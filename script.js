@@ -830,7 +830,7 @@ function openExam() {
 
 function openChapter(cap) {
   runImmediateValidate(true);
-  openImageFolder(`cap${cap}`, `Magic Book-${cap}_page`);
+  openImageFolder(`cap${cap}`, `magic book-${cap}_page`);
 }
 
 /***********************
