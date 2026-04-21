@@ -366,11 +366,10 @@ function showRenewPopup(daysLeft) {
       }
       .rpkg-btn {
         border: none; border-radius: 12px;
-        padding: 10px 18px; font-size: 13px; font-weight: 700;
+        padding: 10px 0; font-size: 13px; font-weight: 700;
         color: #fff; cursor: pointer; white-space: nowrap;
-        min-width: 68px; text-align: center;
+        width: 82px; flex: 0 0 82px; text-align: center;
         transition: opacity 0.15s, transform 0.12s;
-        flex-shrink: 0;
       }
       .rpkg-btn:hover  { opacity: 0.87; transform: scale(1.05); }
       .rpkg-btn:active { transform: scale(0.96); }
