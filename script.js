@@ -1015,7 +1015,7 @@ function openImageFolder(folder, prefix) {
   function loadNext() {
     const n = String(page).padStart(4, "0");
     const img = new Image();
-    img.src = `capitoli/${folder}/${encodeURIComponent(prefix)}-${n}.jpg`;
+    img.src = `capitoli/${folder}/${prefix}-${n}.jpg`;
 
     img.onload = () => {
       const box = document.createElement("div");
