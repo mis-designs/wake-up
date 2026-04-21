@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#dee0ed">
+    <title>Quiz Patente</title>
+    <link rel="icon" type="image/png" href="icons/magicapplogo.png">
+    <link rel="apple-touch-icon" href="icons/magicapplogo.png">
+    <link rel="stylesheet" href="mystyle.css?v=5">
+</head>
+
+<body>
+
+    <div class="quiz-container">
+
+        <div class="top-bar">
+            <button class="icon-btn exit-btn" onclick="exitQuiz()" aria-label="Esci dal quiz">
+                <img src="icons/exit.png" alt="Esci">
+            </button>
+            <h2>Quiz</h2>
+            <div id="timer">20:00</div>
+        </div>
+
+        <div id="progress">Domanda 1 / 30</div>
+
+        <div class="question-area">
+            <div id="figure-wrap" class="figure-wrap hidden">
+                <div id="img-skeleton" class="img-skeleton hidden">
+                    <span class="img-skeleton-label">Caricamento immagine…</span>
+                </div>
+                <img id="figure" alt="">
+            </div>
+            <p id="question"></p>
+        </div>
+
+        <div class="audio-controls">
+            <button class="audio-btn" onclick="speakItalian()" aria-label="Ascolta in italiano">
+                <img src="icons/Italian.png" alt="Italiano">
+            </button>
+            <button class="audio-btn" onclick="playBanglaAudio()" aria-label="Ascolta in Bengali">
+                <img src="icons/Bangla.png" alt="Bangla">
+            </button>
+        </div>
+
+        <div class="controls">
+            <button id="prev-btn" onclick="prev()" aria-label="Indietro">
+                <img src="icons/back.png" alt="Indietro">
+            </button>
+            <button id="vero" onclick="answer(1)" aria-label="Vero">
+                <img src="icons/true.png" alt="Vero">
+                <span class="answer-label">Vero</span>
+            </button>
+            <button id="falso" onclick="answer(0)" aria-label="Falso">
+                <img src="icons/false.png" alt="Falso">
+                <span class="answer-label">Falso</span>
+            </button>
+            <button id="next-btn" class="nav-primary" onclick="next()" aria-label="Avanti">
+                <span id="next-icon-wrap" class="nav-icon-wrap">
+                    <img id="next-icon" src="icons/next.png" alt="Avanti">
+                </span>
+                <span id="next-label" class="nav-label hidden">FINE</span>
+            </button>
+        </div>
+
+    </div>
+
+    <div id="custom-modal" class="modal-overlay hidden" aria-hidden="true">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <div class="modal-badge">Quiz</div>
+            <div id="modal-icon-shell" class="modal-icon-shell hidden">
+                <img id="modal-icon" class="modal-icon hidden" alt="">
+                <span id="modal-icon-fallback" class="modal-icon-fallback hidden">!</span>
+            </div>
+            <h3 id="modal-title">Avviso</h3>
+            <p id="modal-message"></p>
+            <div id="modal-stats" class="modal-stats hidden">
+                <div class="score-numbers">
+                    <div class="score-num score-num-correct">
+                        <strong id="modal-correct-count">0</strong>
+                        <span>Corrette</span>
+                    </div>
+                    <div class="score-divider">/</div>
+                    <div class="score-num score-num-total">
+                        <strong id="modal-score-fraction">30</strong>
+                        <span>Totale</span>
+                    </div>
+                    <div class="score-divider">/</div>
+                    <div class="score-num score-num-wrong">
+                        <strong id="modal-wrong-count">0</strong>
+                        <span>Sbagliate</span>
+                    </div>
+                </div>
+                <div class="score-bar-track">
+                    <div id="score-bar-correct" class="score-bar-correct" style="width:0%"></div>
+                    <div id="score-bar-wrong"   class="score-bar-wrong"   style="width:0%"></div>
+                </div>
+                <div id="modal-score-pct" class="score-pct-label">0%</div>
+            </div>
+            <div id="modal-review" class="modal-review hidden" aria-live="polite">
+                <div class="modal-review-head">
+                    <span>Dettaglio risposte</span>
+                </div>
+                <div id="modal-review-list" class="modal-review-list"></div>
+            </div>
+            <div id="modal-actions" class="modal-actions">
+                <button id="modal-cancel" class="modal-btn modal-btn-secondary" type="button">Annulla</button>
+                <button id="modal-rifai" class="modal-btn modal-btn-rifai" type="button" style="display:none">Rifai scheda</button>
+                <button id="modal-confirm" class="modal-btn modal-btn-primary" type="button">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading-overlay" class="loading-overlay hidden" aria-hidden="true">
+        <div class="loading-card">
+            <img src="icons/loading.gif" alt="Caricamento" class="loading-icon">
+            <p id="loading-text">Caricamento...</p>
+        </div>
+    </div>
+
+    <div id="audio-toast" class="audio-toast" aria-live="assertive" aria-atomic="true"></div>
+
+    <script src="quiz.js?v=5"></script>
+</body>
+
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Magic Book</title>
+
+<!-- GOOGLE ANALYTICS – UTENTE UNICO -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-C5JPY9HFHD"></script>
+<script>
+(function () {
+  let uid = localStorage.getItem("magicbook_user_id");
+  if (!uid) {
+    uid = "mb_" + crypto.randomUUID();
+    localStorage.setItem("magicbook_user_id", uid);
+  }
+  window.MAGICBOOK_UID = uid;
+})();
+
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-C5JPY9HFHD', {
+  user_id: window.MAGICBOOK_UID
+});
+</script>
+
+<link rel="icon" type="image/png" href="icons/magicapplogo.png">
+<link rel="apple-touch-icon" href="icons/magicapplogo.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- WHATSAPP FLOATING BUTTON -->
+<div id="whatsappBtn">
+  <img src="whatsapp.png" alt="WhatsApp">
+</div>
+
+<!-- LOGIN -->
+<div class="card" id="login">
+    <h1>Magic Book</h1>
+    <h2>by MiskatDesigns</h2>
+    <input id="user" type="tel" placeholder="Inserisci il tuo numero di telefono">
+    <button onclick="login()">Accedi</button>
+    <p id="err"></p>
+    <a class="watermark-link" href="https://www.facebook.com/share/14aaeMyWJGw/" target="_blank" rel="noopener noreferrer">
+      By MiskatDesigns
+      <span class="watermark-tip">Visit</span>
+    </a>
+</div>
+
+<!-- HOME -->
+<div class="card hidden" id="home">
+  <div class="section-brand">TMM MAGIC book</div>
+  <img src="https://pub-21131aa867534601af79c34beb746fb7.r2.dev/Figure/ourproduct.jpg" alt="Our Product">
+  <button onclick="showChapters()">Magic Book</button>
+  <a class="watermark-link" href="https://www.facebook.com/share/14aaeMyWJGw/" target="_blank" rel="noopener noreferrer">
+    By MiskatDesigns
+    <span class="watermark-tip">Visit</span>
+  </a>
+</div>
+
+<!-- CAPITOLI -->
+<div class="card hidden lesson-card" id="chapters">
+  <div class="section-brand">TMM MAGIC book</div>
+  <div class="lesson-head">
+    <span class="lesson-kicker">License Journey</span>
+    <h2>Scegli Capitolo</h2>
+    <p>Scorri le carte per cambiare capitolo, poi apri la lezione selezionata.</p>
+  </div>
+
+  <div class="lesson-board">
+    <div class="card-selector">
+      <div class="card-selector-hint" id="cardSelectorHint">
+        <span class="card-selector-hint-dot"></span>
+        <span class="card-selector-hint-text">Scorri per cambiare</span>
+      </div>
+      <div class="card-selector-viewport" id="cardSelectorViewport">
+        <div id="chapterCardTrack" class="chapter-card-track"></div>
+      </div>
+      <div class="chapter-card-dots" id="chapterCardDots"></div>
+    </div>
+
+    <div class="dashboard">
+      <button class="dash-gauge" id="fuelGauge" aria-label="Fuel gauge">
+        <img src="icons/fuel.png" alt="Fuel">
+      </button>
+      <button class="dash-engine" id="engineBtn" aria-label="Avvia motore">
+        <img src="icons/car_off.png" alt="Engine" id="engineImg">
+      </button>
+      <button class="dash-gauge" id="rpmGauge" aria-label="RPM gauge">
+        <img src="icons/rpm.png" alt="RPM">
+      </button>
+    </div>
+
+    <div class="lesson-actions">
+      <button id="examButton" class="lesson-tool lesson-tool-exam" onclick="openExam()">
+        <strong>Exam</strong>
+      </button>
+      <button id="quizButton" class="lesson-tool lesson-tool-quiz" onclick="openQuiz()">
+        <strong>Quiz</strong>
+      </button>
+    </div>
+  </div>
+
+  <a class="watermark-link" href="https://www.facebook.com/share/14aaeMyWJGw/" target="_blank" rel="noopener noreferrer">
+    By MiskatDesigns
+    <span class="watermark-tip">Visit</span>
+  </a>
+</div>
+
+<!-- MENU OVERLAY (backdrop) -->
+<div id="menuOverlay" class="menu-overlay" onclick="closeChapterMenu()"></div>
+
+<!-- APP HEADER/STATUS BAR -->
+<div id="appHeader" class="app-header">
+  <div class="header-left">
+    <button class="header-btn back-btn" id="backBtn" onclick="goBack()" aria-label="Indietro">
+      <img src="icons/go-back.png" alt="Back">
+    </button>
+  </div>
+
+  <div class="header-center">
+    <span class="chapter-status">
+      <img src="icons/chapter.png" alt="Chapter" class="status-icon" id="statusIcon">
+      <span id="headerChapterName">Capitolo 1</span>
+    </span>
+  </div>
+
+  <div class="header-right">
+    <button class="header-btn menu-btn" onclick="toggleChapterMenu()" aria-label="Menu">
+      <img src="icons/menu.png" alt="Menu">
+    </button>
+  </div>
+</div>
+
+<!-- CHAPTER SIDE MENU (slide-in panel) -->
+<div id="chapterMenu" class="chapter-menu">
+  <div class="menu-container">
+    <!-- MENU HEADER -->
+    <div class="menu-header">
+      <img src="icons/magicapplogo.png" alt="Magic Book" class="menu-logo">
+      <span class="menu-brand">Magic Book</span>
+      <button class="menu-close-btn" onclick="closeChapterMenu()">&#x2715;</button>
+    </div>
+
+    <!-- HOME -->
+    <div class="menu-item menu-home" onclick="goHome()">
+      <img src="icons/home.png" alt="Home" class="menu-icon">
+      <span>Home</span>
+    </div>
+
+    <div class="menu-divider"></div>
+
+    <!-- CHAPTERS -->
+    <div class="menu-section">
+      <div class="menu-section-title">Capitoli</div>
+      <div id="menuChaptersList" class="menu-chapters-list">
+        <!-- Filled dinamicamente -->
+      </div>
+    </div>
+
+    <div class="menu-divider"></div>
+
+    <!-- EXAM & QUIZ -->
+    <div class="menu-item menu-exam" onclick="openExamFromMenu()">
+      <img src="icons/true.png" alt="Exam" class="menu-icon">
+      <span>Exam — Final Test</span>
+    </div>
+    <div class="menu-item menu-quiz" onclick="openQuizFromMenu()">
+      <img src="icons/false.png" alt="Quiz" class="menu-icon">
+      <span>Quiz — Practice Mode</span>
+    </div>
+  </div>
+</div>
+
+<!-- VIEWER -->
+<div id="viewer" class="hidden">
+  <button id="viewerBackBtn" class="viewer-back-btn hidden" type="button" onclick="goBack()">
+    Indietro
+  </button>
+  <div id="pages"></div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
