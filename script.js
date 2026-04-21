@@ -318,78 +318,221 @@ function showRenewPopup(daysLeft) {
   const old = document.getElementById("renewPopupOverlay");
   if (old) old.remove();
 
+  // Inject styles once
+  if (!document.getElementById("renewPopupStyles")) {
+    const style = document.createElement("style");
+    style.id = "renewPopupStyles";
+    style.textContent = `
+      @keyframes renewSlideUp {
+        from { opacity: 0; transform: translateY(28px) scale(0.96); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      #renewPopupBox {
+        animation: renewSlideUp 0.38s cubic-bezier(0.22,1,0.36,1) both;
+      }
+      .rpkg-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #f8f9ff;
+        border: 1.5px solid #e8eaf6;
+        border-radius: 16px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .rpkg-card:hover   { box-shadow: 0 6px 24px rgba(99,102,241,0.13); border-color: #6366f1; transform: translateY(-1px); }
+      .rpkg-card:active  { transform: scale(0.985); }
+      .rpkg-card.popular { background: linear-gradient(135deg,#f0f0ff 0%,#f5f3ff 100%); border-color: #8b5cf6; }
+      .rpkg-icon {
+        width: 40px; height: 40px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px; flex-shrink: 0;
+      }
+      .rpkg-info { flex: 1; text-align: left; }
+      .rpkg-price {
+        font-size: 20px; font-weight: 800; line-height: 1.1;
+      }
+      .rpkg-duration {
+        font-size: 13px; font-weight: 600; color: #555; margin-top: 1px;
+      }
+      .rpkg-badge {
+        font-size: 10px; font-weight: 700; letter-spacing: 0.4px;
+        padding: 2px 7px; border-radius: 20px;
+        background: #ede9fe; color: #7c3aed;
+        display: inline-block; margin-top: 3px;
+      }
+      .rpkg-btn {
+        border: none; border-radius: 12px;
+        padding: 10px 18px; font-size: 13px; font-weight: 700;
+        color: #fff; cursor: pointer; white-space: nowrap;
+        min-width: 68px; text-align: center;
+        transition: opacity 0.15s, transform 0.12s;
+        flex-shrink: 0;
+      }
+      .rpkg-btn:hover  { opacity: 0.87; transform: scale(1.05); }
+      .rpkg-btn:active { transform: scale(0.96); }
+      .renew-dismiss {
+        display: block; width: 100%; margin-top: 14px;
+        padding: 12px; background: transparent;
+        border: 1.5px solid #ebebeb; border-radius: 12px;
+        font-size: 14px; color: #aaa; cursor: pointer;
+        font-family: inherit;
+        transition: background 0.15s, color 0.15s;
+      }
+      .renew-dismiss:hover { background: #f7f7f7; color: #666; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Overlay
   const overlay = document.createElement("div");
   overlay.id = "renewPopupOverlay";
-  overlay.style.position = "fixed";
-  overlay.style.inset = "0";
-  overlay.style.background = "rgba(0,0,0,0.55)";
-  overlay.style.zIndex = "999999";
-  overlay.style.display = "flex";
-  overlay.style.alignItems = "center";
-  overlay.style.justifyContent = "center";
-  overlay.style.padding = "20px";
+  overlay.style.cssText = [
+    "position:fixed;inset:0;",
+    "background:rgba(10,10,30,0.62);",
+    "backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);",
+    "z-index:999999;",
+    "display:flex;align-items:center;justify-content:center;",
+    "padding:20px;"
+  ].join("");
+  overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
 
+  // Box
   const box = document.createElement("div");
-  box.style.background = "#fff";
-  box.style.color = "#111";
-  box.style.width = "100%";
-  box.style.maxWidth = "420px";
-  box.style.borderRadius = "18px";
-  box.style.padding = "22px";
-  box.style.boxShadow = "0 20px 60px rgba(0,0,0,.25)";
-  box.style.textAlign = "center";
-  box.style.fontFamily = "Arial, sans-serif";
+  box.id = "renewPopupBox";
+  box.style.cssText = [
+    "background:#ffffff;",
+    "width:100%;max-width:440px;",
+    "border-radius:24px;",
+    "padding:24px 20px 20px;",
+    "box-shadow:0 32px 80px rgba(0,0,0,0.24);",
+    "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;"
+  ].join("");
 
-  const title = document.createElement("div");
-  title.textContent = "Il tuo accesso sta per scadere";
-  title.style.fontSize = "22px";
-  title.style.fontWeight = "700";
-  title.style.marginBottom = "12px";
+  // — Header —
+  const header = document.createElement("div");
+  header.style.cssText = "text-align:center;margin-bottom:18px;";
 
-  const msg = document.createElement("div");
-  msg.textContent = daysLeft === 0
-    ? "শেষ সুযোগ। এখনই রিনিউ করুন — ১০€ তে আরও ৯০ দিন।"
-    : `মেয়াদ শেষ হতে আর ${daysLeft} দিন বাকি। এখনই রিনিউ করুন — ১০€ তে ৯০ দিন।`;
-  msg.style.fontSize = "15px";
-  msg.style.lineHeight = "1.5";
-  msg.style.marginBottom = "18px";
+  const alertBadge = document.createElement("div");
+  alertBadge.style.cssText = [
+    "display:inline-flex;align-items:center;gap:5px;",
+    "background:#fff3e0;color:#d84315;",
+    "font-size:11px;font-weight:700;letter-spacing:0.4px;",
+    "padding:5px 13px;border-radius:30px;margin-bottom:14px;"
+  ].join("");
+  const daysText = daysLeft === 0 ? "আজকেই শেষ!" : `${daysLeft} দিন বাকি`;
+  alertBadge.innerHTML = `⏳&nbsp;${daysText}`;
 
-  const btnRenew = document.createElement("button");
-  btnRenew.textContent = "Rinnova";
-  btnRenew.style.background = "#25D366";
-  btnRenew.style.color = "#fff";
-  btnRenew.style.border = "0";
-  btnRenew.style.padding = "12px 18px";
-  btnRenew.style.borderRadius = "12px";
-  btnRenew.style.fontSize = "16px";
-  btnRenew.style.fontWeight = "700";
-  btnRenew.style.cursor = "pointer";
-  btnRenew.style.marginRight = "10px";
+  const titleEl = document.createElement("div");
+  titleEl.style.cssText = "font-size:21px;font-weight:800;color:#0f0f1e;margin-bottom:5px;";
+  titleEl.textContent = "প্ল্যান রিনিউ করুন";
 
-  btnRenew.onclick = () => {
-    const phone = Storage.get(KEYS.phone) || "";
-    const text = `${RENEW_MESSAGE} Numero: ${phone}`;
-    const url = `https://wa.me/${RENEW_WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
-    window.open(url, "_blank");
-    overlay.remove();
-  };
+  const subtitleEl = document.createElement("div");
+  subtitleEl.style.cssText = "font-size:13px;color:#888;line-height:1.5;";
+  subtitleEl.textContent = "আপনার পছন্দের প্যাকেজ বেছে নিন এবং WhatsApp-এ সহজেই অ্যাক্টিভ করুন।";
 
-  const btnClose = document.createElement("button");
-  btnClose.textContent = "Chiudi";
-  btnClose.style.background = "#eee";
-  btnClose.style.color = "#111";
-  btnClose.style.border = "0";
-  btnClose.style.padding = "12px 18px";
-  btnClose.style.borderRadius = "12px";
-  btnClose.style.fontSize = "16px";
-  btnClose.style.cursor = "pointer";
+  header.appendChild(alertBadge);
+  header.appendChild(titleEl);
+  header.appendChild(subtitleEl);
 
-  btnClose.onclick = () => overlay.remove();
+  // — Divider —
+  const hr = document.createElement("div");
+  hr.style.cssText = "height:1px;background:#f0f0f0;margin-bottom:16px;";
 
-  box.appendChild(title);
-  box.appendChild(msg);
-  box.appendChild(btnRenew);
-  box.appendChild(btnClose);
+  // — Package cards —
+  const packages = [
+    {
+      price: "১০€", duration: "৩০ দিন",
+      icon: "📅", iconBg: "#e8f5e9", color: "#16a34a",
+      msgPrice: "১০€", msgDays: "৩০",
+      popular: false
+    },
+    {
+      price: "২০€", duration: "৯০ দিন",
+      icon: "⭐", iconBg: "#ede9fe", color: "#7c3aed",
+      msgPrice: "২০€", msgDays: "৯০",
+      popular: true
+    },
+    {
+      price: "৪০€", duration: "৩৬৫ দিন",
+      icon: "🏆", iconBg: "#fff3e0", color: "#d97706",
+      msgPrice: "৪০€", msgDays: "৩৬৫",
+      popular: false
+    }
+  ];
+
+  const pkgWrap = document.createElement("div");
+
+  packages.forEach(pkg => {
+    const card = document.createElement("div");
+    card.className = "rpkg-card" + (pkg.popular ? " popular" : "");
+
+    // Icon
+    const iconEl = document.createElement("div");
+    iconEl.className = "rpkg-icon";
+    iconEl.style.background = pkg.iconBg;
+    iconEl.textContent = pkg.icon;
+
+    // Info
+    const info = document.createElement("div");
+    info.className = "rpkg-info";
+
+    const priceEl = document.createElement("div");
+    priceEl.className = "rpkg-price";
+    priceEl.style.color = pkg.color;
+    priceEl.textContent = pkg.price;
+
+    const durEl = document.createElement("div");
+    durEl.className = "rpkg-duration";
+    durEl.textContent = pkg.duration;
+
+    info.appendChild(priceEl);
+    info.appendChild(durEl);
+
+    if (pkg.popular) {
+      const badge = document.createElement("div");
+      badge.className = "rpkg-badge";
+      badge.textContent = "★ সবচেয়ে জনপ্রিয়";
+      info.appendChild(badge);
+    }
+
+    // Button
+    const btn = document.createElement("button");
+    btn.className = "rpkg-btn";
+    btn.style.background = `linear-gradient(135deg, ${pkg.color} 0%, ${pkg.color}bb 100%)`;
+    btn.textContent = "Scegli";
+
+    btn.onclick = e => {
+      e.stopPropagation();
+      const phone = Storage.get(KEYS.phone) || "";
+      const msgText = `Ciao, voglio attivare il pacchetto ${pkg.msgPrice} (${pkg.msgDays} giorni)${phone ? `. Numero: ${phone}` : ""}`;
+      const url = `https://wa.me/${RENEW_WHATSAPP_NUMBER}?text=${encodeURIComponent(msgText)}`;
+      window.open(url, "_blank");
+      overlay.remove();
+    };
+
+    card.appendChild(iconEl);
+    card.appendChild(info);
+    card.appendChild(btn);
+
+    card.onclick = e => { if (e.target !== btn) btn.click(); };
+
+    pkgWrap.appendChild(card);
+  });
+
+  // — Dismiss —
+  const dismiss = document.createElement("button");
+  dismiss.className = "renew-dismiss";
+  dismiss.textContent = "Adesso no";
+  dismiss.onclick = () => overlay.remove();
+
+  box.appendChild(header);
+  box.appendChild(hr);
+  box.appendChild(pkgWrap);
+  box.appendChild(dismiss);
   overlay.appendChild(box);
   document.body.appendChild(overlay);
 }
