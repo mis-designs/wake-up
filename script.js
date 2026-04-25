@@ -3,8 +3,10 @@
  ***********************/
 const API_URL = "https://script.google.com/macros/s/AKfycbxOOQ-8FYN4qv0e5575rNyrvjTiZtEUmaNUj07KjBkjN1G9iCl0Ks4iWcSxthbuWh9h5A/exec";
 const TOKEN = "Xk92!abC_2026_securePanel@#";
-const CHECK_INTERVAL = 30 * 1000;
+const CHECK_INTERVAL = 2 * 60 * 1000;
 const IMMEDIATE_VALIDATE_COOLDOWN = 4000;
+const FETCH_TIMEOUT = 8000;
+const MAX_SILENT_FAILURE_TIME = 10 * 60 * 1000;
 
 // numero whatsapp per rinnovo
 const RENEW_WHATSAPP_NUMBER = "393663584525";
@@ -61,8 +63,50 @@ const KEYS = {
   loggedIn: "loggedIn",
   phone: "phone",
   expiry: "expiry",
+  session: "session",
   renewPopupLastShown: "renewPopupLastShown"
 };
+
+function readStoredSession() {
+  try {
+    const raw = Storage.get(KEYS.session);
+    return raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    console.warn("Sessione salvata non leggibile, continuo senza logout automatico");
+    return null;
+  }
+}
+
+function persistSession(phone, data = {}) {
+  if (!phone) return;
+
+  const existing = readStoredSession() || {};
+  const session = {
+    ...existing,
+    phone,
+    deviceId: data.deviceId || existing.deviceId || Storage.get(KEYS.deviceId) || getDeviceId(),
+    lastValid: data.lastValid || Date.now()
+  };
+
+  if (data.expiry || existing.expiry) session.expiry = data.expiry || existing.expiry;
+
+  Storage.set(KEYS.session, JSON.stringify(session));
+  Storage.set(KEYS.loggedIn, "true");
+  Storage.set(KEYS.phone, phone);
+  Storage.set(KEYS.deviceId, session.deviceId);
+  if (session.expiry) Storage.set(KEYS.expiry, session.expiry);
+}
+
+function restoreSession(session) {
+  if (!session?.phone) return false;
+  persistSession(session.phone, {
+    deviceId: session.deviceId,
+    expiry: session.expiry,
+    lastValid: session.lastValid || Date.now()
+  });
+  if (session.lastValid) lastSuccess = session.lastValid;
+  return true;
+}
 
 /***********************
  * NORMALIZZA TELEFONO
@@ -96,30 +140,57 @@ function getDeviceId() {
  * AUTO LOGIN
  ***********************/
 window.addEventListener("load", () => {
+  const session = readStoredSession();
   const logged = Storage.get(KEYS.loggedIn);
-  const phone = Storage.get(KEYS.phone);
-  const deviceId = Storage.get(KEYS.deviceId);
+  let phone = session?.phone || Storage.get(KEYS.phone);
+  let deviceId = session?.deviceId || Storage.get(KEYS.deviceId);
 
   const mode = Storage.mode();
   if (mode !== "local") {
     console.warn("Storage non persistente:", mode, "(iOS privata / blocchi privacy).");
   }
 
-  if (logged === "true" && phone && deviceId) {
+  if (session) restoreSession(session);
+  else if (logged === "true" && phone && deviceId) {
+    persistSession(phone, { deviceId, lastValid: Date.now() });
+  }
+
+  phone = Storage.get(KEYS.phone);
+  deviceId = Storage.get(KEYS.deviceId);
+
+  if ((session || logged === "true") && phone && deviceId) {
     showHome();
     startSessionCheck();
-    runImmediateValidate(true);
+    safeCheckAccess(true);
     checkRenewReminder();
   } else {
-    logout(false);
+    showLoginScreen("");
   }
 });
 
 /***********************
  * FETCH HELPER
  ***********************/
+async function fetchWithRetry(url, options = {}, retries = 2) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    return res;
+  } catch (err) {
+    if (retries > 0) return fetchWithRetry(url, options, retries - 1);
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 async function postApi(payload) {
-  const res = await fetch(API_URL, {
+  const res = await fetchWithRetry(API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({
@@ -156,16 +227,17 @@ async function login() {
     });
 
     if (data && data.success) {
-      Storage.set(KEYS.loggedIn, "true");
-      Storage.set(KEYS.phone, phone);
-
-      if (data.expiry) {
-        Storage.set(KEYS.expiry, data.expiry);
-      }
+      persistSession(phone, {
+        deviceId,
+        expiry: data.expiry,
+        lastValid: Date.now()
+      });
+      failCount = 0;
+      lastSuccess = Date.now();
 
       showHome();
       startSessionCheck();
-      runImmediateValidate(true);
+      safeCheckAccess(true);
       checkRenewReminder(true);
     } else {
       const e = data?.error;
@@ -185,51 +257,106 @@ function logout(showLogin = true) {
   Storage.remove(KEYS.loggedIn);
   Storage.remove(KEYS.phone);
   Storage.remove(KEYS.expiry);
+  Storage.remove(KEYS.session);
   setChapterMode(false);
   currentScreen = "login";
 
-  if (showLogin) {
-    hideAll();
-    document.getElementById("login")?.classList.remove("hidden");
-    const err = document.getElementById("err");
-    if (err) err.textContent = "Accesso revocato dall'amministratore";
-  }
+  if (showLogin) showLoginScreen("Accesso revocato dall'amministratore");
+}
+
+function showLoginScreen(message = "") {
+  hideAll();
+  document.getElementById("login")?.classList.remove("hidden");
+  const err = document.getElementById("err");
+  if (err) err.textContent = message;
 }
 
 /***********************
  * SESSION CHECK
  ***********************/
 let sessionTimer = null;
+let failCount = 0;
+let lastSuccess = Date.now();
+let accessCheckRunning = false;
 
 function startSessionCheck() {
   if (sessionTimer) clearInterval(sessionTimer);
+  sessionTimer = setInterval(() => safeCheckAccess(), CHECK_INTERVAL);
+}
 
-  sessionTimer = setInterval(async () => {
-    const phone = Storage.get(KEYS.phone);
-    const deviceId = Storage.get(KEYS.deviceId);
+function getAccessStatus(data) {
+  const status = data?.status || data?.error;
+  if (data?.success === true || status === "success") return "success";
+  if (status === "expired" || status === "not_found") return status;
+  return "unknown";
+}
 
-    if (!phone || !deviceId) {
+async function checkAccessAPI() {
+  const session = readStoredSession();
+  if (session) restoreSession(session);
+
+  const phone = session?.phone || Storage.get(KEYS.phone);
+  const deviceId = session?.deviceId || Storage.get(KEYS.deviceId);
+
+  if (!phone || !deviceId) {
+    console.warn("Sessione incompleta, tengo lo stato senza logout automatico");
+    return { status: "unknown" };
+  }
+
+  const data = await postApi({ action: "validate", phone, deviceId });
+  return {
+    status: getAccessStatus(data),
+    data,
+    phone,
+    deviceId
+  };
+}
+
+async function safeCheckAccess(force = false) {
+  const now = Date.now();
+
+  if (accessCheckRunning) return;
+
+  if (!force) {
+    if (now - lastImmediateValidate < IMMEDIATE_VALIDATE_COOLDOWN) return;
+  }
+
+  accessCheckRunning = true;
+  immediateValidateRunning = true;
+  lastImmediateValidate = now;
+
+  try {
+    const res = await checkAccessAPI();
+
+    if (res.status === "success") {
+      failCount = 0;
+      lastSuccess = Date.now();
+      persistSession(res.phone, {
+        deviceId: res.deviceId,
+        expiry: res.data?.expiry,
+        lastValid: lastSuccess
+      });
+      checkRenewReminder();
+      return;
+    }
+
+    if (res.status === "expired" || res.status === "not_found") {
       logout();
       return;
     }
 
-    try {
-      const data = await postApi({ action: "validate", phone, deviceId });
-
-      if (data?.expiry) {
-        Storage.set(KEYS.expiry, data.expiry);
-      }
-
-      if (!data || data.success !== true) {
-        logout();
-        return;
-      }
-
-      checkRenewReminder();
-    } catch (err) {
-      console.warn("Check fallito, rete assente");
+    failCount++;
+    console.warn("Risposta temporanea o sconosciuta, sessione mantenuta attiva");
+  } catch (error) {
+    failCount++;
+    console.warn("Problema temporaneo di rete/API, sessione mantenuta attiva");
+  } finally {
+    if (Date.now() - lastSuccess > MAX_SILENT_FAILURE_TIME) {
+      console.warn("Errore prolungato, ma nessun logout automatico senza conferma backend");
     }
-  }, CHECK_INTERVAL);
+    accessCheckRunning = false;
+    immediateValidateRunning = false;
+  }
 }
 
 /***********************
@@ -239,46 +366,7 @@ let lastImmediateValidate = 0;
 let immediateValidateRunning = false;
 
 async function runImmediateValidate(force = false) {
-  const now = Date.now();
-
-  if (!force) {
-    if (immediateValidateRunning) return;
-    if (now - lastImmediateValidate < IMMEDIATE_VALIDATE_COOLDOWN) return;
-  }
-
-  const phone = Storage.get(KEYS.phone);
-  const deviceId = Storage.get(KEYS.deviceId);
-
-  if (!phone || !deviceId) {
-    logout();
-    return;
-  }
-
-  immediateValidateRunning = true;
-  lastImmediateValidate = now;
-
-  try {
-    const data = await postApi({
-      action: "validate",
-      phone,
-      deviceId
-    });
-
-    if (data?.expiry) {
-      Storage.set(KEYS.expiry, data.expiry);
-    }
-
-    if (!data || data.success !== true) {
-      logout();
-      return;
-    }
-
-    checkRenewReminder();
-  } catch (err) {
-    console.warn("Validate immediato fallito");
-  } finally {
-    immediateValidateRunning = false;
-  }
+  return safeCheckAccess(force);
 }
 
 /***********************
@@ -544,14 +632,14 @@ function showRenewPopup(daysLeft) {
  * EVENTI EXTRA MOBILE
  ***********************/
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) runImmediateValidate(true);
+  if (!document.hidden) safeCheckAccess(true);
 });
 
-window.addEventListener("focus", () => runImmediateValidate(true));
-window.addEventListener("pageshow", () => runImmediateValidate(true));
-document.addEventListener("touchstart", () => runImmediateValidate(), { passive: true });
-document.addEventListener("click", () => runImmediateValidate(), true);
-window.addEventListener("scroll", () => runImmediateValidate(), { passive: true });
+window.addEventListener("focus", () => safeCheckAccess(true));
+window.addEventListener("pageshow", () => safeCheckAccess(true));
+document.addEventListener("touchstart", () => safeCheckAccess(), { passive: true });
+document.addEventListener("click", () => safeCheckAccess(), true);
+window.addEventListener("scroll", () => safeCheckAccess(), { passive: true });
 
 /***********************
  * UI NAVIGATION

@@ -9,10 +9,15 @@
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-C5JPY9HFHD"></script>
 <script>
 (function () {
-  let uid = localStorage.getItem("magicbook_user_id");
-  if (!uid) {
-    uid = "mb_" + crypto.randomUUID();
-    localStorage.setItem("magicbook_user_id", uid);
+  let uid = "";
+  try {
+    uid = localStorage.getItem("magicbook_user_id");
+    if (!uid) {
+      uid = "mb_" + ((typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : Date.now());
+      localStorage.setItem("magicbook_user_id", uid);
+    }
+  } catch (err) {
+    uid = "mb_" + Date.now();
   }
   window.MAGICBOOK_UID = uid;
 })();

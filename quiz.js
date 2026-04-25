@@ -303,7 +303,22 @@ function loadQuizImage(q) {
 }
 
 // LOGIN CHECK
-if (localStorage.getItem("loggedIn") !== "true") {
+function hasStoredSession() {
+  try {
+    const rawSession = localStorage.getItem("session");
+    if (rawSession) {
+      const session = JSON.parse(rawSession);
+      if (session?.phone) return true;
+    }
+
+    return localStorage.getItem("loggedIn") === "true";
+  } catch (err) {
+    console.warn("[quiz] Session check unavailable, redirecting to login safely");
+    return false;
+  }
+}
+
+if (!hasStoredSession()) {
   window.location.href = "index.html";
 }
 
