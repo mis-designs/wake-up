@@ -6,7 +6,7 @@ const TOKEN = "Xk92!abC_2026_securePanel@#";
 const CHECK_INTERVAL = 2 * 60 * 1000;
 const IMMEDIATE_VALIDATE_COOLDOWN = 4000;
 const FETCH_TIMEOUT = 8000;
-const MAX_SILENT_FAILURE_TIME = 10 * 60 * 1000;
+const MAX_SILENT_FAILURE_TIME = 15 * 60 * 1000;
 
 // numero whatsapp per rinnovo
 const RENEW_WHATSAPP_NUMBER = "393663584525";
@@ -256,12 +256,17 @@ async function login() {
 /***********************
  * LOGOUT
  ***********************/
-function logout(showLogin = true) {
+function logout(showLogin = true, reason = "revoked") {
   clearSessionData();
   setChapterMode(false);
   currentScreen = "login";
 
-  if (showLogin) showLoginScreen("Accesso revocato dall'amministratore");
+  if (showLogin) {
+    let msg = "Accesso revocato dall'amministratore";
+    if (reason === "expired") msg = "Abbonamento scaduto";
+    else if (reason === "not_found") msg = "Numero non autorizzato";
+    showLoginScreen(msg);
+  }
 }
 
 function clearSessionData() {
@@ -431,7 +436,7 @@ async function safeCheckAccess(force = false) {
     }
 
     if (res.status === "expired" || res.status === "not_found") {
-      logout();
+      logout(true, res.status);
       return;
     }
 
@@ -721,15 +726,17 @@ function showRenewPopup(daysLeft) {
 /***********************
  * EVENTI EXTRA MOBILE
  ***********************/
+// Re-validate only when the user genuinely returns to the app.
+// touchstart / click / scroll are intentionally excluded — they fire on every
+// user gesture and cause unnecessary API hammering without any safety benefit,
+// since the interval-based check and the visibility/focus handlers below are
+// already sufficient.
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) safeCheckAccess(true);
 });
 
 window.addEventListener("focus", () => safeCheckAccess(true));
 window.addEventListener("pageshow", () => safeCheckAccess(true));
-document.addEventListener("touchstart", () => safeCheckAccess(), { passive: true });
-document.addEventListener("click", () => safeCheckAccess(), true);
-window.addEventListener("scroll", () => safeCheckAccess(), { passive: true });
 
 /***********************
  * UI NAVIGATION
