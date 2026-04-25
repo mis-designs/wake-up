@@ -182,6 +182,61 @@ gtag('config', 'G-C5JPY9HFHD', {
   <div id="pages"></div>
 </div>
 
+<!-- QUIZ MODE SELECTION OVERLAY -->
+<div id="quizModeOverlay" class="qms-overlay hidden">
+  <div class="qms-sheet">
+    <div class="qms-drag-handle"></div>
+    <div class="qms-header">
+      <button class="qms-back" onclick="closeQuizModeScreen()" aria-label="Indietro">
+        <img src="icons/go-back.png" alt="Indietro">
+      </button>
+      <span class="qms-title">Scegli Modalità Quiz</span>
+    </div>
+    <div class="qms-body">
+
+      <!-- MIX QUIZ 786 -->
+      <div class="qms-card" id="qmsCardMix">
+        <div class="qms-card-header">
+          <div class="qms-card-badge qms-badge-mix">🎲</div>
+          <div class="qms-card-info">
+            <div class="qms-card-title">MIX QUIZ 786</div>
+            <div class="qms-card-sub">30 domande casuali dal totale</div>
+          </div>
+        </div>
+        <button class="qms-start qms-start-mix" onclick="startMixQuiz()">Inizia &rarr;</button>
+      </div>
+
+      <!-- QUIZ CAPITOLO -->
+      <div class="qms-card" id="qmsCardCap">
+        <div class="qms-card-header">
+          <div class="qms-card-badge qms-badge-cap">📖</div>
+          <div class="qms-card-info">
+            <div class="qms-card-title">QUIZ CAPITOLO</div>
+            <div class="qms-card-sub">Seleziona un capitolo e inizia</div>
+          </div>
+        </div>
+        <div class="qms-pills" id="qmsCapPills"></div>
+        <button class="qms-start qms-start-cap" id="qmsCapStartBtn" onclick="startCapQuiz()" disabled>Inizia &rarr;</button>
+      </div>
+
+      <!-- MULTI QUIZ -->
+      <div class="qms-card" id="qmsCardMulti">
+        <div class="qms-card-header">
+          <div class="qms-card-badge qms-badge-multi">🗂️</div>
+          <div class="qms-card-info">
+            <div class="qms-card-title">MULTI QUIZ</div>
+            <div class="qms-card-sub">Seleziona 2 o più capitoli</div>
+          </div>
+        </div>
+        <div class="qms-pills" id="qmsMultiPills"></div>
+        <div class="qms-hint" id="qmsMultiHint">Seleziona almeno 2 capitoli</div>
+        <button class="qms-start qms-start-multi" id="qmsMultiStartBtn" onclick="startMultiQuiz()" disabled>Inizia &rarr;</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <script src="script.js"></script>
 </body>
 </html>

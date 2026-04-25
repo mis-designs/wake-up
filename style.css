@@ -1304,3 +1304,298 @@ body.app-mode #whatsappBtn {
 .card:not(.hidden) {
     animation: screenEnter 0.2s ease;
 }
+
+/* =====================
+   QUIZ MODE SELECTION
+   ===================== */
+.qms-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    background: rgba(15, 18, 40, 0.68);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: flex-end;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.32s ease;
+}
+
+.qms-overlay.qms-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.qms-sheet {
+    width: 100%;
+    max-height: 94dvh;
+    background: #eef0f8;
+    border-radius: 28px 28px 0 0;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.44s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 -24px 64px rgba(37, 41, 67, 0.32);
+    overflow: hidden;
+}
+
+.qms-overlay.qms-visible .qms-sheet {
+    transform: translateY(0);
+}
+
+.qms-drag-handle {
+    width: 40px;
+    height: 4px;
+    background: rgba(37, 41, 67, 0.2);
+    border-radius: 2px;
+    margin: 12px auto 0;
+    flex-shrink: 0;
+}
+
+.qms-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px 14px;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.qms-back {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    padding: 0;
+    border-radius: 12px;
+    background: rgba(37, 41, 67, 0.09);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: none;
+    transition: background 0.18s ease, transform 0.14s ease;
+    touch-action: manipulation;
+}
+
+.qms-back:hover  { background: rgba(37, 41, 67, 0.14); transform: none; box-shadow: none; }
+.qms-back:active { transform: scale(0.91) !important; box-shadow: none; background: rgba(37, 41, 67, 0.2); }
+
+.qms-back img {
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+    filter: none;
+}
+
+.qms-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--color-dark);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.qms-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding: 6px 14px calc(env(safe-area-inset-bottom, 0px) + 30px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Mode Cards */
+.qms-card {
+    background: white;
+    border-radius: 22px;
+    padding: 18px 16px 16px;
+    box-shadow: 0 4px 20px rgba(37, 41, 67, 0.08);
+    border: 1.5px solid rgba(37, 41, 67, 0.05);
+    transition: opacity 0.28s ease, transform 0.28s ease,
+                box-shadow 0.28s ease, border-color 0.28s ease;
+}
+
+.qms-card--active {
+    border-color: rgba(58, 78, 251, 0.28) !important;
+    box-shadow: 0 6px 30px rgba(58, 78, 251, 0.14) !important;
+}
+
+.qms-card--inactive {
+    opacity: 0.52;
+}
+
+.qms-card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.qms-card-badge {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.qms-badge-mix   { background: linear-gradient(135deg, #3a4efb 0%, #33a4fa 100%); }
+.qms-badge-cap   { background: linear-gradient(135deg, #e3ff3b 0%, #c8ef00 100%); }
+.qms-badge-multi { background: linear-gradient(135deg, #ff8c00 0%, #f8c000 100%); }
+
+.qms-card-title {
+    font-size: 15px;
+    font-weight: 900;
+    color: var(--color-dark);
+    letter-spacing: 0.03em;
+    line-height: 1.2;
+}
+
+.qms-card-sub {
+    font-size: 12px;
+    color: rgba(37, 41, 67, 0.52);
+    font-weight: 600;
+    margin-top: 3px;
+    line-height: 1.4;
+}
+
+/* Chapter pills */
+.qms-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.qms-pill {
+    width: auto;
+    padding: 0 11px;
+    height: 32px;
+    min-width: 36px;
+    border-radius: 9px;
+    background: rgba(37, 41, 67, 0.07);
+    color: rgba(37, 41, 67, 0.7);
+    font-size: 12px;
+    font-weight: 800;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    box-shadow: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.02em;
+    transition: background 0.17s ease, color 0.17s ease, transform 0.12s ease,
+                box-shadow 0.17s ease, border-color 0.17s ease;
+    touch-action: manipulation;
+    user-select: none;
+    line-height: 1;
+}
+
+.qms-pill:hover {
+    background: rgba(37, 41, 67, 0.12);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(37, 41, 67, 0.1);
+}
+
+.qms-pill:active {
+    transform: scale(0.91) !important;
+    box-shadow: none !important;
+}
+
+.qms-pill.is-selected {
+    background: linear-gradient(135deg, #15d66b 0%, #0fb858 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(21, 214, 107, 0.34);
+}
+
+.qms-pill.is-selected:hover {
+    background: linear-gradient(135deg, #18e272 0%, #13c960 100%);
+    box-shadow: 0 6px 16px rgba(21, 214, 107, 0.44);
+}
+
+/* Hint */
+.qms-hint {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(37, 41, 67, 0.4);
+    text-align: center;
+    margin-bottom: 12px;
+    transition: color 0.25s ease;
+    letter-spacing: 0.02em;
+}
+
+.qms-hint.is-ok {
+    color: #0fb858;
+}
+
+/* Start button */
+.qms-start {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.2s ease;
+}
+
+.qms-start:disabled {
+    opacity: 0.32;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.qms-start:not(:disabled):hover {
+    transform: translateY(-2px);
+}
+
+.qms-start:not(:disabled):active {
+    transform: scale(0.97) !important;
+}
+
+.qms-start-mix {
+    background: var(--gradient-main);
+    color: white;
+    box-shadow: 0 8px 22px rgba(58, 78, 251, 0.3);
+}
+
+.qms-start-mix:not(:disabled):hover {
+    box-shadow: 0 12px 28px rgba(58, 78, 251, 0.38);
+}
+
+.qms-start-cap {
+    background: var(--gradient-dark);
+    color: white;
+    box-shadow: 0 8px 22px rgba(37, 41, 67, 0.22);
+}
+
+.qms-start-cap:not(:disabled):hover {
+    box-shadow: 0 12px 28px rgba(37, 41, 67, 0.3);
+}
+
+.qms-start-multi {
+    background: linear-gradient(135deg, #ff8c00 0%, #f8c000 100%);
+    color: white;
+    box-shadow: 0 8px 22px rgba(248, 140, 0, 0.3);
+}
+
+.qms-start-multi:not(:disabled):hover {
+    box-shadow: 0 12px 28px rgba(248, 140, 0, 0.4);
+}
+
+body.qms-open { overflow: hidden; }

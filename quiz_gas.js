@@ -6,7 +6,7 @@ function doGet(e) {
   const action = e.parameter.action;
 
   if (action === "getQuiz") {
-    return getQuiz();
+    return getQuiz(e);
   }
 
   if (action === "getTTS") {
@@ -40,7 +40,9 @@ function doPost(e) {
 }
 
 
-function getQuiz() {
+function getQuiz(e) {
+  const chaptersParam = ((e && e.parameter && e.parameter.chapters) || "").trim();
+
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("quiz");
   const data = sheet.getDataRange().getValues();
 
@@ -54,14 +56,26 @@ function getQuiz() {
     correct: row[4]
   }));
 
+  // Filter by chapter(s) when provided (QUIZ CAPITOLO / MULTI QUIZ)
+  if (chaptersParam) {
+    const selected = chaptersParam
+      .split(",")
+      .map(function(c) { return Number(c.trim()); })
+      .filter(function(n) { return !isNaN(n) && n > 0; });
+
+    if (selected.length > 0) {
+      quiz = quiz.filter(function(q) { return selected.indexOf(Number(q.chapter)) !== -1; });
+    }
+  }
+
   // mescola
   quiz = shuffle(quiz);
 
-  // prendi 30
-  const selected = quiz.slice(0, 30);
+  // prendi al massimo 30 (se < 30 prende tutto)
+  const slice = quiz.slice(0, 30);
 
   // NON mandiamo la risposta al frontend!
-  const clean = selected.map(q => ({
+  const clean = slice.map(q => ({
     id: q.id,
     chapter: q.chapter,
     question: q.question,

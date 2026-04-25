@@ -346,7 +346,12 @@ async function loadQuiz() {
   showLoading("Caricamento quiz...");
 
   try {
-    const res = await fetch(API + "?action=getQuiz");
+    const params   = new URLSearchParams(window.location.search);
+    const chapters = params.get("chapters") || "";
+    const url      = chapters
+      ? `${API}?action=getQuiz&chapters=${encodeURIComponent(chapters)}`
+      : `${API}?action=getQuiz`;
+    const res = await fetch(url);
     quiz = await res.json();
 
     // inizializza risposte

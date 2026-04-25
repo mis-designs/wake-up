@@ -956,6 +956,10 @@ function openChapterFromMenu(chapterNum) {
 // Context-aware back navigation
 function goBack() {
   closeChapterMenu();
+  if (currentScreen === "quizMode") {
+    closeQuizModeScreen();
+    return;
+  }
   if (currentScreen === "viewer" || currentScreen === "exam") {
     runImmediateValidate();
     showChapters();
@@ -1040,7 +1044,220 @@ function openImageFolder(folder, prefix) {
 }
 
 function openQuiz() {
-  window.location.href = "quiz.html";
+  openQuizModeScreen();
+}
+
+/***********************
+ * QUIZ MODE SELECTION
+ ***********************/
+
+// ── State ──────────────────────────────────────────────────────────────────
+let qmsActiveMode    = null;   // "chapter" | "multi" | null
+let qmsCapSelected   = null;   // single chapter number or null
+let qmsMultiSelected = new Set();
+let qmsPillsBuilt    = false;
+
+// ── Open / Close ───────────────────────────────────────────────────────────
+
+function openQuizModeScreen() {
+  const overlay = document.getElementById("quizModeOverlay");
+  if (!overlay) return;
+
+  _qmsResetAll();
+
+  if (!qmsPillsBuilt) {
+    _buildQMSCapPills();
+    _buildQMSMultiPills();
+    qmsPillsBuilt = true;
+  }
+
+  overlay.classList.remove("hidden");
+  requestAnimationFrame(() => overlay.classList.add("qms-visible"));
+  document.body.classList.add("qms-open");
+  currentScreen = "quizMode";
+}
+
+function closeQuizModeScreen() {
+  const overlay = document.getElementById("quizModeOverlay");
+  if (!overlay) return;
+  overlay.classList.remove("qms-visible");
+  setTimeout(() => {
+    overlay.classList.add("hidden");
+    document.body.classList.remove("qms-open");
+  }, 450);
+  currentScreen = "chapters";
+}
+
+// ── Internal reset helpers ─────────────────────────────────────────────────
+
+function _qmsResetAll() {
+  qmsActiveMode    = null;
+  qmsCapSelected   = null;
+  qmsMultiSelected = new Set();
+
+  document.querySelectorAll(".qms-pill").forEach(p => p.classList.remove("is-selected"));
+
+  const capBtn   = document.getElementById("qmsCapStartBtn");
+  const multiBtn = document.getElementById("qmsMultiStartBtn");
+  const hint     = document.getElementById("qmsMultiHint");
+  if (capBtn)   capBtn.disabled   = true;
+  if (multiBtn) multiBtn.disabled = true;
+  if (hint) {
+    hint.textContent = "Seleziona almeno 2 capitoli";
+    hint.classList.remove("is-ok");
+  }
+
+  _qmsUpdateCardStates();
+}
+
+function _qmsResetCapMode() {
+  qmsCapSelected = null;
+  document.querySelectorAll("#qmsCapPills .qms-pill").forEach(p => p.classList.remove("is-selected"));
+  const btn = document.getElementById("qmsCapStartBtn");
+  if (btn) btn.disabled = true;
+}
+
+function _qmsResetMultiMode() {
+  qmsMultiSelected = new Set();
+  document.querySelectorAll("#qmsMultiPills .qms-pill").forEach(p => p.classList.remove("is-selected"));
+  const btn  = document.getElementById("qmsMultiStartBtn");
+  const hint = document.getElementById("qmsMultiHint");
+  if (btn) btn.disabled = true;
+  if (hint) {
+    hint.textContent = "Seleziona almeno 2 capitoli";
+    hint.classList.remove("is-ok");
+  }
+}
+
+// ── Visual state ───────────────────────────────────────────────────────────
+
+function _qmsUpdateCardStates() {
+  const cardMix   = document.getElementById("qmsCardMix");
+  const cardCap   = document.getElementById("qmsCardCap");
+  const cardMulti = document.getElementById("qmsCardMulti");
+
+  [cardMix, cardCap, cardMulti].forEach(c => {
+    if (c) c.classList.remove("qms-card--active", "qms-card--inactive");
+  });
+
+  if (qmsActiveMode === "chapter") {
+    cardCap?.classList.add("qms-card--active");
+    cardMix?.classList.add("qms-card--inactive");
+    cardMulti?.classList.add("qms-card--inactive");
+  } else if (qmsActiveMode === "multi") {
+    cardMulti?.classList.add("qms-card--active");
+    cardMix?.classList.add("qms-card--inactive");
+    cardCap?.classList.add("qms-card--inactive");
+  }
+}
+
+// ── Pill builders (run once) ───────────────────────────────────────────────
+
+function _buildQMSCapPills() {
+  const container = document.getElementById("qmsCapPills");
+  if (!container) return;
+
+  for (let i = 1; i <= TOTAL_CHAPTERS; i++) {
+    const pill = document.createElement("button");
+    pill.className   = "qms-pill";
+    pill.textContent = String(i).padStart(2, "0");
+    pill.dataset.ch  = i;
+
+    pill.addEventListener("click", () => {
+      // Entering chapter mode clears any multi selection
+      if (qmsActiveMode === "multi") _qmsResetMultiMode();
+
+      if (qmsCapSelected === i) {
+        // Toggle off: same chapter clicked again
+        qmsCapSelected = null;
+        pill.classList.remove("is-selected");
+        qmsActiveMode = null;
+      } else {
+        // Replace previous chapter selection with this one
+        document.querySelectorAll("#qmsCapPills .qms-pill")
+          .forEach(p => p.classList.remove("is-selected"));
+        pill.classList.add("is-selected");
+        qmsCapSelected = i;
+        qmsActiveMode  = "chapter";
+      }
+
+      const btn = document.getElementById("qmsCapStartBtn");
+      if (btn) btn.disabled = (qmsCapSelected === null);
+      _qmsUpdateCardStates();
+    });
+
+    container.appendChild(pill);
+  }
+}
+
+function _buildQMSMultiPills() {
+  const container = document.getElementById("qmsMultiPills");
+  if (!container) return;
+
+  for (let i = 1; i <= TOTAL_CHAPTERS; i++) {
+    const pill = document.createElement("button");
+    pill.className   = "qms-pill";
+    pill.textContent = String(i).padStart(2, "0");
+    pill.dataset.ch  = i;
+
+    pill.addEventListener("click", () => {
+      // Entering multi mode clears any chapter selection
+      if (qmsActiveMode === "chapter") _qmsResetCapMode();
+
+      // Toggle this chapter
+      if (qmsMultiSelected.has(i)) {
+        qmsMultiSelected.delete(i);
+        pill.classList.remove("is-selected");
+      } else {
+        qmsMultiSelected.add(i);
+        pill.classList.add("is-selected");
+      }
+
+      const count = qmsMultiSelected.size;
+      qmsActiveMode = count > 0 ? "multi" : null;
+
+      const btn  = document.getElementById("qmsMultiStartBtn");
+      const hint = document.getElementById("qmsMultiHint");
+      if (btn) btn.disabled = count < 2;
+      if (hint) {
+        if (count === 0) {
+          hint.textContent = "Seleziona almeno 2 capitoli";
+          hint.classList.remove("is-ok");
+        } else if (count === 1) {
+          hint.textContent = "Seleziona ancora 1 capitolo";
+          hint.classList.remove("is-ok");
+        } else {
+          hint.textContent = `${count} capitoli selezionati ✓`;
+          hint.classList.add("is-ok");
+        }
+      }
+
+      _qmsUpdateCardStates();
+    });
+
+    container.appendChild(pill);
+  }
+}
+
+// ── Start actions ──────────────────────────────────────────────────────────
+
+function startMixQuiz() {
+  closeQuizModeScreen();
+  setTimeout(() => { window.location.href = "quiz.html"; }, 460);
+}
+
+function startCapQuiz() {
+  if (qmsCapSelected === null) return;
+  const ch = qmsCapSelected;
+  closeQuizModeScreen();
+  setTimeout(() => { window.location.href = "quiz.html?chapters=" + ch; }, 460);
+}
+
+function startMultiQuiz() {
+  if (qmsMultiSelected.size < 2) return;
+  const chapters = Array.from(qmsMultiSelected).sort((a, b) => a - b).join(",");
+  closeQuizModeScreen();
+  setTimeout(() => { window.location.href = "quiz.html?chapters=" + encodeURIComponent(chapters); }, 460);
 }
 
 /***********************
