@@ -140,6 +140,8 @@ function getDeviceId() {
  * AUTO LOGIN
  ***********************/
 window.addEventListener("load", () => {
+  setupProfileUI();
+
   const session = readStoredSession();
   const logged = Storage.get(KEYS.loggedIn);
   let phone = session?.phone || Storage.get(KEYS.phone);
@@ -227,6 +229,7 @@ async function login() {
     });
 
     if (data && data.success) {
+      sessionCleared = false;
       persistSession(phone, {
         deviceId,
         expiry: data.expiry,
@@ -254,14 +257,48 @@ async function login() {
  * LOGOUT
  ***********************/
 function logout(showLogin = true) {
-  Storage.remove(KEYS.loggedIn);
-  Storage.remove(KEYS.phone);
-  Storage.remove(KEYS.expiry);
-  Storage.remove(KEYS.session);
+  clearSessionData();
   setChapterMode(false);
   currentScreen = "login";
 
   if (showLogin) showLoginScreen("Accesso revocato dall'amministratore");
+}
+
+function clearSessionData() {
+  sessionCleared = true;
+
+  if (sessionTimer) {
+    clearInterval(sessionTimer);
+    sessionTimer = null;
+  }
+
+  [
+    KEYS.loggedIn,
+    KEYS.phone,
+    KEYS.expiry,
+    KEYS.session,
+    KEYS.deviceId,
+    KEYS.renewPopupLastShown,
+    "token"
+  ].forEach(key => Storage.remove(key));
+
+  try {
+    localStorage.removeItem("session");
+    localStorage.removeItem("loggedIn");
+    localStorage.removeItem("phone");
+    localStorage.removeItem("expiry");
+    localStorage.removeItem("deviceId");
+    localStorage.removeItem("renewPopupLastShown");
+    localStorage.removeItem("token");
+  } catch (err) {
+    console.warn("Pulizia localStorage non disponibile");
+  }
+
+  try {
+    sessionStorage.clear();
+  } catch (err) {
+    console.warn("Pulizia sessionStorage non disponibile");
+  }
 }
 
 function showLoginScreen(message = "") {
@@ -269,6 +306,55 @@ function showLoginScreen(message = "") {
   document.getElementById("login")?.classList.remove("hidden");
   const err = document.getElementById("err");
   if (err) err.textContent = message;
+  updateProfileUI(false);
+}
+
+function getCurrentSessionPhone() {
+  const session = readStoredSession();
+  return session?.phone || Storage.get(KEYS.phone) || "";
+}
+
+function updateProfileUI(isLoggedIn = true) {
+  const profileBtn = document.getElementById("profileBtn");
+  const profilePanel = document.getElementById("profilePanel");
+  const userPhone = document.getElementById("userPhone");
+  if (!profileBtn || !profilePanel) return;
+
+  const phone = isLoggedIn ? getCurrentSessionPhone() : "";
+  profileBtn.classList.toggle("hidden", !phone);
+  profilePanel.classList.add("hidden");
+  profileBtn.setAttribute("aria-expanded", "false");
+  if (userPhone) userPhone.textContent = phone ? "Telefono: " + phone : "";
+}
+
+function setupProfileUI() {
+  const profileBtn = document.getElementById("profileBtn");
+  const profilePanel = document.getElementById("profilePanel");
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (!profileBtn || !profilePanel || !logoutBtn) return;
+
+  profileBtn.addEventListener("click", event => {
+    event.stopPropagation();
+    const phone = getCurrentSessionPhone();
+    const userPhone = document.getElementById("userPhone");
+    if (userPhone) userPhone.textContent = phone ? "Telefono: " + phone : "";
+    profilePanel.classList.toggle("hidden");
+    profileBtn.setAttribute("aria-expanded", profilePanel.classList.contains("hidden") ? "false" : "true");
+  });
+
+  profilePanel.addEventListener("click", event => event.stopPropagation());
+
+  document.addEventListener("click", () => {
+    profilePanel.classList.add("hidden");
+    profileBtn.setAttribute("aria-expanded", "false");
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    clearSessionData();
+    updateProfileUI(false);
+    showLoginScreen("");
+    window.location.href = "index.html";
+  });
 }
 
 /***********************
@@ -278,6 +364,7 @@ let sessionTimer = null;
 let failCount = 0;
 let lastSuccess = Date.now();
 let accessCheckRunning = false;
+let sessionCleared = false;
 
 function startSessionCheck() {
   if (sessionTimer) clearInterval(sessionTimer);
@@ -315,6 +402,7 @@ async function checkAccessAPI() {
 async function safeCheckAccess(force = false) {
   const now = Date.now();
 
+  if (sessionCleared) return;
   if (accessCheckRunning) return;
 
   if (!force) {
@@ -327,6 +415,8 @@ async function safeCheckAccess(force = false) {
 
   try {
     const res = await checkAccessAPI();
+
+    if (sessionCleared) return;
 
     if (res.status === "success") {
       failCount = 0;
@@ -658,6 +748,7 @@ function showHome() {
   document.body.classList.add("app-mode");
   showAppHeader("home");
   currentScreen = "home";
+  updateProfileUI(true);
 }
 
 function showChapters() {
@@ -668,6 +759,7 @@ function showChapters() {
   document.body.classList.add("app-mode");
   showAppHeader("chapters");
   currentScreen = "chapters";
+  updateProfileUI(true);
   requestAnimationFrame(() => updateCardTrack());
 }
 

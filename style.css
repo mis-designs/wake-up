@@ -112,6 +112,62 @@ button:active {
     transform: translateY(0) scale(0.99);
 }
 
+.profile-btn {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 16px);
+    right: 16px;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.42);
+    border: 1px solid rgba(255, 255, 255, 0.56);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1200;
+    box-shadow: 0 12px 24px rgba(37, 41, 67, 0.16);
+}
+
+.profile-btn img {
+    width: 20px;
+    height: 20px;
+}
+
+.profile-panel {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 70px);
+    right: 16px;
+    width: min(260px, calc(100vw - 32px));
+    padding: 16px;
+    border-radius: 12px;
+    background: rgba(37, 41, 67, 0.88);
+    color: var(--color-white);
+    z-index: 1200;
+    box-shadow: 0 18px 36px rgba(37, 41, 67, 0.24);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+}
+
+.profile-panel p {
+    margin-bottom: 12px;
+    font-size: 14px;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+.profile-panel button {
+    width: 100%;
+    min-height: 42px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    background: #ff4c4c;
+    box-shadow: none;
+}
+
 /* HOME (POST LOGIN) */
 #home:not(.hidden) {
     display: flex;
