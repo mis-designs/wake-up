@@ -2,6 +2,7 @@
  * CONFIG
  ***********************/
 const API_URL = "https://script.google.com/macros/s/AKfycbxOOQ-8FYN4qv0e5575rNyrvjTiZtEUmaNUj07KjBkjN1G9iCl0Ks4iWcSxthbuWh9h5A/exec";
+const TOKEN = "Xk92!abC_2026_securePanel@#";
 const CHECK_INTERVAL = 30 * 1000;
 const IMMEDIATE_VALIDATE_COOLDOWN = 4000;
 
@@ -121,7 +122,10 @@ async function postApi(payload) {
   const res = await fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify({
+      token: TOKEN,
+      ...payload
+    })
   });
   return res.json();
 }
