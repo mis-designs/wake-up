@@ -1020,8 +1020,8 @@ async function fetchMagicBookPage({ type, chapter, page }) {
 
   if (response.status === 404) {
     if (page === 1) {
-      console.error("Image load error", {
-        message: "Magic Book API returned 404 on first page",
+      console.error("Failed to load page", {
+        status: response.status,
         endpoint: MAGIC_BOOK_API,
         request: body
       });
@@ -1029,7 +1029,12 @@ async function fetchMagicBookPage({ type, chapter, page }) {
     return null;
   }
 
-  if (!response.ok) {
+  if (response.status !== 200) {
+    console.error("Failed to load page", {
+      status: response.status,
+      endpoint: MAGIC_BOOK_API,
+      request: body
+    });
     throw new Error(`Unable to load Magic Book page ${page}: ${response.status}`);
   }
 
