@@ -1,13 +1,6 @@
 /***********************
  * CONFIG
  ***********************/
-const API_URL = "https://script.google.com/macros/s/AKfycbxOOQ-8FYN4qv0e5575rNyrvjTiZtEUmaNUj07KjBkjN1G9iCl0Ks4iWcSxthbuWh9h5A/exec";
-const TOKEN = "Xk92!abC_2026_securePanel@#";
-const CHECK_INTERVAL = 2 * 60 * 1000;
-const IMMEDIATE_VALIDATE_COOLDOWN = 4000;
-const FETCH_TIMEOUT = 8000;
-const MAX_SILENT_FAILURE_TIME = 15 * 60 * 1000;
-
 // numero whatsapp per rinnovo
 const RENEW_WHATSAPP_NUMBER = "393663584525";
 const RENEW_MESSAGE = "Ciao, vorrei rinnovare il mio accesso.";
@@ -104,7 +97,6 @@ function restoreSession(session) {
     expiry: session.expiry,
     lastValid: session.lastValid || Date.now()
   });
-  if (session.lastValid) lastSuccess = session.lastValid;
   return true;
 }
 
@@ -162,46 +154,11 @@ window.addEventListener("load", () => {
 
   if ((session || logged === "true") && phone && deviceId) {
     showHome();
-    startSessionCheck();
-    safeCheckAccess(true);
     checkRenewReminder();
   } else {
     showLoginScreen("");
   }
 });
-
-/***********************
- * FETCH HELPER
- ***********************/
-async function fetchWithRetry(url, options = {}, retries = 2) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
-
-  try {
-    const res = await fetch(url, {
-      ...options,
-      signal: controller.signal
-    });
-    return res;
-  } catch (err) {
-    if (retries > 0) return fetchWithRetry(url, options, retries - 1);
-    throw err;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-async function postApi(payload) {
-  const res = await fetchWithRetry(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({
-      token: TOKEN,
-      ...payload
-    })
-  });
-  return res.json();
-}
 
 /***********************
  * LOGIN
@@ -217,40 +174,14 @@ async function login() {
     return;
   }
 
-  err.textContent = "Verifica in corso...";
+  persistSession(phone, {
+    deviceId: getDeviceId(),
+    lastValid: Date.now()
+  });
 
-  try {
-    const deviceId = getDeviceId();
-
-    const data = await postApi({
-      action: "login",
-      phone,
-      deviceId
-    });
-
-    if (data && data.success) {
-      sessionCleared = false;
-      persistSession(phone, {
-        deviceId,
-        expiry: data.expiry,
-        lastValid: Date.now()
-      });
-      failCount = 0;
-      lastSuccess = Date.now();
-
-      showHome();
-      startSessionCheck();
-      safeCheckAccess(true);
-      checkRenewReminder(true);
-    } else {
-      const e = data?.error;
-      if (e === "expired") err.textContent = "Abbonamento scaduto";
-      else if (e === "not_found") err.textContent = "Numero non autorizzato";
-      else err.textContent = "Accesso non consentito";
-    }
-  } catch (e) {
-    err.textContent = "Errore di connessione";
-  }
+  err.textContent = "";
+  showHome();
+  checkRenewReminder(true);
 }
 
 /***********************
@@ -270,13 +201,6 @@ function logout(showLogin = true, reason = "revoked") {
 }
 
 function clearSessionData() {
-  sessionCleared = true;
-
-  if (sessionTimer) {
-    clearInterval(sessionTimer);
-    sessionTimer = null;
-  }
-
   [
     KEYS.loggedIn,
     KEYS.phone,
@@ -284,7 +208,6 @@ function clearSessionData() {
     KEYS.session,
     KEYS.deviceId,
     KEYS.renewPopupLastShown,
-    "token"
   ].forEach(key => Storage.remove(key));
 
   try {
@@ -294,16 +217,11 @@ function clearSessionData() {
     localStorage.removeItem("expiry");
     localStorage.removeItem("deviceId");
     localStorage.removeItem("renewPopupLastShown");
-    localStorage.removeItem("token");
   } catch (err) {
     console.warn("Pulizia localStorage non disponibile");
   }
 
-  try {
-    sessionStorage.clear();
-  } catch (err) {
-    console.warn("Pulizia sessionStorage non disponibile");
-  }
+  Storage.remove(KEYS.session);
 }
 
 function showLoginScreen(message = "") {
@@ -317,6 +235,11 @@ function showLoginScreen(message = "") {
 function getCurrentSessionPhone() {
   const session = readStoredSession();
   return session?.phone || Storage.get(KEYS.phone) || "";
+}
+
+function getCurrentSessionDeviceId() {
+  const session = readStoredSession();
+  return session?.deviceId || Storage.get(KEYS.deviceId) || getDeviceId();
 }
 
 function updateProfileUI(isLoggedIn = true) {
@@ -360,108 +283,6 @@ function setupProfileUI() {
     showLoginScreen("");
     window.location.href = "index.html";
   });
-}
-
-/***********************
- * SESSION CHECK
- ***********************/
-let sessionTimer = null;
-let failCount = 0;
-let lastSuccess = Date.now();
-let accessCheckRunning = false;
-let sessionCleared = false;
-
-function startSessionCheck() {
-  if (sessionTimer) clearInterval(sessionTimer);
-  sessionTimer = setInterval(() => safeCheckAccess(), CHECK_INTERVAL);
-}
-
-function getAccessStatus(data) {
-  const status = data?.status || data?.error;
-  if (data?.success === true || status === "success") return "success";
-  if (status === "expired" || status === "not_found") return status;
-  return "unknown";
-}
-
-async function checkAccessAPI() {
-  const session = readStoredSession();
-  if (session) restoreSession(session);
-
-  const phone = session?.phone || Storage.get(KEYS.phone);
-  const deviceId = session?.deviceId || Storage.get(KEYS.deviceId);
-
-  if (!phone || !deviceId) {
-    console.warn("Sessione incompleta, tengo lo stato senza logout automatico");
-    return { status: "unknown" };
-  }
-
-  const data = await postApi({ action: "validate", phone, deviceId });
-  return {
-    status: getAccessStatus(data),
-    data,
-    phone,
-    deviceId
-  };
-}
-
-async function safeCheckAccess(force = false) {
-  const now = Date.now();
-
-  if (sessionCleared) return;
-  if (accessCheckRunning) return;
-
-  if (!force) {
-    if (now - lastImmediateValidate < IMMEDIATE_VALIDATE_COOLDOWN) return;
-  }
-
-  accessCheckRunning = true;
-  immediateValidateRunning = true;
-  lastImmediateValidate = now;
-
-  try {
-    const res = await checkAccessAPI();
-
-    if (sessionCleared) return;
-
-    if (res.status === "success") {
-      failCount = 0;
-      lastSuccess = Date.now();
-      persistSession(res.phone, {
-        deviceId: res.deviceId,
-        expiry: res.data?.expiry,
-        lastValid: lastSuccess
-      });
-      checkRenewReminder();
-      return;
-    }
-
-    if (res.status === "expired" || res.status === "not_found") {
-      logout(true, res.status);
-      return;
-    }
-
-    failCount++;
-    console.warn("Risposta temporanea o sconosciuta, sessione mantenuta attiva");
-  } catch (error) {
-    failCount++;
-    console.warn("Problema temporaneo di rete/API, sessione mantenuta attiva");
-  } finally {
-    if (Date.now() - lastSuccess > MAX_SILENT_FAILURE_TIME) {
-      console.warn("Errore prolungato, ma nessun logout automatico senza conferma backend");
-    }
-    accessCheckRunning = false;
-    immediateValidateRunning = false;
-  }
-}
-
-/***********************
- * VALIDATE IMMEDIATO
- ***********************/
-let lastImmediateValidate = 0;
-let immediateValidateRunning = false;
-
-async function runImmediateValidate(force = false) {
-  return safeCheckAccess(force);
 }
 
 /***********************
@@ -731,13 +552,6 @@ function showRenewPopup(daysLeft) {
 // user gesture and cause unnecessary API hammering without any safety benefit,
 // since the interval-based check and the visibility/focus handlers below are
 // already sufficient.
-document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) safeCheckAccess(true);
-});
-
-window.addEventListener("focus", () => safeCheckAccess(true));
-window.addEventListener("pageshow", () => safeCheckAccess(true));
-
 /***********************
  * UI NAVIGATION
  ***********************/
@@ -759,7 +573,6 @@ function showHome() {
 }
 
 function showChapters() {
-  runImmediateValidate();
   hideAll();
   document.getElementById("chapters")?.classList.remove("hidden");
   setChapterMode(false);
@@ -1015,13 +828,11 @@ initDashboard();
  * EXAM
  ***********************/
 function openExam() {
-  runImmediateValidate(true);
-  openImageFolder("exam", "exam_page");
+  openMagicBookPages({ type: "exam" });
 }
 
 function openChapter(cap) {
-  runImmediateValidate(true);
-  openImageFolder(`cap${cap}`, `magic book-${cap}_page`);
+  openMagicBookPages({ type: "chapter", chapter: cap });
 }
 
 /***********************
@@ -1152,7 +963,6 @@ function goBack() {
     return;
   }
   if (currentScreen === "viewer" || currentScreen === "exam") {
-    runImmediateValidate();
     showChapters();
   } else if (currentScreen === "chapters") {
     showHome();
@@ -1181,54 +991,134 @@ function openQuizFromMenu() {
 /***********************
  * VIEWER
  ***********************/
-function openImageFolder(folder, prefix) {
-  runImmediateValidate();
+const MAGIC_BOOK_API = "/api/getPages";
 
+async function fetchMagicBookPage({ type, chapter, page }) {
+  const body = {
+    book: "magic",
+    type,
+    page,
+    phone: getCurrentSessionPhone(),
+    deviceId: getCurrentSessionDeviceId()
+  };
+
+  if (type === "chapter") body.chapter = chapter;
+
+  const response = await fetch(MAGIC_BOOK_API, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  const contentType = response.headers.get("Content-Type") || "";
+
+  if (response.status === 401) {
+    throw new Error("unauthorized");
+  }
+
+  if (response.status === 404) {
+    if (page === 1) {
+      console.error("Image load error", {
+        message: "Magic Book API returned 404 on first page",
+        endpoint: MAGIC_BOOK_API,
+        request: body
+      });
+    }
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Unable to load Magic Book page ${page}: ${response.status}`);
+  }
+
+  if (!contentType.toLowerCase().includes("image/jpeg")) {
+    const text = await response.text();
+    throw new Error(`Invalid Magic Book response type: ${contentType || "empty"} ${text.slice(0, 120)}`);
+  }
+
+  const blob = await response.blob();
+
+  if (!blob || blob.size === 0) {
+    throw new Error(`Empty Magic Book page ${page}`);
+  }
+
+  if (blob.type && blob.type !== "image/jpeg") {
+    throw new Error(`Invalid Magic Book image type: ${blob.type}`);
+  }
+
+  return blob;
+}
+
+function showMagicBookError(message) {
+  const pages = document.getElementById("pages");
+  if (!pages) return;
+
+  pages.innerHTML = "";
+  const box = document.createElement("div");
+  box.className = "page";
+  box.style.cssText = "color:#fff;text-align:center;padding:40px 16px;font-weight:700;";
+  box.textContent = message;
+  pages.appendChild(box);
+}
+
+function appendMagicBookPage(pages, blob) {
+  const img = new Image();
+  const url = URL.createObjectURL(blob);
+  img.src = url;
+  img.dataset.objectUrl = url;
+
+  const box = document.createElement("div");
+  box.className = "page";
+
+  const shield = document.createElement("div");
+  shield.className = "shield";
+  shield.oncontextmenu = e => e.preventDefault();
+
+  box.appendChild(img);
+  box.appendChild(shield);
+  pages.appendChild(box);
+}
+
+async function openMagicBookPages({ type, chapter = null }) {
   hideAll();
   document.getElementById("viewer")?.classList.remove("hidden");
   document.getElementById("viewerBackBtn")?.classList.add("hidden");
-  
-  // Extract chapter number from folder name
-  const capMatch = folder.match(/^cap(\d+)$/);
-  if (capMatch) {
-    const chapterNum = parseInt(capMatch[1]);
+
+  if (type === "chapter") {
     currentScreen = "viewer";
-    setChapterMode(true, chapterNum);
-  } else if (folder === "exam") {
+    setChapterMode(true, chapter);
+  } else if (type === "exam") {
     currentScreen = "exam";
     setChapterMode(false);
     document.body.classList.add("app-mode");
     showAppHeader("exam");
   }
-  
+
   const pages = document.getElementById("pages");
   if (!pages) return;
 
+  pages.querySelectorAll("img[data-object-url]").forEach(img => {
+    URL.revokeObjectURL(img.dataset.objectUrl);
+  });
   pages.innerHTML = "";
   let page = 1;
 
   function loadNext() {
-    const n = String(page).padStart(4, "0");
-    const img = new Image();
-    img.src = `capitoli/${folder}/${prefix}-${n}.jpg`;
-
-    img.onload = () => {
-      const box = document.createElement("div");
-      box.className = "page";
-
-      const shield = document.createElement("div");
-      shield.className = "shield";
-      shield.oncontextmenu = e => e.preventDefault();
-
-      box.appendChild(img);
-      box.appendChild(shield);
-      pages.appendChild(box);
-
-      page++;
-      loadNext();
-    };
-
-    img.onerror = () => { };
+    fetchMagicBookPage({ type, chapter, page })
+      .then(blob => {
+        if (!blob) return;
+        appendMagicBookPage(pages, blob);
+        page++;
+        loadNext();
+      })
+      .catch(err => {
+        console.error("Image load error", err);
+        if (err.message === "unauthorized") {
+          showMagicBookError("Accesso non autorizzato");
+        }
+      });
   }
 
   loadNext();
