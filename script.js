@@ -289,6 +289,7 @@ function showLoginScreen(message = "") {
   const err = document.getElementById("err");
   if (err) err.textContent = message;
   updateProfileUI(false);
+  setProfileIconVisible(true);
 }
 
 function getCurrentSessionPhone() {
@@ -312,6 +313,18 @@ function updateProfileUI(isLoggedIn = true) {
   profilePanel.classList.add("hidden");
   profileBtn.setAttribute("aria-expanded", "false");
   if (userPhone) userPhone.textContent = phone ? "Telefono: " + phone : "";
+}
+
+function setProfileIconVisible(visible) {
+  const profileBtn = document.getElementById("profileBtn");
+  const profilePanel = document.getElementById("profilePanel");
+  if (!profileBtn) return;
+
+  profileBtn.classList.toggle("hidden", !visible);
+  if (!visible) {
+    profilePanel?.classList.add("hidden");
+    profileBtn.setAttribute("aria-expanded", "false");
+  }
 }
 
 function setupProfileUI() {
@@ -629,6 +642,7 @@ function showHome() {
   showAppHeader("home");
   currentScreen = "home";
   updateProfileUI(true);
+  setProfileIconVisible(true);
 }
 
 function showChapters() {
@@ -639,6 +653,7 @@ function showChapters() {
   showAppHeader("chapters");
   currentScreen = "chapters";
   updateProfileUI(true);
+  setProfileIconVisible(false);
   requestAnimationFrame(() => updateCardTrack());
 }
 
@@ -1149,6 +1164,7 @@ async function openMagicBookPages({ type, chapter = null }) {
   hideAll();
   document.getElementById("viewer")?.classList.remove("hidden");
   document.getElementById("viewerBackBtn")?.classList.add("hidden");
+  setProfileIconVisible(false);
 
   if (type === "chapter") {
     currentScreen = "viewer";
@@ -1408,14 +1424,32 @@ function startMultiQuiz() {
 /***********************
  * CONTENT PROTECTION
  ***********************/
+function isEditableTarget(target) {
+  return Boolean(target?.closest?.("input, textarea, select, [contenteditable='true']"));
+}
+
 document.addEventListener("contextmenu", e => {
-  if (e.target.closest("#viewer")) e.preventDefault();
+  if (!isEditableTarget(e.target)) e.preventDefault();
 });
+
+document.addEventListener("selectstart", e => {
+  if (!isEditableTarget(e.target)) e.preventDefault();
+});
+
 document.addEventListener("dragstart", e => {
-  if (e.target.closest("#viewer")) e.preventDefault();
+  if (!isEditableTarget(e.target)) e.preventDefault();
 });
+
 document.addEventListener("copy", e => {
-  if (e.target.closest("#viewer")) e.preventDefault();
+  if (!isEditableTarget(e.target)) e.preventDefault();
+});
+
+document.addEventListener("keydown", e => {
+  if (isEditableTarget(e.target)) return;
+
+  if (e.ctrlKey && ["c", "u", "s", "a"].includes(e.key.toLowerCase())) {
+    e.preventDefault();
+  }
 });
 
 /***********************
