@@ -17,6 +17,32 @@ function buildMagicBookPath({ type, chapter, page }) {
   return null;
 }
 
+async function validateAccess(phone, deviceId) {
+  if (!phone || !deviceId) return null;
+
+  const authResponse = await fetch(GOOGLE_SCRIPT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      token: TOKEN,
+      phone,
+      deviceId,
+      action: "validate"
+    })
+  });
+
+  if (!authResponse.ok) return null;
+
+  const authData = await authResponse.json();
+  const authStatus = authData?.status || authData?.error;
+
+  if (authData?.success !== true && authStatus !== "success") return null;
+
+  return authData;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "method_not_allowed" });
@@ -24,9 +50,23 @@ export default async function handler(req, res) {
 
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
-    const { book, type, chapter, page, phone, deviceId } = body;
+    const { action, book, type, chapter, page, phone, deviceId } = body;
     const pageNumber = Number(page);
     const chapterNumber = chapter === undefined ? undefined : Number(chapter);
+
+    if (action === "validate") {
+      const authData = await validateAccess(phone, deviceId);
+      if (!authData) {
+        return res.status(401).json({ error: "unauthorized" });
+      }
+
+      return res.status(200).json({
+        success: true,
+        phone,
+        deviceId,
+        expiry: authData.expiry
+      });
+    }
 
     if (!SUPPORTED_BOOKS.has(book)) {
       return res.status(400).json({ error: "invalid_book" });
@@ -44,27 +84,8 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "unauthorized" });
     }
 
-    const authResponse = await fetch(GOOGLE_SCRIPT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        token: TOKEN,
-        phone,
-        deviceId,
-        action: "validate"
-      })
-    });
-
-    if (!authResponse.ok) {
-      return res.status(401).json({ error: "unauthorized" });
-    }
-
-    const authData = await authResponse.json();
-    const authStatus = authData?.status || authData?.error;
-
-    if (authData?.success !== true && authStatus !== "success") {
+    const authData = await validateAccess(phone, deviceId);
+    if (!authData) {
       return res.status(401).json({ error: "unauthorized" });
     }
 

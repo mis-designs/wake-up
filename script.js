@@ -131,7 +131,7 @@ function getDeviceId() {
 /***********************
  * AUTO LOGIN
  ***********************/
-window.addEventListener("load", () => {
+window.addEventListener("load", async () => {
   setupProfileUI();
 
   const session = readStoredSession();
@@ -153,12 +153,42 @@ window.addEventListener("load", () => {
   deviceId = Storage.get(KEYS.deviceId);
 
   if ((session || logged === "true") && phone && deviceId) {
-    showHome();
-    checkRenewReminder();
+    try {
+      const isValid = await validateLoginAccess(phone, deviceId);
+      if (isValid) {
+        showHome();
+        checkRenewReminder();
+      } else {
+        clearSessionData();
+        showLoginScreen("Numero non valido o accesso non autorizzato");
+      }
+    } catch (error) {
+      console.error("Auto-login validation error", error);
+      clearSessionData();
+      showLoginScreen("Numero non valido o accesso non autorizzato");
+    }
   } else {
     showLoginScreen("");
   }
 });
+
+async function validateLoginAccess(phone, deviceId) {
+  const response = await fetch("/api/getPages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "validate",
+      phone,
+      deviceId
+    })
+  });
+
+  if (response.status !== 200) {
+    return null;
+  }
+
+  return response.json();
+}
 
 /***********************
  * LOGIN
@@ -166,6 +196,7 @@ window.addEventListener("load", () => {
 async function login() {
   const phoneInput = document.getElementById("user");
   const err = document.getElementById("err");
+  const loginButton = document.querySelector("#login button");
 
   const phone = normalizePhone(phoneInput?.value);
 
@@ -174,14 +205,42 @@ async function login() {
     return;
   }
 
-  persistSession(phone, {
-    deviceId: getDeviceId(),
-    lastValid: Date.now()
-  });
+  const deviceId = getDeviceId();
+  const originalText = loginButton?.textContent;
 
-  err.textContent = "";
-  showHome();
-  checkRenewReminder(true);
+  if (loginButton) {
+    loginButton.disabled = true;
+    loginButton.textContent = "Verifica...";
+  }
+
+  err.textContent = "Verifica in corso...";
+
+  try {
+    const data = await validateLoginAccess(phone, deviceId);
+
+    if (!data) {
+      err.textContent = "Numero non valido o accesso non autorizzato";
+      return;
+    }
+
+    persistSession(phone, {
+      deviceId,
+      expiry: data.expiry,
+      lastValid: Date.now()
+    });
+
+    err.textContent = "";
+    showHome();
+    checkRenewReminder(true);
+  } catch (error) {
+    console.error("Login validation error", error);
+    err.textContent = "Numero non valido o accesso non autorizzato";
+  } finally {
+    if (loginButton) {
+      loginButton.disabled = false;
+      loginButton.textContent = originalText || "Accedi";
+    }
+  }
 }
 
 /***********************
