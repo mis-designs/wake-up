@@ -23,29 +23,24 @@ const Storage = (() => {
   }
 
   const ls = (typeof localStorage !== "undefined" && canUse(localStorage)) ? localStorage : null;
-  const ss = (typeof sessionStorage !== "undefined" && canUse(sessionStorage)) ? sessionStorage : null;
 
   return {
     get(key) {
       if (ls) return ls.getItem(key);
-      if (ss) return ss.getItem(key);
       return Object.prototype.hasOwnProperty.call(mem, key) ? mem[key] : null;
     },
     set(key, val) {
       const v = String(val);
       if (ls) { ls.setItem(key, v); return "local"; }
-      if (ss) { ss.setItem(key, v); return "session"; }
       mem[key] = v;
       return "memory";
     },
     remove(key) {
       if (ls) ls.removeItem(key);
-      if (ss) ss.removeItem(key);
       delete mem[key];
     },
     mode() {
       if (ls) return "local";
-      if (ss) return "session";
       return "memory";
     }
   };
@@ -56,18 +51,24 @@ const KEYS = {
   loggedIn: "loggedIn",
   phone: "phone",
   expiry: "expiry",
-  session: "session",
+  session: "user_session",
+  legacySession: "session",
   renewPopupLastShown: "renewPopupLastShown"
 };
 
 function readStoredSession() {
-  try {
-    const raw = Storage.get(KEYS.session);
-    return raw ? JSON.parse(raw) : null;
-  } catch (err) {
-    console.warn("Sessione salvata non leggibile, continuo senza logout automatico");
-    return null;
+  const rawSessionValues = [Storage.get(KEYS.session), Storage.get(KEYS.legacySession)].filter(Boolean);
+
+  for (const raw of rawSessionValues) {
+    try {
+      const session = JSON.parse(raw);
+      if (session?.phone) return session;
+    } catch (err) {
+      console.warn("Sessione salvata non leggibile, continuo senza logout automatico");
+    }
   }
+
+  return null;
 }
 
 function persistSession(phone, data = {}) {
@@ -78,7 +79,9 @@ function persistSession(phone, data = {}) {
     ...existing,
     phone,
     deviceId: data.deviceId || existing.deviceId || Storage.get(KEYS.deviceId) || getDeviceId(),
-    lastValid: data.lastValid || Date.now()
+    loggedIn: true,
+    lastLogin: data.lastLogin || existing.lastLogin || Date.now(),
+    lastValid: data.lastValid || existing.lastValid || Date.now()
   };
 
   if (data.expiry || existing.expiry) session.expiry = data.expiry || existing.expiry;
@@ -146,31 +149,50 @@ window.addEventListener("load", async () => {
 
   if (session) restoreSession(session);
   else if (logged === "true" && phone && deviceId) {
-    persistSession(phone, { deviceId, lastValid: Date.now() });
+    persistSession(phone, { deviceId, lastLogin: Date.now(), lastValid: Date.now() });
   }
 
   phone = Storage.get(KEYS.phone);
   deviceId = Storage.get(KEYS.deviceId);
 
   if ((session || logged === "true") && phone && deviceId) {
-    try {
-      const isValid = await validateLoginAccess(phone, deviceId);
-      if (isValid) {
-        showHome();
-        checkRenewReminder();
-      } else {
-        clearSessionData();
-        showLoginScreen("Numero non valido o accesso non autorizzato");
-      }
-    } catch (error) {
-      console.error("Auto-login validation error", error);
-      clearSessionData();
-      showLoginScreen("Numero non valido o accesso non autorizzato");
-    }
+    showHome();
+    checkRenewReminder();
+    validateRestoredSession(phone, deviceId);
   } else {
     showLoginScreen("");
   }
 });
+
+function isRevokedSessionError(error) {
+  return error === "expired" || error === "not_found";
+}
+
+async function validateRestoredSession(phone, deviceId) {
+  try {
+    const data = await validateLoginAccess(phone, deviceId);
+    const error = data?.error || data?.status;
+
+    if (isRevokedSessionError(error)) {
+      logout(true, error);
+      return;
+    }
+
+    if (data?.success) {
+      persistSession(phone, {
+        deviceId,
+        expiry: data.expiry,
+        lastValid: Date.now()
+      });
+      checkRenewReminder();
+      return;
+    }
+
+    console.warn("Auto-login validation inconclusive, keeping stored session", data);
+  } catch (error) {
+    console.warn("Auto-login validation unavailable, keeping stored session", error);
+  }
+}
 
 async function validateLoginAccess(phone, deviceId) {
   const response = await fetch("/api/getPages", {
@@ -183,11 +205,18 @@ async function validateLoginAccess(phone, deviceId) {
     })
   });
 
-  if (response.status !== 200) {
-    return null;
+  let data = null;
+  try {
+    data = await response.json();
+  } catch (err) {
+    console.warn("Risposta validazione non leggibile", err);
   }
 
-  return response.json();
+  if (response.status !== 200) {
+    return data || { error: "temporary_error", statusCode: response.status };
+  }
+
+  return data;
 }
 
 /***********************
@@ -218,7 +247,7 @@ async function login() {
   try {
     const data = await validateLoginAccess(phone, deviceId);
 
-    if (!data) {
+    if (!data?.success) {
       err.textContent = "Numero non valido o accesso non autorizzato";
       return;
     }
@@ -226,6 +255,7 @@ async function login() {
     persistSession(phone, {
       deviceId,
       expiry: data.expiry,
+      lastLogin: Date.now(),
       lastValid: Date.now()
     });
 
@@ -265,11 +295,13 @@ function clearSessionData() {
     KEYS.phone,
     KEYS.expiry,
     KEYS.session,
+    KEYS.legacySession,
     KEYS.deviceId,
     KEYS.renewPopupLastShown,
   ].forEach(key => Storage.remove(key));
 
   try {
+    localStorage.removeItem("user_session");
     localStorage.removeItem("session");
     localStorage.removeItem("loggedIn");
     localStorage.removeItem("phone");
@@ -281,6 +313,7 @@ function clearSessionData() {
   }
 
   Storage.remove(KEYS.session);
+  Storage.remove(KEYS.legacySession);
 }
 
 function showLoginScreen(message = "") {
@@ -350,9 +383,7 @@ function setupProfileUI() {
   });
 
   logoutBtn.addEventListener("click", () => {
-    clearSessionData();
-    updateProfileUI(false);
-    showLoginScreen("");
+    logout(true, "manual");
     window.location.href = "index.html";
   });
 }

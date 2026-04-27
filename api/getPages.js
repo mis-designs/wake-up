@@ -33,14 +33,34 @@ async function validateAccess(phone, deviceId) {
     })
   });
 
-  if (!authResponse.ok) return null;
+  let authData = null;
+  try {
+    authData = await authResponse.json();
+  } catch (err) {
+    authData = null;
+  }
 
-  const authData = await authResponse.json();
+  if (!authResponse.ok && !authData) return null;
+
   const authStatus = authData?.status || authData?.error;
 
-  if (authData?.success !== true && authStatus !== "success") return null;
+  if (authData?.success !== true && authStatus !== "success") {
+    return {
+      success: false,
+      error: authStatus || "unauthorized"
+    };
+  }
 
   return authData;
+}
+
+function getAuthError(authData) {
+  const error = authData?.error || authData?.status;
+  return error === "expired" || error === "not_found" ? error : "unauthorized";
+}
+
+function isAuthSuccess(authData) {
+  return authData?.success === true || authData?.status === "success";
 }
 
 export default async function handler(req, res) {
@@ -56,8 +76,8 @@ export default async function handler(req, res) {
 
     if (action === "validate") {
       const authData = await validateAccess(phone, deviceId);
-      if (!authData) {
-        return res.status(401).json({ error: "unauthorized" });
+      if (!isAuthSuccess(authData)) {
+        return res.status(401).json({ error: getAuthError(authData) });
       }
 
       return res.status(200).json({
@@ -85,8 +105,8 @@ export default async function handler(req, res) {
     }
 
     const authData = await validateAccess(phone, deviceId);
-    if (!authData) {
-      return res.status(401).json({ error: "unauthorized" });
+    if (!isAuthSuccess(authData)) {
+      return res.status(401).json({ error: getAuthError(authData) });
     }
 
     const path = buildMagicBookPath({

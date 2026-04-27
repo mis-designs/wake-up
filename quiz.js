@@ -305,10 +305,18 @@ function loadQuizImage(q) {
 // LOGIN CHECK
 function hasStoredSession() {
   try {
-    const rawSession = localStorage.getItem("session");
-    if (rawSession) {
-      const session = JSON.parse(rawSession);
-      if (session?.phone) return true;
+    const rawSessionValues = [
+      localStorage.getItem("user_session"),
+      localStorage.getItem("session")
+    ].filter(Boolean);
+
+    for (const rawSession of rawSessionValues) {
+      try {
+        const session = JSON.parse(rawSession);
+        if (session?.phone && session?.loggedIn !== false) return true;
+      } catch (err) {
+        console.warn("[quiz] Stored session is not readable, checking fallback");
+      }
     }
 
     return localStorage.getItem("loggedIn") === "true";
