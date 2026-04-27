@@ -135,6 +135,7 @@ function getDeviceId() {
  * AUTO LOGIN
  ***********************/
 window.addEventListener("load", async () => {
+  setupLoginUI();
   setupProfileUI();
 
   const session = readStoredSession();
@@ -225,30 +226,32 @@ async function validateLoginAccess(phone, deviceId) {
 async function login() {
   const phoneInput = document.getElementById("user");
   const err = document.getElementById("err");
-  const loginButton = document.querySelector("#login button");
+  const loginButton = document.querySelector("#login .login-submit");
 
   const phone = normalizePhone(phoneInput?.value);
 
-  if (!phone) {
-    err.textContent = "Inserisci il numero di telefono";
+  if (!isValidPhoneNumber(phoneInput?.value)) {
+    if (err) err.textContent = "Inserisci un numero di telefono valido";
+    updateLoginButtonState();
     return;
   }
 
   const deviceId = getDeviceId();
-  const originalText = loginButton?.textContent;
+  const originalText = loginButton?.dataset.defaultText || loginButton?.textContent || "Continua";
 
   if (loginButton) {
     loginButton.disabled = true;
+    loginButton.classList.add("is-loading");
     loginButton.textContent = "Verifica...";
   }
 
-  err.textContent = "Verifica in corso...";
+  if (err) err.textContent = "Verifica in corso...";
 
   try {
     const data = await validateLoginAccess(phone, deviceId);
 
     if (!data?.success) {
-      err.textContent = "Numero non valido o accesso non autorizzato";
+      if (err) err.textContent = getLoginErrorMessage(data?.error || data?.status);
       return;
     }
 
@@ -259,18 +262,57 @@ async function login() {
       lastValid: Date.now()
     });
 
-    err.textContent = "";
+    if (err) err.textContent = "";
     showHome();
     checkRenewReminder(true);
   } catch (error) {
     console.error("Login validation error", error);
-    err.textContent = "Numero non valido o accesso non autorizzato";
+    if (err) err.textContent = "Verifica non riuscita. Riprova tra poco.";
   } finally {
     if (loginButton) {
-      loginButton.disabled = false;
-      loginButton.textContent = originalText || "Accedi";
+      loginButton.classList.remove("is-loading");
+      loginButton.textContent = originalText;
     }
+    updateLoginButtonState();
   }
+}
+
+function isValidPhoneNumber(input) {
+  const phone = normalizePhone(input);
+  return phone.length >= 10 && phone.length <= 15;
+}
+
+function getLoginErrorMessage(error) {
+  if (error === "expired") return "Accesso scaduto. Contatta il supporto per rinnovare.";
+  if (error === "not_found") return "Numero non autorizzato.";
+  if (error === "temporary_error" || error === "server_error") return "Servizio momentaneamente non disponibile.";
+  return "Numero non valido o accesso non autorizzato.";
+}
+
+function updateLoginButtonState() {
+  const phoneInput = document.getElementById("user");
+  const loginButton = document.querySelector("#login .login-submit");
+  if (!loginButton) return;
+
+  const isLoading = loginButton.classList.contains("is-loading");
+  loginButton.disabled = isLoading || !isValidPhoneNumber(phoneInput?.value);
+}
+
+function setupLoginUI() {
+  const phoneInput = document.getElementById("user");
+  const loginButton = document.querySelector("#login .login-submit");
+  const err = document.getElementById("err");
+
+  if (loginButton && !loginButton.dataset.defaultText) {
+    loginButton.dataset.defaultText = loginButton.textContent || "Continua";
+  }
+
+  phoneInput?.addEventListener("input", () => {
+    if (err) err.textContent = "";
+    updateLoginButtonState();
+  });
+
+  updateLoginButtonState();
 }
 
 /***********************
@@ -282,9 +324,10 @@ function logout(showLogin = true, reason = "revoked") {
   currentScreen = "login";
 
   if (showLogin) {
-    let msg = "Accesso revocato dall'amministratore";
+    let msg = "";
     if (reason === "expired") msg = "Abbonamento scaduto";
     else if (reason === "not_found") msg = "Numero non autorizzato";
+    else if (reason === "revoked") msg = "Accesso revocato dall'amministratore";
     showLoginScreen(msg);
   }
 }
@@ -322,7 +365,9 @@ function showLoginScreen(message = "") {
   const err = document.getElementById("err");
   if (err) err.textContent = message;
   updateProfileUI(false);
-  setProfileIconVisible(true);
+  setProfileIconVisible(false);
+  setLoggedOutChrome();
+  updateLoginButtonState();
 }
 
 function getCurrentSessionPhone() {
@@ -353,11 +398,24 @@ function setProfileIconVisible(visible) {
   const profilePanel = document.getElementById("profilePanel");
   if (!profileBtn) return;
 
-  profileBtn.classList.toggle("hidden", !visible);
+  const hasPhone = Boolean(getCurrentSessionPhone());
+  profileBtn.classList.toggle("hidden", !visible || !hasPhone);
   if (!visible) {
     profilePanel?.classList.add("hidden");
     profileBtn.setAttribute("aria-expanded", "false");
   }
+}
+
+function setWhatsAppVisible(visible) {
+  document.getElementById("whatsappBtn")?.classList.toggle("hidden", !visible);
+}
+
+function setLoggedOutChrome() {
+  setWhatsAppVisible(false);
+}
+
+function setLoggedInChrome() {
+  setWhatsAppVisible(true);
 }
 
 function setupProfileUI() {
@@ -674,6 +732,7 @@ function showHome() {
   currentScreen = "home";
   updateProfileUI(true);
   setProfileIconVisible(true);
+  setLoggedInChrome();
 }
 
 function showChapters() {

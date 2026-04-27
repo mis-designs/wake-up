@@ -37,7 +37,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <body>
 
 <!-- WHATSAPP FLOATING BUTTON -->
-<div id="whatsappBtn">
+<div id="whatsappBtn" class="hidden">
   <img src="whatsapp.png" alt="WhatsApp">
 </div>
 
@@ -48,18 +48,19 @@ gtag('config', 'G-C5JPY9HFHD', {
 
 <div id="profilePanel" class="profile-panel hidden" aria-live="polite">
   <p id="userPhone"></p>
-  <button id="logoutBtn" type="button">Log out</button>
+  <button id="logoutBtn" type="button">Logout</button>
 </div>
 
 <!-- LOGIN -->
 <div class="card" id="login">
     <img class="login-hero-img" src="icons/login_img.svg" alt="TMM Bangla Patente">
     <h1>MagicBook</h1>
+    <p class="login-subtitle">Accedi con il numero autorizzato.</p>
     <form class="login-form" onsubmit="event.preventDefault(); login();">
-      <input id="user" type="tel" placeholder="Suo numero" autocomplete="tel" inputmode="tel">
-      <button class="login-submit" type="submit">Gooo</button>
+      <input id="user" type="tel" placeholder="Numero di telefono" autocomplete="tel" inputmode="tel" aria-describedby="err">
+      <button class="login-submit" type="submit" disabled>Continua</button>
     </form>
-    <p id="err"></p>
+    <p id="err" role="status" aria-live="polite"></p>
     <a class="watermark-link" href="https://www.facebook.com/share/14aaeMyWJGw/" target="_blank" rel="noopener noreferrer">
       By MiskatDesigns
       <span class="watermark-tip">Visit</span>
