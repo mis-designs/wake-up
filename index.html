@@ -53,10 +53,12 @@ gtag('config', 'G-C5JPY9HFHD', {
 
 <!-- LOGIN -->
 <div class="card" id="login">
-    <h1>Magic. Book</h1>
-    <h2>by MiskatDesigns</h2>
-    <input id="user" type="tel" placeholder="Inserisci il tuo numero di telefono">
-    <button onclick="login()">Accedi</button>
+    <img class="login-hero-img" src="icons/login_img.svg" alt="TMM Bangla Patente">
+    <h1>MagicBook</h1>
+    <form class="login-form" onsubmit="event.preventDefault(); login();">
+      <input id="user" type="tel" placeholder="Suo numero" autocomplete="tel" inputmode="tel">
+      <button class="login-submit" type="submit">Accedi</button>
+    </form>
     <p id="err"></p>
     <a class="watermark-link" href="https://www.facebook.com/share/14aaeMyWJGw/" target="_blank" rel="noopener noreferrer">
       By MiskatDesigns
