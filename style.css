@@ -323,6 +323,10 @@ button:active {
 #login .login-form {
     width: min(100%, 302px);
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
 }
 
 #login input {
@@ -351,15 +355,26 @@ button:active {
 }
 
 #login .login-submit {
-    position: absolute;
-    width: 1px;
-    height: 1px;
+    width: 132px;
+    min-height: 42px;
     padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-    border: 0;
+    margin: 0;
+    border-radius: 999px;
+    background: #6c9657;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    box-shadow: 0 10px 20px rgba(94, 139, 74, 0.2);
+}
+
+#login .login-submit:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(94, 139, 74, 0.24);
+}
+
+#login .login-submit:active {
+    transform: scale(0.97);
 }
 
 #login #err {
@@ -1469,6 +1484,14 @@ body.app-mode #whatsappBtn {
     }
     #login input {
         height: 44px;
+    }
+    #login .login-form {
+        gap: 10px;
+    }
+    #login .login-submit {
+        width: 118px;
+        min-height: 38px;
+        font-size: 0.94rem;
     }
     #login #err {
         min-height: 16px;
