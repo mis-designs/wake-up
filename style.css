@@ -195,16 +195,83 @@ button:active {
     color: var(--color-dark);
 }
 
-#home img {
+#home .home-promo {
     width: 100%;
-    max-width: 420px;
-    margin-bottom: 22px;
+    max-width: 390px;
+    margin-bottom: 18px;
     border-radius: 20px;
     box-shadow: 0 14px 28px rgba(37, 41, 67, 0.12);
 }
 
-#home button {
-    width: 220px;
+#home .home-start-btn {
+    position: relative;
+    width: 206px;
+    max-width: 64vw;
+    padding: 0;
+    border-radius: 22px;
+    background: transparent;
+    box-shadow: none;
+    isolation: isolate;
+    animation: startRecall 1.8s ease-in-out infinite;
+}
+
+#home .home-start-btn::before,
+#home .home-start-btn::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 28px;
+    pointer-events: none;
+}
+
+#home .home-start-btn::before {
+    z-index: -1;
+    background: radial-gradient(circle, rgba(227, 255, 59, 0.48), rgba(58, 78, 251, 0.18) 46%, transparent 72%);
+    filter: blur(5px);
+    opacity: 0.8;
+    animation: startGlow 1.8s ease-in-out infinite;
+}
+
+#home .home-start-btn::after {
+    z-index: 1;
+    border: 2px solid rgba(255, 255, 255, 0.72);
+    opacity: 0;
+    animation: startRing 1.8s ease-out infinite;
+}
+
+#home .home-start-btn img {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0;
+    border-radius: 22px;
+    box-shadow: 0 14px 28px rgba(37, 41, 67, 0.22);
+}
+
+#home .home-start-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: none;
+}
+
+#home .home-start-btn:active {
+    transform: scale(0.97);
+}
+
+@keyframes startRecall {
+    0%, 100% { transform: translateY(0) scale(1); }
+    44% { transform: translateY(-4px) scale(1.045); }
+    58% { transform: translateY(0) scale(0.99); }
+    72% { transform: translateY(-2px) scale(1.02); }
+}
+
+@keyframes startGlow {
+    0%, 100% { opacity: 0.48; transform: scale(0.92); }
+    50% { opacity: 0.95; transform: scale(1.08); }
+}
+
+@keyframes startRing {
+    0% { opacity: 0.7; transform: scale(0.82); }
+    70%, 100% { opacity: 0; transform: scale(1.28); }
 }
 
 #login:not(.hidden) {
@@ -229,9 +296,9 @@ button:active {
     margin-right: auto;
 }
 
-#home > button {
-    width: 220px;
-    max-width: 220px;
+#home > .home-start-btn {
+    width: 206px;
+    max-width: 64vw;
 }
 
 /* CHAPTERS */
@@ -1146,6 +1213,40 @@ body.app-mode .card {
     margin-bottom: 0;
 }
 
+body.app-mode #home {
+    height: calc(100dvh - 60px);
+    min-height: 0;
+    overflow: hidden;
+    padding-top: 10px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+}
+
+body.app-mode #home .section-brand {
+    margin-bottom: 8px;
+    font-size: 1.05rem;
+    line-height: 1.2;
+}
+
+body.app-mode #home .home-promo {
+    width: auto;
+    max-width: min(100%, 330px);
+    max-height: calc(100dvh - 260px);
+    margin-bottom: 10px;
+    object-fit: contain;
+}
+
+body.app-mode #home .home-start-btn {
+    width: clamp(104px, 18dvh, 138px);
+    max-width: 42vw;
+    flex: 0 0 auto;
+}
+
+body.app-mode #home .watermark-link {
+    padding-top: 6px;
+    padding-bottom: 0;
+    font-size: 10px;
+}
+
 body.app-mode .lesson-card {
     height: calc(100dvh - 60px);
     min-height: 0;
@@ -1251,6 +1352,21 @@ body.app-mode #whatsappBtn {
 @media (max-height: 620px) {
     .app-header { height: 54px; }
     body.app-mode { padding-top: 54px; }
+    body.app-mode #home {
+        height: calc(100dvh - 54px);
+        padding-top: 8px;
+    }
+    body.app-mode #home .home-promo {
+        max-width: min(100%, 285px);
+        max-height: calc(100dvh - 215px);
+        margin-bottom: 8px;
+    }
+    body.app-mode #home .home-start-btn {
+        width: clamp(92px, 17dvh, 116px);
+    }
+    body.app-mode #home .watermark-link {
+        display: none;
+    }
     body.app-mode .lesson-card { height: calc(100dvh - 54px); }
     body.app-mode #viewer { padding-top: 54px; }
 }
@@ -1338,8 +1454,18 @@ body.app-mode #whatsappBtn {
         font-size: 1.35rem;
     }
 
-    #home button {
-        width: 100%;
+    #home .home-promo {
+        max-width: min(100%, 320px);
+    }
+
+    #home .home-start-btn {
+        width: 150px;
+        max-width: 44vw;
+    }
+
+    body.app-mode #home .home-start-btn {
+        width: clamp(100px, 18dvh, 130px);
+        max-width: 42vw;
     }
 }
 
