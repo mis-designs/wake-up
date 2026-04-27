@@ -782,6 +782,32 @@ button:active {
 /* PAGE CONTAINER */
 .page { position: relative; max-width: 900px; margin: 20px auto; }
 
+.viewer-loading {
+    min-height: calc(100dvh - 120px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    color: var(--color-white);
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.page + .viewer-loading {
+    min-height: 120px;
+    padding: 24px 0 34px;
+}
+
+.viewer-loading img {
+    width: 74px;
+    height: 74px;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 22px rgba(255, 255, 255, 0.16));
+}
+
 /* PAGE IMAGE */
 .page img {
     width: 100%;

@@ -1173,6 +1173,35 @@ function showMagicBookError(message) {
   pages.appendChild(box);
 }
 
+function setMagicBookLoading(pages, visible) {
+  if (!pages) return;
+
+  const existing = pages.querySelector(".viewer-loading");
+
+  if (!visible) {
+    existing?.remove();
+    return;
+  }
+
+  if (existing) return;
+
+  const loader = document.createElement("div");
+  loader.className = "viewer-loading";
+  loader.setAttribute("role", "status");
+  loader.setAttribute("aria-live", "polite");
+
+  const img = document.createElement("img");
+  img.src = "icons/loading.gif";
+  img.alt = "";
+
+  const text = document.createElement("span");
+  text.textContent = "Caricamento...";
+
+  loader.appendChild(img);
+  loader.appendChild(text);
+  pages.appendChild(loader);
+}
+
 function appendMagicBookPage(pages, blob) {
   const img = new Image();
   const url = URL.createObjectURL(blob);
@@ -1188,7 +1217,9 @@ function appendMagicBookPage(pages, blob) {
 
   box.appendChild(img);
   box.appendChild(shield);
-  pages.appendChild(box);
+
+  const loader = pages.querySelector(".viewer-loading");
+  pages.insertBefore(box, loader || null);
 }
 
 async function openMagicBookPages({ type, chapter = null }) {
@@ -1214,12 +1245,16 @@ async function openMagicBookPages({ type, chapter = null }) {
     URL.revokeObjectURL(img.dataset.objectUrl);
   });
   pages.innerHTML = "";
+  setMagicBookLoading(pages, true);
   let page = 1;
 
   function loadNext() {
     fetchMagicBookPage({ type, chapter, page })
       .then(blob => {
-        if (!blob) return;
+        if (!blob) {
+          setMagicBookLoading(pages, false);
+          return;
+        }
         appendMagicBookPage(pages, blob);
         page++;
         loadNext();
@@ -1228,7 +1263,9 @@ async function openMagicBookPages({ type, chapter = null }) {
         console.error("Image load error", err);
         if (err.message === "unauthorized") {
           showMagicBookError("Accesso non autorizzato");
+          return;
         }
+        setMagicBookLoading(pages, false);
       });
   }
 
