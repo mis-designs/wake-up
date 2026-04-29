@@ -166,7 +166,14 @@ window.addEventListener("load", async () => {
 });
 
 function isRevokedSessionError(error) {
-  return error === "expired" || error === "not_found";
+  return [
+    "expired",
+    "not_found",
+    "unauthorized",
+    "device_replaced",
+    "device_mismatch",
+    "device_limit"
+  ].includes(error);
 }
 
 async function validateRestoredSession(phone, deviceId) {
@@ -195,14 +202,15 @@ async function validateRestoredSession(phone, deviceId) {
   }
 }
 
-async function validateLoginAccess(phone, deviceId) {
+async function validateLoginAccess(phone, deviceId, options = {}) {
   const response = await fetch("/api/getPages", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       action: "validate",
       phone,
-      deviceId
+      deviceId,
+      registerDevice: options.registerDevice === true
     })
   });
 
@@ -248,7 +256,7 @@ async function login() {
   if (err) err.textContent = "Verifica in corso...";
 
   try {
-    const data = await validateLoginAccess(phone, deviceId);
+    const data = await validateLoginAccess(phone, deviceId, { registerDevice: true });
 
     if (!data?.success) {
       if (err) err.textContent = getLoginErrorMessage(data?.error || data?.status);
@@ -285,6 +293,7 @@ function isValidPhoneNumber(input) {
 function getLoginErrorMessage(error) {
   if (error === "expired") return "Accesso scaduto. Contatta il supporto per rinnovare.";
   if (error === "not_found") return "Numero non autorizzato.";
+  if (error === "device_replaced" || error === "device_mismatch") return "Questo dispositivo non e piu autorizzato.";
   if (error === "temporary_error" || error === "server_error") return "Servizio momentaneamente non disponibile.";
   return "Numero non valido o accesso non autorizzato.";
 }
@@ -327,6 +336,7 @@ function logout(showLogin = true, reason = "revoked") {
     let msg = "";
     if (reason === "expired") msg = "Abbonamento scaduto";
     else if (reason === "not_found") msg = "Numero non autorizzato";
+    else if (reason === "device_replaced" || reason === "device_mismatch") msg = "Questo dispositivo e stato disconnesso perche l'accesso e stato spostato su un altro dispositivo";
     else if (reason === "revoked") msg = "Accesso revocato dall'amministratore";
     showLoginScreen(msg);
   }
@@ -1179,7 +1189,17 @@ async function fetchMagicBookPage({ type, chapter, page }) {
   const contentType = response.headers.get("Content-Type") || "";
 
   if (response.status === 401) {
-    throw new Error("unauthorized");
+    let authError = "unauthorized";
+    try {
+      const data = await response.json();
+      authError = data?.error || authError;
+    } catch (err) {
+      console.warn("Risposta autorizzazione non leggibile", err);
+    }
+
+    const error = new Error(authError);
+    error.code = authError;
+    throw error;
   }
 
   if (response.status === 404) {
@@ -1320,8 +1340,8 @@ async function openMagicBookPages({ type, chapter = null }) {
       })
       .catch(err => {
         console.error("Image load error", err);
-        if (err.message === "unauthorized") {
-          showMagicBookError("Accesso non autorizzato");
+        if (isRevokedSessionError(err.code || err.message)) {
+          logout(true, err.code || err.message);
           return;
         }
         setMagicBookLoading(pages, false);

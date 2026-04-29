@@ -17,7 +17,7 @@ function buildMagicBookPath({ type, chapter, page }) {
   return null;
 }
 
-async function validateAccess(phone, deviceId) {
+async function validateAccess(phone, deviceId, options = {}) {
   if (!phone || !deviceId) return null;
 
   const authResponse = await fetch(GOOGLE_SCRIPT_URL, {
@@ -29,7 +29,8 @@ async function validateAccess(phone, deviceId) {
       token: TOKEN,
       phone,
       deviceId,
-      action: "validate"
+      action: "validate",
+      registerDevice: options.registerDevice === true
     })
   });
 
@@ -56,7 +57,15 @@ async function validateAccess(phone, deviceId) {
 
 function getAuthError(authData) {
   const error = authData?.error || authData?.status;
-  return error === "expired" || error === "not_found" ? error : "unauthorized";
+  const knownErrors = new Set([
+    "expired",
+    "not_found",
+    "device_replaced",
+    "device_mismatch",
+    "device_limit"
+  ]);
+
+  return knownErrors.has(error) ? error : "unauthorized";
 }
 
 function isAuthSuccess(authData) {
@@ -70,12 +79,14 @@ export default async function handler(req, res) {
 
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
-    const { action, book, type, chapter, page, phone, deviceId } = body;
+    const { action, book, type, chapter, page, phone, deviceId, registerDevice } = body;
     const pageNumber = Number(page);
     const chapterNumber = chapter === undefined ? undefined : Number(chapter);
 
     if (action === "validate") {
-      const authData = await validateAccess(phone, deviceId);
+      const authData = await validateAccess(phone, deviceId, {
+        registerDevice: registerDevice === true
+      });
       if (!isAuthSuccess(authData)) {
         return res.status(401).json({ error: getAuthError(authData) });
       }
