@@ -1,16 +1,131 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// ENDPOINT CONFIG
-// This is lightweight obfuscation only — NOT cryptographic security.
-// Anyone with DevTools can still decode it.  For real security route requests
-// through a backend proxy (Node/PHP/etc.) and store the real URL in an env var.
-//
-// To update the URL:  open the browser console and run
-//   btoa("https://your-new-gas-url.../exec")
-// then paste the result as the value of _e below.
+// QUIZ API CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
-const _e = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J6Q21VOFp6VnpQeDJFMUtrem5qaU9ycUwwSWlDdUdWQ2ZTdC1XTldEeThPU1J0NFg2eGJDVVhmNGpnbnFrVi1aaHQvZXhlYw==";
-const API = (() => { try { return atob(_e); } catch (_) { return ""; } })();
+const QUIZ_API = "/api/quiz";
 const BASE_IMG_URL = "https://pub-21131aa867534601af79c34beb746fb7.r2.dev/Figure/";
+
+function parseStoredQuizSession(rawSession) {
+  if (!rawSession) return null;
+
+  try {
+    const session = JSON.parse(rawSession);
+    if (session?.loggedIn === false) return null;
+    return {
+      phone: session?.phone || "",
+      deviceId: session?.deviceId || ""
+    };
+  } catch (err) {
+    console.warn("[quiz] Stored session is not readable");
+    return null;
+  }
+}
+
+function getQuizSession() {
+  try {
+    const loggedIn = localStorage.getItem("loggedIn");
+    const sessionCandidates = [
+      parseStoredQuizSession(localStorage.getItem("user_session")),
+      parseStoredQuizSession(localStorage.getItem("session"))
+    ].filter(Boolean);
+
+    const fallbackSession = {
+      phone: localStorage.getItem("phone") || "",
+      deviceId: localStorage.getItem("deviceId") || ""
+    };
+
+    const session = sessionCandidates.find(item => item.phone && item.deviceId)
+      || (loggedIn === "true" && fallbackSession.phone && fallbackSession.deviceId ? fallbackSession : null);
+
+    if (!session?.phone || !session?.deviceId) return null;
+    return session;
+  } catch (err) {
+    console.warn("[quiz] Session check unavailable");
+    return null;
+  }
+}
+
+function requireQuizSession() {
+  const session = getQuizSession();
+  if (!session) {
+    window.location.href = "index.html";
+    throw new Error("missing_quiz_session");
+  }
+  return session;
+}
+
+const QUIZ_SESSION = requireQuizSession();
+
+function getQuizPhone() {
+  return QUIZ_SESSION.phone;
+}
+
+function getQuizDeviceId() {
+  return QUIZ_SESSION.deviceId;
+}
+
+function buildQuizApiUrl(action, params = {}) {
+  const query = new URLSearchParams({
+    action,
+    phone: getQuizPhone(),
+    deviceId: getQuizDeviceId()
+  });
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      query.set(key, value);
+    }
+  });
+
+  return `${QUIZ_API}?${query.toString()}`;
+}
+
+function getQuizAccessErrorMessage(error) {
+  if (error === "expired") return "Abbonamento scaduto.";
+  if (error === "not_found") return "Numero non autorizzato.";
+  if (error === "device_limit") return "Hai gi\u00e0 raggiunto il limite massimo di 2 dispositivi per questo numero.";
+  return "Accesso non autorizzato.";
+}
+
+function isQuizAccessError(error) {
+  return ["expired", "not_found", "device_limit", "unauthorized"].includes(error);
+}
+
+let quizAccessErrorHandled = false;
+
+async function handleQuizAccessError(error) {
+  if (quizAccessErrorHandled) return;
+  quizAccessErrorHandled = true;
+
+  try {
+    hideLoading();
+    await showMessage("Accesso", getQuizAccessErrorMessage(error));
+  } finally {
+    window.location.href = "index.html";
+  }
+}
+
+async function fetchQuizJson(url, options = {}) {
+  const response = await fetch(url, options);
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch (err) {
+    data = null;
+  }
+
+  const error = data?.error;
+  if (response.status === 401 || response.status === 403 || isQuizAccessError(error)) {
+    await handleQuizAccessError(error || "unauthorized");
+    throw new Error(error || "unauthorized");
+  }
+
+  if (!response.ok) {
+    throw new Error(error || `quiz_api_${response.status}`);
+  }
+
+  return data;
+}
 
 let quiz = [];
 let answers = [];
@@ -97,12 +212,12 @@ async function fetchItalianAudio(text, cacheKey) {
   const timeoutId = setTimeout(() => controller.abort(), 15000);
 
   try {
-    const res = await fetch(
-      API + "?action=getItalianAudio&text=" + encodeURIComponent(text),
+    const res = await fetchQuizJson(
+      buildQuizApiUrl("getItalianAudio", { text }),
       { signal: controller.signal }
     );
     clearTimeout(timeoutId);
-    const data = await res.json();
+    const data = res;
     if (!data.audio) throw new Error(data.error || "no audio in response");
     italianAudioCache[cacheKey] = data;
     return data;
@@ -173,12 +288,12 @@ async function fetchBengaliAudio(italianText, cacheKey) {
   const timeoutId  = setTimeout(() => controller.abort(), 15000);
 
   try {
-    const res  = await fetch(
-      API + "?action=getBengaliAudio&text=" + encodeURIComponent(italianText),
+    const res = await fetchQuizJson(
+      buildQuizApiUrl("getBengaliAudio", { text: italianText }),
       { signal: controller.signal }
     );
     clearTimeout(timeoutId);
-    const data = await res.json();
+    const data = res;
     if (!data.audio) throw new Error(data.error || "no audio in response");
     bengaliAudioCache[cacheKey] = data;
     return data;
@@ -302,34 +417,6 @@ function loadQuizImage(q) {
     : BASE_IMG_URL + q.figure + ".jpg";
 }
 
-// LOGIN CHECK
-function hasStoredSession() {
-  try {
-    const rawSessionValues = [
-      localStorage.getItem("user_session"),
-      localStorage.getItem("session")
-    ].filter(Boolean);
-
-    for (const rawSession of rawSessionValues) {
-      try {
-        const session = JSON.parse(rawSession);
-        if (session?.phone && session?.loggedIn !== false) return true;
-      } catch (err) {
-        console.warn("[quiz] Stored session is not readable, checking fallback");
-      }
-    }
-
-    return localStorage.getItem("loggedIn") === "true";
-  } catch (err) {
-    console.warn("[quiz] Session check unavailable, redirecting to login safely");
-    return false;
-  }
-}
-
-if (!hasStoredSession()) {
-  window.location.href = "index.html";
-}
-
 function showLoading(message = "Caricamento...") {
   loadingText.innerText = message;
   loadingOverlay.classList.remove("hidden");
@@ -371,11 +458,12 @@ async function loadQuiz() {
   try {
     const params   = new URLSearchParams(window.location.search);
     const chapters = params.get("chapters") || "";
-    const url      = chapters
-      ? `${API}?action=getQuiz&chapters=${encodeURIComponent(chapters)}`
-      : `${API}?action=getQuiz`;
-    const res = await fetch(url);
-    quiz = await res.json();
+    const url = buildQuizApiUrl("getQuiz", { chapters });
+    quiz = await fetchQuizJson(url);
+
+    if (!Array.isArray(quiz)) {
+      throw new Error("invalid_quiz_response");
+    }
 
     // inizializza risposte
     answers = quiz.map(q => ({ id: q.id, answer: null }));
@@ -383,6 +471,7 @@ async function loadQuiz() {
     buildProgressBar();
     showQuestion();
   } catch (err) {
+    if (quizAccessErrorHandled) return;
     showMessage("Errore", "Errore caricamento quiz");
     console.error("[quiz] loadQuiz failed:", err.message);
   } finally {
@@ -875,7 +964,7 @@ function answer(val) {
 
   // mantiene una sola risposta selezionata per volta
   veroBtn.classList.remove("selected", "tap-feedback");
-  falsoBtn.classList.remove("selected", "tap-feedback");
+  falsoBtn.classList.remove("selected", "tap-feedback");>
   otherBtn.classList.remove("selected", "tap-feedback");
 
   selectedBtn.classList.remove("tap-feedback");
@@ -970,12 +1059,15 @@ async function finishQuiz(forceFinish = false) {
   }
 
   try {
-    const res = await fetch(API + "?action=checkQuiz", {
+    const data = await fetchQuizJson(buildQuizApiUrl("checkQuiz"), {
       method: "POST",
-      body: JSON.stringify({ answers: payload })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone: getQuizPhone(),
+        deviceId: getQuizDeviceId(),
+        answers: payload
+      })
     });
-
-    const data = await res.json();
 
     // Attach non-risposte count so the result modal can display it correctly
     data._nonRisposte = nonRisposte;
@@ -989,6 +1081,7 @@ async function finishQuiz(forceFinish = false) {
       returnToBook();
     }
   } catch (err) {
+    if (quizAccessErrorHandled) return;
     hideLoading();
     await showMessage("Errore", "Errore invio risposte");
     console.error("[quiz] finishQuiz failed:", err.message);
