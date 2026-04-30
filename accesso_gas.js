@@ -279,7 +279,7 @@ function handleUserAccess(sheet, phone, deviceId, registerDevice, now) {
         return { success: false, error: "device_limit" };
       }
 
-      return { success: false, error: "device_replaced" };
+      return { success: false, error: "unauthorized" };
     }
 
     return { success: false, error: "not_found" };

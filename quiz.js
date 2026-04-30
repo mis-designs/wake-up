@@ -121,7 +121,7 @@ function buildQuizApiUrl(action, params = {}) {
 function getQuizAccessErrorMessage(error) {
   if (error === "expired") return "Abbonamento scaduto.";
   if (error === "not_found") return "Numero non autorizzato.";
-  if (error === "device_limit") return "Hai gi\u00e0 raggiunto il limite massimo di 2 dispositivi per questo numero.";
+  if (error === "device_limit") return "Hai gi\u00e0 raggiunto il limite massimo di 2 dispositivi per questo numero. Non puoi usare pi\u00f9 di due dispositivi.";
   if (error === "quiz_session_expired") return "Sessione quiz scaduta. Riapri il quiz.";
   return "Accesso non autorizzato.";
 }

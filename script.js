@@ -487,7 +487,7 @@ function isValidPhoneNumber(input) {
 function getLoginErrorMessage(error) {
   if (error === "expired") return "Accesso scaduto. Contatta il supporto per rinnovare.";
   if (error === "not_found") return "Numero non autorizzato.";
-  if (error === "device_limit") return "Hai gi\u00e0 raggiunto il limite massimo di 2 dispositivi per questo numero.";
+  if (error === "device_limit") return "Hai gi\u00e0 raggiunto il limite massimo di 2 dispositivi per questo numero. Non puoi usare pi\u00f9 di due dispositivi.";
   if (error === "device_replaced" || error === "device_mismatch") return "Questo dispositivo non e piu autorizzato.";
   if (error === "temporary_error" || error === "server_error") return "Servizio momentaneamente non disponibile.";
   return "Numero non valido o accesso non autorizzato.";
@@ -1456,7 +1456,7 @@ function showMagicBookError(message) {
 
 function getMagicBookAccessErrorMessage(error) {
   if (error === "device_limit") {
-    return "Hai gi\u00e0 raggiunto il limite massimo di 2 dispositivi per questo numero.";
+    return "Hai gi\u00e0 raggiunto il limite massimo di 2 dispositivi per questo numero. Non puoi usare pi\u00f9 di due dispositivi.";
   }
   return "Accesso non disponibile. Riprova tra poco.";
 }
