@@ -41,7 +41,6 @@ function doGet(e) {
 
 
 function doPost(e) {
-  const action = e.parameter.action;
   var body = {};
   try {
     body = JSON.parse((e && e.postData && e.postData.contents) ? e.postData.contents : "{}");
@@ -49,9 +48,15 @@ function doPost(e) {
     body = {};
   }
 
+  const params = (e && e.parameter) ? e.parameter : {};
+  const action = String(params.action || body.action || "").trim();
+
+  if (!isProxyAuthorized(e, body)) {
+    return jsonResponse({ error: "unauthorized" });
+  }
+
   if (action === "checkQuiz") {
-    if (!isProxyAuthorized(e, body)) return jsonResponse({ error: "unauthorized" });
-    return checkQuiz(e);
+    return checkQuiz(e, body);
   }
 
   return ContentService
@@ -120,12 +125,13 @@ function normalizeAnswer(val) {
   return null;
 }
 
-function checkQuiz(e) {
-  var body;
-  try {
-    body = JSON.parse(e.postData.contents);
-  } catch (err) {
-    return jsonResponse({ error: "invalid_payload" });
+function checkQuiz(e, body) {
+  if (!body) {
+    try {
+      body = JSON.parse((e && e.postData && e.postData.contents) ? e.postData.contents : "{}");
+    } catch (err) {
+      return jsonResponse({ error: "invalid_payload" });
+    }
   }
 
   if (!Array.isArray(body.answers) || body.answers.length === 0) {

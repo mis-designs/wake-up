@@ -114,6 +114,7 @@ export default async function handler(req, res) {
 
   try {
     const { action, phone, deviceId, chapters, text, answers } = getRequestData(req);
+    console.log("[api/quiz] action", action);
 
     if (!action) {
       return res.status(400).json({ error: "missing_action" });
@@ -131,6 +132,8 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST" && action === "checkQuiz") {
+      console.log("[api/quiz] checkQuiz answers", Array.isArray(answers) ? answers.length : "invalid");
+
       if (!Array.isArray(answers)) {
         return res.status(400).json({ error: "missing_answers" });
       }

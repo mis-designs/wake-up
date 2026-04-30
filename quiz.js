@@ -1059,7 +1059,9 @@ async function finishQuiz(forceFinish = false) {
   }
 
   try {
-    const data = await fetchQuizJson(buildQuizApiUrl("checkQuiz"), {
+    console.log("[quiz] submitting answers", payload.length);
+
+    const data = await fetchQuizJson("/api/quiz?action=checkQuiz", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
