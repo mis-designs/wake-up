@@ -119,15 +119,130 @@ function normalizePhone(input) {
 /***********************
  * DEVICE ID
  ***********************/
-function getDeviceId() {
-  let id = Storage.get(KEYS.deviceId);
-  if (!id) {
-    id = (crypto.randomUUID && crypto.randomUUID())
-      ? crypto.randomUUID()
-      : "dev_" + Date.now() + "_" + Math.random().toString(36).slice(2, 12);
+const DEVICE_DB_NAME = "magicph_device";
+const DEVICE_STORE_NAME = "kv";
+let cachedDeviceId = null;
 
-    Storage.set(KEYS.deviceId, id);
+function isValidStoredDeviceId(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function createDeviceId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
   }
+  return "dev_" + Date.now() + "_" + Math.random().toString(36).slice(2, 12);
+}
+
+function getDeviceCookie() {
+  if (typeof document === "undefined" || !document.cookie) return null;
+  const name = encodeURIComponent(KEYS.deviceId) + "=";
+  const match = document.cookie
+    .split(";")
+    .map(part => part.trim())
+    .find(part => part.startsWith(name));
+
+  if (!match) return null;
+
+  try {
+    return decodeURIComponent(match.slice(name.length));
+  } catch {
+    return null;
+  }
+}
+
+function setDeviceCookie(id) {
+  if (typeof document === "undefined" || !isValidStoredDeviceId(id)) return;
+  document.cookie = `${encodeURIComponent(KEYS.deviceId)}=${encodeURIComponent(id)}; Max-Age=31536000; Path=/; SameSite=Lax`;
+}
+
+function openDeviceDb() {
+  return new Promise((resolve, reject) => {
+    if (typeof indexedDB === "undefined") {
+      reject(new Error("indexeddb_unavailable"));
+      return;
+    }
+
+    const request = indexedDB.open(DEVICE_DB_NAME, 1);
+
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(DEVICE_STORE_NAME)) {
+        db.createObjectStore(DEVICE_STORE_NAME);
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error("indexeddb_error"));
+  });
+}
+
+async function getIndexedDbDeviceId() {
+  let db = null;
+  try {
+    db = await openDeviceDb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(DEVICE_STORE_NAME, "readonly");
+      const request = tx.objectStore(DEVICE_STORE_NAME).get(KEYS.deviceId);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error || new Error("indexeddb_read_error"));
+    });
+  } catch {
+    return null;
+  } finally {
+    db?.close();
+  }
+}
+
+async function setIndexedDbDeviceId(id) {
+  let db = null;
+  try {
+    db = await openDeviceDb();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(DEVICE_STORE_NAME, "readwrite");
+      tx.objectStore(DEVICE_STORE_NAME).put(id, KEYS.deviceId);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error("indexeddb_write_error"));
+    });
+  } catch {
+    // IndexedDB is a best-effort persistence layer.
+  } finally {
+    db?.close();
+  }
+}
+
+function syncDeviceId(id) {
+  if (!isValidStoredDeviceId(id)) return;
+  cachedDeviceId = id;
+  Storage.set(KEYS.deviceId, id);
+  setDeviceCookie(id);
+  setIndexedDbDeviceId(id);
+}
+
+async function getRobustDeviceId() {
+  const candidates = [
+    cachedDeviceId,
+    Storage.get(KEYS.deviceId),
+    getDeviceCookie(),
+    await getIndexedDbDeviceId(),
+    readStoredSession()?.deviceId
+  ];
+
+  const existing = candidates.find(isValidStoredDeviceId);
+  const id = existing || createDeviceId();
+  syncDeviceId(id);
+  return id;
+}
+
+function getDeviceId() {
+  const id = [
+    cachedDeviceId,
+    Storage.get(KEYS.deviceId),
+    getDeviceCookie(),
+    readStoredSession()?.deviceId
+  ].find(isValidStoredDeviceId) || createDeviceId();
+
+  syncDeviceId(id);
   return id;
 }
 
@@ -138,23 +253,24 @@ window.addEventListener("load", async () => {
   setupLoginUI();
   setupProfileUI();
 
+  const stableDeviceId = await getRobustDeviceId();
   const session = readStoredSession();
   const logged = Storage.get(KEYS.loggedIn);
   let phone = session?.phone || Storage.get(KEYS.phone);
-  let deviceId = session?.deviceId || Storage.get(KEYS.deviceId);
+  let deviceId = stableDeviceId;
 
   const mode = Storage.mode();
   if (mode !== "local") {
     console.warn("Storage non persistente:", mode, "(iOS privata / blocchi privacy).");
   }
 
-  if (session) restoreSession(session);
+  if (session) restoreSession({ ...session, deviceId });
   else if (logged === "true" && phone && deviceId) {
     persistSession(phone, { deviceId, lastLogin: Date.now(), lastValid: Date.now() });
   }
 
   phone = Storage.get(KEYS.phone);
-  deviceId = Storage.get(KEYS.deviceId);
+  deviceId = await getRobustDeviceId();
 
   if ((session || logged === "true") && phone && deviceId) {
     showHome();
@@ -166,14 +282,7 @@ window.addEventListener("load", async () => {
 });
 
 function isRevokedSessionError(error) {
-  return [
-    "expired",
-    "not_found",
-    "unauthorized",
-    "device_replaced",
-    "device_mismatch",
-    "device_limit"
-  ].includes(error);
+  return ["expired", "not_found"].includes(error);
 }
 
 async function validateRestoredSession(phone, deviceId) {
@@ -244,7 +353,7 @@ async function login() {
     return;
   }
 
-  const deviceId = getDeviceId();
+  const deviceId = await getRobustDeviceId();
   const originalText = loginButton?.dataset.defaultText || loginButton?.textContent || "Continua";
 
   if (loginButton) {
@@ -293,6 +402,7 @@ function isValidPhoneNumber(input) {
 function getLoginErrorMessage(error) {
   if (error === "expired") return "Accesso scaduto. Contatta il supporto per rinnovare.";
   if (error === "not_found") return "Numero non autorizzato.";
+  if (error === "device_limit") return "Hai gi\u00e0 raggiunto il limite massimo di 2 dispositivi per questo numero.";
   if (error === "device_replaced" || error === "device_mismatch") return "Questo dispositivo non e piu autorizzato.";
   if (error === "temporary_error" || error === "server_error") return "Servizio momentaneamente non disponibile.";
   return "Numero non valido o accesso non autorizzato.";
@@ -349,7 +459,6 @@ function clearSessionData() {
     KEYS.expiry,
     KEYS.session,
     KEYS.legacySession,
-    KEYS.deviceId,
     KEYS.renewPopupLastShown,
   ].forEach(key => Storage.remove(key));
 
@@ -359,7 +468,6 @@ function clearSessionData() {
     localStorage.removeItem("loggedIn");
     localStorage.removeItem("phone");
     localStorage.removeItem("expiry");
-    localStorage.removeItem("deviceId");
     localStorage.removeItem("renewPopupLastShown");
   } catch (err) {
     console.warn("Pulizia localStorage non disponibile");
@@ -387,7 +495,7 @@ function getCurrentSessionPhone() {
 
 function getCurrentSessionDeviceId() {
   const session = readStoredSession();
-  return session?.deviceId || Storage.get(KEYS.deviceId) || getDeviceId();
+  return Storage.get(KEYS.deviceId) || session?.deviceId || getDeviceId();
 }
 
 function updateProfileUI(isLoggedIn = true) {
@@ -1188,7 +1296,7 @@ async function fetchMagicBookPage({ type, chapter, page }) {
 
   const contentType = response.headers.get("Content-Type") || "";
 
-  if (response.status === 401) {
+  if (response.status === 401 || response.status === 403) {
     let authError = "unauthorized";
     try {
       const data = await response.json();
@@ -1250,6 +1358,13 @@ function showMagicBookError(message) {
   box.style.cssText = "color:#fff;text-align:center;padding:40px 16px;font-weight:700;";
   box.textContent = message;
   pages.appendChild(box);
+}
+
+function getMagicBookAccessErrorMessage(error) {
+  if (error === "device_limit") {
+    return "Hai gi\u00e0 raggiunto il limite massimo di 2 dispositivi per questo numero.";
+  }
+  return "Accesso non disponibile. Riprova tra poco.";
 }
 
 function setMagicBookLoading(pages, visible) {
@@ -1342,6 +1457,11 @@ async function openMagicBookPages({ type, chapter = null }) {
         console.error("Image load error", err);
         if (isRevokedSessionError(err.code || err.message)) {
           logout(true, err.code || err.message);
+          return;
+        }
+        if ((err.code || err.message) === "device_limit") {
+          setMagicBookLoading(pages, false);
+          showMagicBookError(getMagicBookAccessErrorMessage("device_limit"));
           return;
         }
         setMagicBookLoading(pages, false);

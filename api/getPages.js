@@ -1,6 +1,6 @@
-const BASE_URL = "https://pub-21131aa867534601af79c34beb746fb7.r2.dev";
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxOOQ-8FYN4qv0e5575rNyrvjTiZtEUmaNUj07KjBkjN1G9iCl0Ks4iWcSxthbuWh9h5A/exec";
-const TOKEN = "Xk92!abC_2026_securePanel@#";
+const BASE_URL = process.env.R2_BASE_URL;
+const GOOGLE_SCRIPT_URL = process.env.GAS_ACCESS_URL;
+const TOKEN = process.env.GAS_SECRET;
 const SUPPORTED_BOOKS = new Set(["magic"]);
 
 function buildMagicBookPath({ type, chapter, page }) {
@@ -68,6 +68,11 @@ function getAuthError(authData) {
   return knownErrors.has(error) ? error : "unauthorized";
 }
 
+function getAuthStatusCode(error) {
+  if (error === "device_limit") return 403;
+  return 401;
+}
+
 function isAuthSuccess(authData) {
   return authData?.success === true || authData?.status === "success";
 }
@@ -75,6 +80,10 @@ function isAuthSuccess(authData) {
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "method_not_allowed" });
+  }
+
+  if (!BASE_URL || !GOOGLE_SCRIPT_URL || !TOKEN) {
+    return res.status(500).json({ error: "missing_server_config" });
   }
 
   try {
@@ -88,7 +97,8 @@ export default async function handler(req, res) {
         registerDevice: registerDevice === true
       });
       if (!isAuthSuccess(authData)) {
-        return res.status(401).json({ error: getAuthError(authData) });
+        const error = getAuthError(authData);
+        return res.status(getAuthStatusCode(error)).json({ error });
       }
 
       return res.status(200).json({
@@ -117,7 +127,8 @@ export default async function handler(req, res) {
 
     const authData = await validateAccess(phone, deviceId);
     if (!isAuthSuccess(authData)) {
-      return res.status(401).json({ error: getAuthError(authData) });
+      const error = getAuthError(authData);
+      return res.status(getAuthStatusCode(error)).json({ error });
     }
 
     const path = buildMagicBookPath({
@@ -131,7 +142,6 @@ export default async function handler(req, res) {
     }
 
     const url = new URL(path, `${BASE_URL}/`).toString();
-    console.log(url);
 
     const response = await fetch(url);
 
