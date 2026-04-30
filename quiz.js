@@ -964,7 +964,7 @@ function answer(val) {
 
   // mantiene una sola risposta selezionata per volta
   veroBtn.classList.remove("selected", "tap-feedback");
-  falsoBtn.classList.remove("selected", "tap-feedback");>
+  falsoBtn.classList.remove("selected", "tap-feedback");
   otherBtn.classList.remove("selected", "tap-feedback");
 
   selectedBtn.classList.remove("tap-feedback");
