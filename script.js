@@ -51,10 +51,16 @@ const KEYS = {
   loggedIn: "loggedIn",
   phone: "phone",
   expiry: "expiry",
+  accessToken: "accessToken",
+  accessTokenExpiresAt: "accessTokenExpiresAt",
   session: "user_session",
   legacySession: "session",
   renewPopupLastShown: "renewPopupLastShown"
 };
+
+const ACCESS_TOKEN_REFRESH_SKEW_MS = 60 * 1000;
+const ACCESS_VALIDATION_INTERVAL_MS = 15 * 60 * 1000;
+let accessValidationTimer = null;
 
 function readStoredSession() {
   const rawSessionValues = [Storage.get(KEYS.session), Storage.get(KEYS.legacySession)].filter(Boolean);
@@ -80,6 +86,8 @@ function persistSession(phone, data = {}) {
     phone,
     deviceId: data.deviceId || existing.deviceId || Storage.get(KEYS.deviceId) || getDeviceId(),
     loggedIn: true,
+    accessToken: data.accessToken || existing.accessToken || Storage.get(KEYS.accessToken) || "",
+    accessTokenExpiresAt: data.accessTokenExpiresAt || existing.accessTokenExpiresAt || Number(Storage.get(KEYS.accessTokenExpiresAt) || 0),
     lastLogin: data.lastLogin || existing.lastLogin || Date.now(),
     lastValid: data.lastValid || existing.lastValid || Date.now()
   };
@@ -90,6 +98,8 @@ function persistSession(phone, data = {}) {
   Storage.set(KEYS.loggedIn, "true");
   Storage.set(KEYS.phone, phone);
   Storage.set(KEYS.deviceId, session.deviceId);
+  if (session.accessToken) Storage.set(KEYS.accessToken, session.accessToken);
+  if (session.accessTokenExpiresAt) Storage.set(KEYS.accessTokenExpiresAt, session.accessTokenExpiresAt);
   if (session.expiry) Storage.set(KEYS.expiry, session.expiry);
 }
 
@@ -98,6 +108,8 @@ function restoreSession(session) {
   persistSession(session.phone, {
     deviceId: session.deviceId,
     expiry: session.expiry,
+    accessToken: session.accessToken,
+    accessTokenExpiresAt: session.accessTokenExpiresAt,
     lastValid: session.lastValid || Date.now()
   });
   return true;
@@ -275,7 +287,10 @@ window.addEventListener("load", async () => {
   if ((session || logged === "true") && phone && deviceId) {
     showHome();
     checkRenewReminder();
-    validateRestoredSession(phone, deviceId);
+    startAccessValidationTimer();
+    if (shouldRefreshAccessToken()) {
+      validateRestoredSession(phone, deviceId);
+    }
   } else {
     showLoginScreen("");
   }
@@ -283,6 +298,71 @@ window.addEventListener("load", async () => {
 
 function isRevokedSessionError(error) {
   return ["expired", "not_found"].includes(error);
+}
+
+function getCurrentAccessToken() {
+  const session = readStoredSession();
+  return Storage.get(KEYS.accessToken) || session?.accessToken || "";
+}
+
+function getAccessTokenExpiresAt() {
+  const session = readStoredSession();
+  return Number(Storage.get(KEYS.accessTokenExpiresAt) || session?.accessTokenExpiresAt || 0);
+}
+
+function isAccessTokenUsable(skewMs = 0) {
+  return Boolean(getCurrentAccessToken()) && getAccessTokenExpiresAt() > Date.now() + skewMs;
+}
+
+function shouldRefreshAccessToken() {
+  return !isAccessTokenUsable(ACCESS_TOKEN_REFRESH_SKEW_MS);
+}
+
+function startAccessValidationTimer() {
+  if (accessValidationTimer) clearInterval(accessValidationTimer);
+  accessValidationTimer = setInterval(() => {
+    const phone = getCurrentSessionPhone();
+    const deviceId = getCurrentSessionDeviceId();
+    if (phone && deviceId) {
+      validateRestoredSession(phone, deviceId);
+    }
+  }, ACCESS_VALIDATION_INTERVAL_MS);
+}
+
+async function ensureAccessToken(options = {}) {
+  if (!options.force && isAccessTokenUsable(ACCESS_TOKEN_REFRESH_SKEW_MS)) {
+    return true;
+  }
+
+  const phone = getCurrentSessionPhone();
+  const deviceId = getCurrentSessionDeviceId();
+  if (!phone || !deviceId) return false;
+
+  try {
+    const data = await validateLoginAccess(phone, deviceId);
+    const error = data?.error || data?.status;
+
+    if (isRevokedSessionError(error)) {
+      logout(true, error);
+      return false;
+    }
+
+    if (data?.success) {
+      persistSession(phone, {
+        deviceId,
+        expiry: data.expiry,
+        accessToken: data.accessToken,
+        accessTokenExpiresAt: data.accessTokenExpiresAt,
+        lastValid: Date.now()
+      });
+      return true;
+    }
+
+    return false;
+  } catch (err) {
+    console.warn("Access token refresh unavailable, keeping current session", err);
+    return false;
+  }
 }
 
 async function validateRestoredSession(phone, deviceId) {
@@ -299,6 +379,8 @@ async function validateRestoredSession(phone, deviceId) {
       persistSession(phone, {
         deviceId,
         expiry: data.expiry,
+        accessToken: data.accessToken,
+        accessTokenExpiresAt: data.accessTokenExpiresAt,
         lastValid: Date.now()
       });
       checkRenewReminder();
@@ -375,12 +457,15 @@ async function login() {
     persistSession(phone, {
       deviceId,
       expiry: data.expiry,
+      accessToken: data.accessToken,
+      accessTokenExpiresAt: data.accessTokenExpiresAt,
       lastLogin: Date.now(),
       lastValid: Date.now()
     });
 
     if (err) err.textContent = "";
     showHome();
+    startAccessValidationTimer();
     checkRenewReminder(true);
   } catch (error) {
     console.error("Login validation error", error);
@@ -438,6 +523,10 @@ function setupLoginUI() {
  * LOGOUT
  ***********************/
 function logout(showLogin = true, reason = "revoked") {
+  if (accessValidationTimer) {
+    clearInterval(accessValidationTimer);
+    accessValidationTimer = null;
+  }
   clearSessionData();
   setChapterMode(false);
   currentScreen = "login";
@@ -457,6 +546,8 @@ function clearSessionData() {
     KEYS.loggedIn,
     KEYS.phone,
     KEYS.expiry,
+    KEYS.accessToken,
+    KEYS.accessTokenExpiresAt,
     KEYS.session,
     KEYS.legacySession,
     KEYS.renewPopupLastShown,
@@ -468,6 +559,8 @@ function clearSessionData() {
     localStorage.removeItem("loggedIn");
     localStorage.removeItem("phone");
     localStorage.removeItem("expiry");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("accessTokenExpiresAt");
     localStorage.removeItem("renewPopupLastShown");
   } catch (err) {
     console.warn("Pulizia localStorage non disponibile");
@@ -1281,7 +1374,8 @@ async function fetchMagicBookPage({ type, chapter, page }) {
     type,
     page,
     phone: getCurrentSessionPhone(),
-    deviceId: getCurrentSessionDeviceId()
+    deviceId: getCurrentSessionDeviceId(),
+    accessToken: getCurrentAccessToken()
   };
 
   if (type === "chapter") body.chapter = chapter;
@@ -1440,6 +1534,14 @@ async function openMagicBookPages({ type, chapter = null }) {
   });
   pages.innerHTML = "";
   setMagicBookLoading(pages, true);
+
+  const accessReady = await ensureAccessToken();
+  if (!accessReady) {
+    setMagicBookLoading(pages, false);
+    showMagicBookError("Accesso non disponibile. Riprova tra poco.");
+    return;
+  }
+
   let page = 1;
 
   function loadNext() {
@@ -1462,6 +1564,15 @@ async function openMagicBookPages({ type, chapter = null }) {
         if ((err.code || err.message) === "device_limit") {
           setMagicBookLoading(pages, false);
           showMagicBookError(getMagicBookAccessErrorMessage("device_limit"));
+          return;
+        }
+        if ((err.code || err.message) === "token_expired") {
+          ensureAccessToken({ force: true })
+            .then(ok => {
+              if (ok) loadNext();
+              else setMagicBookLoading(pages, false);
+            })
+            .catch(() => setMagicBookLoading(pages, false));
           return;
         }
         setMagicBookLoading(pages, false);

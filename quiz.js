@@ -12,7 +12,9 @@ function parseStoredQuizSession(rawSession) {
     if (session?.loggedIn === false) return null;
     return {
       phone: session?.phone || "",
-      deviceId: session?.deviceId || ""
+      deviceId: session?.deviceId || "",
+      accessToken: session?.accessToken || "",
+      accessTokenExpiresAt: session?.accessTokenExpiresAt || 0
     };
   } catch (err) {
     console.warn("[quiz] Stored session is not readable");
@@ -30,7 +32,9 @@ function getQuizSession() {
 
     const fallbackSession = {
       phone: localStorage.getItem("phone") || "",
-      deviceId: localStorage.getItem("deviceId") || ""
+      deviceId: localStorage.getItem("deviceId") || "",
+      accessToken: localStorage.getItem("accessToken") || "",
+      accessTokenExpiresAt: Number(localStorage.getItem("accessTokenExpiresAt") || 0)
     };
 
     const session = sessionCandidates.find(item => item.phone && item.deviceId)
@@ -63,12 +67,47 @@ function getQuizDeviceId() {
   return QUIZ_SESSION.deviceId;
 }
 
+function getQuizAccessToken() {
+  return localStorage.getItem("accessToken") || QUIZ_SESSION.accessToken || "";
+}
+
+function saveQuizAccessToken(accessToken, accessTokenExpiresAt) {
+  if (!accessToken || !accessTokenExpiresAt) return;
+  QUIZ_SESSION.accessToken = accessToken;
+  QUIZ_SESSION.accessTokenExpiresAt = accessTokenExpiresAt;
+  localStorage.setItem("accessToken", accessToken);
+  localStorage.setItem("accessTokenExpiresAt", String(accessTokenExpiresAt));
+
+  try {
+    const raw = localStorage.getItem("user_session");
+    const session = raw ? JSON.parse(raw) : {};
+    if (session?.phone) {
+      session.accessToken = accessToken;
+      session.accessTokenExpiresAt = accessTokenExpiresAt;
+      localStorage.setItem("user_session", JSON.stringify(session));
+    }
+  } catch {
+    // Best effort: top-level localStorage keys are already updated.
+  }
+}
+
+let quizSessionToken = "";
+let quizSessionTokenExpiresAt = 0;
+
+function getQuizSessionToken() {
+  return quizSessionToken;
+}
+
 function buildQuizApiUrl(action, params = {}) {
   const query = new URLSearchParams({
     action,
     phone: getQuizPhone(),
-    deviceId: getQuizDeviceId()
+    deviceId: getQuizDeviceId(),
+    accessToken: getQuizAccessToken()
   });
+
+  const activeQuizToken = getQuizSessionToken();
+  if (activeQuizToken) query.set("quizSessionToken", activeQuizToken);
 
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") {
@@ -83,11 +122,12 @@ function getQuizAccessErrorMessage(error) {
   if (error === "expired") return "Abbonamento scaduto.";
   if (error === "not_found") return "Numero non autorizzato.";
   if (error === "device_limit") return "Hai gi\u00e0 raggiunto il limite massimo di 2 dispositivi per questo numero.";
+  if (error === "quiz_session_expired") return "Sessione quiz scaduta. Riapri il quiz.";
   return "Accesso non autorizzato.";
 }
 
 function isQuizAccessError(error) {
-  return ["expired", "not_found", "device_limit", "unauthorized"].includes(error);
+  return ["expired", "not_found", "device_limit", "unauthorized", "quiz_session_expired"].includes(error);
 }
 
 let quizAccessErrorHandled = false;
@@ -459,7 +499,15 @@ async function loadQuiz() {
     const params   = new URLSearchParams(window.location.search);
     const chapters = params.get("chapters") || "";
     const url = buildQuizApiUrl("getQuiz", { chapters });
-    quiz = await fetchQuizJson(url);
+    const data = await fetchQuizJson(url);
+
+    if (data.accessToken && data.accessTokenExpiresAt) {
+      saveQuizAccessToken(data.accessToken, data.accessTokenExpiresAt);
+    }
+
+    quizSessionToken = data.quizSessionToken || "";
+    quizSessionTokenExpiresAt = data.quizSessionTokenExpiresAt || 0;
+    quiz = data.quiz;
 
     if (!Array.isArray(quiz)) {
       throw new Error("invalid_quiz_response");
@@ -1067,6 +1115,7 @@ async function finishQuiz(forceFinish = false) {
       body: JSON.stringify({
         phone: getQuizPhone(),
         deviceId: getQuizDeviceId(),
+        quizSessionToken: getQuizSessionToken(),
         answers: payload
       })
     });

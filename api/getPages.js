@@ -1,7 +1,11 @@
+import crypto from "crypto";
+
 const BASE_URL = process.env.R2_BASE_URL;
 const GOOGLE_SCRIPT_URL = process.env.GAS_ACCESS_URL;
 const TOKEN = process.env.GAS_SECRET;
+const SESSION_SECRET = process.env.SESSION_SECRET;
 const SUPPORTED_BOOKS = new Set(["magic"]);
+const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
 
 function buildMagicBookPath({ type, chapter, page }) {
   const pageNumber = String(page).padStart(4, "0");
@@ -77,18 +81,81 @@ function isAuthSuccess(authData) {
   return authData?.success === true || authData?.status === "success";
 }
 
+function base64UrlEncode(value) {
+  return Buffer.from(value).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function base64UrlDecode(value) {
+  const padded = value + "=".repeat((4 - value.length % 4) % 4);
+  return Buffer.from(padded.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
+}
+
+function signTokenPayload(encodedPayload) {
+  return crypto.createHmac("sha256", SESSION_SECRET).update(encodedPayload).digest("base64url");
+}
+
+function createAccessToken(phone, deviceId) {
+  const accessTokenExpiresAt = Date.now() + ACCESS_TOKEN_TTL_MS;
+  const payload = {
+    phone,
+    deviceId,
+    purpose: "access",
+    exp: accessTokenExpiresAt
+  };
+  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  const signature = signTokenPayload(encodedPayload);
+
+  return {
+    accessToken: `${encodedPayload}.${signature}`,
+    accessTokenExpiresAt
+  };
+}
+
+function verifyAccessToken(token, phone, deviceId) {
+  if (!token || !phone || !deviceId) return { ok: false, error: "unauthorized" };
+
+  const parts = String(token).split(".");
+  if (parts.length !== 2) return { ok: false, error: "unauthorized" };
+
+  const [encodedPayload, signature] = parts;
+  const expectedSignature = signTokenPayload(encodedPayload);
+  const provided = Buffer.from(signature);
+  const expected = Buffer.from(expectedSignature);
+
+  if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
+    return { ok: false, error: "unauthorized" };
+  }
+
+  let payload = null;
+  try {
+    payload = JSON.parse(base64UrlDecode(encodedPayload));
+  } catch {
+    return { ok: false, error: "unauthorized" };
+  }
+
+  if (payload.purpose !== "access" || payload.phone !== phone || payload.deviceId !== deviceId) {
+    return { ok: false, error: "unauthorized" };
+  }
+
+  if (!payload.exp || payload.exp <= Date.now()) {
+    return { ok: false, error: "token_expired" };
+  }
+
+  return { ok: true, payload };
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "method_not_allowed" });
   }
 
-  if (!BASE_URL || !GOOGLE_SCRIPT_URL || !TOKEN) {
+  if (!BASE_URL || !GOOGLE_SCRIPT_URL || !TOKEN || !SESSION_SECRET) {
     return res.status(500).json({ error: "missing_server_config" });
   }
 
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
-    const { action, book, type, chapter, page, phone, deviceId, registerDevice } = body;
+    const { action, book, type, chapter, page, phone, deviceId, registerDevice, accessToken } = body;
     const pageNumber = Number(page);
     const chapterNumber = chapter === undefined ? undefined : Number(chapter);
 
@@ -101,11 +168,15 @@ export default async function handler(req, res) {
         return res.status(getAuthStatusCode(error)).json({ error });
       }
 
+      const tokenData = createAccessToken(phone, deviceId);
+
       return res.status(200).json({
         success: true,
         phone,
         deviceId,
-        expiry: authData.expiry
+        expiry: authData.expiry,
+        accessToken: tokenData.accessToken,
+        accessTokenExpiresAt: tokenData.accessTokenExpiresAt
       });
     }
 
@@ -125,10 +196,9 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "unauthorized" });
     }
 
-    const authData = await validateAccess(phone, deviceId);
-    if (!isAuthSuccess(authData)) {
-      const error = getAuthError(authData);
-      return res.status(getAuthStatusCode(error)).json({ error });
+    const tokenStatus = verifyAccessToken(accessToken, phone, deviceId);
+    if (!tokenStatus.ok) {
+      return res.status(401).json({ error: tokenStatus.error });
     }
 
     const path = buildMagicBookPath({
