@@ -73,7 +73,7 @@ function getAuthError(authData) {
 }
 
 function getAuthStatusCode(error) {
-  if (error === "device_limit") return 403;
+  if (error === "device_replaced" || error === "device_mismatch" || error === "device_limit") return 403;
   return 401;
 }
 
@@ -176,7 +176,9 @@ export default async function handler(req, res) {
         deviceId,
         expiry: authData.expiry,
         accessToken: tokenData.accessToken,
-        accessTokenExpiresAt: tokenData.accessTokenExpiresAt
+        accessTokenExpiresAt: tokenData.accessTokenExpiresAt,
+        ...(authData.rotated ? { rotated: true } : {}),
+        ...(authData.replacedDevice ? { replacedDevice: authData.replacedDevice } : {})
       });
     }
 

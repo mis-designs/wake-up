@@ -16,12 +16,12 @@ function isConfigured() {
 
 function getAuthError(authData) {
   const error = authData?.error || authData?.status;
-  if (["expired", "not_found", "device_limit"].includes(error)) return error;
+  if (["expired", "not_found", "device_replaced", "device_mismatch", "device_limit"].includes(error)) return error;
   return "unauthorized";
 }
 
 function getAuthStatusCode(error) {
-  if (error === "device_limit") return 403;
+  if (error === "device_replaced" || error === "device_mismatch" || error === "device_limit") return 403;
   return 401;
 }
 
@@ -87,9 +87,9 @@ function verifySignedToken(token, { phone, deviceId, purpose }) {
   return { ok: true, payload };
 }
 
-async function ensureAccess({ phone, deviceId, accessToken }) {
+async function ensureAccess({ phone, deviceId, accessToken, forceValidate = false }) {
   const tokenStatus = verifySignedToken(accessToken, { phone, deviceId, purpose: "access" });
-  if (tokenStatus.ok) {
+  if (tokenStatus.ok && !forceValidate) {
     return { ok: true, usedAccessToken: true };
   }
 
@@ -97,6 +97,10 @@ async function ensureAccess({ phone, deviceId, accessToken }) {
   if (!isAuthSuccess(authData)) {
     const error = getAuthError(authData);
     return { ok: false, error, statusCode: getAuthStatusCode(error) };
+  }
+
+  if (tokenStatus.ok) {
+    return { ok: true, usedAccessToken: true };
   }
 
   const access = createSignedToken({
@@ -213,7 +217,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "GET" && action === "getQuiz") {
-      const access = await ensureAccess({ phone, deviceId, accessToken });
+      const access = await ensureAccess({ phone, deviceId, accessToken, forceValidate: true });
       if (!access.ok) {
         return res.status(access.statusCode || 401).json({ error: access.error || "unauthorized" });
       }

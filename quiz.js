@@ -135,18 +135,42 @@ function buildQuizApiUrl(action, params = {}) {
 }
 
 function getQuizAccessErrorMessage(error) {
-  if (error === "expired") return "Abbonamento scaduto.";
+  if (error === "expired") return "Accesso scaduto. Contatta il supporto per rinnovare.";
   if (error === "not_found") return "Numero non autorizzato.";
-  if (error === "device_limit") return "Hai gi\u00e0 raggiunto il limite massimo di 2 dispositivi per questo numero. Non puoi usare pi\u00f9 di due dispositivi.";
+  if (error === "device_replaced") return "Questo dispositivo non è più autorizzato perché l’accesso è stato spostato su un altro dispositivo.";
+  if (error === "device_mismatch") return "Questo dispositivo non è più autorizzato.";
   if (error === "quiz_session_expired") return "Sessione quiz scaduta. Riapri il quiz.";
   return "Accesso non autorizzato.";
 }
 
 function isQuizAccessError(error) {
-  return ["expired", "not_found", "device_limit", "unauthorized", "quiz_session_expired"].includes(error);
+  return ["expired", "not_found", "device_replaced", "device_mismatch", "unauthorized", "quiz_session_expired"].includes(error);
 }
 
 let quizAccessErrorHandled = false;
+
+function isQuizRevokedSessionError(error) {
+  return ["expired", "not_found", "device_replaced", "device_mismatch"].includes(error);
+}
+
+function clearQuizSessionDataForLogout() {
+  try {
+    [
+      "loggedIn",
+      "phone",
+      "expiry",
+      "user_session",
+      "session",
+      "accessToken",
+      "accessTokenExpiresAt",
+      "quizSessionToken",
+      "quizSessionTokenExpiresAt",
+      "renewPopupLastShown"
+    ].forEach(key => localStorage.removeItem(key));
+  } catch (err) {
+    console.warn("[quiz] Session cleanup unavailable");
+  }
+}
 
 async function handleQuizAccessError(error) {
   if (quizAccessErrorHandled) return;
@@ -154,6 +178,7 @@ async function handleQuizAccessError(error) {
 
   try {
     hideLoading();
+    if (isQuizRevokedSessionError(error)) clearQuizSessionDataForLogout();
     await showMessage("Accesso", getQuizAccessErrorMessage(error));
   } finally {
     window.location.href = "index.html";

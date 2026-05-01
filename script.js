@@ -64,7 +64,7 @@ const KEYS = {
 const CLIENT_AUTH_RESET_VERSION = "2026-04-device-reset-1";
 const CLIENT_AUTH_RESET_KEY = "client_auth_reset_version";
 const ACCESS_TOKEN_REFRESH_SKEW_MS = 60 * 1000;
-const ACCESS_VALIDATION_INTERVAL_MS = 15 * 60 * 1000;
+const ACCESS_VALIDATION_INTERVAL_MS = 5 * 60 * 1000;
 let accessValidationTimer = null;
 
 function getClientAuthResetVersion() {
@@ -405,7 +405,7 @@ window.addEventListener("load", async () => {
 });
 
 function isRevokedSessionError(error) {
-  return ["expired", "not_found"].includes(error);
+  return ["expired", "not_found", "device_replaced", "device_mismatch"].includes(error);
 }
 
 function getCurrentAccessToken() {
@@ -596,8 +596,8 @@ function isValidPhoneNumber(input) {
 function getLoginErrorMessage(error) {
   if (error === "expired") return "Accesso scaduto. Contatta il supporto per rinnovare.";
   if (error === "not_found") return "Numero non autorizzato.";
-  if (error === "device_limit") return "Hai gi\u00e0 raggiunto il limite massimo di 2 dispositivi per questo numero. Non puoi usare pi\u00f9 di due dispositivi.";
-  if (error === "device_replaced" || error === "device_mismatch") return "Questo dispositivo non e piu autorizzato.";
+  if (error === "device_replaced") return "Questo dispositivo non è più autorizzato perché l’accesso è stato spostato su un altro dispositivo.";
+  if (error === "device_mismatch") return "Questo dispositivo non è più autorizzato.";
   if (error === "temporary_error" || error === "server_error") return "Servizio momentaneamente non disponibile.";
   return "Numero non valido o accesso non autorizzato.";
 }
@@ -642,9 +642,10 @@ function logout(showLogin = true, reason = "revoked") {
 
   if (showLogin) {
     let msg = "";
-    if (reason === "expired") msg = "Abbonamento scaduto";
+    if (reason === "expired") msg = "Accesso scaduto. Contatta il supporto per rinnovare.";
     else if (reason === "not_found") msg = "Numero non autorizzato";
-    else if (reason === "device_replaced" || reason === "device_mismatch") msg = "Questo dispositivo e stato disconnesso perche l'accesso e stato spostato su un altro dispositivo";
+    else if (reason === "device_replaced") msg = "Questo dispositivo non è più autorizzato perché l’accesso è stato spostato su un altro dispositivo.";
+    else if (reason === "device_mismatch") msg = "Questo dispositivo non è più autorizzato.";
     else if (reason === "revoked") msg = "Accesso revocato dall'amministratore";
     showLoginScreen(msg);
   }
@@ -1916,9 +1917,10 @@ function showMagicBookError(message) {
 }
 
 function getMagicBookAccessErrorMessage(error) {
-  if (error === "device_limit") {
-    return "Hai gi\u00e0 raggiunto il limite massimo di 2 dispositivi per questo numero. Non puoi usare pi\u00f9 di due dispositivi.";
-  }
+  if (error === "expired") return "Accesso scaduto. Contatta il supporto per rinnovare.";
+  if (error === "not_found") return "Numero non autorizzato.";
+  if (error === "device_replaced") return "Questo dispositivo non è più autorizzato perché l’accesso è stato spostato su un altro dispositivo.";
+  if (error === "device_mismatch") return "Questo dispositivo non è più autorizzato.";
   return "Accesso non disponibile. Riprova tra poco.";
 }
 
@@ -1996,7 +1998,7 @@ async function openMagicBookPages({ type, chapter = null }) {
   pages.innerHTML = "";
   setMagicBookLoading(pages, true);
 
-  const accessReady = await ensureAccessToken();
+  const accessReady = await ensureAccessToken({ force: true });
   if (!accessReady) {
     setMagicBookLoading(pages, false);
     showMagicBookError("Accesso non disponibile. Riprova tra poco.");
@@ -2020,11 +2022,6 @@ async function openMagicBookPages({ type, chapter = null }) {
         console.error("Image load error", err);
         if (isRevokedSessionError(err.code || err.message)) {
           logout(true, err.code || err.message);
-          return;
-        }
-        if ((err.code || err.message) === "device_limit") {
-          setMagicBookLoading(pages, false);
-          showMagicBookError(getMagicBookAccessErrorMessage("device_limit"));
           return;
         }
         if ((err.code || err.message) === "token_expired") {
