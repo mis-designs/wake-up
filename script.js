@@ -1081,6 +1081,29 @@ function maybeShowWhatsAppGroupPopup() {
   }, 360);
 }
 
+function openWhatsAppGroupLink() {
+  const groupCode = "LBL1G7nvz2B3SThJj4uRxD";
+  const normalLink = "https://chat.whatsapp.com/" + groupCode;
+  const isAndroid = /Android/i.test(navigator.userAgent);
+
+  if (isAndroid) {
+    const intentUrl =
+      "intent://chat.whatsapp.com/" +
+      groupCode +
+      "#Intent;scheme=https;package=com.whatsapp;end";
+
+    window.location.href = intentUrl;
+
+    setTimeout(() => {
+      window.open(normalLink, "_blank");
+    }, 1200);
+
+    return;
+  }
+
+  window.open(normalLink, "_blank");
+}
+
 function injectWhatsAppGroupPopupStyles() {
   if (document.getElementById("whatsappGroupPopupStyles")) return;
 
@@ -1129,23 +1152,23 @@ function injectWhatsAppGroupPopupStyles() {
     }
     .wgp-lang {
       position: absolute;
-      top: 17px;
-      right: 16px;
+      top: 14px;
+      right: 14px;
       display: inline-flex;
       gap: 2px;
-      padding: 3px;
+      padding: 2px;
       border-radius: 999px;
       background: #edfdf4;
       border: 1px solid #c7f5d8;
     }
     .wgp-lang button {
-      min-width: 34px;
-      height: 28px;
+      min-width: 30px;
+      height: 24px;
       border: 0;
       border-radius: 999px;
       background: transparent;
       color: #12833d;
-      font: 800 12px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font: 800 11px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       cursor: pointer;
     }
     .wgp-lang button.is-active {
@@ -1156,7 +1179,7 @@ function injectWhatsAppGroupPopupStyles() {
     .wgp-icon {
       width: 70px;
       height: 70px;
-      margin: 10px auto 16px;
+      margin: 42px auto 16px;
       border-radius: 22px;
       display: flex;
       align-items: center;
@@ -1224,7 +1247,9 @@ function injectWhatsAppGroupPopupStyles() {
       .wgp-content { padding: 22px 16px 18px; }
       .wgp-title { font-size: 20px; }
       .wgp-message { font-size: 14px; }
-      .wgp-lang { top: 15px; right: 12px; }
+      .wgp-lang { top: 12px; right: 12px; }
+      .wgp-lang button { min-width: 28px; height: 22px; font-size: 10px; }
+      .wgp-icon { margin-top: 38px; }
     }
   `;
   document.head.appendChild(style);
@@ -1317,7 +1342,7 @@ function showWhatsAppGroupPopup() {
 
   primary.addEventListener("click", () => {
     Storage.set(WHATSAPP_GROUP_CLICKED_KEY, "true");
-    window.open(WHATSAPP_GROUP_LINK, "_blank", "noopener");
+    openWhatsAppGroupLink();
     overlay.remove();
   });
 
