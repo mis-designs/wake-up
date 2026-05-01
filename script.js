@@ -53,14 +53,47 @@ const KEYS = {
   expiry: "expiry",
   accessToken: "accessToken",
   accessTokenExpiresAt: "accessTokenExpiresAt",
+  quizSessionToken: "quizSessionToken",
+  quizSessionTokenExpiresAt: "quizSessionTokenExpiresAt",
   session: "user_session",
   legacySession: "session",
   renewPopupLastShown: "renewPopupLastShown"
 };
 
+const CLIENT_AUTH_RESET_VERSION = "2026-04-device-reset-1";
+const CLIENT_AUTH_RESET_KEY = "client_auth_reset_version";
 const ACCESS_TOKEN_REFRESH_SKEW_MS = 60 * 1000;
 const ACCESS_VALIDATION_INTERVAL_MS = 15 * 60 * 1000;
 let accessValidationTimer = null;
+
+function getClientAuthResetVersion() {
+  try {
+    return localStorage.getItem(CLIENT_AUTH_RESET_KEY);
+  } catch {
+    return Storage.get(CLIENT_AUTH_RESET_KEY);
+  }
+}
+
+function setClientAuthResetVersion(version) {
+  try {
+    localStorage.setItem(CLIENT_AUTH_RESET_KEY, version);
+  } catch {
+    // Storage fallback keeps the app usable in restricted/private contexts.
+  }
+  Storage.set(CLIENT_AUTH_RESET_KEY, version);
+}
+
+async function forceGlobalAuthResetIfNeeded() {
+  const current = getClientAuthResetVersion();
+
+  if (current === CLIENT_AUTH_RESET_VERSION) return false;
+
+  await clearSessionDataForGlobalReset();
+
+  setClientAuthResetVersion(CLIENT_AUTH_RESET_VERSION);
+
+  return true;
+}
 
 function readStoredSession() {
   const rawSessionValues = [Storage.get(KEYS.session), Storage.get(KEYS.legacySession)].filter(Boolean);
@@ -223,6 +256,73 @@ async function setIndexedDbDeviceId(id) {
   }
 }
 
+async function clearIndexedDbDeviceId() {
+  let db = null;
+  try {
+    db = await openDeviceDb();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(DEVICE_STORE_NAME, "readwrite");
+      tx.objectStore(DEVICE_STORE_NAME).delete(KEYS.deviceId);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error("indexeddb_delete_error"));
+    });
+  } catch {
+    // IndexedDB is a best-effort persistence layer.
+  } finally {
+    db?.close();
+  }
+}
+
+function clearDeviceCookie() {
+  if (typeof document === "undefined") return;
+  document.cookie = `${encodeURIComponent(KEYS.deviceId)}=; Max-Age=0; Path=/; SameSite=Lax`;
+  document.cookie = `${encodeURIComponent(KEYS.deviceId)}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; SameSite=Lax`;
+}
+
+async function clearSessionDataForGlobalReset() {
+  // This forced admin reset is the only client-side cleanup allowed to delete deviceId.
+  if (accessValidationTimer) {
+    clearInterval(accessValidationTimer);
+    accessValidationTimer = null;
+  }
+
+  [
+    KEYS.deviceId,
+    KEYS.loggedIn,
+    KEYS.phone,
+    KEYS.expiry,
+    KEYS.session,
+    KEYS.legacySession,
+    KEYS.accessToken,
+    KEYS.accessTokenExpiresAt,
+    KEYS.quizSessionToken,
+    KEYS.quizSessionTokenExpiresAt,
+    KEYS.renewPopupLastShown,
+  ].forEach(key => Storage.remove(key));
+
+  try {
+    [
+      "deviceId",
+      "loggedIn",
+      "phone",
+      "expiry",
+      "user_session",
+      "session",
+      "accessToken",
+      "accessTokenExpiresAt",
+      "quizSessionToken",
+      "quizSessionTokenExpiresAt",
+      "renewPopupLastShown",
+    ].forEach(key => localStorage.removeItem(key));
+  } catch (err) {
+    console.warn("Pulizia reset globale localStorage non disponibile");
+  }
+
+  cachedDeviceId = null;
+  clearDeviceCookie();
+  await clearIndexedDbDeviceId();
+}
+
 function syncDeviceId(id) {
   if (!isValidStoredDeviceId(id)) return;
   cachedDeviceId = id;
@@ -262,8 +362,15 @@ function getDeviceId() {
  * AUTO LOGIN
  ***********************/
 window.addEventListener("load", async () => {
+  const wasReset = await forceGlobalAuthResetIfNeeded();
+
   setupLoginUI();
   setupProfileUI();
+
+  if (wasReset) {
+    showLoginScreen("Effettua nuovamente il login.");
+    return;
+  }
 
   const stableDeviceId = await getRobustDeviceId();
   const session = readStoredSession();

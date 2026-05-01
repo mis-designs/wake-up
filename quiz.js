@@ -1,6 +1,22 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // QUIZ API CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
+const CLIENT_AUTH_RESET_VERSION = "2026-04-device-reset-1";
+const CLIENT_AUTH_RESET_KEY = "client_auth_reset_version";
+
+function hasCurrentClientAuthResetVersion() {
+  try {
+    return localStorage.getItem(CLIENT_AUTH_RESET_KEY) === CLIENT_AUTH_RESET_VERSION;
+  } catch {
+    return false;
+  }
+}
+
+if (!hasCurrentClientAuthResetVersion()) {
+  window.location.href = "index.html";
+  throw new Error("client_auth_reset_required");
+}
+
 const QUIZ_API = "/api/quiz";
 const BASE_IMG_URL = "https://pub-21131aa867534601af79c34beb746fb7.r2.dev/Figure/";
 
