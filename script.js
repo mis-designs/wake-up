@@ -4,6 +4,7 @@
 // numero whatsapp per rinnovo
 const RENEW_WHATSAPP_NUMBER = "393663584525";
 const RENEW_MESSAGE = "Ciao, vorrei rinnovare il mio accesso.";
+const WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/LBL1G7nvz2B3SThJj4uRxD";
 
 /***********************
  * STORAGE ROBUSTO
@@ -574,6 +575,7 @@ async function login() {
     showHome();
     startAccessValidationTimer();
     checkRenewReminder(true);
+    maybeShowWhatsAppGroupPopup();
   } catch (error) {
     console.error("Login validation error", error);
     if (err) err.textContent = "Verifica non riuscita. Riprova tra poco.";
@@ -1024,6 +1026,332 @@ function showRenewPopup(daysLeft) {
 }
 
 /***********************
+ * WHATSAPP GROUP POPUP
+ ***********************/
+const WHATSAPP_GROUP_CLICKED_KEY = "whatsapp_group_joined_or_clicked";
+const WHATSAPP_GROUP_DISMISSED_AT_KEY = "whatsapp_group_popup_dismissed_at";
+const WHATSAPP_GROUP_DISMISS_MS = 7 * 24 * 60 * 60 * 1000;
+
+const WHATSAPP_GROUP_POPUP_TEXT = {
+  bn: {
+    title: "MagicBook WhatsApp গ্রুপে যোগ দিন",
+    message: "সাপোর্ট, আপডেট এবং অ্যাপ ব্যবহারের সাহায্যের জন্য আমাদের অফিসিয়াল WhatsApp গ্রুপে যোগ দিন।",
+    primary: "গ্রুপে যোগ দিন",
+    secondary: "এখন না",
+    note: "আপনি চাইলে পরে আবার যোগ দিতে পারবেন।"
+  },
+  it: {
+    title: "Unisciti al gruppo WhatsApp MagicBook",
+    message: "Entra nel gruppo ufficiale per supporto, aggiornamenti e aiuto sull’utilizzo dell’app.",
+    primary: "Unisciti al gruppo",
+    secondary: "Non ora",
+    note: "Puoi unirti anche più tardi."
+  }
+};
+
+function hasVisibleBlockingPopup() {
+  const quizModeOverlay = document.getElementById("quizModeOverlay");
+  const menuOverlay = document.getElementById("menuOverlay");
+
+  return Boolean(
+    document.getElementById("renewPopupOverlay") ||
+    document.getElementById("whatsappGroupPopupOverlay") ||
+    quizModeOverlay?.classList.contains("qms-visible") ||
+    menuOverlay?.classList.contains("overlay-visible")
+  );
+}
+
+function getWhatsAppGroupDismissedAt() {
+  const value = Number(Storage.get(WHATSAPP_GROUP_DISMISSED_AT_KEY) || 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function isWhatsAppGroupPopupAllowed() {
+  if (currentScreen !== "home") return false;
+  if (!getCurrentSessionPhone()) return false;
+  if (Storage.get(WHATSAPP_GROUP_CLICKED_KEY) === "true") return false;
+  if (Date.now() - getWhatsAppGroupDismissedAt() < WHATSAPP_GROUP_DISMISS_MS) return false;
+  if (hasVisibleBlockingPopup()) return false;
+  return true;
+}
+
+function maybeShowWhatsAppGroupPopup() {
+  setTimeout(() => {
+    if (isWhatsAppGroupPopupAllowed()) showWhatsAppGroupPopup();
+  }, 360);
+}
+
+function injectWhatsAppGroupPopupStyles() {
+  if (document.getElementById("whatsappGroupPopupStyles")) return;
+
+  const style = document.createElement("style");
+  style.id = "whatsappGroupPopupStyles";
+  style.textContent = `
+    @keyframes whatsappGroupFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes whatsappGroupSlideUp {
+      from { opacity: 0; transform: translateY(24px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    #whatsappGroupPopupOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 999998;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(6, 18, 20, 0.68);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      animation: whatsappGroupFadeIn 0.22s ease-out both;
+    }
+    #whatsappGroupPopupCard {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      overflow: hidden;
+      border-radius: 26px;
+      background: linear-gradient(180deg, #ffffff 0%, #f7fffb 100%);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.28);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      animation: whatsappGroupSlideUp 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .wgp-accent {
+      height: 7px;
+      background: linear-gradient(90deg, #16a34a 0%, #22c55e 48%, #86efac 100%);
+    }
+    .wgp-content {
+      padding: 24px 20px 20px;
+      text-align: center;
+    }
+    .wgp-lang {
+      position: absolute;
+      top: 17px;
+      right: 16px;
+      display: inline-flex;
+      gap: 2px;
+      padding: 3px;
+      border-radius: 999px;
+      background: #edfdf4;
+      border: 1px solid #c7f5d8;
+    }
+    .wgp-lang button {
+      min-width: 34px;
+      height: 28px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: #12833d;
+      font: 800 12px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      cursor: pointer;
+    }
+    .wgp-lang button.is-active {
+      background: #16a34a;
+      color: #ffffff;
+      box-shadow: 0 6px 14px rgba(22, 163, 74, 0.25);
+    }
+    .wgp-icon {
+      width: 70px;
+      height: 70px;
+      margin: 10px auto 16px;
+      border-radius: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 30% 20%, #dcfce7 0%, #22c55e 62%, #128c45 100%);
+      color: #ffffff;
+      font-size: 36px;
+      box-shadow: 0 18px 32px rgba(22, 163, 74, 0.28);
+    }
+    .wgp-icon img {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+    }
+    .wgp-title {
+      margin: 0 6px 10px;
+      color: #10251a;
+      font-size: 23px;
+      font-weight: 850;
+      line-height: 1.22;
+    }
+    .wgp-message {
+      margin: 0 auto 18px;
+      max-width: 340px;
+      color: #53615a;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+    .wgp-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .wgp-primary,
+    .wgp-secondary {
+      min-height: 48px;
+      border-radius: 15px;
+      border: 0;
+      font: 800 15px/1.2 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      cursor: pointer;
+      transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .wgp-primary {
+      color: #ffffff;
+      background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+      box-shadow: 0 13px 28px rgba(22, 163, 74, 0.26);
+    }
+    .wgp-secondary {
+      color: #29543a;
+      background: #eefaf3;
+      border: 1px solid #d6f2df;
+    }
+    .wgp-primary:active,
+    .wgp-secondary:active {
+      transform: scale(0.985);
+    }
+    .wgp-note {
+      margin: 13px 0 0;
+      color: #789083;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    @media (max-width: 380px) {
+      .wgp-content { padding: 22px 16px 18px; }
+      .wgp-title { font-size: 20px; }
+      .wgp-message { font-size: 14px; }
+      .wgp-lang { top: 15px; right: 12px; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function showWhatsAppGroupPopup() {
+  if (!isWhatsAppGroupPopupAllowed()) return;
+
+  injectWhatsAppGroupPopupStyles();
+
+  let lang = "bn";
+  const overlay = document.createElement("div");
+  overlay.id = "whatsappGroupPopupOverlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+
+  const card = document.createElement("div");
+  card.id = "whatsappGroupPopupCard";
+
+  const accent = document.createElement("div");
+  accent.className = "wgp-accent";
+
+  const content = document.createElement("div");
+  content.className = "wgp-content";
+
+  const langToggle = document.createElement("div");
+  langToggle.className = "wgp-lang";
+
+  const bnBtn = document.createElement("button");
+  bnBtn.type = "button";
+  bnBtn.textContent = "BN";
+
+  const itBtn = document.createElement("button");
+  itBtn.type = "button";
+  itBtn.textContent = "IT";
+
+  const icon = document.createElement("div");
+  icon.className = "wgp-icon";
+  icon.setAttribute("aria-hidden", "true");
+  const iconImg = document.createElement("img");
+  iconImg.src = "whatsapp.png";
+  iconImg.alt = "";
+  iconImg.onerror = () => {
+    icon.textContent = "☎";
+  };
+  icon.appendChild(iconImg);
+
+  const title = document.createElement("h2");
+  title.className = "wgp-title";
+
+  const message = document.createElement("p");
+  message.className = "wgp-message";
+
+  const actions = document.createElement("div");
+  actions.className = "wgp-actions";
+
+  const primary = document.createElement("button");
+  primary.type = "button";
+  primary.className = "wgp-primary";
+
+  const secondary = document.createElement("button");
+  secondary.type = "button";
+  secondary.className = "wgp-secondary";
+
+  const note = document.createElement("p");
+  note.className = "wgp-note";
+
+  function renderLanguage() {
+    const text = WHATSAPP_GROUP_POPUP_TEXT[lang];
+    title.textContent = text.title;
+    message.textContent = text.message;
+    primary.textContent = text.primary;
+    secondary.textContent = text.secondary;
+    note.textContent = text.note;
+    bnBtn.classList.toggle("is-active", lang === "bn");
+    itBtn.classList.toggle("is-active", lang === "it");
+    bnBtn.setAttribute("aria-pressed", lang === "bn" ? "true" : "false");
+    itBtn.setAttribute("aria-pressed", lang === "it" ? "true" : "false");
+  }
+
+  bnBtn.addEventListener("click", () => {
+    lang = "bn";
+    renderLanguage();
+  });
+
+  itBtn.addEventListener("click", () => {
+    lang = "it";
+    renderLanguage();
+  });
+
+  primary.addEventListener("click", () => {
+    Storage.set(WHATSAPP_GROUP_CLICKED_KEY, "true");
+    window.open(WHATSAPP_GROUP_LINK, "_blank", "noopener");
+    overlay.remove();
+  });
+
+  secondary.addEventListener("click", () => {
+    Storage.set(WHATSAPP_GROUP_DISMISSED_AT_KEY, String(Date.now()));
+    overlay.remove();
+  });
+
+  overlay.addEventListener("click", event => {
+    if (event.target === overlay) {
+      Storage.set(WHATSAPP_GROUP_DISMISSED_AT_KEY, String(Date.now()));
+      overlay.remove();
+    }
+  });
+
+  langToggle.appendChild(bnBtn);
+  langToggle.appendChild(itBtn);
+  actions.appendChild(primary);
+  actions.appendChild(secondary);
+  content.appendChild(langToggle);
+  content.appendChild(icon);
+  content.appendChild(title);
+  content.appendChild(message);
+  content.appendChild(actions);
+  content.appendChild(note);
+  card.appendChild(accent);
+  card.appendChild(content);
+  overlay.appendChild(card);
+
+  renderLanguage();
+  document.body.appendChild(overlay);
+}
+
+/***********************
  * EVENTI EXTRA MOBILE
  ***********************/
 // Re-validate only when the user genuinely returns to the app.
@@ -1051,6 +1379,7 @@ function showHome() {
   updateProfileUI(true);
   setProfileIconVisible(true);
   setLoggedInChrome();
+  maybeShowWhatsAppGroupPopup();
 }
 
 function showChapters() {
