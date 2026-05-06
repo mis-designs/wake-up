@@ -297,6 +297,7 @@ let current = 0;
 let time = 20 * 60;
 let isFinishing = false;
 let lastQuizSet = null;
+let isAdmin = false;
 let modalResolver = null;
 let isTtsPlaying = false;
 let isBengaliPlaying = false;
@@ -651,6 +652,7 @@ async function loadQuiz() {
     const params   = new URLSearchParams(window.location.search);
     if (RESULT_PREVIEW_MODE) {
       const isPassedPreview = RESULT_PREVIEW_MODE.toLowerCase() !== "fail";
+      isAdmin = params.get("previewAdmin") === "1";
       const previewTotal = isPassedPreview ? 8 : 18;
       const previewCorrect = isPassedPreview ? 8 : 16;
       quiz = Array.from({ length: previewTotal }, (_, index) => ({
@@ -687,6 +689,7 @@ async function loadQuiz() {
       saveQuizAccessToken(data.accessToken, data.accessTokenExpiresAt);
     }
 
+    isAdmin = data.isAdmin === true;
     quizSessionToken = data.quizSessionToken || "";
     quizSessionTokenExpiresAt = data.quizSessionTokenExpiresAt || 0;
     quiz = data.quiz;
@@ -756,6 +759,12 @@ function resetModalState() {
   modalRifai.style.display = "none";
   const oldBanner = document.getElementById("_result_stats_banner");
   if (oldBanner) oldBanner.remove();
+}
+
+function stopResultVideo() {
+  if (!modalResultVideo) return;
+  modalResultVideo.pause();
+  modalResultVideo.currentTime = 0;
 }
 
 function setModalVideo(videoSrc, fallbackIconSrc, fallbackText) {
@@ -927,6 +936,7 @@ function openModal({
 }
 
 function closeModal(result) {
+  stopResultVideo();
   modal.classList.add("hidden");
   modal.setAttribute("aria-hidden", "true");
   document.body.classList.remove("modal-open");
@@ -1208,6 +1218,25 @@ async function exitQuiz() {
 }
 
 // MOSTRA DOMANDA
+function updateAdminCorrectDots(question) {
+  const wrappers = document.querySelectorAll(".answer-wrapper[data-answer-value]");
+  const correctAnswer = getQuestionCorrectAnswer(question);
+
+  wrappers.forEach(wrapper => {
+    const slot = wrapper.querySelector(".admin-correct-dot-slot");
+    if (!slot) return;
+    slot.innerHTML = "";
+
+    const optionValue = normalizeAnswerValue(wrapper.dataset.answerValue);
+    if (!isAdmin || correctAnswer === null || optionValue !== correctAnswer) return;
+
+    const dot = document.createElement("span");
+    dot.className = "admin-correct-dot";
+    dot.setAttribute("aria-hidden", "true");
+    slot.appendChild(dot);
+  });
+}
+
 function showQuestion() {
   const q = quiz[current];
   const veroBtn = document.getElementById("vero");
@@ -1229,6 +1258,7 @@ function showQuestion() {
   }
 
   updateFinishButtonState();
+  updateAdminCorrectDots(q);
   prefetchBengali(current + 1);
   prefetchBengali(current - 1);
   prefetchItalian(current + 1);

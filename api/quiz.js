@@ -5,6 +5,10 @@ const ACCESS_GAS_SECRET = process.env.GAS_SECRET;
 const QUIZ_GAS_URL = process.env.QUIZ_GAS_URL;
 const QUIZ_PROXY_SECRET = process.env.QUIZ_PROXY_SECRET;
 const SESSION_SECRET = process.env.SESSION_SECRET;
+const ADMIN_PHONE_NUMBERS = (process.env.ADMIN_PHONE_NUMBERS || "")
+  .split(",")
+  .map(normalizePhoneNumber)
+  .filter(Boolean);
 
 const GET_ACTIONS = new Set(["getQuiz", "getItalianAudio", "getBengaliAudio", "getTTS"]);
 const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
@@ -60,6 +64,22 @@ function normalizeQuizResult(result, totalQuestions) {
     scorePercentage: calculated.scorePercentage,
     passed: calculated.passed
   };
+}
+
+function normalizePhoneNumber(phone) {
+  if (!phone) return "";
+
+  let normalized = String(phone).replace(/\D/g, "");
+  if (normalized.startsWith("39") && normalized.length === 12) {
+    normalized = normalized.slice(2);
+  }
+
+  return normalized;
+}
+
+function isAdminPhone(phone) {
+  const normalizedPhone = normalizePhoneNumber(phone);
+  return normalizedPhone !== "" && ADMIN_PHONE_NUMBERS.includes(normalizedPhone);
 }
 
 function isConfigured() {
@@ -284,6 +304,7 @@ export default async function handler(req, res) {
 
       return res.status(200).json({
         quiz: Array.isArray(data) ? data : [],
+        isAdmin: isAdminPhone(phone),
         quizSessionToken: quizSession.token,
         quizSessionTokenExpiresAt: quizSession.expiresAt,
         ...(access.accessToken ? {

@@ -8,7 +8,7 @@
     <title>Quiz Patente</title>
     <link rel="icon" type="image/png" href="https://pub-21131aa867534601af79c34beb746fb7.r2.dev/mg_logo.png">
     <link rel="apple-touch-icon" href="https://pub-21131aa867534601af79c34beb746fb7.r2.dev/mg_logo.png">
-    <link rel="stylesheet" href="mystyle.css?v=13">
+    <link rel="stylesheet" href="mystyle.css?v=15">
 </head>
 
 <body>
@@ -48,14 +48,20 @@
             <button id="prev-btn" onclick="prev()" aria-label="Indietro">
                 <img src="icons/back.png" alt="Indietro">
             </button>
-            <button id="vero" onclick="answer(1)" aria-label="Vero">
-                <img src="icons/true.png" alt="Vero">
-                <span class="answer-label">Vero</span>
-            </button>
-            <button id="falso" onclick="answer(0)" aria-label="Falso">
-                <img src="icons/false.png" alt="Falso">
-                <span class="answer-label">Falso</span>
-            </button>
+            <div class="answer-wrapper" data-answer-value="1">
+                <button id="vero" onclick="answer(1)" aria-label="Vero">
+                    <img src="icons/true.png" alt="Vero">
+                    <span class="answer-label">Vero</span>
+                </button>
+                <div class="admin-correct-dot-slot"></div>
+            </div>
+            <div class="answer-wrapper" data-answer-value="0">
+                <button id="falso" onclick="answer(0)" aria-label="Falso">
+                    <img src="icons/false.png" alt="Falso">
+                    <span class="answer-label">Falso</span>
+                </button>
+                <div class="admin-correct-dot-slot"></div>
+            </div>
             <button id="next-btn" class="nav-primary" onclick="next()" aria-label="Avanti">
                 <span id="next-icon-wrap" class="nav-icon-wrap">
                     <img id="next-icon" src="icons/next.png" alt="Avanti">
@@ -122,7 +128,7 @@
 
     <div id="audio-toast" class="audio-toast" aria-live="assertive" aria-atomic="true"></div>
 
-    <script src="quiz.js?v=13"></script>
+    <script src="quiz.js?v=15"></script>
 </body>
 
 </html>
