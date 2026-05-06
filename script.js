@@ -5,6 +5,7 @@
 const RENEW_WHATSAPP_NUMBER = "393663584525";
 const RENEW_MESSAGE = "Ciao, vorrei rinnovare il mio accesso.";
 const WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/LBL1G7nvz2B3SThJj4uRxD";
+const AUTH_API = "/api/auth";
 
 /***********************
  * STORAGE ROBUSTO
@@ -66,6 +67,7 @@ const CLIENT_AUTH_RESET_KEY = "client_auth_reset_version";
 const ACCESS_TOKEN_REFRESH_SKEW_MS = 60 * 1000;
 const ACCESS_VALIDATION_INTERVAL_MS = 5 * 60 * 1000;
 let accessValidationTimer = null;
+let pendingOtpLogin = null;
 
 function getClientAuthResetVersion() {
   try {
@@ -527,6 +529,47 @@ async function validateLoginAccess(phone, deviceId, options = {}) {
   return data;
 }
 
+async function requestAuthAction(payload) {
+  const response = await fetch(AUTH_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch (err) {
+    console.warn("Risposta autenticazione non leggibile", err);
+  }
+
+  if (response.status !== 200) {
+    return data || { success: false, error: "server_error", statusCode: response.status };
+  }
+
+  return data || { success: false, error: "server_error" };
+}
+
+function completeLogin(phone, deviceId, data) {
+  persistSession(phone, {
+    deviceId,
+    expiry: data.expiry,
+    accessToken: data.accessToken,
+    accessTokenExpiresAt: data.accessTokenExpiresAt,
+    lastLogin: Date.now(),
+    lastValid: Date.now()
+  });
+
+  const err = document.getElementById("err");
+  if (err) err.textContent = "";
+  pendingOtpLogin = null;
+  hideOtpUI();
+  showHome();
+  startAccessValidationTimer();
+  checkRenewReminder(true);
+  maybeShowWhatsAppGroupPopup();
+}
+
 /***********************
  * LOGIN
  ***********************/
@@ -555,27 +598,27 @@ async function login() {
   if (err) err.textContent = "Verifica in corso...";
 
   try {
-    const data = await validateLoginAccess(phone, deviceId, { registerDevice: true });
+    const data = await requestAuthAction({
+      action: "login",
+      phone,
+      deviceId
+    });
 
     if (!data?.success) {
+      if ((data?.error || data?.status) === "otp_required") {
+        pendingOtpLogin = { phone, deviceId };
+        showOtpUI();
+        if (err) {
+          err.textContent = "Abbiamo inviato un codice OTP al tuo numero. Inserisci il codice per autorizzare questo dispositivo.";
+        }
+        return;
+      }
+
       if (err) err.textContent = getLoginErrorMessage(data?.error || data?.status);
       return;
     }
 
-    persistSession(phone, {
-      deviceId,
-      expiry: data.expiry,
-      accessToken: data.accessToken,
-      accessTokenExpiresAt: data.accessTokenExpiresAt,
-      lastLogin: Date.now(),
-      lastValid: Date.now()
-    });
-
-    if (err) err.textContent = "";
-    showHome();
-    startAccessValidationTimer();
-    checkRenewReminder(true);
-    maybeShowWhatsAppGroupPopup();
+    completeLogin(phone, deviceId, data);
   } catch (error) {
     console.error("Login validation error", error);
     if (err) err.textContent = "Verifica non riuscita. Riprova tra poco.";
@@ -588,18 +631,174 @@ async function login() {
   }
 }
 
+function ensureOtpUI() {
+  if (document.getElementById("otpForm")) return;
+
+  const loginCard = document.getElementById("login");
+  const loginForm = loginCard?.querySelector(".login-form");
+  if (!loginCard || !loginForm) return;
+
+  const otpForm = document.createElement("form");
+  otpForm.id = "otpForm";
+  otpForm.className = "otp-form hidden";
+  otpForm.setAttribute("aria-describedby", "err");
+  otpForm.addEventListener("submit", event => {
+    event.preventDefault();
+    verifyOtp();
+  });
+
+  const otpInput = document.createElement("input");
+  otpInput.id = "otpCode";
+  otpInput.type = "text";
+  otpInput.inputMode = "numeric";
+  otpInput.autocomplete = "one-time-code";
+  otpInput.placeholder = "Codice OTP";
+  otpInput.maxLength = 10;
+  otpInput.setAttribute("aria-label", "Codice OTP");
+
+  const actions = document.createElement("div");
+  actions.className = "otp-actions";
+
+  const verifyButton = document.createElement("button");
+  verifyButton.id = "otpVerifyButton";
+  verifyButton.className = "login-submit otp-submit";
+  verifyButton.type = "submit";
+  verifyButton.textContent = "Verifica";
+  verifyButton.dataset.defaultText = "Verifica";
+
+  const cancelButton = document.createElement("button");
+  cancelButton.id = "otpCancelButton";
+  cancelButton.className = "otp-cancel";
+  cancelButton.type = "button";
+  cancelButton.textContent = "Indietro";
+  cancelButton.addEventListener("click", cancelOtpLogin);
+
+  otpInput.addEventListener("input", () => {
+    const err = document.getElementById("err");
+    if (err) err.textContent = "";
+  });
+
+  actions.appendChild(verifyButton);
+  actions.appendChild(cancelButton);
+  otpForm.appendChild(otpInput);
+  otpForm.appendChild(actions);
+  loginForm.insertAdjacentElement("afterend", otpForm);
+}
+
+function showOtpUI() {
+  ensureOtpUI();
+  const loginForm = document.querySelector("#login .login-form");
+  const otpForm = document.getElementById("otpForm");
+  const otpInput = document.getElementById("otpCode");
+
+  loginForm?.classList.add("hidden");
+  otpForm?.classList.remove("hidden");
+  setOtpLoading(false);
+  if (otpInput) {
+    otpInput.value = "";
+    otpInput.focus();
+  }
+}
+
+function hideOtpUI() {
+  const loginForm = document.querySelector("#login .login-form");
+  const otpForm = document.getElementById("otpForm");
+  const otpInput = document.getElementById("otpCode");
+
+  loginForm?.classList.remove("hidden");
+  otpForm?.classList.add("hidden");
+  if (otpInput) otpInput.value = "";
+  setOtpLoading(false);
+}
+
+function setOtpLoading(isLoading) {
+  const otpInput = document.getElementById("otpCode");
+  const verifyButton = document.getElementById("otpVerifyButton");
+  const cancelButton = document.getElementById("otpCancelButton");
+
+  if (otpInput) otpInput.disabled = isLoading;
+  if (cancelButton) cancelButton.disabled = isLoading;
+  if (verifyButton) {
+    verifyButton.disabled = isLoading;
+    verifyButton.classList.toggle("is-loading", isLoading);
+    verifyButton.textContent = isLoading ? "Verifica..." : (verifyButton.dataset.defaultText || "Verifica");
+  }
+}
+
+function cancelOtpLogin() {
+  pendingOtpLogin = null;
+  hideOtpUI();
+
+  const err = document.getElementById("err");
+  if (err) err.textContent = "";
+
+  const phoneInput = document.getElementById("user");
+  phoneInput?.focus();
+  updateLoginButtonState();
+}
+
+async function verifyOtp() {
+  const otpInput = document.getElementById("otpCode");
+  const err = document.getElementById("err");
+  const code = String(otpInput?.value || "").trim();
+
+  if (!pendingOtpLogin) {
+    hideOtpUI();
+    if (err) err.textContent = "Verifica non riuscita. Riprova tra poco.";
+    return;
+  }
+
+  if (!code) {
+    if (err) err.textContent = "Inserisci il codice OTP.";
+    otpInput?.focus();
+    return;
+  }
+
+  setOtpLoading(true);
+  if (err) err.textContent = "Verifica codice in corso...";
+
+  try {
+    const data = await requestAuthAction({
+      action: "verifyOtp",
+      phone: pendingOtpLogin.phone,
+      deviceId: pendingOtpLogin.deviceId,
+      code
+    });
+
+    if (!data?.success) {
+      if (err) err.textContent = getOtpErrorMessage(data?.error || data?.status);
+      return;
+    }
+
+    completeLogin(pendingOtpLogin.phone, pendingOtpLogin.deviceId, data);
+  } catch (error) {
+    console.error("OTP verification error", error);
+    if (err) err.textContent = "Verifica non riuscita. Riprova tra poco.";
+  } finally {
+    setOtpLoading(false);
+  }
+}
+
 function isValidPhoneNumber(input) {
   const phone = normalizePhone(input);
   return phone.length >= 10 && phone.length <= 15;
 }
 
 function getLoginErrorMessage(error) {
+  if (error === "otp_required") return "Abbiamo inviato un codice OTP al tuo numero. Inserisci il codice per autorizzare questo dispositivo.";
   if (error === "expired") return "Accesso scaduto. Contatta il supporto per rinnovare.";
   if (error === "not_found") return "Numero non autorizzato.";
   if (error === "device_replaced") return "Questo dispositivo non è più autorizzato perché l’accesso è stato spostato su un altro dispositivo.";
   if (error === "device_mismatch") return "Questo dispositivo non è più autorizzato.";
-  if (error === "temporary_error" || error === "server_error") return "Servizio momentaneamente non disponibile.";
+  if (error === "temporary_error" || error === "server_error" || error === "otp_send_failed") return "Servizio momentaneamente non disponibile.";
   return "Numero non valido o accesso non autorizzato.";
+}
+
+function getOtpErrorMessage(error) {
+  if (error === "invalid_otp") return "Codice OTP non valido. Riprova.";
+  if (error === "expired") return "Accesso scaduto. Contatta il supporto per rinnovare.";
+  if (error === "not_found") return "Numero non autorizzato.";
+  return "Verifica non riuscita. Riprova tra poco.";
 }
 
 function updateLoginButtonState() {
@@ -612,6 +811,8 @@ function updateLoginButtonState() {
 }
 
 function setupLoginUI() {
+  ensureOtpUI();
+
   const phoneInput = document.getElementById("user");
   const loginButton = document.querySelector("#login .login-submit");
   const err = document.getElementById("err");
@@ -621,6 +822,10 @@ function setupLoginUI() {
   }
 
   phoneInput?.addEventListener("input", () => {
+    if (pendingOtpLogin) {
+      pendingOtpLogin = null;
+      hideOtpUI();
+    }
     if (err) err.textContent = "";
     updateLoginButtonState();
   });
@@ -682,6 +887,8 @@ function clearSessionData() {
 
 function showLoginScreen(message = "") {
   hideAll();
+  pendingOtpLogin = null;
+  hideOtpUI();
   document.getElementById("login")?.classList.remove("hidden");
   const err = document.getElementById("err");
   if (err) err.textContent = message;
