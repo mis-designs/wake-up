@@ -79,16 +79,20 @@ function getPhoneLast4(phone) {
   return String(phone || "").slice(-4) || "unknown";
 }
 
-function getServiceSidLast6() {
-  return String(TWILIO_VERIFY_SERVICE_SID || "").slice(-6) || "unknown";
-}
-
 function formatPhoneForTwilio(phone) {
   const digits = String(phone || "").replace(/\D+/g, "");
   if (!digits) return "";
   if (digits.startsWith("00")) return "+" + digits.slice(2);
   if (digits.startsWith("39")) return "+" + digits;
   return "+39" + digits;
+}
+
+function logFormattedTwilioPhone(formattedPhone) {
+  console.log("[twilio] formatted phone", {
+    phoneLast4: formattedPhone.slice(-4),
+    hasPlus: formattedPhone.startsWith("+"),
+    length: formattedPhone.length
+  });
 }
 
 function logAuthEvent({ action, phone, event, twilioStatus, twilioErrorCode }) {
@@ -134,11 +138,7 @@ async function startTwilioVerification(phone) {
   params.append("To", to);
   params.append("Channel", "sms");
 
-  console.log("[auth/twilio] start verification", {
-    phoneLast4: getPhoneLast4(phone),
-    to,
-    serviceSidLast6: getServiceSidLast6()
-  });
+  logFormattedTwilioPhone(to);
 
   const response = await fetch(
     `https://verify.twilio.com/v2/Services/${encodeURIComponent(TWILIO_VERIFY_SERVICE_SID)}/Verifications`,
@@ -152,27 +152,31 @@ async function startTwilioVerification(phone) {
     }
   );
 
-  const data = await readJsonResponse(response);
-  console.log("[auth/twilio] start result", {
+  const data = await readJsonResponse(response) || {};
+  console.log("[twilio] start verification result", {
+    httpStatus: response.status,
     ok: response.ok,
-    status: response.status,
-    code: data?.code || null,
-    verifyStatus: data?.status || null
+    twilioStatus: data.status || null,
+    twilioCode: data.code || null,
+    twilioMessage: data.message || null
   });
 
   return {
     ok: response.ok,
     httpStatus: response.status,
-    verifyStatus: data?.status || null,
-    errorCode: data?.code || data?.error_code || data?.errorCode || null,
-    message: data?.message || null
+    verifyStatus: data.status || null,
+    errorCode: data.code || data.error_code || data.errorCode || null,
+    message: data.message || null
   };
 }
 
 async function checkTwilioVerification(phone, code) {
+  const to = formatPhoneForTwilio(phone);
   const params = new URLSearchParams();
-  params.append("To", formatPhoneForTwilio(phone));
+  params.append("To", to);
   params.append("Code", code);
+
+  logFormattedTwilioPhone(to);
 
   const response = await fetch(
     `https://verify.twilio.com/v2/Services/${encodeURIComponent(TWILIO_VERIFY_SERVICE_SID)}/VerificationCheck`,
@@ -186,17 +190,18 @@ async function checkTwilioVerification(phone, code) {
     }
   );
 
-  const data = await readJsonResponse(response);
-  console.log("[auth/twilio] check result", {
-    status: data?.status || null,
-    code: data?.code || null
+  const data = await readJsonResponse(response) || {};
+  console.log("[twilio] check verification result", {
+    httpStatus: response.status,
+    twilioStatus: data.status || null,
+    twilioCode: data.code || null
   });
 
   return {
     ok: response.ok,
     httpStatus: response.status,
-    verifyStatus: data?.status || null,
-    errorCode: data?.code || data?.error_code || data?.errorCode || null
+    verifyStatus: data.status || null,
+    errorCode: data.code || data.error_code || data.errorCode || null
   };
 }
 
