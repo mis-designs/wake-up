@@ -2320,3 +2320,102 @@ if (whatsappBtn) {
     }
   });
 }
+
+/***********************
+ * PWA INSTALL PROMPT
+ ***********************/
+(function initPwaInstallPrompt() {
+  const INSTALLED_KEY = "magicbook_pwa_installed";
+  const SESSION_DISMISSED_KEY = "magicbook_pwa_prompt_dismissed";
+  const promptEl = document.getElementById("installPrompt");
+  const promptBtn = document.getElementById("installPromptBtn");
+  const promptClose = document.getElementById("installPromptClose");
+  const promptText = document.getElementById("installPromptText");
+  let deferredInstallPrompt = null;
+
+  function isStandalone() {
+    return window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
+  }
+
+  function markInstalled() {
+    try {
+      localStorage.setItem(INSTALLED_KEY, "1");
+    } catch {}
+    hidePrompt();
+  }
+
+  function shouldSkipPrompt() {
+    try {
+      return localStorage.getItem(INSTALLED_KEY) === "1" || sessionStorage.getItem(SESSION_DISMISSED_KEY) === "1";
+    } catch {
+      return true;
+    }
+  }
+
+  function showPrompt(mode = "browser") {
+    if (!promptEl || shouldSkipPrompt() || isStandalone()) return;
+    if (promptText) {
+      promptText.textContent = mode === "ios"
+        ? "Apri Condividi e scegli Aggiungi a Home."
+        : "Aggiungi alla schermata Home.";
+    }
+    if (promptBtn) {
+      promptBtn.textContent = mode === "ios" ? "OK" : "Aggiungi";
+      promptBtn.dataset.mode = mode;
+    }
+    promptEl.classList.remove("hidden");
+  }
+
+  function hidePrompt() {
+    promptEl?.classList.add("hidden");
+  }
+
+  if (isStandalone()) {
+    markInstalled();
+    return;
+  }
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+    });
+  }
+
+  window.addEventListener("beforeinstallprompt", event => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    window.setTimeout(() => showPrompt("browser"), 900);
+  });
+
+  window.addEventListener("appinstalled", markInstalled);
+
+  promptBtn?.addEventListener("click", async () => {
+    if (promptBtn.dataset.mode === "ios") {
+      try {
+        sessionStorage.setItem(SESSION_DISMISSED_KEY, "1");
+      } catch {}
+      hidePrompt();
+      return;
+    }
+
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const choice = await deferredInstallPrompt.userChoice.catch(() => null);
+    if (choice?.outcome === "accepted") markInstalled();
+    deferredInstallPrompt = null;
+    hidePrompt();
+  });
+
+  promptClose?.addEventListener("click", () => {
+    try {
+      sessionStorage.setItem(SESSION_DISMISSED_KEY, "1");
+    } catch {}
+    hidePrompt();
+  });
+
+  const isIosSafari = /iphone|ipad|ipod/i.test(navigator.userAgent)
+    && !/crios|fxios|edgios/i.test(navigator.userAgent);
+  if (isIosSafari) {
+    window.setTimeout(() => showPrompt("ios"), 1200);
+  }
+})();
