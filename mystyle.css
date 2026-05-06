@@ -268,7 +268,7 @@ body.loading-open {
 
 .admin-correct-dot-slot {
   height: 10px;
-  margin-top: 6px;
+  margin-top: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -279,9 +279,17 @@ body.loading-open {
   width: 7px;
   height: 7px;
   border-radius: 999px;
+  pointer-events: none;
+}
+
+.admin-correct-dot--true {
   background: #22c55e;
   box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.18);
-  pointer-events: none;
+}
+
+.admin-correct-dot--false {
+  background: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18);
 }
 
 .controls button img {

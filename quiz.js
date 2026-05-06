@@ -1179,6 +1179,7 @@ function updateAdminCorrectDots(question) {
 
     const dot = document.createElement("span");
     dot.className = "admin-correct-dot";
+    dot.classList.add(optionValue === 1 ? "admin-correct-dot--true" : "admin-correct-dot--false");
     dot.setAttribute("aria-hidden", "true");
     slot.appendChild(dot);
   });
