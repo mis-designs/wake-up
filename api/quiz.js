@@ -271,6 +271,88 @@ async function forwardCheckQuiz(answers) {
   return readJsonResponse(response);
 }
 
+function getReviewItems(result = {}) {
+  const reviewArrays = [
+    result.review,
+    result.details,
+    result.answers,
+    result.results,
+    result.questions
+  ];
+
+  return reviewArrays.find(Array.isArray) || [];
+}
+
+function normalizeAnswerValue(value) {
+  if (value === null || value === undefined || value === "") return null;
+  if (value === 1 || value === true) return 1;
+  if (value === 0 || value === false) return 0;
+
+  const normalized = String(value).trim().toLowerCase();
+  if (["1", "true", "vero", "v", "yes"].includes(normalized)) return 1;
+  if (["0", "false", "falso", "f", "no"].includes(normalized)) return 0;
+
+  return null;
+}
+
+function getReviewCorrectAnswer(item, submittedAnswer) {
+  const explicitAnswer = normalizeAnswerValue(
+    item?.correctAnswer ??
+    item?.correct_answer ??
+    item?.rightAnswer ??
+    item?.right_answer ??
+    item?.solution ??
+    item?.soluzione ??
+    item?.risposta_corretta
+  );
+  if (explicitAnswer !== null) return explicitAnswer;
+
+  if (typeof item?.correct === "boolean") {
+    return item.correct ? submittedAnswer : (submittedAnswer === 1 ? 0 : 1);
+  }
+
+  if (typeof item?.isCorrect === "boolean") {
+    return item.isCorrect ? submittedAnswer : (submittedAnswer === 1 ? 0 : 1);
+  }
+
+  return null;
+}
+
+async function addAdminCorrectAnswers(quiz) {
+  if (!Array.isArray(quiz) || quiz.length === 0) return quiz;
+
+  const submittedAnswer = 1;
+  const probeAnswers = quiz.map((question, index) => ({
+    id: question?.id ?? index,
+    answer: submittedAnswer
+  }));
+
+  const result = await forwardCheckQuiz(probeAnswers);
+  const reviewItems = getReviewItems(result);
+  if (!reviewItems.length) return quiz;
+
+  const answerById = new Map();
+  reviewItems.forEach((item, index) => {
+    const correctAnswer = getReviewCorrectAnswer(item, submittedAnswer);
+    if (correctAnswer === null) return;
+
+    if (item?.id !== undefined && item?.id !== null) {
+      answerById.set(String(item.id), correctAnswer);
+    }
+    answerById.set(`__index_${index}`, correctAnswer);
+  });
+
+  return quiz.map((question, index) => {
+    const correctAnswer = answerById.get(String(question?.id)) ?? answerById.get(`__index_${index}`);
+    if (correctAnswer === undefined) return question;
+
+    return {
+      ...question,
+      admin_correct_answer: correctAnswer
+    };
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== "GET" && req.method !== "POST") {
     return res.status(405).json({ error: "method_not_allowed" });
@@ -295,6 +377,9 @@ export default async function handler(req, res) {
       }
 
       const data = await forwardGetAction({ action, chapters, text });
+      const admin = isAdminPhone(phone);
+      const quiz = Array.isArray(data) ? data : [];
+      const quizForClient = admin ? await addAdminCorrectAnswers(quiz) : quiz;
       const quizSession = createSignedToken({
         phone,
         deviceId,
@@ -303,8 +388,8 @@ export default async function handler(req, res) {
       });
 
       return res.status(200).json({
-        quiz: Array.isArray(data) ? data : [],
-        isAdmin: isAdminPhone(phone),
+        quiz: quizForClient,
+        isAdmin: admin,
         quizSessionToken: quizSession.token,
         quizSessionTokenExpiresAt: quizSession.expiresAt,
         ...(access.accessToken ? {

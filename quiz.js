@@ -1008,6 +1008,7 @@ function getQuestionCorrectAnswer(question = {}) {
     "correct_value",
     "adminCorrectAnswer",
     "admin_correct_answer",
+    "admin_answer",
     "rightAnswer",
     "right_answer",
     "risposta",
@@ -1235,14 +1236,6 @@ async function exitQuiz() {
 function updateAdminCorrectDots(question) {
   const wrappers = document.querySelectorAll(".answer-wrapper[data-answer-value]");
   const correctAnswer = getQuestionCorrectAnswer(question);
-
-  if (isAdmin) {
-    console.log("[quiz] admin correct answer", {
-      current: current + 1,
-      correctAnswer,
-      questionKeys: Object.keys(question || {})
-    });
-  }
 
   wrappers.forEach(wrapper => {
     const slot = wrapper.querySelector(".admin-correct-dot-slot");
