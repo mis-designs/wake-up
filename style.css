@@ -430,6 +430,7 @@ button:active {
     box-shadow: 0 14px 28px rgba(70, 111, 56, 0.2);
 }
 
+#login .otp-resend,
 #login .otp-cancel {
     min-height: 48px;
     padding: 0 18px;
@@ -443,11 +444,18 @@ button:active {
     box-shadow: 0 8px 22px rgba(37, 41, 67, 0.06);
 }
 
+#login .otp-resend {
+    color: #252943;
+    background: #eef3eb;
+}
+
+#login .otp-resend:hover,
 #login .otp-cancel:hover {
     transform: translateY(-1px);
     box-shadow: 0 10px 24px rgba(37, 41, 67, 0.09);
 }
 
+#login .otp-resend:disabled,
 #login .otp-cancel:disabled {
     cursor: not-allowed;
     color: rgba(37, 41, 67, 0.4);

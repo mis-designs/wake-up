@@ -66,8 +66,12 @@ const CLIENT_AUTH_RESET_VERSION = "2026-04-device-reset-1";
 const CLIENT_AUTH_RESET_KEY = "client_auth_reset_version";
 const ACCESS_TOKEN_REFRESH_SKEW_MS = 60 * 1000;
 const ACCESS_VALIDATION_INTERVAL_MS = 5 * 60 * 1000;
+const OTP_COOLDOWN_SECONDS = 120;
 let accessValidationTimer = null;
 let pendingOtpLogin = null;
+let otpResendTimer = null;
+let otpRetryAtMs = 0;
+let otpResendLoading = false;
 
 function getClientAuthResetVersion() {
   try {
@@ -160,6 +164,7 @@ function normalizePhone(input) {
   s = s.replace(/^\+/, "");
   s = s.replace(/\D+/g, "");
   if (!s) return "";
+  if (s.startsWith("00")) s = s.slice(2);
   if (!s.startsWith("39")) s = "39" + s;
   return s;
 }
@@ -607,11 +612,15 @@ async function login() {
     if (!data?.success) {
       if ((data?.error || data?.status) === "otp_required") {
         pendingOtpLogin = { phone, deviceId };
-        showOtpUI();
+        showOtpUI(data);
         if (err) {
-          err.textContent = "Abbiamo inviato un codice OTP al tuo numero. Inserisci il codice per autorizzare questo dispositivo.";
+          err.textContent = getOtpRequiredMessage(data);
         }
         return;
+      }
+
+      if ((data?.error || data?.status) === "otp_send_failed") {
+        logOtpSendFailure(data, "login");
       }
 
       if (err) err.textContent = getLoginErrorMessage(data?.error || data?.status);
@@ -666,6 +675,13 @@ function ensureOtpUI() {
   verifyButton.textContent = "Verifica";
   verifyButton.dataset.defaultText = "Verifica";
 
+  const resendButton = document.createElement("button");
+  resendButton.id = "otpResendButton";
+  resendButton.className = "otp-resend";
+  resendButton.type = "button";
+  resendButton.textContent = "Reinvia codice";
+  resendButton.addEventListener("click", resendOtp);
+
   const cancelButton = document.createElement("button");
   cancelButton.id = "otpCancelButton";
   cancelButton.className = "otp-cancel";
@@ -679,21 +695,24 @@ function ensureOtpUI() {
   });
 
   actions.appendChild(verifyButton);
+  actions.appendChild(resendButton);
   actions.appendChild(cancelButton);
   otpForm.appendChild(otpInput);
   otpForm.appendChild(actions);
   loginForm.insertAdjacentElement("afterend", otpForm);
 }
 
-function showOtpUI() {
+function showOtpUI(data = {}) {
   ensureOtpUI();
   const loginForm = document.querySelector("#login .login-form");
   const otpForm = document.getElementById("otpForm");
   const otpInput = document.getElementById("otpCode");
+  const retryAfterSeconds = getOtpRetryAfterSeconds(data);
 
   loginForm?.classList.add("hidden");
   otpForm?.classList.remove("hidden");
   setOtpLoading(false);
+  startOtpResendCooldown(retryAfterSeconds);
   if (otpInput) {
     otpInput.value = "";
     otpInput.focus();
@@ -708,6 +727,7 @@ function hideOtpUI() {
   loginForm?.classList.remove("hidden");
   otpForm?.classList.add("hidden");
   if (otpInput) otpInput.value = "";
+  stopOtpResendCooldown();
   setOtpLoading(false);
 }
 
@@ -715,6 +735,7 @@ function setOtpLoading(isLoading) {
   const otpInput = document.getElementById("otpCode");
   const verifyButton = document.getElementById("otpVerifyButton");
   const cancelButton = document.getElementById("otpCancelButton");
+  const resendButton = document.getElementById("otpResendButton");
 
   if (otpInput) otpInput.disabled = isLoading;
   if (cancelButton) cancelButton.disabled = isLoading;
@@ -723,6 +744,82 @@ function setOtpLoading(isLoading) {
     verifyButton.classList.toggle("is-loading", isLoading);
     verifyButton.textContent = isLoading ? "Verifica..." : (verifyButton.dataset.defaultText || "Verifica");
   }
+  if (resendButton && isLoading) {
+    resendButton.disabled = true;
+  } else {
+    updateOtpResendButton();
+  }
+}
+
+function getOtpRetryAfterSeconds(data = {}) {
+  const seconds = Number(data.retryAfterSeconds);
+  if (Number.isFinite(seconds) && seconds > 0) return Math.ceil(seconds);
+  return OTP_COOLDOWN_SECONDS;
+}
+
+function getOtpRequiredMessage(data = {}) {
+  if (data.otpAlreadySent) {
+    return "Codice OTP già inviato. Attendi prima di richiederne un altro.";
+  }
+
+  if (data.otpSent) {
+    return "Codice OTP inviato. Inserisci il codice ricevuto.";
+  }
+
+  return "Codice OTP inviato. Inserisci il codice ricevuto.";
+}
+
+function stopOtpResendCooldown() {
+  if (otpResendTimer) {
+    clearInterval(otpResendTimer);
+    otpResendTimer = null;
+  }
+  otpRetryAtMs = 0;
+  otpResendLoading = false;
+  updateOtpResendButton();
+}
+
+function startOtpResendCooldown(seconds = OTP_COOLDOWN_SECONDS) {
+  if (otpResendTimer) clearInterval(otpResendTimer);
+
+  const safeSeconds = Math.max(0, Math.ceil(Number(seconds) || OTP_COOLDOWN_SECONDS));
+  otpRetryAtMs = Date.now() + safeSeconds * 1000;
+  updateOtpResendButton();
+
+  otpResendTimer = setInterval(() => {
+    updateOtpResendButton();
+    if (otpRetryAtMs <= Date.now()) {
+      clearInterval(otpResendTimer);
+      otpResendTimer = null;
+    }
+  }, 1000);
+}
+
+function updateOtpResendButton() {
+  const resendButton = document.getElementById("otpResendButton");
+  if (!resendButton) return;
+
+  if (otpResendLoading) {
+    resendButton.disabled = true;
+    resendButton.textContent = "Invio...";
+    return;
+  }
+
+  const remainingSeconds = Math.max(0, Math.ceil((otpRetryAtMs - Date.now()) / 1000));
+  resendButton.disabled = remainingSeconds > 0;
+  resendButton.textContent = remainingSeconds > 0
+    ? `Reinvia codice tra ${remainingSeconds}s`
+    : "Reinvia codice";
+}
+
+function setOtpResendLoading(isLoading) {
+  otpResendLoading = isLoading;
+  const verifyButton = document.getElementById("otpVerifyButton");
+  const cancelButton = document.getElementById("otpCancelButton");
+
+  if (verifyButton) verifyButton.disabled = isLoading;
+  if (cancelButton) cancelButton.disabled = isLoading;
+  updateOtpResendButton();
 }
 
 function cancelOtpLogin() {
@@ -735,6 +832,55 @@ function cancelOtpLogin() {
   const phoneInput = document.getElementById("user");
   phoneInput?.focus();
   updateLoginButtonState();
+}
+
+async function resendOtp() {
+  const err = document.getElementById("err");
+
+  if (!pendingOtpLogin) {
+    hideOtpUI();
+    if (err) err.textContent = "Verifica non riuscita. Riprova tra poco.";
+    return;
+  }
+
+  if (otpRetryAtMs > Date.now()) {
+    updateOtpResendButton();
+    return;
+  }
+
+  setOtpResendLoading(true);
+  if (err) err.textContent = "Invio codice OTP in corso...";
+
+  try {
+    const data = await requestAuthAction({
+      action: "resendOtp",
+      phone: pendingOtpLogin.phone,
+      deviceId: pendingOtpLogin.deviceId
+    });
+
+    if (data?.success) {
+      completeLogin(pendingOtpLogin.phone, pendingOtpLogin.deviceId, data);
+      return;
+    }
+
+    const error = data?.error || data?.status;
+    if (error === "otp_required") {
+      startOtpResendCooldown(getOtpRetryAfterSeconds(data));
+      if (err) err.textContent = getOtpRequiredMessage(data);
+      return;
+    }
+
+    if (error === "otp_send_failed") {
+      logOtpSendFailure(data, "resendOtp");
+    }
+
+    if (err) err.textContent = getOtpErrorMessage(error);
+  } catch (error) {
+    console.error("OTP resend error", error);
+    if (err) err.textContent = "Non siamo riusciti a inviare il codice OTP. Riprova più tardi.";
+  } finally {
+    setOtpResendLoading(false);
+  }
 }
 
 async function verifyOtp() {
@@ -790,7 +936,9 @@ function getLoginErrorMessage(error) {
   if (error === "not_found") return "Numero non autorizzato.";
   if (error === "device_replaced") return "Questo dispositivo non è più autorizzato perché l’accesso è stato spostato su un altro dispositivo.";
   if (error === "device_mismatch") return "Questo dispositivo non è più autorizzato.";
-  if (error === "temporary_error" || error === "server_error" || error === "otp_send_failed") return "Servizio momentaneamente non disponibile.";
+  if (error === "otp_send_failed") return "Non siamo riusciti a inviare il codice OTP. Riprova più tardi.";
+  if (error === "missing_twilio_config") return "Servizio OTP non configurato correttamente.";
+  if (error === "temporary_error" || error === "server_error") return "Servizio momentaneamente non disponibile.";
   return "Numero non valido o accesso non autorizzato.";
 }
 
@@ -798,7 +946,18 @@ function getOtpErrorMessage(error) {
   if (error === "invalid_otp") return "Codice OTP non valido. Riprova.";
   if (error === "expired") return "Accesso scaduto. Contatta il supporto per rinnovare.";
   if (error === "not_found") return "Numero non autorizzato.";
+  if (error === "otp_send_failed") return "Non siamo riusciti a inviare il codice OTP. Riprova più tardi.";
+  if (error === "missing_twilio_config") return "Servizio OTP non configurato correttamente.";
   return "Verifica non riuscita. Riprova tra poco.";
+}
+
+function logOtpSendFailure(data, context) {
+  console.warn("OTP send failed", {
+    context,
+    twilioStatus: data?.twilioStatus || null,
+    twilioErrorCode: data?.twilioErrorCode || null,
+    twilioMessage: data?.twilioMessage || null
+  });
 }
 
 function updateLoginButtonState() {

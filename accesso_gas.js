@@ -3,7 +3,9 @@ const SECRET = SCRIPT_PROPS.getProperty("GAS_SECRET");
 const SHEET_NAME = "Sheet1";
 const ADMIN_KEY = SCRIPT_PROPS.getProperty("ADMIN_KEY");
 const adminActions = ["insertUser", "updateExpiry", "deleteUser"];
-const userAccessActions = ["login", "validate", "login_check", "confirm_device_rotation"];
+const userAccessActions = ["login", "validate", "login_check", "confirm_device_rotation", "otp_start", "otp_status", "otp_cancel", "otp_mark_sent", "otp_mark_failed"];
+const OTP_COOLDOWN_MS = 120 * 1000;
+const OTP_EXPIRY_MS = 10 * 60 * 1000;
 
 // Sheet column layout (1-based for getRange, 0-based for array index):
 //  col 1 / index 0  ->  phone
@@ -11,6 +13,10 @@ const userAccessActions = ["login", "validate", "login_check", "confirm_device_r
 //  col 3 / index 2  ->  device2
 //  col 4 / index 3  ->  expiry
 //  col 5 / index 4  ->  registration_date
+//  col 6 / index 5  ->  pendingDeviceId
+//  col 7 / index 6  ->  otpLastSentAt
+//  col 8 / index 7  ->  otpExpiresAt
+//  col 9 / index 8  ->  otpStatus
 
 function isAuthorized(e, body) {
   const params = (e && e.parameter) ? e.parameter : {};
@@ -95,6 +101,26 @@ function doGet(e) {
 
       if (action === "confirm_device_rotation") {
         return jsonOrJsonp(handleConfirmDeviceRotation(sheet, phone, deviceId, now), callback);
+      }
+
+      if (action === "otp_start") {
+        return jsonOrJsonp(handleOtpStart(sheet, phone, deviceId, now), callback);
+      }
+
+      if (action === "otp_status") {
+        return jsonOrJsonp(handleOtpStatus(sheet, phone, deviceId, now), callback);
+      }
+
+      if (action === "otp_cancel") {
+        return jsonOrJsonp(handleOtpCancel(sheet, phone, deviceId), callback);
+      }
+
+      if (action === "otp_mark_sent") {
+        return jsonOrJsonp(handleOtpMark(sheet, phone, deviceId, "sent"), callback);
+      }
+
+      if (action === "otp_mark_failed") {
+        return jsonOrJsonp(handleOtpMark(sheet, phone, deviceId, "failed"), callback);
       }
 
       const registerDevice = action === "login" || action === "login_check" || isTrue(p.registerDevice);
@@ -207,6 +233,16 @@ function doPost(e) {
     let result;
     if (action === "confirm_device_rotation") {
       result = handleConfirmDeviceRotation(sheet, phone, deviceId, now);
+    } else if (action === "otp_start") {
+      result = handleOtpStart(sheet, phone, deviceId, now);
+    } else if (action === "otp_status") {
+      result = handleOtpStatus(sheet, phone, deviceId, now);
+    } else if (action === "otp_cancel") {
+      result = handleOtpCancel(sheet, phone, deviceId);
+    } else if (action === "otp_mark_sent") {
+      result = handleOtpMark(sheet, phone, deviceId, "sent");
+    } else if (action === "otp_mark_failed") {
+      result = handleOtpMark(sheet, phone, deviceId, "failed");
     } else {
       const registerDevice = action === "login" || action === "login_check" || isTrue(data.registerDevice);
       result = handleUserAccess(sheet, phone, deviceId, registerDevice, now);
@@ -235,6 +271,49 @@ function output(ok, error, extra) {
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
+function getExpiryIsoOrError(expiry, now) {
+  if (!expiry) return { expiryIso: null, error: null };
+
+  const expDate = new Date(expiry);
+  if (isNaN(expDate.getTime())) return { expiryIso: null, error: null };
+
+  if (expDate < now) {
+    return { expiryIso: expDate.toISOString(), error: "expired" };
+  }
+
+  return { expiryIso: expDate.toISOString(), error: null };
+}
+
+function parseDateValue(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? null : date;
+}
+
+function clearOtpMetadata(sheet, rowNumber) {
+  sheet.getRange(rowNumber, 6, 1, 4).clearContent();
+}
+
+function getOtpCooldown(lastSentAt, now) {
+  const sentAt = parseDateValue(lastSentAt);
+  if (!sentAt) return 0;
+
+  const remainingMs = OTP_COOLDOWN_MS - (now.getTime() - sentAt.getTime());
+  return Math.max(0, Math.ceil(remainingMs / 1000));
+}
+
+function buildOtpNotRequiredResult(d1, d2, deviceId, expiryIso) {
+  if (d1 === deviceId || d2 === deviceId) {
+    return { success: true, error: null, otpRequired: false, expiry: expiryIso };
+  }
+
+  if (!d1 || !d2) {
+    return { success: false, error: "otp_not_required", expiry: expiryIso };
+  }
+
+  return null;
+}
+
 function handleUserAccess(sheet, phone, deviceId, registerDevice, now) {
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
@@ -249,16 +328,11 @@ function handleUserAccess(sheet, phone, deviceId, registerDevice, now) {
       d1 = String(d1 || "").trim();
       d2 = String(d2 || "").trim();
 
-      let expiryIso = null;
-      if (expiry) {
-        const expDate = new Date(expiry);
-        if (!isNaN(expDate.getTime())) {
-          expiryIso = expDate.toISOString();
-          if (expDate < now) {
-            return { success: false, error: "expired" };
-          }
-        }
+      const expiryState = getExpiryIsoOrError(expiry, now);
+      if (expiryState.error) {
+        return { success: false, error: expiryState.error };
       }
+      const expiryIso = expiryState.expiryIso;
 
       if (d1 === deviceId || d2 === deviceId) {
         return { success: true, error: null, expiry: expiryIso };
@@ -301,35 +375,35 @@ function handleConfirmDeviceRotation(sheet, phone, deviceId, now) {
       d1 = String(d1 || "").trim();
       d2 = String(d2 || "").trim();
 
-      let expiryIso = null;
-      if (expiry) {
-        const expDate = new Date(expiry);
-        if (!isNaN(expDate.getTime())) {
-          expiryIso = expDate.toISOString();
-          if (expDate < now) {
-            return { success: false, error: "expired" };
-          }
-        }
+      const rowNumber = i + 1;
+      const expiryState = getExpiryIsoOrError(expiry, now);
+      if (expiryState.error) {
+        return { success: false, error: expiryState.error };
       }
+      const expiryIso = expiryState.expiryIso;
 
       if (d1 === deviceId || d2 === deviceId) {
+        clearOtpMetadata(sheet, rowNumber);
         return { success: true, error: null, expiry: expiryIso };
       }
 
       if (!d1) {
-        sheet.getRange(i + 1, 2).setValue(deviceId);
+        sheet.getRange(rowNumber, 2).setValue(deviceId);
+        clearOtpMetadata(sheet, rowNumber);
         return { success: true, error: null, expiry: expiryIso, devices: 1 };
       }
 
       if (!d2) {
-        sheet.getRange(i + 1, 3).setValue(deviceId);
+        sheet.getRange(rowNumber, 3).setValue(deviceId);
+        clearOtpMetadata(sheet, rowNumber);
         return { success: true, error: null, expiry: expiryIso, devices: 2 };
       }
 
       const oldDevice1 = d1;
       const oldDevice2 = d2;
-      sheet.getRange(i + 1, 2).setValue(oldDevice2);
-      sheet.getRange(i + 1, 3).setValue(deviceId);
+      sheet.getRange(rowNumber, 2).setValue(oldDevice2);
+      sheet.getRange(rowNumber, 3).setValue(deviceId);
+      clearOtpMetadata(sheet, rowNumber);
 
       return {
         success: true,
@@ -346,6 +420,161 @@ function handleConfirmDeviceRotation(sheet, phone, deviceId, now) {
   }
 }
 
+function handleOtpStart(sheet, phone, deviceId, now) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+
+  try {
+    const rows = sheet.getDataRange().getValues();
+
+    for (let i = 1; i < rows.length; i++) {
+      let [p, d1, d2, expiry, regDate, pendingDeviceId, otpLastSentAt, otpExpiresAt, otpStatus] = rows[i];
+      if (normalizePhone(p) !== phone) continue;
+
+      d1 = String(d1 || "").trim();
+      d2 = String(d2 || "").trim();
+      pendingDeviceId = String(pendingDeviceId || "").trim();
+      otpStatus = String(otpStatus || "").trim();
+
+      const expiryState = getExpiryIsoOrError(expiry, now);
+      if (expiryState.error) {
+        return { success: false, error: expiryState.error };
+      }
+
+      const notRequired = buildOtpNotRequiredResult(d1, d2, deviceId, expiryState.expiryIso);
+      if (notRequired) return notRequired;
+
+      const otpExpiryDate = parseDateValue(otpExpiresAt);
+      const pendingMatches = pendingDeviceId === deviceId && otpExpiryDate && otpExpiryDate > now;
+      const retryAfterSeconds = pendingMatches ? getOtpCooldown(otpLastSentAt, now) : 0;
+
+      if (retryAfterSeconds > 0) {
+        if (otpStatus === "failed") {
+          return {
+            success: false,
+            error: "otp_send_failed",
+            otpSendFailed: true,
+            retryAfterSeconds,
+            otpExpiresAt: otpExpiryDate.toISOString()
+          };
+        }
+
+        return {
+          success: false,
+          error: "otp_required",
+          otpAlreadySent: true,
+          retryAfterSeconds,
+          otpExpiresAt: otpExpiryDate.toISOString()
+        };
+      }
+
+      const rowNumber = i + 1;
+      const nextOtpExpiresAt = new Date(now.getTime() + OTP_EXPIRY_MS);
+      sheet.getRange(rowNumber, 6).setValue(deviceId);
+      sheet.getRange(rowNumber, 7).setValue(now);
+      sheet.getRange(rowNumber, 8).setValue(nextOtpExpiresAt);
+      sheet.getRange(rowNumber, 9).setValue("pending");
+
+      return {
+        success: false,
+        error: "otp_required",
+        otpStartAllowed: true,
+        retryAfterSeconds: Math.ceil(OTP_COOLDOWN_MS / 1000),
+        otpExpiresAt: nextOtpExpiresAt.toISOString()
+      };
+    }
+
+    return { success: false, error: "not_found" };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function handleOtpStatus(sheet, phone, deviceId, now) {
+  const rows = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < rows.length; i++) {
+    let [p, d1, d2, expiry, regDate, pendingDeviceId, otpLastSentAt, otpExpiresAt, otpStatus] = rows[i];
+    if (normalizePhone(p) !== phone) continue;
+
+    d1 = String(d1 || "").trim();
+    d2 = String(d2 || "").trim();
+    pendingDeviceId = String(pendingDeviceId || "").trim();
+    otpStatus = String(otpStatus || "").trim();
+
+    const expiryState = getExpiryIsoOrError(expiry, now);
+    if (expiryState.error) {
+      return { success: false, error: expiryState.error };
+    }
+
+    const notRequired = buildOtpNotRequiredResult(d1, d2, deviceId, expiryState.expiryIso);
+    if (notRequired) return notRequired;
+
+    const otpExpiryDate = parseDateValue(otpExpiresAt);
+    const pendingMatches = pendingDeviceId === deviceId && otpExpiryDate && otpExpiryDate > now;
+    const retryAfterSeconds = pendingMatches ? getOtpCooldown(otpLastSentAt, now) : 0;
+
+    return {
+      success: false,
+      error: retryAfterSeconds > 0 && otpStatus === "failed" ? "otp_send_failed" : "otp_required",
+      otpSendFailed: retryAfterSeconds > 0 && otpStatus === "failed",
+      otpAlreadySent: retryAfterSeconds > 0,
+      retryAfterSeconds,
+      otpExpiresAt: otpExpiryDate ? otpExpiryDate.toISOString() : null
+    };
+  }
+
+  return { success: false, error: "not_found" };
+}
+
+function handleOtpCancel(sheet, phone, deviceId) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+
+  try {
+    const rows = sheet.getDataRange().getValues();
+
+    for (let i = 1; i < rows.length; i++) {
+      const [p, d1, d2, expiry, regDate, pendingDeviceId] = rows[i];
+      if (normalizePhone(p) !== phone) continue;
+
+      if (String(pendingDeviceId || "").trim() === deviceId) {
+        clearOtpMetadata(sheet, i + 1);
+      }
+
+      return { success: true, error: null };
+    }
+
+    return { success: false, error: "not_found" };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function handleOtpMark(sheet, phone, deviceId, status) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+
+  try {
+    const rows = sheet.getDataRange().getValues();
+
+    for (let i = 1; i < rows.length; i++) {
+      const [p, d1, d2, expiry, regDate, pendingDeviceId] = rows[i];
+      if (normalizePhone(p) !== phone) continue;
+
+      if (String(pendingDeviceId || "").trim() === deviceId) {
+        sheet.getRange(i + 1, 9).setValue(status);
+      }
+
+      return { success: true, error: null };
+    }
+
+    return { success: false, error: "not_found" };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function isTrue(value) {
   return value === true || String(value || "").toLowerCase() === "true" || String(value || "") === "1";
 }
@@ -354,6 +583,7 @@ function normalizePhone(input) {
   let s = String(input || "").trim();
   s = s.replace(/\s+/g, "").replace(/^\+/, "").replace(/\D+/g, "");
   if (!s) return "";
+  if (s.startsWith("00")) s = s.slice(2);
   if (!s.startsWith("39")) s = "39" + s;
   return s;
 }

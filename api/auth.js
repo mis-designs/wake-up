@@ -8,20 +8,21 @@ const TWILIO_VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID;
 const SESSION_SECRET = process.env.SESSION_SECRET;
 
 const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
+const OTP_COOLDOWN_SECONDS = 120;
 
-function isConfigured() {
-  return GAS_ACCESS_URL &&
-    GAS_SECRET &&
-    TWILIO_ACCOUNT_SID &&
-    TWILIO_AUTH_TOKEN &&
-    TWILIO_VERIFY_SERVICE_SID &&
-    SESSION_SECRET;
+function hasCoreConfig() {
+  return Boolean(GAS_ACCESS_URL && GAS_SECRET && SESSION_SECRET);
+}
+
+function hasTwilioConfig() {
+  return Boolean(TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_VERIFY_SERVICE_SID);
 }
 
 function normalizePhone(input) {
   let phone = String(input || "").trim();
   phone = phone.replace(/\s+/g, "").replace(/^\+/, "").replace(/\D+/g, "");
   if (!phone) return "";
+  if (phone.startsWith("00")) phone = phone.slice(2);
   if (!phone.startsWith("39")) phone = "39" + phone;
   return phone;
 }
@@ -74,7 +75,37 @@ function getAuthError(data) {
   return data?.error || data?.status || "unauthorized";
 }
 
-async function callAccessBackend(action, phone, deviceId) {
+function getPhoneLast4(phone) {
+  return String(phone || "").slice(-4) || "unknown";
+}
+
+function getServiceSidLast6() {
+  return String(TWILIO_VERIFY_SERVICE_SID || "").slice(-6) || "unknown";
+}
+
+function formatPhoneForTwilio(phone) {
+  const digits = String(phone || "").replace(/\D+/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("00")) return "+" + digits.slice(2);
+  if (digits.startsWith("39")) return "+" + digits;
+  return "+39" + digits;
+}
+
+function logAuthEvent({ action, phone, event, twilioStatus, twilioErrorCode }) {
+  const parts = [
+    "[api/auth]",
+    `action=${action}`,
+    `phoneLast4=${getPhoneLast4(phone)}`,
+    `event=${event}`
+  ];
+
+  if (twilioStatus) parts.push(`twilioStatus=${twilioStatus}`);
+  if (twilioErrorCode) parts.push(`twilioErrorCode=${twilioErrorCode}`);
+
+  console.info(parts.join(" "));
+}
+
+async function callAccessBackend(action, phone, deviceId, extra = {}) {
   const response = await fetch(GAS_ACCESS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -82,7 +113,8 @@ async function callAccessBackend(action, phone, deviceId) {
       token: GAS_SECRET,
       action,
       phone,
-      deviceId
+      deviceId,
+      ...extra
     })
   });
 
@@ -97,9 +129,15 @@ function getTwilioAuthHeader() {
 }
 
 async function startTwilioVerification(phone) {
-  const params = new URLSearchParams({
-    To: `+${phone}`,
-    Channel: "sms"
+  const to = formatPhoneForTwilio(phone);
+  const params = new URLSearchParams();
+  params.append("To", to);
+  params.append("Channel", "sms");
+
+  console.log("[auth/twilio] start verification", {
+    phoneLast4: getPhoneLast4(phone),
+    to,
+    serviceSidLast6: getServiceSidLast6()
   });
 
   const response = await fetch(
@@ -110,19 +148,31 @@ async function startTwilioVerification(phone) {
         "Authorization": getTwilioAuthHeader(),
         "Content-Type": "application/x-www-form-urlencoded"
       },
-      body: params
+      body: params.toString()
     }
   );
 
-  await readJsonResponse(response);
-  return { ok: response.ok };
+  const data = await readJsonResponse(response);
+  console.log("[auth/twilio] start result", {
+    ok: response.ok,
+    status: response.status,
+    code: data?.code || null,
+    verifyStatus: data?.status || null
+  });
+
+  return {
+    ok: response.ok,
+    httpStatus: response.status,
+    verifyStatus: data?.status || null,
+    errorCode: data?.code || data?.error_code || data?.errorCode || null,
+    message: data?.message || null
+  };
 }
 
 async function checkTwilioVerification(phone, code) {
-  const params = new URLSearchParams({
-    To: `+${phone}`,
-    Code: code
-  });
+  const params = new URLSearchParams();
+  params.append("To", formatPhoneForTwilio(phone));
+  params.append("Code", code);
 
   const response = await fetch(
     `https://verify.twilio.com/v2/Services/${encodeURIComponent(TWILIO_VERIFY_SERVICE_SID)}/VerificationCheck`,
@@ -132,14 +182,21 @@ async function checkTwilioVerification(phone, code) {
         "Authorization": getTwilioAuthHeader(),
         "Content-Type": "application/x-www-form-urlencoded"
       },
-      body: params
+      body: params.toString()
     }
   );
 
   const data = await readJsonResponse(response);
+  console.log("[auth/twilio] check result", {
+    status: data?.status || null,
+    code: data?.code || null
+  });
+
   return {
     ok: response.ok,
-    status: data?.status || null
+    httpStatus: response.status,
+    verifyStatus: data?.status || null,
+    errorCode: data?.code || data?.error_code || data?.errorCode || null
   };
 }
 
@@ -157,13 +214,91 @@ function sendSuccessfulLogin(res, { phone, deviceId, authData, extra = {} }) {
   });
 }
 
+async function sendOtpForDevice({ res, phone, deviceId, action }) {
+  const otpState = await callAccessBackend("otp_start", phone, deviceId);
+  const retryAfterSeconds = Number(otpState?.retryAfterSeconds) || OTP_COOLDOWN_SECONDS;
+
+  if (otpState?.otpAlreadySent) {
+    logAuthEvent({ action, phone, event: "otp_skipped_cooldown" });
+    return res.status(200).json({
+      success: false,
+      error: "otp_required",
+      otpAlreadySent: true,
+      retryAfterSeconds
+    });
+  }
+
+  if (!otpState?.otpStartAllowed) {
+    const error = getAuthError(otpState);
+    logAuthEvent({ action, phone, event: `otp_not_started_${error}` });
+    return res.status(200).json({
+      success: false,
+      error,
+      ...(otpState?.retryAfterSeconds ? { retryAfterSeconds: otpState.retryAfterSeconds } : {})
+    });
+  }
+
+  let verification;
+  try {
+    verification = await startTwilioVerification(phone);
+  } catch {
+    verification = {
+      ok: false,
+      httpStatus: null,
+      verifyStatus: null,
+      errorCode: "network_error",
+      message: "Twilio send failed"
+    };
+  }
+
+  if (!verification.ok) {
+    logAuthEvent({
+      action,
+      phone,
+      event: "otp_send_failed",
+      twilioStatus: verification.httpStatus,
+      twilioErrorCode: verification.errorCode
+    });
+
+    await callAccessBackend("otp_mark_failed", phone, deviceId);
+
+    return res.status(502).json({
+      success: false,
+      error: "otp_send_failed",
+      twilioStatus: verification.httpStatus,
+      twilioErrorCode: verification.errorCode || null,
+      twilioMessage: verification.message || "Twilio send failed"
+    });
+  }
+
+  await callAccessBackend("otp_mark_sent", phone, deviceId);
+
+  logAuthEvent({
+    action,
+    phone,
+    event: "otp_sent",
+    twilioStatus: verification.verifyStatus
+  });
+
+  return res.status(200).json({
+    success: false,
+    error: "otp_required",
+    otpSent: true,
+    retryAfterSeconds: OTP_COOLDOWN_SECONDS
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "method_not_allowed" });
   }
 
-  if (!isConfigured()) {
+  if (!hasCoreConfig()) {
     return res.status(500).json({ error: "missing_server_config" });
+  }
+
+  if (!hasTwilioConfig()) {
+    return res.status(500).json({ error: "missing_twilio_config" });
   }
 
   try {
@@ -196,17 +331,22 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: false, error });
       }
 
-      const verification = await startTwilioVerification(phone);
-      if (!verification.ok) {
-        return res.status(502).json({ success: false, error: "otp_send_failed" });
+      return sendOtpForDevice({ res, phone, deviceId, action: "login" });
+    }
+
+    if (action === "resendOtp") {
+      const authData = await callAccessBackend("login_check", phone, deviceId);
+
+      if (isAuthSuccess(authData)) {
+        return sendSuccessfulLogin(res, { phone, deviceId, authData });
       }
 
-      return res.status(200).json({
-        success: false,
-        error: "otp_required",
-        phone,
-        deviceId
-      });
+      const error = getAuthError(authData);
+      if (error !== "otp_required") {
+        return res.status(200).json({ success: false, error });
+      }
+
+      return sendOtpForDevice({ res, phone, deviceId, action: "resendOtp" });
     }
 
     if (action === "verifyOtp") {
@@ -216,9 +356,27 @@ export default async function handler(req, res) {
       }
 
       const verification = await checkTwilioVerification(phone, code);
-      if (!verification.ok || verification.status !== "approved") {
-        return res.status(200).json({ success: false, error: "invalid_otp" });
+      if (!verification.ok || verification.verifyStatus !== "approved") {
+        logAuthEvent({
+          action: "verifyOtp",
+          phone,
+          event: "otp_verify_not_approved",
+          twilioStatus: verification.verifyStatus,
+          twilioErrorCode: verification.errorCode
+        });
+        return res.status(200).json({
+          success: false,
+          error: "invalid_otp",
+          twilioStatus: verification.verifyStatus || null
+        });
       }
+
+      logAuthEvent({
+        action: "verifyOtp",
+        phone,
+        event: "otp_verify_approved",
+        twilioStatus: verification.verifyStatus
+      });
 
       const authData = await callAccessBackend("confirm_device_rotation", phone, deviceId);
       if (!isAuthSuccess(authData)) {
