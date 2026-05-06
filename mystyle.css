@@ -268,7 +268,7 @@ body.loading-open {
 
 .admin-correct-dot-slot {
   height: 10px;
-  margin-top: 11px;
+  margin-top: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -276,8 +276,8 @@ body.loading-open {
 }
 
 .admin-correct-dot {
-  width: 2px;
-  height: 2px;
+  width: 4px;
+  height: 4px;
   border-radius: 999px;
   pointer-events: none;
 }
