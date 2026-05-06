@@ -3,7 +3,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 const CLIENT_AUTH_RESET_VERSION = "2026-04-device-reset-1";
 const CLIENT_AUTH_RESET_KEY = "client_auth_reset_version";
-const RESULT_PREVIEW_MODE = new URLSearchParams(window.location.search).get("previewResult");
 const RESULT_VIDEO_SOURCES = {
   pass: "pial_vhai%20applauso.mp4",
   fail: "delusione.mp4"
@@ -86,7 +85,7 @@ function hasCurrentClientAuthResetVersion() {
   }
 }
 
-if (!hasCurrentClientAuthResetVersion() && !RESULT_PREVIEW_MODE) {
+if (!hasCurrentClientAuthResetVersion()) {
   window.location.href = "index.html";
   throw new Error("client_auth_reset_required");
 }
@@ -139,15 +138,6 @@ function getQuizSession() {
 }
 
 function requireQuizSession() {
-  if (RESULT_PREVIEW_MODE) {
-    return {
-      phone: "preview",
-      deviceId: "preview",
-      accessToken: "",
-      accessTokenExpiresAt: 0
-    };
-  }
-
   const session = getQuizSession();
   if (!session) {
     window.location.href = "index.html";
@@ -596,33 +586,6 @@ function hideLoading() {
   document.body.classList.remove("loading-open");
 }
 
-function showResultPreviewLauncher(result) {
-  const launcher = document.createElement("button");
-  launcher.type = "button";
-  launcher.innerText = "VEDI ANTEPRIMA VIDEO";
-  launcher.style.cssText = [
-    "position:fixed",
-    "left:50%",
-    "top:50%",
-    "transform:translate(-50%,-50%)",
-    "z-index:1200",
-    "border:0",
-    "border-radius:18px",
-    "padding:18px 22px",
-    "background:#252943",
-    "color:#fff",
-    "font-weight:900",
-    "font-size:1rem",
-    "box-shadow:0 18px 40px rgba(37,41,67,.28)",
-    "cursor:pointer"
-  ].join(";");
-  launcher.addEventListener("click", () => {
-    launcher.remove();
-    showResult(result);
-  }, { once: true });
-  document.body.appendChild(launcher);
-}
-
 function returnToBook() {
   window.location.href = "index.html";
 }
@@ -650,37 +613,6 @@ async function loadQuiz() {
 
   try {
     const params   = new URLSearchParams(window.location.search);
-    if (RESULT_PREVIEW_MODE) {
-      const isPassedPreview = RESULT_PREVIEW_MODE.toLowerCase() !== "fail";
-      isAdmin = params.get("previewAdmin") === "1";
-      const previewTotal = isPassedPreview ? 8 : 18;
-      const previewCorrect = isPassedPreview ? 8 : 16;
-      quiz = Array.from({ length: previewTotal }, (_, index) => ({
-        id: `preview-${index + 1}`,
-        question: "Anteprima risultato quiz con video nel cerchio.",
-        figure: "",
-        correct_answer: index % 2
-      }));
-      answers = quiz.map((q, index) => ({
-        id: q.id,
-        answer: index < previewCorrect ? q.correct_answer : null
-      }));
-      lastQuizSet = quiz.slice();
-
-      buildProgressBar();
-      showQuestion();
-
-      setTimeout(() => {
-        hideLoading();
-        showResultPreviewLauncher(normalizeQuizResult({
-          correct: previewCorrect,
-          _nonRisposte: 1,
-          review: []
-        }, previewTotal));
-      });
-      return;
-    }
-
     const chapters = params.get("chapters") || "";
     const url = buildQuizApiUrl("getQuiz", { chapters });
     const data = await fetchQuizJson(url);
