@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { normalizeQuizResult } from "./quiz-result.mjs";
 
 const ACCESS_GAS_URL = process.env.GAS_ACCESS_URL;
 const ACCESS_GAS_SECRET = process.env.GAS_SECRET;
@@ -264,7 +265,8 @@ export default async function handler(req, res) {
       }
 
       const data = await forwardCheckQuiz(answers);
-      return res.status(200).json(data);
+      const normalizedResult = normalizeQuizResult(data, answers.length);
+      return res.status(200).json(normalizedResult);
     }
 
     return res.status(400).json({ error: "invalid_action" });

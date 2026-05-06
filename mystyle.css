@@ -490,6 +490,7 @@ body.loading-open {
   align-items: center;
   justify-content: center;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(223, 226, 239, 0.9));
+  overflow: hidden;
 }
 
 .modal-card.modal-pass .modal-icon-shell {
@@ -516,6 +517,13 @@ body.loading-open {
   width: 74px;
   height: 74px;
   object-fit: contain;
+}
+
+.modal-result-video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 .modal-icon-fallback {

@@ -3,6 +3,80 @@
 // ─────────────────────────────────────────────────────────────────────────────
 const CLIENT_AUTH_RESET_VERSION = "2026-04-device-reset-1";
 const CLIENT_AUTH_RESET_KEY = "client_auth_reset_version";
+const RESULT_PREVIEW_MODE = new URLSearchParams(window.location.search).get("previewResult");
+const RESULT_VIDEO_SOURCES = {
+  pass: "pial_vhai%20applauso.mp4",
+  fail: "delusione.mp4"
+};
+const PASSING_SCORE_RATIO = 0.9;
+
+function calculateQuizResult(correctAnswers, totalQuestions) {
+  const total = Number(totalQuestions) || 0;
+  const correct = Number(correctAnswers) || 0;
+
+  if (total <= 0) {
+    return {
+      passed: false,
+      passingScore: 0,
+      scorePercentage: 0
+    };
+  }
+
+  const passingScore = Math.ceil(total * PASSING_SCORE_RATIO);
+  const scorePercentage = Math.round((correct / total) * 100);
+
+  return {
+    passed: correct >= passingScore,
+    passingScore,
+    scorePercentage
+  };
+}
+
+function getCorrectAnswerCount(result) {
+  const candidates = [
+    result?.correct,
+    result?.correctAnswers,
+    result?.correctCount
+  ];
+
+  for (const value of candidates) {
+    const numberValue = Number(value);
+    if (Number.isFinite(numberValue)) return numberValue;
+  }
+
+  return 0;
+}
+
+function getResultTotalQuestions(result) {
+  const candidates = [
+    result?.totalQuestions,
+    quiz.length,
+    answers.length,
+    result?.total,
+    result?.questionCount
+  ];
+
+  for (const value of candidates) {
+    const numberValue = Number(value);
+    if (Number.isFinite(numberValue) && numberValue > 0) return numberValue;
+  }
+
+  return 0;
+}
+
+function normalizeQuizResult(result, totalQuestions = getResultTotalQuestions(result)) {
+  const correctAnswers = getCorrectAnswerCount(result);
+  const calculated = calculateQuizResult(correctAnswers, totalQuestions);
+
+  return {
+    ...result,
+    correct: correctAnswers,
+    totalQuestions: Number(totalQuestions) || 0,
+    passingScore: calculated.passingScore,
+    scorePercentage: calculated.scorePercentage,
+    passed: calculated.passed
+  };
+}
 
 function hasCurrentClientAuthResetVersion() {
   try {
@@ -12,7 +86,7 @@ function hasCurrentClientAuthResetVersion() {
   }
 }
 
-if (!hasCurrentClientAuthResetVersion()) {
+if (!hasCurrentClientAuthResetVersion() && !RESULT_PREVIEW_MODE) {
   window.location.href = "index.html";
   throw new Error("client_auth_reset_required");
 }
@@ -65,6 +139,15 @@ function getQuizSession() {
 }
 
 function requireQuizSession() {
+  if (RESULT_PREVIEW_MODE) {
+    return {
+      phone: "preview",
+      deviceId: "preview",
+      accessToken: "",
+      accessTokenExpiresAt: 0
+    };
+  }
+
   const session = getQuizSession();
   if (!session) {
     window.location.href = "index.html";
@@ -233,6 +316,7 @@ const modalConfirm = document.getElementById("modal-confirm");
 const modalCancel = document.getElementById("modal-cancel");
 const modalRifai  = document.getElementById("modal-rifai");
 const modalIconShell = document.getElementById("modal-icon-shell");
+const modalResultVideo = document.getElementById("modal-result-video");
 const modalIcon = document.getElementById("modal-icon");
 const modalIconFallback = document.getElementById("modal-icon-fallback");
 const modalStats         = document.getElementById("modal-stats");
@@ -511,6 +595,33 @@ function hideLoading() {
   document.body.classList.remove("loading-open");
 }
 
+function showResultPreviewLauncher(result) {
+  const launcher = document.createElement("button");
+  launcher.type = "button";
+  launcher.innerText = "VEDI ANTEPRIMA VIDEO";
+  launcher.style.cssText = [
+    "position:fixed",
+    "left:50%",
+    "top:50%",
+    "transform:translate(-50%,-50%)",
+    "z-index:1200",
+    "border:0",
+    "border-radius:18px",
+    "padding:18px 22px",
+    "background:#252943",
+    "color:#fff",
+    "font-weight:900",
+    "font-size:1rem",
+    "box-shadow:0 18px 40px rgba(37,41,67,.28)",
+    "cursor:pointer"
+  ].join(";");
+  launcher.addEventListener("click", () => {
+    launcher.remove();
+    showResult(result);
+  }, { once: true });
+  document.body.appendChild(launcher);
+}
+
 function returnToBook() {
   window.location.href = "index.html";
 }
@@ -538,6 +649,36 @@ async function loadQuiz() {
 
   try {
     const params   = new URLSearchParams(window.location.search);
+    if (RESULT_PREVIEW_MODE) {
+      const isPassedPreview = RESULT_PREVIEW_MODE.toLowerCase() !== "fail";
+      const previewTotal = isPassedPreview ? 8 : 18;
+      const previewCorrect = isPassedPreview ? 8 : 16;
+      quiz = Array.from({ length: previewTotal }, (_, index) => ({
+        id: `preview-${index + 1}`,
+        question: "Anteprima risultato quiz con video nel cerchio.",
+        figure: "",
+        correct_answer: index % 2
+      }));
+      answers = quiz.map((q, index) => ({
+        id: q.id,
+        answer: index < previewCorrect ? q.correct_answer : null
+      }));
+      lastQuizSet = quiz.slice();
+
+      buildProgressBar();
+      showQuestion();
+
+      setTimeout(() => {
+        hideLoading();
+        showResultPreviewLauncher(normalizeQuizResult({
+          correct: previewCorrect,
+          _nonRisposte: 1,
+          review: []
+        }, previewTotal));
+      });
+      return;
+    }
+
     const chapters = params.get("chapters") || "";
     const url = buildQuizApiUrl("getQuiz", { chapters });
     const data = await fetchQuizJson(url);
@@ -596,6 +737,17 @@ function resetModalState() {
   modalCard.classList.remove("modal-result", "modal-pass", "modal-fail");
   modalBadge.innerText = "Quiz";
   modalIconShell.classList.add("hidden");
+  modalIconShell.onclick = null;
+  modalIconShell.removeAttribute("role");
+  modalIconShell.removeAttribute("tabindex");
+  modalIconShell.removeAttribute("aria-label");
+  if (modalResultVideo) {
+    modalResultVideo.pause();
+    modalResultVideo.onerror = null;
+    modalResultVideo.removeAttribute("src");
+    modalResultVideo.load();
+    modalResultVideo.classList.add("hidden");
+  }
   modalIcon.classList.add("hidden");
   modalIconFallback.classList.add("hidden");
   modalStats.classList.add("hidden");
@@ -606,14 +758,47 @@ function resetModalState() {
   if (oldBanner) oldBanner.remove();
 }
 
+function setModalVideo(videoSrc, fallbackIconSrc, fallbackText) {
+  if (!modalResultVideo || !videoSrc) {
+    setModalIcon(fallbackIconSrc, fallbackText);
+    return;
+  }
+
+  modalIcon.classList.add("hidden");
+  modalIconFallback.classList.add("hidden");
+  modalResultVideo.src = videoSrc;
+  modalResultVideo.classList.remove("hidden");
+  modalResultVideo.currentTime = 0;
+  modalResultVideo.loop = true;
+  modalResultVideo.muted = false;
+  modalResultVideo.volume = 1;
+  modalIconShell.setAttribute("role", "button");
+  modalIconShell.setAttribute("tabindex", "0");
+  modalIconShell.setAttribute("aria-label", "Riproduci video risultato");
+  modalIconShell.onclick = () => {
+    modalResultVideo.muted = false;
+    modalResultVideo.volume = 1;
+    modalResultVideo.play().catch(() => {});
+  };
+  modalResultVideo.onerror = () => {
+    modalResultVideo.classList.add("hidden");
+    setModalIcon(fallbackIconSrc, fallbackText);
+  };
+  modalResultVideo.play().catch(() => {
+    modalResultVideo.muted = false;
+  });
+}
+
 function setModalIcon(iconSrc, fallbackText) {
   if (!iconSrc) {
+    modalResultVideo?.classList.add("hidden");
     modalIcon.classList.add("hidden");
     modalIconFallback.innerText = fallbackText;
     modalIconFallback.classList.remove("hidden");
     return;
   }
 
+  modalResultVideo?.classList.add("hidden");
   modalIcon.src = iconSrc;
   modalIcon.alt = modalTitle.innerText;
   modalIcon.classList.remove("hidden");
@@ -643,18 +828,21 @@ function openModal({
   modalBadge.innerText = badgeText;
 
   if (result) {
-    const total       = quiz.length || 30;
-    const corrette    = result.correct    ?? 0;
+    const normalizedResult = normalizeQuizResult(result);
+    const total       = normalizedResult.totalQuestions;
+    const corrette    = normalizedResult.correct;
     const nonRisposte = result._nonRisposte ?? 0;
     const sbagliate   = Math.max(0, total - corrette - nonRisposte);
-    const isPassed    = result.passed === true;
+    const isPassed    = normalizedResult.passed === true;
+    const passingScore = normalizedResult.passingScore;
 
     console.log("[quiz] result →", { corrette, nonRisposte, sbagliate, total, isPassed });
 
     modal.classList.add("modal-fullscreen");
     modalCard.classList.add("modal-result", isPassed ? "modal-pass" : "modal-fail");
     modalIconShell.classList.remove("hidden");
-    setModalIcon(
+    setModalVideo(
+      isPassed ? RESULT_VIDEO_SOURCES.pass : RESULT_VIDEO_SOURCES.fail,
       isPassed ? "icons/promosso.png" : "icons/bocciato.png",
       isPassed ? "OK" : "X"
     );
@@ -663,10 +851,10 @@ function openModal({
     modalRifai.style.display = "block";
 
     // ── Stats banner (fully inline — immune to CSS caching) ──
-    const correttePct    = (corrette    / total) * 100;
-    const nonRispostePct = (nonRisposte / total) * 100;
-    const sbagliAtePct   = (sbagliate   / total) * 100;
-    const pct            = Math.round(correttePct);
+    const correttePct    = total > 0 ? (corrette    / total) * 100 : 0;
+    const nonRispostePct = total > 0 ? (nonRisposte / total) * 100 : 0;
+    const sbagliAtePct   = total > 0 ? (sbagliate   / total) * 100 : 0;
+    const pct            = normalizedResult.scorePercentage;
 
     const banner = document.createElement("div");
     banner.id = "_result_stats_banner";
@@ -703,7 +891,11 @@ function openModal({
         <div style="height:100%;width:${nonRispostePct.toFixed(1)}%;background:#c8cad8;transition:width .65s ease;"></div>
         <div style="height:100%;width:${sbagliAtePct.toFixed(1)}%;background:#ee2f4b;${sbagliAtePct > 0 && correttePct === 0 && nonRispostePct === 0 ? "border-radius:999px;" : "border-radius:0 999px 999px 0;"};transition:width .65s ease;"></div>
       </div>
-      <div style="text-align:center;font-size:0.76rem;font-weight:700;color:rgba(37,41,67,.42);letter-spacing:.03em;">${pct}% corrette</div>
+      <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;text-align:center;font-size:0.76rem;font-weight:700;color:rgba(37,41,67,.42);letter-spacing:.03em;">
+        <span>Risultato: ${corrette}/${total} corrette</span>
+        <span>Percentuale: ${pct}%</span>
+        <span>Minimo richiesto: ${passingScore}/${total}</span>
+      </div>
     `;
 
     modalReview.parentNode.insertBefore(banner, modalReview);
@@ -712,7 +904,7 @@ function openModal({
 
     // ── Render review (wrapped so a throw here can't hide the stats) ──
     try {
-      const reviewItems = buildAnswerReview(result);
+      const reviewItems = buildAnswerReview(normalizedResult);
       renderAnswerReview(reviewItems);
     } catch (err) {
       console.error("[quiz] review render failed:", err.message);
@@ -754,13 +946,14 @@ function showConfirm(title, message, confirmText = "Conferma", cancelText = "Ann
 }
 
 function showResult(result) {
+  const normalizedResult = normalizeQuizResult(result);
   return openModal({
-    title:       result.passed ? "Promosso" : "Bocciato",
-    message:     result.passed ? "Hai superato il quiz." : "Riprova e migliora il risultato.",
+    title:       normalizedResult.passed ? "Promosso" : "Bocciato",
+    message:     normalizedResult.passed ? "Hai superato il quiz." : "Riprova e migliora il risultato.",
     confirmText: "Chiudi",
     showCancel:  false,
     badgeText:   "Esito",
-    result
+    result: normalizedResult
   });
 }
 
@@ -1161,11 +1354,11 @@ async function finishQuiz(forceFinish = false) {
       })
     });
 
-    // Attach non-risposte count so the result modal can display it correctly
-    data._nonRisposte = nonRisposte;
+    const result = normalizeQuizResult(data, payload.length);
+    result._nonRisposte = nonRisposte;
 
     hideLoading();
-    const action = await showResult(data);
+    const action = await showResult(result);
 
     if (action === "rifai") {
       rifaiScheda();
