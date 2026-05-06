@@ -690,6 +690,7 @@ async function loadQuiz() {
     }
 
     isAdmin = data.isAdmin === true;
+    console.log("[quiz] admin mode", isAdmin ? "enabled" : "disabled");
     quizSessionToken = data.quizSessionToken || "";
     quizSessionTokenExpiresAt = data.quizSessionTokenExpiresAt || 0;
     quiz = data.quiz;
@@ -999,8 +1000,11 @@ function getQuestionCorrectAnswer(question = {}) {
   const possibleKeys = [
     "correct",
     "answer",
+    "correct_answer",
     "correctAnswer",
+    "correct_answer_value",
     "rightAnswer",
+    "right_answer",
     "solution",
     "value"
   ];
