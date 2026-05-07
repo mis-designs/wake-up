@@ -359,6 +359,10 @@ button:active {
     display: none;
 }
 
+#login .admin-password.hidden {
+    display: none;
+}
+
 #login .otp-actions {
     width: 100%;
     display: grid;

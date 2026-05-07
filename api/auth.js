@@ -6,6 +6,7 @@ const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID;
 const SESSION_SECRET = process.env.SESSION_SECRET;
+const ADMIN_LOGIN_PASSWORD = process.env.ADMIN_LOGIN_PASSWORD || "";
 
 const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
 const OTP_COOLDOWN_SECONDS = 120;
@@ -27,8 +28,46 @@ function normalizePhone(input) {
   return phone;
 }
 
+const ADMIN_PHONE_NUMBERS = (process.env.ADMIN_PHONE_NUMBERS || "")
+  .split(",")
+  .map(normalizePhone)
+  .filter(Boolean);
+
 function isValidPhone(phone) {
   return /^[0-9]{6,15}$/.test(phone);
+}
+
+function isAdminPhone(phone) {
+  return ADMIN_PHONE_NUMBERS.includes(normalizePhone(phone));
+}
+
+function safeCompare(value, expected) {
+  const provided = Buffer.from(String(value || ""));
+  const target = Buffer.from(String(expected || ""));
+
+  if (!provided.length || !target.length || provided.length !== target.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(provided, target);
+}
+
+function validateAdminLoginPassword(phone, password) {
+  if (!isAdminPhone(phone)) return { ok: true, admin: false };
+
+  if (!ADMIN_LOGIN_PASSWORD) {
+    return { ok: false, admin: true, error: "missing_admin_password_config", statusCode: 500 };
+  }
+
+  if (!password) {
+    return { ok: false, admin: true, error: "admin_password_required", statusCode: 200 };
+  }
+
+  if (!safeCompare(password, ADMIN_LOGIN_PASSWORD)) {
+    return { ok: false, admin: true, error: "admin_password_invalid", statusCode: 200 };
+  }
+
+  return { ok: true, admin: true };
 }
 
 function base64UrlEncode(value) {
@@ -321,6 +360,14 @@ export default async function handler(req, res) {
     }
 
     if (action === "login") {
+      const adminPasswordCheck = validateAdminLoginPassword(phone, body.adminPassword);
+      if (!adminPasswordCheck.ok) {
+        return res.status(adminPasswordCheck.statusCode || 200).json({
+          success: false,
+          error: adminPasswordCheck.error
+        });
+      }
+
       const authData = await callAccessBackend("login", phone, deviceId, {
         registerDevice: true
       });

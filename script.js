@@ -72,6 +72,7 @@ let pendingOtpLogin = null;
 let otpResendTimer = null;
 let otpRetryAtMs = 0;
 let otpResendLoading = false;
+let adminPasswordRequired = false;
 
 function getClientAuthResetVersion() {
   try {
@@ -568,6 +569,7 @@ function completeLogin(phone, deviceId, data) {
   const err = document.getElementById("err");
   if (err) err.textContent = "";
   pendingOtpLogin = null;
+  hideAdminPasswordUI();
   hideOtpUI();
   showHome();
   startAccessValidationTimer();
@@ -580,6 +582,7 @@ function completeLogin(phone, deviceId, data) {
  ***********************/
 async function login() {
   const phoneInput = document.getElementById("user");
+  const adminPasswordInput = document.getElementById("adminPassword");
   const err = document.getElementById("err");
   const loginButton = document.querySelector("#login .login-submit");
 
@@ -606,10 +609,29 @@ async function login() {
     const data = await requestAuthAction({
       action: "login",
       phone,
-      deviceId
+      deviceId,
+      adminPassword: adminPasswordRequired ? String(adminPasswordInput?.value || "") : undefined
     });
 
     if (!data?.success) {
+      if ((data?.error || data?.status) === "admin_password_required") {
+        showAdminPasswordUI();
+        if (err) err.textContent = "Inserisci la password amministratore.";
+        updateLoginButtonState();
+        return;
+      }
+
+      if ((data?.error || data?.status) === "admin_password_invalid") {
+        showAdminPasswordUI();
+        if (adminPasswordInput) {
+          adminPasswordInput.value = "";
+          adminPasswordInput.focus();
+        }
+        if (err) err.textContent = "Password amministratore non corretta.";
+        updateLoginButtonState();
+        return;
+      }
+
       if (err) err.textContent = getLoginErrorMessage(data?.error || data?.status);
       return;
     }
@@ -625,6 +647,46 @@ async function login() {
     }
     updateLoginButtonState();
   }
+}
+
+function ensureAdminPasswordUI() {
+  if (document.getElementById("adminPassword")) return;
+
+  const phoneInput = document.getElementById("user");
+  if (!phoneInput) return;
+
+  const input = document.createElement("input");
+  input.id = "adminPassword";
+  input.className = "admin-password hidden";
+  input.type = "password";
+  input.placeholder = "Password amministratore";
+  input.autocomplete = "current-password";
+  input.setAttribute("aria-label", "Password amministratore");
+
+  input.addEventListener("input", () => {
+    const err = document.getElementById("err");
+    if (err) err.textContent = "";
+    updateLoginButtonState();
+  });
+
+  phoneInput.insertAdjacentElement("afterend", input);
+}
+
+function showAdminPasswordUI() {
+  ensureAdminPasswordUI();
+  adminPasswordRequired = true;
+  const input = document.getElementById("adminPassword");
+  input?.classList.remove("hidden");
+  input?.focus();
+}
+
+function hideAdminPasswordUI() {
+  adminPasswordRequired = false;
+  const input = document.getElementById("adminPassword");
+  if (!input) return;
+
+  input.value = "";
+  input.classList.add("hidden");
 }
 
 function ensureOtpUI() {
@@ -923,6 +985,9 @@ function isValidPhoneNumber(input) {
 
 function getLoginErrorMessage(error) {
   if (error === "otp_required") return "Accesso non disponibile. Riprova tra poco.";
+  if (error === "admin_password_required") return "Inserisci la password amministratore.";
+  if (error === "admin_password_invalid") return "Password amministratore non corretta.";
+  if (error === "missing_admin_password_config") return "Password amministratore non configurata.";
   if (error === "expired") return "Accesso scaduto. Contatta il supporto per rinnovare.";
   if (error === "not_found") return "Numero non autorizzato.";
   if (error === "device_replaced") return "Questo dispositivo non è più autorizzato perché l’accesso è stato spostato su un altro dispositivo.";
@@ -953,14 +1018,18 @@ function logOtpSendFailure(data, context) {
 
 function updateLoginButtonState() {
   const phoneInput = document.getElementById("user");
+  const adminPasswordInput = document.getElementById("adminPassword");
   const loginButton = document.querySelector("#login .login-submit");
   if (!loginButton) return;
 
   const isLoading = loginButton.classList.contains("is-loading");
-  loginButton.disabled = isLoading || !isValidPhoneNumber(phoneInput?.value);
+  const missingAdminPassword = adminPasswordRequired && !String(adminPasswordInput?.value || "").trim();
+  loginButton.disabled = isLoading || !isValidPhoneNumber(phoneInput?.value) || missingAdminPassword;
 }
 
 function setupLoginUI() {
+  ensureAdminPasswordUI();
+
   const phoneInput = document.getElementById("user");
   const loginButton = document.querySelector("#login .login-submit");
   const err = document.getElementById("err");
@@ -970,6 +1039,7 @@ function setupLoginUI() {
   }
 
   phoneInput?.addEventListener("input", () => {
+    hideAdminPasswordUI();
     if (err) err.textContent = "";
     updateLoginButtonState();
   });
