@@ -337,6 +337,24 @@ export default async function handler(req, res) {
         });
       }
 
+      if (getAuthError(authData) === "otp_required") {
+        const rotationData = await callAccessBackend("confirm_device_rotation", phone, deviceId);
+
+        if (isAuthSuccess(rotationData)) {
+          return sendSuccessfulLogin(res, {
+            phone,
+            deviceId,
+            authData: rotationData,
+            extra: {
+              ...(rotationData.rotated ? { rotated: true } : {}),
+              ...(rotationData.replacedDevice ? { replacedDevice: rotationData.replacedDevice } : {})
+            }
+          });
+        }
+
+        return res.status(200).json({ success: false, error: getAuthError(rotationData) });
+      }
+
       return res.status(200).json({ success: false, error: getAuthError(authData) });
     }
 
