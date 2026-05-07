@@ -302,10 +302,6 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "missing_server_config" });
   }
 
-  if (!hasTwilioConfig()) {
-    return res.status(500).json({ error: "missing_twilio_config" });
-  }
-
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
     const action = String(body.action || "").trim();
@@ -325,78 +321,31 @@ export default async function handler(req, res) {
     }
 
     if (action === "login") {
-      const authData = await callAccessBackend("login_check", phone, deviceId);
+      const authData = await callAccessBackend("login", phone, deviceId, {
+        registerDevice: true
+      });
 
       if (isAuthSuccess(authData)) {
-        return sendSuccessfulLogin(res, { phone, deviceId, authData });
+        return sendSuccessfulLogin(res, {
+          phone,
+          deviceId,
+          authData,
+          extra: {
+            ...(authData.rotated ? { rotated: true } : {}),
+            ...(authData.replacedDevice ? { replacedDevice: authData.replacedDevice } : {})
+          }
+        });
       }
 
-      const error = getAuthError(authData);
-      if (error !== "otp_required") {
-        return res.status(200).json({ success: false, error });
-      }
-
-      return sendOtpForDevice({ res, phone, deviceId, action: "login" });
+      return res.status(200).json({ success: false, error: getAuthError(authData) });
     }
 
     if (action === "resendOtp") {
-      const authData = await callAccessBackend("login_check", phone, deviceId);
-
-      if (isAuthSuccess(authData)) {
-        return sendSuccessfulLogin(res, { phone, deviceId, authData });
-      }
-
-      const error = getAuthError(authData);
-      if (error !== "otp_required") {
-        return res.status(200).json({ success: false, error });
-      }
-
-      return sendOtpForDevice({ res, phone, deviceId, action: "resendOtp" });
+      return res.status(400).json({ success: false, error: "otp_disabled" });
     }
 
     if (action === "verifyOtp") {
-      const code = String(body.code || "").trim();
-      if (!code) {
-        return res.status(400).json({ success: false, error: "bad_otp" });
-      }
-
-      const verification = await checkTwilioVerification(phone, code);
-      if (!verification.ok || verification.verifyStatus !== "approved") {
-        logAuthEvent({
-          action: "verifyOtp",
-          phone,
-          event: "otp_verify_not_approved",
-          twilioStatus: verification.verifyStatus,
-          twilioErrorCode: verification.errorCode
-        });
-        return res.status(200).json({
-          success: false,
-          error: "invalid_otp",
-          twilioStatus: verification.verifyStatus || null
-        });
-      }
-
-      logAuthEvent({
-        action: "verifyOtp",
-        phone,
-        event: "otp_verify_approved",
-        twilioStatus: verification.verifyStatus
-      });
-
-      const authData = await callAccessBackend("confirm_device_rotation", phone, deviceId);
-      if (!isAuthSuccess(authData)) {
-        return res.status(200).json({ success: false, error: getAuthError(authData) });
-      }
-
-      return sendSuccessfulLogin(res, {
-        phone,
-        deviceId,
-        authData,
-        extra: {
-          rotated: true,
-          ...(authData.replacedDevice ? { replacedDevice: authData.replacedDevice } : {})
-        }
-      });
+      return res.status(400).json({ success: false, error: "otp_disabled" });
     }
 
     return res.status(400).json({ success: false, error: "invalid_action" });

@@ -610,19 +610,6 @@ async function login() {
     });
 
     if (!data?.success) {
-      if ((data?.error || data?.status) === "otp_required") {
-        pendingOtpLogin = { phone, deviceId };
-        showOtpUI(data);
-        if (err) {
-          err.textContent = getOtpRequiredMessage(data);
-        }
-        return;
-      }
-
-      if ((data?.error || data?.status) === "otp_send_failed") {
-        logOtpSendFailure(data, "login");
-      }
-
       if (err) err.textContent = getLoginErrorMessage(data?.error || data?.status);
       return;
     }
@@ -641,6 +628,7 @@ async function login() {
 }
 
 function ensureOtpUI() {
+  return;
   if (document.getElementById("otpForm")) return;
 
   const loginCard = document.getElementById("login");
@@ -703,6 +691,7 @@ function ensureOtpUI() {
 }
 
 function showOtpUI(data = {}) {
+  return;
   ensureOtpUI();
   const loginForm = document.querySelector("#login .login-form");
   const otpForm = document.getElementById("otpForm");
@@ -835,6 +824,7 @@ function cancelOtpLogin() {
 }
 
 async function resendOtp() {
+  return;
   const err = document.getElementById("err");
 
   if (!pendingOtpLogin) {
@@ -884,6 +874,7 @@ async function resendOtp() {
 }
 
 async function verifyOtp() {
+  return;
   const otpInput = document.getElementById("otpCode");
   const err = document.getElementById("err");
   const code = String(otpInput?.value || "").trim();
@@ -970,8 +961,6 @@ function updateLoginButtonState() {
 }
 
 function setupLoginUI() {
-  ensureOtpUI();
-
   const phoneInput = document.getElementById("user");
   const loginButton = document.querySelector("#login .login-submit");
   const err = document.getElementById("err");
@@ -981,10 +970,6 @@ function setupLoginUI() {
   }
 
   phoneInput?.addEventListener("input", () => {
-    if (pendingOtpLogin) {
-      pendingOtpLogin = null;
-      hideOtpUI();
-    }
     if (err) err.textContent = "";
     updateLoginButtonState();
   });
