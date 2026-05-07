@@ -922,7 +922,7 @@ function isValidPhoneNumber(input) {
 }
 
 function getLoginErrorMessage(error) {
-  if (error === "otp_required") return "Abbiamo inviato un codice OTP al tuo numero. Inserisci il codice per autorizzare questo dispositivo.";
+  if (error === "otp_required") return "Accesso in aggiornamento. Riprova tra poco.";
   if (error === "expired") return "Accesso scaduto. Contatta il supporto per rinnovare.";
   if (error === "not_found") return "Numero non autorizzato.";
   if (error === "device_replaced") return "Questo dispositivo non è più autorizzato perché l’accesso è stato spostato su un altro dispositivo.";
