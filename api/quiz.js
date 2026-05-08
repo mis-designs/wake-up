@@ -16,6 +16,8 @@ const QUIZ_SESSION_TOKEN_TTL_MS = 30 * 60 * 1000;
 const PASSING_SCORE_RATIO = 0.9;
 const EXAM_POOL_START_INDEX = 790;
 const EXAM_POOL_SIZE = 80;
+const EXAM_POOL_FETCH_ATTEMPTS = 20;
+const EXAM_POOL_FETCH_BATCH_SIZE = 4;
 const EXAM_QUIZ_MODES = {
   exam80: {
     mode: "exam80",
@@ -351,6 +353,49 @@ function getExamPool(rows) {
   return examRows;
 }
 
+function mergeQuestionsById(existingRows, nextRows) {
+  const merged = existingRows.slice();
+  const seen = new Set(merged.map((question, index) => String(question?.id ?? `__index_${index}`)));
+
+  nextRows.forEach((question, index) => {
+    const key = String(question?.id ?? `__new_${merged.length}_${index}`);
+    if (seen.has(key)) return;
+    seen.add(key);
+    merged.push(question);
+  });
+
+  return merged;
+}
+
+async function fetchExamRows(action, text) {
+  let collected = [];
+  let lastReceived = 0;
+
+  for (let attempt = 0; attempt < EXAM_POOL_FETCH_ATTEMPTS && collected.length < EXAM_POOL_SIZE; attempt += EXAM_POOL_FETCH_BATCH_SIZE) {
+    const remainingAttempts = EXAM_POOL_FETCH_ATTEMPTS - attempt;
+    const batchSize = Math.min(EXAM_POOL_FETCH_BATCH_SIZE, remainingAttempts);
+    const batch = await Promise.all(
+      Array.from({ length: batchSize }, () => forwardGetAction({ action, chapters: "exam", text }))
+    );
+
+    batch.forEach(data => {
+      const rows = getExamPool(getQuizRows(data));
+      lastReceived = rows.length;
+      collected = mergeQuestionsById(collected, rows);
+    });
+  }
+
+  if (collected.length < EXAM_POOL_SIZE) {
+    console.warn("[api/quiz] incomplete exam pool", {
+      expected: EXAM_POOL_SIZE,
+      collected: collected.length,
+      lastReceived
+    });
+  }
+
+  return collected;
+}
+
 function buildExamQuiz(rows, modeConfig) {
   const pool = getExamPool(rows);
   if (pool.length !== EXAM_POOL_SIZE) {
@@ -483,11 +528,9 @@ export default async function handler(req, res) {
       }
 
       const modeConfig = getExamModeConfig(mode);
-      const data = modeConfig
-        ? await forwardGetAction({ action, chapters: "exam", text })
-        : await forwardGetAction({ action, chapters, text });
+      const data = modeConfig ? null : await forwardGetAction({ action, chapters, text });
       const admin = isAdminPhone(phone);
-      const rows = getQuizRows(data);
+      const rows = modeConfig ? await fetchExamRows(action, text) : getQuizRows(data);
       const quiz = modeConfig ? buildExamQuiz(rows, modeConfig) : rows;
       const quizForClient = admin ? await addAdminCorrectAnswers(quiz) : quiz;
       const quizSession = createSignedToken({

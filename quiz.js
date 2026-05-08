@@ -238,6 +238,14 @@ function getQuizAccessErrorMessage(error) {
   return "Accesso non autorizzato.";
 }
 
+function getQuizLoadErrorMessage(error) {
+  if (error === "invalid_exam_pool") {
+    return "Domande Exam non trovate. Controlla che il backend quiz restituisca il capitolo exam.";
+  }
+
+  return "Errore caricamento quiz";
+}
+
 function isQuizAccessError(error) {
   return ["expired", "not_found", "device_replaced", "device_mismatch", "unauthorized", "quiz_session_expired"].includes(error);
 }
@@ -669,7 +677,7 @@ async function loadQuiz() {
     startTimer();
   } catch (err) {
     if (quizAccessErrorHandled) return;
-    showMessage("Errore", "Errore caricamento quiz");
+    showMessage("Errore", getQuizLoadErrorMessage(err.message));
     console.error("[quiz] loadQuiz failed:", err.message);
   } finally {
     hideLoading();
