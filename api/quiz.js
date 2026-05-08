@@ -265,7 +265,7 @@ function getRequestData(req) {
   };
 }
 
-async function forwardGetAction({ action, chapters, text }) {
+async function forwardGetAction({ action, chapters, text, mode, limit, count, questionCount }) {
   const params = new URLSearchParams({
     action,
     token: QUIZ_PROXY_SECRET
@@ -273,6 +273,10 @@ async function forwardGetAction({ action, chapters, text }) {
 
   if (chapters) params.set("chapters", chapters);
   if (text) params.set("text", text);
+  if (mode) params.set("mode", mode);
+  if (limit !== undefined && limit !== null) params.set("limit", String(limit));
+  if (count !== undefined && count !== null) params.set("count", String(count));
+  if (questionCount !== undefined && questionCount !== null) params.set("questionCount", String(questionCount));
 
   const url = `${QUIZ_GAS_URL}?${params.toString()}`;
   const response = await fetch(url);
@@ -376,7 +380,15 @@ async function fetchExamRows(action, text) {
     const remainingAttempts = EXAM_POOL_FETCH_ATTEMPTS - attempt;
     const batchSize = Math.min(EXAM_POOL_FETCH_BATCH_SIZE, remainingAttempts);
     const batch = await Promise.all(
-      Array.from({ length: batchSize }, () => forwardGetAction({ action, chapters: EXAM_CHAPTER_CODE, text }))
+      Array.from({ length: batchSize }, () => forwardGetAction({
+        action,
+        chapters: EXAM_CHAPTER_CODE,
+        text,
+        mode: "exam",
+        limit: EXAM_POOL_SIZE,
+        count: EXAM_POOL_SIZE,
+        questionCount: EXAM_POOL_SIZE
+      }))
     );
 
     batch.forEach(data => {
@@ -399,10 +411,12 @@ async function fetchExamRows(action, text) {
 
 function buildExamQuiz(rows, modeConfig) {
   const pool = getExamPool(rows);
-  if (pool.length !== EXAM_POOL_SIZE) {
+  const requiredCount = modeConfig.questionCount === EXAM_POOL_SIZE ? EXAM_POOL_SIZE : modeConfig.questionCount;
+
+  if (pool.length < requiredCount) {
     const err = new Error("invalid_exam_pool");
     err.statusCode = 502;
-    err.details = { expected: EXAM_POOL_SIZE, received: pool.length };
+    err.details = { expected: requiredCount, received: pool.length };
     throw err;
   }
 

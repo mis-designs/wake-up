@@ -240,7 +240,7 @@ function getQuizAccessErrorMessage(error) {
 
 function getQuizLoadErrorMessage(error) {
   if (error === "invalid_exam_pool") {
-    return "Domande Exam non trovate. Controlla che il backend quiz restituisca il capitolo exam.";
+    return "Domande Exam insufficienti. Controlla che il backend quiz restituisca il capitolo 0.";
   }
 
   return "Errore caricamento quiz";
