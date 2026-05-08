@@ -1864,6 +1864,15 @@ body.app-mode #whatsappBtn {
 .qms-badge-mix   { background: linear-gradient(135deg, #3a4efb 0%, #33a4fa 100%); }
 .qms-badge-cap   { background: linear-gradient(135deg, #e3ff3b 0%, #c8ef00 100%); }
 .qms-badge-multi { background: linear-gradient(135deg, #ff8c00 0%, #f8c000 100%); }
+.qms-badge-exam80 { background: linear-gradient(135deg, #15d66b 0%, #0fb858 100%); }
+.qms-badge-exam30 { background: linear-gradient(135deg, #ee2f4b 0%, #ff7a59 100%); }
+
+.qms-card-badge img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+}
 
 .qms-card-title {
     font-size: 15px;
@@ -2009,6 +2018,26 @@ body.app-mode #whatsappBtn {
 
 .qms-start-multi:not(:disabled):hover {
     box-shadow: 0 12px 28px rgba(248, 140, 0, 0.4);
+}
+
+.qms-start-exam80 {
+    background: linear-gradient(135deg, #15d66b 0%, #0fb858 100%);
+    color: white;
+    box-shadow: 0 8px 22px rgba(21, 214, 107, 0.3);
+}
+
+.qms-start-exam80:not(:disabled):hover {
+    box-shadow: 0 12px 28px rgba(21, 214, 107, 0.4);
+}
+
+.qms-start-exam30 {
+    background: linear-gradient(135deg, #ee2f4b 0%, #ff7a59 100%);
+    color: white;
+    box-shadow: 0 8px 22px rgba(238, 47, 75, 0.28);
+}
+
+.qms-start-exam30:not(:disabled):hover {
+    box-shadow: 0 12px 28px rgba(238, 47, 75, 0.38);
 }
 
 body.qms-open { overflow: hidden; }

@@ -36,7 +36,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <meta name="theme-color" content="#dee0ed">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MagicBook">
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 
@@ -274,6 +274,48 @@ gtag('config', 'G-C5JPY9HFHD', {
   </div>
 </div>
 
-<script src="script.js"></script>
+<!-- EXAM MODE SELECTION OVERLAY -->
+<div id="examModeOverlay" class="qms-overlay hidden">
+  <div class="qms-sheet">
+    <div class="qms-drag-handle"></div>
+    <div class="qms-header">
+      <button class="qms-back" onclick="closeExamModeScreen()" aria-label="Indietro">
+        <img src="icons/go-back.png" alt="Indietro">
+      </button>
+      <span class="qms-title">Scegli Modalita Exam</span>
+    </div>
+    <div class="qms-body">
+
+      <div class="qms-card" id="examCard80">
+        <div class="qms-card-header">
+          <div class="qms-card-badge qms-badge-exam80">
+            <img src="icons/true.png" alt="">
+          </div>
+          <div class="qms-card-info">
+            <div class="qms-card-title">Mix Quiz 80</div>
+            <div class="qms-card-sub">80 Questions, 50 Minutes</div>
+          </div>
+        </div>
+        <button class="qms-start qms-start-exam80" onclick="startExamQuiz('exam80')">Inizia &rarr;</button>
+      </div>
+
+      <div class="qms-card" id="examCard30">
+        <div class="qms-card-header">
+          <div class="qms-card-badge qms-badge-exam30">
+            <img src="icons/false.png" alt="">
+          </div>
+          <div class="qms-card-info">
+            <div class="qms-card-title">Mix Quiz 30</div>
+            <div class="qms-card-sub">30 Questions, 20 Minutes</div>
+          </div>
+        </div>
+        <button class="qms-start qms-start-exam30" onclick="startExamQuiz('exam30')">Inizia &rarr;</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="script.js?v=2"></script>
 </body>
 </html>

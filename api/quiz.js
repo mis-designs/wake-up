@@ -14,6 +14,24 @@ const GET_ACTIONS = new Set(["getQuiz", "getItalianAudio", "getBengaliAudio", "g
 const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
 const QUIZ_SESSION_TOKEN_TTL_MS = 30 * 60 * 1000;
 const PASSING_SCORE_RATIO = 0.9;
+const EXAM_POOL_START_INDEX = 790;
+const EXAM_POOL_SIZE = 80;
+const EXAM_QUIZ_MODES = {
+  exam80: {
+    mode: "exam80",
+    questionCount: 80,
+    timerMinutes: 50,
+    sessionTtlMs: 55 * 60 * 1000,
+    title: "Exam"
+  },
+  exam30: {
+    mode: "exam30",
+    questionCount: 30,
+    timerMinutes: 20,
+    sessionTtlMs: QUIZ_SESSION_TOKEN_TTL_MS,
+    title: "Exam"
+  }
+};
 
 function calculateQuizResult(correctAnswers, totalQuestions) {
   const total = Number(totalQuestions) || 0;
@@ -238,6 +256,7 @@ function getRequestData(req) {
     accessToken: body.accessToken || query.accessToken,
     quizSessionToken: body.quizSessionToken || query.quizSessionToken,
     chapters: body.chapters || query.chapters,
+    mode: body.mode || query.mode,
     text: body.text || query.text,
     answers: body.answers
   };
@@ -255,6 +274,93 @@ async function forwardGetAction({ action, chapters, text }) {
   const url = `${QUIZ_GAS_URL}?${params.toString()}`;
   const response = await fetch(url);
   return readJsonResponse(response);
+}
+
+function getQuizRows(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.quiz)) return data.quiz;
+  if (Array.isArray(data?.questions)) return data.questions;
+  if (Array.isArray(data?.rows)) return data.rows;
+  return [];
+}
+
+function getExamModeConfig(mode) {
+  return EXAM_QUIZ_MODES[String(mode || "").toLowerCase()] || null;
+}
+
+function getMappedValue(row, names) {
+  if (!row || typeof row !== "object") return undefined;
+
+  for (const name of names) {
+    if (Object.prototype.hasOwnProperty.call(row, name)) return row[name];
+  }
+
+  const entries = Object.entries(row);
+  for (const name of names) {
+    const match = entries.find(([key]) => String(key).trim().toLowerCase() === String(name).trim().toLowerCase());
+    if (match) return match[1];
+  }
+
+  return undefined;
+}
+
+function normalizeQuestionRow(row) {
+  // image_0.png defines these database headers; image_1.png identifies the exam rows from index 790+.
+  return {
+    ...row,
+    id: getMappedValue(row, ["id", "ID"]),
+    chapter: getMappedValue(row, ["chapter", "Chapter"]),
+    question: getMappedValue(row, ["question", "Question"]),
+    figure: getMappedValue(row, ["figure", "Figure"]),
+    correct: getMappedValue(row, ["correct", "Correct"]),
+    question_bd: getMappedValue(row, ["question_bd", "Question_BD", "questionBD", "questionBd"])
+  };
+}
+
+function isExamQuestion(question) {
+  const chapter = String(question?.chapter ?? "").trim().toLowerCase();
+  const id = String(question?.id ?? "").trim().toLowerCase();
+  return chapter === "exam" || /^exam_q\d+$/.test(id);
+}
+
+function shuffleQuestions(questions) {
+  const shuffled = questions.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+function getExamPool(rows) {
+  const normalized = rows.map(normalizeQuestionRow);
+  const examRows = normalized.filter(isExamQuestion);
+
+  if (examRows.length >= EXAM_POOL_SIZE) {
+    return examRows.slice(0, EXAM_POOL_SIZE);
+  }
+
+  if (normalized.length === EXAM_POOL_SIZE) {
+    return normalized;
+  }
+
+  if (normalized.length >= EXAM_POOL_START_INDEX + EXAM_POOL_SIZE) {
+    return normalized.slice(EXAM_POOL_START_INDEX, EXAM_POOL_START_INDEX + EXAM_POOL_SIZE);
+  }
+
+  return examRows;
+}
+
+function buildExamQuiz(rows, modeConfig) {
+  const pool = getExamPool(rows);
+  if (pool.length !== EXAM_POOL_SIZE) {
+    const err = new Error("invalid_exam_pool");
+    err.statusCode = 502;
+    err.details = { expected: EXAM_POOL_SIZE, received: pool.length };
+    throw err;
+  }
+
+  return shuffleQuestions(pool).slice(0, modeConfig.questionCount);
 }
 
 async function forwardCheckQuiz(answers) {
@@ -363,7 +469,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { action, phone, deviceId, accessToken, quizSessionToken, chapters, text, answers } = getRequestData(req);
+    const { action, phone, deviceId, accessToken, quizSessionToken, chapters, mode, text, answers } = getRequestData(req);
     console.log("[api/quiz] action", action);
 
     if (!action) {
@@ -376,20 +482,27 @@ export default async function handler(req, res) {
         return res.status(access.statusCode || 401).json({ error: access.error || "unauthorized" });
       }
 
-      const data = await forwardGetAction({ action, chapters, text });
+      const modeConfig = getExamModeConfig(mode);
+      const data = modeConfig
+        ? await forwardGetAction({ action, chapters: "exam", text })
+        : await forwardGetAction({ action, chapters, text });
       const admin = isAdminPhone(phone);
-      const quiz = Array.isArray(data) ? data : [];
+      const rows = getQuizRows(data);
+      const quiz = modeConfig ? buildExamQuiz(rows, modeConfig) : rows;
       const quizForClient = admin ? await addAdminCorrectAnswers(quiz) : quiz;
       const quizSession = createSignedToken({
         phone,
         deviceId,
         purpose: "quiz",
-        ttlMs: QUIZ_SESSION_TOKEN_TTL_MS
+        ttlMs: modeConfig?.sessionTtlMs || QUIZ_SESSION_TOKEN_TTL_MS
       });
 
       return res.status(200).json({
         quiz: quizForClient,
         isAdmin: admin,
+        mode: modeConfig?.mode || "default",
+        title: modeConfig?.title || "Quiz",
+        timerMinutes: modeConfig?.timerMinutes || 20,
         quizSessionToken: quizSession.token,
         quizSessionTokenExpiresAt: quizSession.expiresAt,
         ...(access.accessToken ? {
@@ -429,6 +542,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "invalid_action" });
   } catch (err) {
     console.error("[api/quiz] server_error", err);
-    return res.status(500).json({ error: "server_error" });
+    return res.status(err.statusCode || 500).json({
+      error: err.message || "server_error",
+      ...(err.details ? { details: err.details } : {})
+    });
   }
 }

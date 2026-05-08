@@ -92,6 +92,28 @@ if (!hasCurrentClientAuthResetVersion()) {
 
 const QUIZ_API = "/api/quiz";
 const BASE_IMG_URL = "https://pub-21131aa867534601af79c34beb746fb7.r2.dev/Figure/";
+const QUIZ_MODE_CONFIG = {
+  exam80: { title: "Exam", timerMinutes: 50 },
+  exam30: { title: "Exam", timerMinutes: 20 },
+  default: { title: "Quiz", timerMinutes: 20 }
+};
+
+function getRequestedQuizMode() {
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get("mode") || "";
+  return Object.prototype.hasOwnProperty.call(QUIZ_MODE_CONFIG, mode) ? mode : "default";
+}
+
+function getQuizModeConfig(mode = quizMode) {
+  return QUIZ_MODE_CONFIG[mode] || QUIZ_MODE_CONFIG.default;
+}
+
+function formatTimer(totalSeconds) {
+  const safeSeconds = Math.max(0, Number(totalSeconds) || 0);
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+}
 
 function parseStoredQuizSession(rawSession) {
   if (!rawSession) return null;
@@ -284,7 +306,9 @@ async function fetchQuizJson(url, options = {}) {
 let quiz = [];
 let answers = [];
 let current = 0;
-let time = 20 * 60;
+let quizMode = getRequestedQuizMode();
+let quizDurationMinutes = getQuizModeConfig(quizMode).timerMinutes;
+let time = quizDurationMinutes * 60;
 let isFinishing = false;
 let lastQuizSet = null;
 let isAdmin = false;
@@ -614,7 +638,8 @@ async function loadQuiz() {
   try {
     const params   = new URLSearchParams(window.location.search);
     const chapters = params.get("chapters") || "";
-    const url = buildQuizApiUrl("getQuiz", { chapters });
+    quizMode = getRequestedQuizMode();
+    const url = buildQuizApiUrl("getQuiz", { chapters, mode: quizMode === "default" ? "" : quizMode });
     const data = await fetchQuizJson(url);
 
     if (data.accessToken && data.accessTokenExpiresAt) {
@@ -625,17 +650,23 @@ async function loadQuiz() {
     console.log("[quiz] admin mode", isAdmin ? "enabled" : "disabled");
     quizSessionToken = data.quizSessionToken || "";
     quizSessionTokenExpiresAt = data.quizSessionTokenExpiresAt || 0;
+    quizDurationMinutes = Number(data.timerMinutes) || getQuizModeConfig(quizMode).timerMinutes;
     quiz = data.quiz;
 
     if (!Array.isArray(quiz)) {
       throw new Error("invalid_quiz_response");
     }
 
+    const modeConfig = getQuizModeConfig(quizMode);
+    const titleEl = document.querySelector(".top-bar h2");
+    if (titleEl) titleEl.innerText = data.title || modeConfig.title || "Quiz";
+
     // inizializza risposte
     answers = quiz.map(q => ({ id: q.id, answer: null }));
 
     buildProgressBar();
     showQuestion();
+    startTimer();
   } catch (err) {
     if (quizAccessErrorHandled) return;
     showMessage("Errore", "Errore caricamento quiz");
@@ -1258,22 +1289,17 @@ let timerInterval = null;
 
 function startTimer() {
   clearInterval(timerInterval);
-  time = 20 * 60;
-  document.getElementById("timer").innerText = "20:00";
+  time = quizDurationMinutes * 60;
+  document.getElementById("timer").innerText = formatTimer(time);
   timerInterval = setInterval(() => {
     time--;
-    let m = Math.floor(time / 60);
-    let s = time % 60;
-    document.getElementById("timer").innerText =
-      `${m}:${s < 10 ? "0" : ""}${s}`;
+    document.getElementById("timer").innerText = formatTimer(time);
     if (time <= 0) {
       clearInterval(timerInterval);
       finishQuiz(true);
     }
   }, 1000);
 }
-
-startTimer();
 
 // CONTROLLO RISPOSTE
 function allAnswered() {

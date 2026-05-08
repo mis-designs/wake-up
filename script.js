@@ -2086,7 +2086,38 @@ initDashboard();
  * EXAM
  ***********************/
 function openExam() {
-  openMagicBookPages({ type: "exam" });
+  openExamModeScreen();
+}
+
+function openExamModeScreen() {
+  const overlay = document.getElementById("examModeOverlay");
+  if (!overlay) return;
+
+  overlay.classList.remove("hidden");
+  requestAnimationFrame(() => overlay.classList.add("qms-visible"));
+  document.body.classList.add("qms-open");
+  currentScreen = "examMode";
+}
+
+function closeExamModeScreen() {
+  const overlay = document.getElementById("examModeOverlay");
+  if (!overlay) return;
+  overlay.classList.remove("qms-visible");
+  setTimeout(() => {
+    overlay.classList.add("hidden");
+    document.body.classList.remove("qms-open");
+  }, 450);
+  currentScreen = "chapters";
+}
+
+function startExamQuiz(mode) {
+  const validModes = new Set(["exam80", "exam30"]);
+  if (!validModes.has(mode)) return;
+
+  closeExamModeScreen();
+  setTimeout(() => {
+    window.location.href = "quiz.html?mode=" + encodeURIComponent(mode);
+  }, 460);
 }
 
 function openChapter(cap) {
@@ -2097,7 +2128,7 @@ function openChapter(cap) {
  * APP HEADER & MENU
  ***********************/
 let currentViewingChapter = null;
-let currentScreen = "login"; // login | home | chapters | viewer | exam
+let currentScreen = "login"; // login | home | chapters | viewer | exam | quizMode | examMode
 
 function setChapterMode(enabled, chapterNum = null) {
   const viewerBackBtn = document.getElementById("viewerBackBtn");
@@ -2216,6 +2247,10 @@ function openChapterFromMenu(chapterNum) {
 // Context-aware back navigation
 function goBack() {
   closeChapterMenu();
+  if (currentScreen === "examMode") {
+    closeExamModeScreen();
+    return;
+  }
   if (currentScreen === "quizMode") {
     closeQuizModeScreen();
     return;

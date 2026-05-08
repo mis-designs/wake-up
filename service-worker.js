@@ -1,9 +1,9 @@
-const CACHE_NAME = "magicbook-pwa-v1";
+const CACHE_NAME = "magicbook-pwa-v2";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
-  "/style.css?v=2",
-  "/script.js",
+  "/style.css?v=3",
+  "/script.js?v=2",
   "/manifest.webmanifest",
   "/icons/mg_logo.png"
 ];
