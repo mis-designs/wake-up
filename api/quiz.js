@@ -14,6 +14,7 @@ const GET_ACTIONS = new Set(["getQuiz", "getItalianAudio", "getBengaliAudio", "g
 const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
 const QUIZ_SESSION_TOKEN_TTL_MS = 30 * 60 * 1000;
 const PASSING_SCORE_RATIO = 0.9;
+const EXAM_CHAPTER_CODE = "0";
 const EXAM_POOL_START_INDEX = 790;
 const EXAM_POOL_SIZE = 80;
 const EXAM_POOL_FETCH_ATTEMPTS = 20;
@@ -322,7 +323,7 @@ function normalizeQuestionRow(row) {
 function isExamQuestion(question) {
   const chapter = String(question?.chapter ?? "").trim().toLowerCase();
   const id = String(question?.id ?? "").trim().toLowerCase();
-  return chapter === "exam" || /^exam_q\d+$/.test(id);
+  return chapter === EXAM_CHAPTER_CODE || chapter === "exam" || /^exam_q\d+$/.test(id);
 }
 
 function shuffleQuestions(questions) {
@@ -375,7 +376,7 @@ async function fetchExamRows(action, text) {
     const remainingAttempts = EXAM_POOL_FETCH_ATTEMPTS - attempt;
     const batchSize = Math.min(EXAM_POOL_FETCH_BATCH_SIZE, remainingAttempts);
     const batch = await Promise.all(
-      Array.from({ length: batchSize }, () => forwardGetAction({ action, chapters: "exam", text }))
+      Array.from({ length: batchSize }, () => forwardGetAction({ action, chapters: EXAM_CHAPTER_CODE, text }))
     );
 
     batch.forEach(data => {
