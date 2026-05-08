@@ -36,7 +36,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <meta name="theme-color" content="#dee0ed">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MagicBook">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -240,7 +240,10 @@ gtag('config', 'G-C5JPY9HFHD', {
             <div class="qms-card-sub">30 domande casuali dal totale</div>
           </div>
         </div>
-        <button class="qms-start qms-start-mix" onclick="startMixQuiz()">Inizia &rarr;</button>
+        <button class="qms-start qms-start-mix" onclick="startMixQuiz()">
+          <span class="qms-start-label">Inizia</span>
+          <span class="qms-start-arrow" aria-hidden="true">&rarr;</span>
+        </button>
       </div>
 
       <!-- QUIZ CAPITOLO -->
@@ -253,7 +256,10 @@ gtag('config', 'G-C5JPY9HFHD', {
           </div>
         </div>
         <div class="qms-pills" id="qmsCapPills"></div>
-        <button class="qms-start qms-start-cap" id="qmsCapStartBtn" onclick="startCapQuiz()" disabled>Inizia &rarr;</button>
+        <button class="qms-start qms-start-cap" id="qmsCapStartBtn" onclick="startCapQuiz()" disabled>
+          <span class="qms-start-label">Inizia</span>
+          <span class="qms-start-arrow" aria-hidden="true">&rarr;</span>
+        </button>
       </div>
 
       <!-- MULTI QUIZ -->
@@ -267,7 +273,10 @@ gtag('config', 'G-C5JPY9HFHD', {
         </div>
         <div class="qms-pills" id="qmsMultiPills"></div>
         <div class="qms-hint" id="qmsMultiHint">Seleziona almeno 2 capitoli</div>
-        <button class="qms-start qms-start-multi" id="qmsMultiStartBtn" onclick="startMultiQuiz()" disabled>Inizia &rarr;</button>
+        <button class="qms-start qms-start-multi" id="qmsMultiStartBtn" onclick="startMultiQuiz()" disabled>
+          <span class="qms-start-label">Inizia</span>
+          <span class="qms-start-arrow" aria-hidden="true">&rarr;</span>
+        </button>
       </div>
 
     </div>
@@ -293,10 +302,13 @@ gtag('config', 'G-C5JPY9HFHD', {
           </div>
           <div class="qms-card-info">
             <div class="qms-card-title">Mix Quiz 80</div>
-            <div class="qms-card-sub">80 Questions, 50 Minutes</div>
+            <div class="qms-card-sub">80 Questions, 50 Minutes (Most Difficult)</div>
           </div>
         </div>
-        <button class="qms-start qms-start-exam80" onclick="startExamQuiz('exam80')">Inizia &rarr;</button>
+        <button class="qms-start qms-start-exam80" onclick="startExamQuiz('exam80')">
+          <span class="qms-start-label">Inizia</span>
+          <span class="qms-start-arrow" aria-hidden="true">&rarr;</span>
+        </button>
       </div>
 
       <div class="qms-card" id="examCard30">
@@ -309,13 +321,32 @@ gtag('config', 'G-C5JPY9HFHD', {
             <div class="qms-card-sub">30 Questions, 20 Minutes</div>
           </div>
         </div>
-        <button class="qms-start qms-start-exam30" onclick="startExamQuiz('exam30')">Inizia &rarr;</button>
+        <button class="qms-start qms-start-exam30" onclick="startExamQuiz('exam30')">
+          <span class="qms-start-label">Inizia</span>
+          <span class="qms-start-arrow" aria-hidden="true">&rarr;</span>
+        </button>
+      </div>
+
+      <div class="qms-card" id="examCardPdf">
+        <div class="qms-card-header">
+          <div class="qms-card-badge qms-badge-exam-pdf">
+            <img src="icons/chapter.png" alt="">
+          </div>
+          <div class="qms-card-info">
+            <div class="qms-card-title">Exam PDF</div>
+            <div class="qms-card-sub">Apri il file PDF come prima</div>
+          </div>
+        </div>
+        <button class="qms-start qms-start-exam-pdf" onclick="startExamPdf()">
+          <span class="qms-start-label">Apri PDF</span>
+          <span class="qms-start-arrow" aria-hidden="true">&rarr;</span>
+        </button>
       </div>
 
     </div>
   </div>
 </div>
 
-<script src="script.js?v=2"></script>
+<script src="script.js?v=3"></script>
 </body>
 </html>

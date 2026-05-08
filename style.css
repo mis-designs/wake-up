@@ -1866,6 +1866,7 @@ body.app-mode #whatsappBtn {
 .qms-badge-multi { background: linear-gradient(135deg, #ff8c00 0%, #f8c000 100%); }
 .qms-badge-exam80 { background: linear-gradient(135deg, #15d66b 0%, #0fb858 100%); }
 .qms-badge-exam30 { background: linear-gradient(135deg, #ee2f4b 0%, #ff7a59 100%); }
+.qms-badge-exam-pdf { background: linear-gradient(135deg, #252943 0%, #54607f 100%); }
 
 .qms-card-badge img {
     width: 28px;
@@ -1972,8 +1973,30 @@ body.app-mode #whatsappBtn {
     cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+    gap: 12px;
     transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.2s ease;
+}
+
+.qms-start-label {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+}
+
+.qms-start-arrow {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    line-height: 1;
+    font-weight: 900;
+    transition: transform 0.16s ease, background 0.16s ease;
 }
 
 .qms-start:disabled {
@@ -1984,6 +2007,11 @@ body.app-mode #whatsappBtn {
 
 .qms-start:not(:disabled):hover {
     transform: translateY(-2px);
+}
+
+.qms-start:not(:disabled):hover .qms-start-arrow {
+    transform: translateX(2px);
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .qms-start:not(:disabled):active {
@@ -2038,6 +2066,16 @@ body.app-mode #whatsappBtn {
 
 .qms-start-exam30:not(:disabled):hover {
     box-shadow: 0 12px 28px rgba(238, 47, 75, 0.38);
+}
+
+.qms-start-exam-pdf {
+    background: linear-gradient(135deg, #252943 0%, #54607f 100%);
+    color: white;
+    box-shadow: 0 8px 22px rgba(37, 41, 67, 0.24);
+}
+
+.qms-start-exam-pdf:not(:disabled):hover {
+    box-shadow: 0 12px 28px rgba(37, 41, 67, 0.34);
 }
 
 body.qms-open { overflow: hidden; }

@@ -2120,6 +2120,13 @@ function startExamQuiz(mode) {
   }, 460);
 }
 
+function startExamPdf() {
+  closeExamModeScreen();
+  setTimeout(() => {
+    openMagicBookPages({ type: "exam" });
+  }, 460);
+}
+
 function openChapter(cap) {
   openMagicBookPages({ type: "chapter", chapter: cap });
 }

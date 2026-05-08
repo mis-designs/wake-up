@@ -372,11 +372,24 @@ function mergeQuestionsById(existingRows, nextRows) {
   return merged;
 }
 
-async function fetchExamRows(action, text) {
+async function fetchExamRows(action, text, modeConfig) {
   let collected = [];
   let lastReceived = 0;
+  const targetCount = modeConfig.questionCount;
 
-  for (let attempt = 0; attempt < EXAM_POOL_FETCH_ATTEMPTS && collected.length < EXAM_POOL_SIZE; attempt += EXAM_POOL_FETCH_BATCH_SIZE) {
+  const firstData = await forwardGetAction({
+    action,
+    chapters: EXAM_CHAPTER_CODE,
+    text,
+    mode: modeConfig.mode,
+    limit: modeConfig.questionCount,
+    count: modeConfig.questionCount,
+    questionCount: modeConfig.questionCount
+  });
+  collected = mergeQuestionsById(collected, getExamPool(getQuizRows(firstData)));
+  lastReceived = collected.length;
+
+  for (let attempt = 0; attempt < EXAM_POOL_FETCH_ATTEMPTS && collected.length < targetCount; attempt += EXAM_POOL_FETCH_BATCH_SIZE) {
     const remainingAttempts = EXAM_POOL_FETCH_ATTEMPTS - attempt;
     const batchSize = Math.min(EXAM_POOL_FETCH_BATCH_SIZE, remainingAttempts);
     const batch = await Promise.all(
@@ -384,10 +397,10 @@ async function fetchExamRows(action, text) {
         action,
         chapters: EXAM_CHAPTER_CODE,
         text,
-        mode: "exam",
-        limit: EXAM_POOL_SIZE,
-        count: EXAM_POOL_SIZE,
-        questionCount: EXAM_POOL_SIZE
+        mode: modeConfig.mode,
+        limit: targetCount,
+        count: targetCount,
+        questionCount: targetCount
       }))
     );
 
@@ -398,9 +411,9 @@ async function fetchExamRows(action, text) {
     });
   }
 
-  if (collected.length < EXAM_POOL_SIZE) {
+  if (collected.length < targetCount) {
     console.warn("[api/quiz] incomplete exam pool", {
-      expected: EXAM_POOL_SIZE,
+      expected: targetCount,
       collected: collected.length,
       lastReceived
     });
@@ -545,7 +558,7 @@ export default async function handler(req, res) {
       const modeConfig = getExamModeConfig(mode);
       const data = modeConfig ? null : await forwardGetAction({ action, chapters, text });
       const admin = isAdminPhone(phone);
-      const rows = modeConfig ? await fetchExamRows(action, text) : getQuizRows(data);
+      const rows = modeConfig ? await fetchExamRows(action, text, modeConfig) : getQuizRows(data);
       const quiz = modeConfig ? buildExamQuiz(rows, modeConfig) : rows;
       const quizForClient = admin ? await addAdminCorrectAnswers(quiz) : quiz;
       const quizSession = createSignedToken({
