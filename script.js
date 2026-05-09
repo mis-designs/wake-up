@@ -2312,8 +2312,7 @@ function openQuizFromMenu() {
  * VIEWER
  ***********************/
 const MAGIC_BOOK_API = "/api/getPages";
-const PAGE_FLIP_HINT_KEY = "page_flip_hint_seen";
-const VIEWER_SWIPE_THRESHOLD = 60;
+const VIEWER_SCROLL_LOAD_OFFSET = 420;
 
 let currentBookViewer = {
   book: "magic",
@@ -2326,16 +2325,7 @@ let currentBookViewer = {
   knownLastPage: null
 };
 
-let viewerHintTimer = null;
 let viewerLoadToken = 0;
-let viewerDragState = {
-  dragging: false,
-  startX: 0,
-  startY: 0,
-  deltaX: 0,
-  deltaY: 0,
-  pointerId: null
-};
 
 async function fetchMagicBookPage({ type, chapter, page }) {
   const body = {
@@ -2431,9 +2421,7 @@ function cleanupMagicBookViewer({ resetState = true } = {}) {
     pages.style.removeProperty("--viewer-drag-rotate");
   }
 
-  viewerDragState.dragging = false;
   revokeCurrentBookObjectUrl();
-  hideViewerHint(false);
 
   if (resetState) {
     currentBookViewer = {
@@ -2530,7 +2518,7 @@ function createMagicBookPage(blob, direction = "next") {
   img.draggable = false;
 
   const box = document.createElement("div");
-  box.className = `page page-enter page-enter-${direction === "prev" ? "prev" : "next"}`;
+  box.className = "page";
 
   const shield = document.createElement("div");
   shield.className = "shield";
@@ -2541,98 +2529,15 @@ function createMagicBookPage(blob, direction = "next") {
   return { box, url };
 }
 
-function waitForPageTransition(pageEl) {
-  return new Promise(resolve => {
-    if (!pageEl) {
-      resolve();
-      return;
-    }
-
-    const done = () => resolve();
-    pageEl.addEventListener("transitionend", done, { once: true });
-    window.setTimeout(done, 260);
-  });
-}
-
-async function animateCurrentPageOut(direction = "next") {
-  const page = document.querySelector("#pages .page:not(.viewer-empty-page)");
-  if (!page) return;
-
-  page.classList.remove("is-dragging");
-  page.style.transform = "";
-  page.classList.add(direction === "prev" ? "page-exit-right" : "page-exit-left");
-  await waitForPageTransition(page);
-  page.remove();
-}
-
 async function renderMagicBookPage(blob, direction = "next") {
   const pages = document.getElementById("pages");
   if (!pages) return;
 
   pages.querySelector(".viewer-message")?.remove();
-  const oldUrl = currentBookViewer.objectUrl;
   const { box, url } = createMagicBookPage(blob, direction);
 
-  await animateCurrentPageOut(direction);
-  pages.querySelectorAll(".page").forEach(page => page.remove());
   pages.insertBefore(box, pages.querySelector(".viewer-loading") || null);
-  document.getElementById("viewer")?.scrollTo({ top: 0, left: 0, behavior: "auto" });
-
-  if (oldUrl) URL.revokeObjectURL(oldUrl);
   currentBookViewer.objectUrl = url;
-
-  requestAnimationFrame(() => {
-    box.classList.remove("page-enter", "page-enter-next", "page-enter-prev");
-  });
-}
-
-function resetViewerDragTransform() {
-  const page = getVisibleViewerPage();
-  if (!page) return;
-  page.classList.remove("is-dragging");
-  page.style.transform = "";
-}
-
-function getVisibleViewerPage() {
-  return document.querySelector("#pages .page:not(.viewer-empty-page)");
-}
-
-function applyViewerDragTransform(deltaX) {
-  const page = getVisibleViewerPage();
-  if (!page) return;
-
-  const clamped = Math.max(-140, Math.min(140, deltaX));
-  const rotate = clamped < 0 ? -8 : 8;
-  page.classList.add("is-dragging");
-  page.style.transform = `translateX(${clamped}px) rotateY(${rotate}deg)`;
-}
-
-function hideViewerHint(saveSeen = true) {
-  const hint = document.getElementById("viewerFlipHint");
-  if (viewerHintTimer) {
-    clearTimeout(viewerHintTimer);
-    viewerHintTimer = null;
-  }
-
-  if (hint) hint.classList.remove("is-visible");
-
-  if (saveSeen) {
-    try {
-      localStorage.setItem(PAGE_FLIP_HINT_KEY, "true");
-    } catch {}
-  }
-}
-
-function maybeShowViewerHint(type) {
-  const hint = document.getElementById("viewerFlipHint");
-  if (!hint || type !== "chapter") return;
-
-  try {
-    if (localStorage.getItem(PAGE_FLIP_HINT_KEY) === "true") return;
-  } catch {}
-
-  hint.classList.add("is-visible");
-  viewerHintTimer = window.setTimeout(() => hideViewerHint(true), 3000);
 }
 
 function ensureViewerChrome() {
@@ -2644,130 +2549,23 @@ function ensureViewerChrome() {
   counter.className = "viewer-page-counter";
   counter.textContent = "Pagina 1";
 
-  const prev = document.createElement("button");
-  prev.id = "viewerPrevBtn";
-  prev.className = "viewer-nav-zone viewer-nav-prev";
-  prev.type = "button";
-  prev.setAttribute("aria-label", "Pagina precedente");
-  prev.innerHTML = "<span aria-hidden=\"true\">&larr;</span>";
-  prev.addEventListener("click", event => {
-    event.stopPropagation();
-    hideViewerHint(true);
-    goViewerPage("prev");
-  });
-
-  const next = document.createElement("button");
-  next.id = "viewerNextBtn";
-  next.className = "viewer-nav-zone viewer-nav-next";
-  next.type = "button";
-  next.setAttribute("aria-label", "Pagina successiva");
-  next.innerHTML = "<span aria-hidden=\"true\">&rarr;</span>";
-  next.addEventListener("click", event => {
-    event.stopPropagation();
-    hideViewerHint(true);
-    goViewerPage("next");
-  });
-
-  const hint = document.createElement("div");
-  hint.id = "viewerFlipHint";
-  hint.className = "viewer-flip-hint";
-  hint.innerHTML = `
-    <span class="viewer-hint-hand" aria-hidden="true"></span>
-    <strong>Sfoglia come un libro</strong>
-    <span>Trascina a sinistra o destra per cambiare pagina</span>
-  `;
-
-  const pages = document.getElementById("pages");
-  pages?.addEventListener("pointerdown", handleViewerPointerDown);
-  pages?.addEventListener("pointermove", handleViewerPointerMove);
-  pages?.addEventListener("pointerup", handleViewerPointerEnd);
-  pages?.addEventListener("pointercancel", handleViewerPointerEnd);
-
   viewer.appendChild(counter);
-  viewer.appendChild(prev);
-  viewer.appendChild(next);
-  viewer.appendChild(hint);
+  viewer.addEventListener("scroll", handleViewerScroll, { passive: true });
   viewer.dataset.viewerChromeReady = "true";
 }
 
-function handleViewerPointerDown(event) {
+function handleViewerScroll() {
   if (!(currentScreen === "viewer" || currentScreen === "exam")) return;
-  if (currentBookViewer.isLoading || event.button !== 0) return;
+  if (currentBookViewer.isLoading || !currentBookViewer.hasNext) return;
 
-  hideViewerHint(true);
+  const viewer = document.getElementById("viewer");
+  if (!viewer) return;
 
-  if (event.pointerType === "touch" && !event.isPrimary) {
-    viewerDragState.dragging = false;
-    resetViewerDragTransform();
-    return;
+  const distanceFromBottom = viewer.scrollHeight - (viewer.scrollTop + viewer.clientHeight);
+
+  if (distanceFromBottom <= VIEWER_SCROLL_LOAD_OFFSET) {
+    loadViewerPage(currentBookViewer.page + 1, "next");
   }
-
-  event.currentTarget.setPointerCapture?.(event.pointerId);
-
-  viewerDragState = {
-    dragging: true,
-    startX: event.clientX,
-    startY: event.clientY,
-    deltaX: 0,
-    deltaY: 0,
-    pointerId: event.pointerId
-  };
-}
-
-function handleViewerPointerMove(event) {
-  if (!viewerDragState.dragging || event.pointerId !== viewerDragState.pointerId) return;
-
-  viewerDragState.deltaX = event.clientX - viewerDragState.startX;
-  viewerDragState.deltaY = event.clientY - viewerDragState.startY;
-  const isHorizontalSwipe = Math.abs(viewerDragState.deltaX) > 14
-    && Math.abs(viewerDragState.deltaX) > Math.abs(viewerDragState.deltaY) * 1.25;
-
-  if (isHorizontalSwipe) {
-    event.preventDefault();
-    applyViewerDragTransform(viewerDragState.deltaX);
-  }
-}
-
-function handleViewerPointerEnd(event) {
-  event.currentTarget.releasePointerCapture?.(event.pointerId);
-
-  if (!viewerDragState.dragging || event.pointerId !== viewerDragState.pointerId) return;
-
-  const deltaX = viewerDragState.deltaX;
-  const deltaY = viewerDragState.deltaY;
-  viewerDragState.dragging = false;
-  const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY) * 1.25;
-
-  if (isHorizontalSwipe && deltaX < -VIEWER_SWIPE_THRESHOLD) {
-    goViewerPage("next");
-  } else if (isHorizontalSwipe && deltaX > VIEWER_SWIPE_THRESHOLD) {
-    goViewerPage("prev");
-  } else {
-    resetViewerDragTransform();
-  }
-}
-
-function goViewerPage(direction) {
-  if (currentBookViewer.isLoading) return;
-
-  if (direction === "prev") {
-    if (currentBookViewer.page <= 1) {
-      showViewerMessage("Pagina iniziale");
-      resetViewerDragTransform();
-      return;
-    }
-    loadViewerPage(currentBookViewer.page - 1, "prev");
-    return;
-  }
-
-  const targetPage = currentBookViewer.page + 1;
-  if (currentBookViewer.knownLastPage && targetPage > currentBookViewer.knownLastPage) {
-    showViewerMessage("Fine capitolo");
-    resetViewerDragTransform();
-    return;
-  }
-
-  loadViewerPage(targetPage, "next");
 }
 
 async function loadViewerPage(pageNumber, direction = "next", options = {}) {
@@ -2776,7 +2574,6 @@ async function loadViewerPage(pageNumber, direction = "next", options = {}) {
 
   const loadToken = ++viewerLoadToken;
   currentBookViewer.isLoading = true;
-  resetViewerDragTransform();
   setMagicBookLoading(pages, true);
 
   try {
@@ -2874,6 +2671,7 @@ async function openMagicBookPages({ type, chapter = null }) {
   };
 
   pages.innerHTML = "";
+  document.getElementById("viewer")?.scrollTo({ top: 0, left: 0, behavior: "auto" });
   updateViewerPageCounter();
   setMagicBookLoading(pages, true);
   const openToken = viewerLoadToken;
@@ -2890,27 +2688,8 @@ async function openMagicBookPages({ type, chapter = null }) {
   }
 
   setMagicBookLoading(pages, false);
-  maybeShowViewerHint(type);
   loadViewerPage(1, "next");
 }
-
-document.addEventListener("keydown", event => {
-  if (!(currentScreen === "viewer" || currentScreen === "exam")) return;
-  if (document.body.classList.contains("body-menu-open")) return;
-  if (isEditableTarget(event.target)) return;
-
-  if (event.key === "ArrowRight") {
-    event.preventDefault();
-    hideViewerHint(true);
-    goViewerPage("next");
-  }
-
-  if (event.key === "ArrowLeft") {
-    event.preventDefault();
-    hideViewerHint(true);
-    goViewerPage("prev");
-  }
-});
 
 function openQuiz() {
   openQuizModeScreen();
