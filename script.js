@@ -1810,6 +1810,7 @@ function showWhatsAppGroupPopup() {
  * UI NAVIGATION
  ***********************/
 function hideAll() {
+  cleanupMagicBookViewer();
   ["login", "home", "chapters", "viewer"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.add("hidden");
@@ -2292,6 +2293,28 @@ function openQuizFromMenu() {
  * VIEWER
  ***********************/
 const MAGIC_BOOK_API = "/api/getPages";
+const PAGE_FLIP_HINT_KEY = "page_flip_hint_seen";
+const VIEWER_SWIPE_THRESHOLD = 60;
+
+let currentBookViewer = {
+  book: "magic",
+  type: "chapter",
+  chapter: null,
+  page: 1,
+  objectUrl: null,
+  isLoading: false,
+  hasNext: true,
+  knownLastPage: null
+};
+
+let viewerHintTimer = null;
+let viewerLoadToken = 0;
+let viewerDragState = {
+  dragging: false,
+  startX: 0,
+  deltaX: 0,
+  pointerId: null
+};
 
 async function fetchMagicBookPage({ type, chapter, page }) {
   const body = {
@@ -2367,14 +2390,72 @@ async function fetchMagicBookPage({ type, chapter, page }) {
   return blob;
 }
 
+function revokeCurrentBookObjectUrl() {
+  if (currentBookViewer?.objectUrl) {
+    URL.revokeObjectURL(currentBookViewer.objectUrl);
+    currentBookViewer.objectUrl = null;
+  }
+}
+
+function cleanupMagicBookViewer({ resetState = true } = {}) {
+  viewerLoadToken++;
+  const pages = document.getElementById("pages");
+  if (pages) {
+    pages.querySelectorAll("img[data-object-url]").forEach(img => {
+      URL.revokeObjectURL(img.dataset.objectUrl);
+    });
+    pages.innerHTML = "";
+    pages.classList.remove("is-loading", "is-dragging");
+    pages.style.removeProperty("--viewer-drag-x");
+    pages.style.removeProperty("--viewer-drag-rotate");
+  }
+
+  revokeCurrentBookObjectUrl();
+  hideViewerHint(false);
+
+  if (resetState) {
+    currentBookViewer = {
+      book: "magic",
+      type: "chapter",
+      chapter: null,
+      page: 1,
+      objectUrl: null,
+      isLoading: false,
+      hasNext: true,
+      knownLastPage: null
+    };
+  }
+}
+
+function updateViewerPageCounter() {
+  const counter = document.getElementById("viewerPageCounter");
+  if (!counter) return;
+  counter.textContent = `Pagina ${currentBookViewer.page || 1}`;
+}
+
+function showViewerMessage(message, options = {}) {
+  const pages = document.getElementById("pages");
+  if (!pages) return;
+
+  pages.querySelector(".viewer-message")?.remove();
+  const box = document.createElement("div");
+  box.className = "viewer-message";
+  box.setAttribute("role", "status");
+  box.textContent = message;
+  pages.appendChild(box);
+
+  if (!options.sticky) {
+    window.setTimeout(() => box.remove(), options.duration || 1800);
+  }
+}
+
 function showMagicBookError(message) {
   const pages = document.getElementById("pages");
   if (!pages) return;
 
-  pages.innerHTML = "";
+  cleanupMagicBookViewer({ resetState: false });
   const box = document.createElement("div");
-  box.className = "page";
-  box.style.cssText = "color:#fff;text-align:center;padding:40px 16px;font-weight:700;";
+  box.className = "page viewer-empty-page";
   box.textContent = message;
   pages.appendChild(box);
 }
@@ -2393,10 +2474,12 @@ function setMagicBookLoading(pages, visible) {
   const existing = pages.querySelector(".viewer-loading");
 
   if (!visible) {
+    pages.classList.remove("is-loading");
     existing?.remove();
     return;
   }
 
+  pages.classList.add("is-loading");
   if (existing) return;
 
   const loader = document.createElement("div");
@@ -2416,14 +2499,16 @@ function setMagicBookLoading(pages, visible) {
   pages.appendChild(loader);
 }
 
-function appendMagicBookPage(pages, blob) {
+function createMagicBookPage(blob, direction = "next") {
   const img = new Image();
   const url = URL.createObjectURL(blob);
   img.src = url;
   img.dataset.objectUrl = url;
+  img.alt = "";
+  img.draggable = false;
 
   const box = document.createElement("div");
-  box.className = "page";
+  box.className = `page page-enter page-enter-${direction === "prev" ? "prev" : "next"}`;
 
   const shield = document.createElement("div");
   shield.className = "shield";
@@ -2431,13 +2516,290 @@ function appendMagicBookPage(pages, blob) {
 
   box.appendChild(img);
   box.appendChild(shield);
+  return { box, url };
+}
 
-  const loader = pages.querySelector(".viewer-loading");
-  pages.insertBefore(box, loader || null);
+function waitForPageTransition(pageEl) {
+  return new Promise(resolve => {
+    if (!pageEl) {
+      resolve();
+      return;
+    }
+
+    const done = () => resolve();
+    pageEl.addEventListener("transitionend", done, { once: true });
+    window.setTimeout(done, 260);
+  });
+}
+
+async function animateCurrentPageOut(direction = "next") {
+  const page = document.querySelector("#pages .page:not(.viewer-empty-page)");
+  if (!page) return;
+
+  page.classList.remove("is-dragging");
+  page.style.transform = "";
+  page.classList.add(direction === "prev" ? "page-exit-right" : "page-exit-left");
+  await waitForPageTransition(page);
+  page.remove();
+}
+
+async function renderMagicBookPage(blob, direction = "next") {
+  const pages = document.getElementById("pages");
+  if (!pages) return;
+
+  pages.querySelector(".viewer-message")?.remove();
+  const oldUrl = currentBookViewer.objectUrl;
+  const { box, url } = createMagicBookPage(blob, direction);
+
+  await animateCurrentPageOut(direction);
+  pages.querySelectorAll(".page").forEach(page => page.remove());
+  pages.insertBefore(box, pages.querySelector(".viewer-loading") || null);
+
+  if (oldUrl) URL.revokeObjectURL(oldUrl);
+  currentBookViewer.objectUrl = url;
+
+  requestAnimationFrame(() => {
+    box.classList.remove("page-enter", "page-enter-next", "page-enter-prev");
+  });
+}
+
+function resetViewerDragTransform() {
+  const page = document.querySelector("#pages .page:not(.viewer-empty-page)");
+  if (!page) return;
+  page.classList.remove("is-dragging");
+  page.style.transform = "";
+}
+
+function applyViewerDragTransform(deltaX) {
+  const page = document.querySelector("#pages .page:not(.viewer-empty-page)");
+  if (!page) return;
+
+  const clamped = Math.max(-140, Math.min(140, deltaX));
+  const rotate = clamped < 0 ? -8 : 8;
+  page.classList.add("is-dragging");
+  page.style.transform = `translateX(${clamped}px) rotateY(${rotate}deg)`;
+}
+
+function hideViewerHint(saveSeen = true) {
+  const hint = document.getElementById("viewerFlipHint");
+  if (viewerHintTimer) {
+    clearTimeout(viewerHintTimer);
+    viewerHintTimer = null;
+  }
+
+  if (hint) hint.classList.remove("is-visible");
+
+  if (saveSeen) {
+    try {
+      localStorage.setItem(PAGE_FLIP_HINT_KEY, "true");
+    } catch {}
+  }
+}
+
+function maybeShowViewerHint(type) {
+  const hint = document.getElementById("viewerFlipHint");
+  if (!hint || type !== "chapter") return;
+
+  try {
+    if (localStorage.getItem(PAGE_FLIP_HINT_KEY) === "true") return;
+  } catch {}
+
+  hint.classList.add("is-visible");
+  viewerHintTimer = window.setTimeout(() => hideViewerHint(true), 3000);
+}
+
+function ensureViewerChrome() {
+  const viewer = document.getElementById("viewer");
+  if (!viewer || viewer.dataset.viewerChromeReady === "true") return;
+
+  const counter = document.createElement("div");
+  counter.id = "viewerPageCounter";
+  counter.className = "viewer-page-counter";
+  counter.textContent = "Pagina 1";
+
+  const prev = document.createElement("button");
+  prev.id = "viewerPrevBtn";
+  prev.className = "viewer-nav-zone viewer-nav-prev";
+  prev.type = "button";
+  prev.setAttribute("aria-label", "Pagina precedente");
+  prev.innerHTML = "<span aria-hidden=\"true\">&larr;</span>";
+  prev.addEventListener("click", event => {
+    event.stopPropagation();
+    hideViewerHint(true);
+    goViewerPage("prev");
+  });
+
+  const next = document.createElement("button");
+  next.id = "viewerNextBtn";
+  next.className = "viewer-nav-zone viewer-nav-next";
+  next.type = "button";
+  next.setAttribute("aria-label", "Pagina successiva");
+  next.innerHTML = "<span aria-hidden=\"true\">&rarr;</span>";
+  next.addEventListener("click", event => {
+    event.stopPropagation();
+    hideViewerHint(true);
+    goViewerPage("next");
+  });
+
+  const hint = document.createElement("div");
+  hint.id = "viewerFlipHint";
+  hint.className = "viewer-flip-hint";
+  hint.innerHTML = `
+    <span class="viewer-hint-hand" aria-hidden="true"></span>
+    <strong>Sfoglia come un libro</strong>
+    <span>Trascina a sinistra o destra per cambiare pagina</span>
+  `;
+
+  const pages = document.getElementById("pages");
+  pages?.addEventListener("pointerdown", handleViewerPointerDown);
+  pages?.addEventListener("pointermove", handleViewerPointerMove);
+  pages?.addEventListener("pointerup", handleViewerPointerEnd);
+  pages?.addEventListener("pointercancel", handleViewerPointerEnd);
+
+  viewer.appendChild(counter);
+  viewer.appendChild(prev);
+  viewer.appendChild(next);
+  viewer.appendChild(hint);
+  viewer.dataset.viewerChromeReady = "true";
+}
+
+function handleViewerPointerDown(event) {
+  if (!(currentScreen === "viewer" || currentScreen === "exam")) return;
+  if (currentBookViewer.isLoading || event.button !== 0) return;
+
+  hideViewerHint(true);
+  viewerDragState = {
+    dragging: true,
+    startX: event.clientX,
+    deltaX: 0,
+    pointerId: event.pointerId
+  };
+
+  event.currentTarget.setPointerCapture?.(event.pointerId);
+}
+
+function handleViewerPointerMove(event) {
+  if (!viewerDragState.dragging || event.pointerId !== viewerDragState.pointerId) return;
+
+  viewerDragState.deltaX = event.clientX - viewerDragState.startX;
+  if (Math.abs(viewerDragState.deltaX) > 4) {
+    event.preventDefault();
+    applyViewerDragTransform(viewerDragState.deltaX);
+  }
+}
+
+function handleViewerPointerEnd(event) {
+  if (!viewerDragState.dragging || event.pointerId !== viewerDragState.pointerId) return;
+
+  const deltaX = viewerDragState.deltaX;
+  viewerDragState.dragging = false;
+  event.currentTarget.releasePointerCapture?.(event.pointerId);
+
+  if (deltaX < -VIEWER_SWIPE_THRESHOLD) {
+    goViewerPage("next");
+  } else if (deltaX > VIEWER_SWIPE_THRESHOLD) {
+    goViewerPage("prev");
+  } else {
+    resetViewerDragTransform();
+  }
+}
+
+function goViewerPage(direction) {
+  if (currentBookViewer.isLoading) return;
+
+  if (direction === "prev") {
+    if (currentBookViewer.page <= 1) {
+      showViewerMessage("Pagina iniziale");
+      resetViewerDragTransform();
+      return;
+    }
+    loadViewerPage(currentBookViewer.page - 1, "prev");
+    return;
+  }
+
+  const targetPage = currentBookViewer.page + 1;
+  if (currentBookViewer.knownLastPage && targetPage > currentBookViewer.knownLastPage) {
+    showViewerMessage("Fine capitolo");
+    resetViewerDragTransform();
+    return;
+  }
+
+  loadViewerPage(targetPage, "next");
+}
+
+async function loadViewerPage(pageNumber, direction = "next", options = {}) {
+  const pages = document.getElementById("pages");
+  if (!pages || currentBookViewer.isLoading) return;
+
+  const loadToken = ++viewerLoadToken;
+  currentBookViewer.isLoading = true;
+  resetViewerDragTransform();
+  setMagicBookLoading(pages, true);
+
+  try {
+    const blob = await fetchMagicBookPage({
+      type: currentBookViewer.type,
+      chapter: currentBookViewer.chapter,
+      page: pageNumber
+    });
+
+    if (loadToken !== viewerLoadToken || !(currentScreen === "viewer" || currentScreen === "exam")) {
+      return;
+    }
+
+    if (!blob) {
+      if (pageNumber === 1) {
+        showMagicBookError("Nessuna pagina trovata.");
+      } else if (direction === "next") {
+        currentBookViewer.hasNext = false;
+        currentBookViewer.knownLastPage = currentBookViewer.page;
+        showViewerMessage("Fine capitolo");
+      } else {
+        showViewerMessage("Pagina non disponibile");
+      }
+      return;
+    }
+
+    currentBookViewer.page = pageNumber;
+    currentBookViewer.hasNext = true;
+    await renderMagicBookPage(blob, direction);
+    updateViewerPageCounter();
+  } catch (err) {
+    console.error("Image load error", err);
+    const code = err.code || err.message;
+
+    if (isRevokedSessionError(code)) {
+      logout(true, code);
+      return;
+    }
+
+    if (code === "token_expired" && !options.retried) {
+      const ok = await ensureAccessToken({ force: true }).catch(() => false);
+      if (ok) {
+        if (loadToken === viewerLoadToken) {
+          currentBookViewer.isLoading = false;
+          setMagicBookLoading(pages, false);
+        }
+        return loadViewerPage(pageNumber, direction, { retried: true });
+      }
+    }
+
+    if (pageNumber === 1 && !currentBookViewer.objectUrl) {
+      showMagicBookError(getMagicBookAccessErrorMessage(code));
+    } else {
+      showViewerMessage("Pagina non caricata. Riprova.", { duration: 2400 });
+    }
+  } finally {
+    if (loadToken === viewerLoadToken) {
+      currentBookViewer.isLoading = false;
+      setMagicBookLoading(pages, false);
+    }
+  }
 }
 
 async function openMagicBookPages({ type, chapter = null }) {
   hideAll();
+  ensureViewerChrome();
   document.getElementById("viewer")?.classList.remove("hidden");
   document.getElementById("viewerBackBtn")?.classList.add("hidden");
   setProfileIconVisible(false);
@@ -2455,53 +2817,55 @@ async function openMagicBookPages({ type, chapter = null }) {
   const pages = document.getElementById("pages");
   if (!pages) return;
 
-  pages.querySelectorAll("img[data-object-url]").forEach(img => {
-    URL.revokeObjectURL(img.dataset.objectUrl);
-  });
+  currentBookViewer = {
+    book: "magic",
+    type,
+    chapter: type === "chapter" ? chapter : null,
+    page: 1,
+    objectUrl: null,
+    isLoading: false,
+    hasNext: true,
+    knownLastPage: null
+  };
+
   pages.innerHTML = "";
+  updateViewerPageCounter();
   setMagicBookLoading(pages, true);
+  const openToken = viewerLoadToken;
 
   const accessReady = await ensureAccessToken({ force: true });
+  if (openToken !== viewerLoadToken || !(currentScreen === "viewer" || currentScreen === "exam")) {
+    return;
+  }
+
   if (!accessReady) {
     setMagicBookLoading(pages, false);
     showMagicBookError("Accesso non disponibile. Riprova tra poco.");
     return;
   }
 
-  let page = 1;
+  setMagicBookLoading(pages, false);
+  maybeShowViewerHint(type);
+  loadViewerPage(1, "next");
+}
 
-  function loadNext() {
-    fetchMagicBookPage({ type, chapter, page })
-      .then(blob => {
-        if (!blob) {
-          setMagicBookLoading(pages, false);
-          return;
-        }
-        appendMagicBookPage(pages, blob);
-        page++;
-        loadNext();
-      })
-      .catch(err => {
-        console.error("Image load error", err);
-        if (isRevokedSessionError(err.code || err.message)) {
-          logout(true, err.code || err.message);
-          return;
-        }
-        if ((err.code || err.message) === "token_expired") {
-          ensureAccessToken({ force: true })
-            .then(ok => {
-              if (ok) loadNext();
-              else setMagicBookLoading(pages, false);
-            })
-            .catch(() => setMagicBookLoading(pages, false));
-          return;
-        }
-        setMagicBookLoading(pages, false);
-      });
+document.addEventListener("keydown", event => {
+  if (!(currentScreen === "viewer" || currentScreen === "exam")) return;
+  if (document.body.classList.contains("body-menu-open")) return;
+  if (isEditableTarget(event.target)) return;
+
+  if (event.key === "ArrowRight") {
+    event.preventDefault();
+    hideViewerHint(true);
+    goViewerPage("next");
   }
 
-  loadNext();
-}
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    hideViewerHint(true);
+    goViewerPage("prev");
+  }
+});
 
 function openQuiz() {
   openQuizModeScreen();
