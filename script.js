@@ -1109,7 +1109,7 @@ function showLoginScreen(message = "") {
   updateProfileUI(false);
   setProfileIconVisible(false);
   setLoggedOutChrome();
-  setCleanRoute("/login", "MagicBook | Login");
+  document.title = "MagicBook | Login";
   updateLoginButtonState();
 }
 
@@ -1185,7 +1185,7 @@ function setupProfileUI() {
 
   logoutBtn.addEventListener("click", () => {
     logout(true, "manual");
-    window.location.href = "/login";
+    window.location.href = "index.html";
   });
 }
 
@@ -1810,22 +1810,6 @@ function showWhatsAppGroupPopup() {
 /***********************
  * UI NAVIGATION
  ***********************/
-function setCleanRoute(path, title, mode = "replace") {
-  if (title) document.title = title;
-  if (!path || typeof window === "undefined" || !window.history) return;
-  if (!/^https?:$/.test(window.location.protocol)) return;
-
-  const nextUrl = path;
-  if (window.location.pathname + window.location.search === nextUrl) return;
-
-  try {
-    const method = mode === "push" ? "pushState" : "replaceState";
-    window.history[method]({}, title || document.title, nextUrl);
-  } catch (err) {
-    console.warn("Clean route update unavailable", err);
-  }
-}
-
 function hideAll() {
   cleanupMagicBookViewer();
   ["login", "home", "chapters", "viewer"].forEach(id => {
@@ -1844,7 +1828,7 @@ function showHome() {
   updateProfileUI(true);
   setProfileIconVisible(true);
   setLoggedInChrome();
-  setCleanRoute("/home", "MagicBook | Home");
+  document.title = "MagicBook | Home";
   maybeShowWhatsAppGroupPopup();
 }
 
@@ -1857,7 +1841,7 @@ function showChapters() {
   currentScreen = "chapters";
   updateProfileUI(true);
   setProfileIconVisible(false);
-  setCleanRoute("/chapters", "MagicBook | Capitoli");
+  document.title = "MagicBook | Capitoli";
   requestAnimationFrame(() => updateCardTrack());
 }
 
@@ -2136,7 +2120,7 @@ function startExamQuiz(mode) {
 
   closeExamModeScreen();
   setTimeout(() => {
-    window.location.href = "/quiz?mode=" + encodeURIComponent(mode);
+    window.location.href = "quiz.html?mode=" + encodeURIComponent(mode);
   }, 460);
 }
 
@@ -2312,20 +2296,16 @@ function openQuizFromMenu() {
  * VIEWER
  ***********************/
 const MAGIC_BOOK_API = "/api/getPages";
-const VIEWER_SCROLL_LOAD_OFFSET = 420;
-
 let currentBookViewer = {
   book: "magic",
-  type: "chapter",
+  type: null,
   chapter: null,
-  page: 1,
-  objectUrl: null,
+  page: 0,
   isLoading: false,
-  hasNext: true,
-  knownLastPage: null
+  hasNext: false
 };
-
-let viewerLoadToken = 0;
+let magicBookViewerRequestId = 0;
+let magicBookScrollHandlerInstalled = false;
 
 async function fetchMagicBookPage({ type, chapter, page }) {
   const body = {
@@ -2401,61 +2381,26 @@ async function fetchMagicBookPage({ type, chapter, page }) {
   return blob;
 }
 
-function revokeCurrentBookObjectUrl() {
-  if (currentBookViewer?.objectUrl) {
-    URL.revokeObjectURL(currentBookViewer.objectUrl);
-    currentBookViewer.objectUrl = null;
-  }
-}
-
 function cleanupMagicBookViewer({ resetState = true } = {}) {
-  viewerLoadToken++;
+  magicBookViewerRequestId++;
+
   const pages = document.getElementById("pages");
   if (pages) {
     pages.querySelectorAll("img[data-object-url]").forEach(img => {
       URL.revokeObjectURL(img.dataset.objectUrl);
     });
     pages.innerHTML = "";
-    pages.classList.remove("is-loading", "is-dragging");
-    pages.style.removeProperty("--viewer-drag-x");
-    pages.style.removeProperty("--viewer-drag-rotate");
   }
-
-  revokeCurrentBookObjectUrl();
 
   if (resetState) {
     currentBookViewer = {
       book: "magic",
-      type: "chapter",
+      type: null,
       chapter: null,
-      page: 1,
-      objectUrl: null,
+      page: 0,
       isLoading: false,
-      hasNext: true,
-      knownLastPage: null
+      hasNext: false
     };
-  }
-}
-
-function updateViewerPageCounter() {
-  const counter = document.getElementById("viewerPageCounter");
-  if (!counter) return;
-  counter.textContent = `Pagina ${currentBookViewer.page || 1}`;
-}
-
-function showViewerMessage(message, options = {}) {
-  const pages = document.getElementById("pages");
-  if (!pages) return;
-
-  pages.querySelector(".viewer-message")?.remove();
-  const box = document.createElement("div");
-  box.className = "viewer-message";
-  box.setAttribute("role", "status");
-  box.textContent = message;
-  pages.appendChild(box);
-
-  if (!options.sticky) {
-    window.setTimeout(() => box.remove(), options.duration || 1800);
   }
 }
 
@@ -2463,9 +2408,10 @@ function showMagicBookError(message) {
   const pages = document.getElementById("pages");
   if (!pages) return;
 
-  cleanupMagicBookViewer({ resetState: false });
+  pages.innerHTML = "";
   const box = document.createElement("div");
-  box.className = "page viewer-empty-page";
+  box.className = "page";
+  box.style.cssText = "color:#252943;text-align:center;padding:40px 16px;font-weight:700;";
   box.textContent = message;
   pages.appendChild(box);
 }
@@ -2484,12 +2430,10 @@ function setMagicBookLoading(pages, visible) {
   const existing = pages.querySelector(".viewer-loading");
 
   if (!visible) {
-    pages.classList.remove("is-loading");
     existing?.remove();
     return;
   }
 
-  pages.classList.add("is-loading");
   if (existing) return;
 
   const loader = document.createElement("div");
@@ -2509,7 +2453,7 @@ function setMagicBookLoading(pages, visible) {
   pages.appendChild(loader);
 }
 
-function createMagicBookPage(blob, direction = "next") {
+function appendMagicBookPage(pages, blob) {
   const img = new Image();
   const url = URL.createObjectURL(blob);
   img.src = url;
@@ -2526,120 +2470,87 @@ function createMagicBookPage(blob, direction = "next") {
 
   box.appendChild(img);
   box.appendChild(shield);
-  return { box, url };
+
+  const loader = pages.querySelector(".viewer-loading");
+  pages.insertBefore(box, loader || null);
 }
 
-async function renderMagicBookPage(blob, direction = "next") {
+function shouldLoadNextMagicBookPage(viewer) {
+  if (!viewer) return false;
+  const remaining = viewer.scrollHeight - viewer.scrollTop - viewer.clientHeight;
+  return remaining < 520;
+}
+
+function ensureMagicBookScrollLoading() {
+  const viewer = document.getElementById("viewer");
+  if (!viewer || magicBookScrollHandlerInstalled) return;
+
+  viewer.addEventListener("scroll", () => {
+    if (!currentBookViewer.type || currentBookViewer.isLoading || !currentBookViewer.hasNext) return;
+    if (shouldLoadNextMagicBookPage(viewer)) loadNextMagicBookPage();
+  }, { passive: true });
+
+  magicBookScrollHandlerInstalled = true;
+}
+
+async function loadNextMagicBookPage() {
   const pages = document.getElementById("pages");
   if (!pages) return;
+  if (!currentBookViewer.type || currentBookViewer.isLoading || !currentBookViewer.hasNext) return;
 
-  pages.querySelector(".viewer-message")?.remove();
-  const { box, url } = createMagicBookPage(blob, direction);
+  const requestId = magicBookViewerRequestId;
+  const type = currentBookViewer.type;
+  const chapter = currentBookViewer.chapter;
+  const nextPage = currentBookViewer.page + 1;
 
-  pages.insertBefore(box, pages.querySelector(".viewer-loading") || null);
-  currentBookViewer.objectUrl = url;
-}
-
-function ensureViewerChrome() {
-  const viewer = document.getElementById("viewer");
-  if (!viewer || viewer.dataset.viewerChromeReady === "true") return;
-
-  const counter = document.createElement("div");
-  counter.id = "viewerPageCounter";
-  counter.className = "viewer-page-counter";
-  counter.textContent = "Pagina 1";
-
-  viewer.appendChild(counter);
-  viewer.addEventListener("scroll", handleViewerScroll, { passive: true });
-  viewer.dataset.viewerChromeReady = "true";
-}
-
-function handleViewerScroll() {
-  if (!(currentScreen === "viewer" || currentScreen === "exam")) return;
-  if (currentBookViewer.isLoading || !currentBookViewer.hasNext) return;
-
-  const viewer = document.getElementById("viewer");
-  if (!viewer) return;
-
-  const distanceFromBottom = viewer.scrollHeight - (viewer.scrollTop + viewer.clientHeight);
-
-  if (distanceFromBottom <= VIEWER_SCROLL_LOAD_OFFSET) {
-    loadViewerPage(currentBookViewer.page + 1, "next");
-  }
-}
-
-async function loadViewerPage(pageNumber, direction = "next", options = {}) {
-  const pages = document.getElementById("pages");
-  if (!pages || currentBookViewer.isLoading) return;
-
-  const loadToken = ++viewerLoadToken;
   currentBookViewer.isLoading = true;
   setMagicBookLoading(pages, true);
 
   try {
-    const blob = await fetchMagicBookPage({
-      type: currentBookViewer.type,
-      chapter: currentBookViewer.chapter,
-      page: pageNumber
-    });
-
-    if (loadToken !== viewerLoadToken || !(currentScreen === "viewer" || currentScreen === "exam")) {
-      return;
-    }
+    const blob = await fetchMagicBookPage({ type, chapter, page: nextPage });
+    if (requestId !== magicBookViewerRequestId) return;
 
     if (!blob) {
-      if (pageNumber === 1) {
-        showMagicBookError("Nessuna pagina trovata.");
-      } else if (direction === "next") {
-        currentBookViewer.hasNext = false;
-        currentBookViewer.knownLastPage = currentBookViewer.page;
-        showViewerMessage("Fine capitolo");
-      } else {
-        showViewerMessage("Pagina non disponibile");
-      }
-      return;
-    }
-
-    currentBookViewer.page = pageNumber;
-    currentBookViewer.hasNext = true;
-    await renderMagicBookPage(blob, direction);
-    updateViewerPageCounter();
-  } catch (err) {
-    console.error("Image load error", err);
-    const code = err.code || err.message;
-
-    if (isRevokedSessionError(code)) {
-      logout(true, code);
-      return;
-    }
-
-    if (code === "token_expired" && !options.retried) {
-      const ok = await ensureAccessToken({ force: true }).catch(() => false);
-      if (ok) {
-        if (loadToken === viewerLoadToken) {
-          currentBookViewer.isLoading = false;
-          setMagicBookLoading(pages, false);
-        }
-        return loadViewerPage(pageNumber, direction, { retried: true });
-      }
-    }
-
-    if (pageNumber === 1 && !currentBookViewer.objectUrl) {
-      showMagicBookError(getMagicBookAccessErrorMessage(code));
-    } else {
-      showViewerMessage("Pagina non caricata. Riprova.", { duration: 2400 });
-    }
-  } finally {
-    if (loadToken === viewerLoadToken) {
-      currentBookViewer.isLoading = false;
+      currentBookViewer.hasNext = false;
       setMagicBookLoading(pages, false);
+      if (nextPage === 1) showMagicBookError("Nessuna pagina trovata.");
+      return;
+    }
+
+    appendMagicBookPage(pages, blob);
+    currentBookViewer.page = nextPage;
+    setMagicBookLoading(pages, false);
+  } catch (err) {
+    if (requestId !== magicBookViewerRequestId) return;
+
+    console.error("Image load error", err);
+    if (isRevokedSessionError(err.code || err.message)) {
+      logout(true, err.code || err.message);
+      return;
+    }
+
+    if ((err.code || err.message) === "token_expired") {
+      currentBookViewer.isLoading = false;
+      const ok = await ensureAccessToken({ force: true });
+      if (ok && requestId === magicBookViewerRequestId) {
+        await loadNextMagicBookPage();
+      } else {
+        setMagicBookLoading(pages, false);
+      }
+      return;
+    }
+
+    setMagicBookLoading(pages, false);
+    if (nextPage === 1) showMagicBookError("Errore caricamento pagina.");
+  } finally {
+    if (requestId === magicBookViewerRequestId) {
+      currentBookViewer.isLoading = false;
     }
   }
 }
 
 async function openMagicBookPages({ type, chapter = null }) {
   hideAll();
-  ensureViewerChrome();
   document.getElementById("viewer")?.classList.remove("hidden");
   document.getElementById("viewerBackBtn")?.classList.add("hidden");
   setProfileIconVisible(false);
@@ -2647,48 +2558,43 @@ async function openMagicBookPages({ type, chapter = null }) {
   if (type === "chapter") {
     currentScreen = "viewer";
     setChapterMode(true, chapter);
-    setCleanRoute(`/book/capitolo-${chapter}`, `MagicBook | Capitolo ${chapter}`);
+    document.title = `MagicBook | Capitolo ${chapter}`;
   } else if (type === "exam") {
     currentScreen = "exam";
     setChapterMode(false);
     document.body.classList.add("app-mode");
     showAppHeader("exam");
-    setCleanRoute("/exam-pdf", "MagicBook | Exam PDF");
+    document.title = "MagicBook | Exam PDF";
   }
 
   const pages = document.getElementById("pages");
   if (!pages) return;
 
+  const viewer = document.getElementById("viewer");
+  if (viewer) viewer.scrollTop = 0;
+  ensureMagicBookScrollLoading();
+  magicBookViewerRequestId++;
   currentBookViewer = {
     book: "magic",
     type,
-    chapter: type === "chapter" ? chapter : null,
-    page: 1,
-    objectUrl: null,
+    chapter,
+    page: 0,
     isLoading: false,
-    hasNext: true,
-    knownLastPage: null
+    hasNext: true
   };
 
   pages.innerHTML = "";
-  document.getElementById("viewer")?.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  updateViewerPageCounter();
   setMagicBookLoading(pages, true);
-  const openToken = viewerLoadToken;
 
   const accessReady = await ensureAccessToken({ force: true });
-  if (openToken !== viewerLoadToken || !(currentScreen === "viewer" || currentScreen === "exam")) {
-    return;
-  }
-
   if (!accessReady) {
+    currentBookViewer.hasNext = false;
     setMagicBookLoading(pages, false);
     showMagicBookError("Accesso non disponibile. Riprova tra poco.");
     return;
   }
 
-  setMagicBookLoading(pages, false);
-  loadViewerPage(1, "next");
+  loadNextMagicBookPage();
 }
 
 function openQuiz() {
@@ -2891,21 +2797,21 @@ function _buildQMSMultiPills() {
 
 function startMixQuiz() {
   closeQuizModeScreen();
-  setTimeout(() => { window.location.href = "/quiz"; }, 460);
+  setTimeout(() => { window.location.href = "quiz.html"; }, 460);
 }
 
 function startCapQuiz() {
   if (qmsCapSelected === null) return;
   const ch = qmsCapSelected;
   closeQuizModeScreen();
-  setTimeout(() => { window.location.href = "/quiz?chapters=" + ch; }, 460);
+  setTimeout(() => { window.location.href = "quiz.html?chapters=" + ch; }, 460);
 }
 
 function startMultiQuiz() {
   if (qmsMultiSelected.size < 2) return;
   const chapters = Array.from(qmsMultiSelected).sort((a, b) => a - b).join(",");
   closeQuizModeScreen();
-  setTimeout(() => { window.location.href = "/quiz?chapters=" + encodeURIComponent(chapters); }, 460);
+  setTimeout(() => { window.location.href = "quiz.html?chapters=" + encodeURIComponent(chapters); }, 460);
 }
 
 /***********************

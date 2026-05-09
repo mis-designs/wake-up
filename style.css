@@ -938,12 +938,11 @@ button:active {
 #viewer {
     position: fixed;
     inset: 0;
-    background: #080a12;
+    background: #000;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    padding: calc(env(safe-area-inset-top, 0px) + 92px) 6px calc(env(safe-area-inset-bottom, 0px) + 18px);
-    perspective: 1100px;
+    padding: calc(env(safe-area-inset-top, 0px) + 92px) 20px calc(env(safe-area-inset-bottom, 0px) + 20px);
     touch-action: pan-y pinch-zoom;
 }
 
@@ -970,7 +969,6 @@ button:active {
 #pages {
     position: relative;
     width: 100%;
-    min-height: calc(100dvh - 116px);
     display: block;
     overflow: visible;
     touch-action: pan-y pinch-zoom;
@@ -979,50 +977,46 @@ button:active {
 
 .page {
     position: relative;
-    width: min(calc(100vw - 12px), 980px);
-    max-width: 980px;
-    margin: 0 auto 18px;
-    border: 1.5px solid rgba(255, 255, 255, 0.32);
+    max-width: 900px;
+    margin: 20px auto;
+    border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 8px;
     overflow: hidden;
     background: #f7f8fb;
-    box-shadow: 0 26px 64px rgba(0, 0, 0, 0.38);
-    transform-origin: center center;
-    transition: transform 0.22s ease, opacity 0.22s ease;
-    will-change: transform, opacity;
-}
-
-.page.is-dragging {
-    transition: none;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.42);
 }
 
 .viewer-loading {
-    min-height: calc(100dvh - 150px);
+    max-width: 900px;
+    min-height: min(70dvh, 820px);
+    margin: 20px auto;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 8px;
     z-index: 12;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 14px;
-    color: var(--color-white);
+    color: var(--color-dark);
     font-size: 14px;
     font-weight: 800;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.08), rgba(8, 10, 18, 0.34) 58%, transparent);
+    background: #fff;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.42);
     pointer-events: none;
 }
 
 .page + .viewer-loading {
-    min-height: 120px;
-    padding: 24px 0 34px;
+    min-height: 220px;
+    padding: 24px 0;
 }
 
 .viewer-loading img {
     width: 74px;
     height: 74px;
     object-fit: contain;
-    filter: drop-shadow(0 10px 22px rgba(255, 255, 255, 0.16));
 }
 
 /* PAGE IMAGE */
@@ -1048,49 +1042,6 @@ button:active {
   touch-action: pan-y pinch-zoom;
   pointer-events: none;
 
-}
-
-.viewer-empty-page {
-    min-height: min(420px, calc(100dvh - 160px));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 36px 18px;
-    color: var(--color-dark);
-    text-align: center;
-    font-weight: 900;
-}
-
-.viewer-page-counter {
-    position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 68px);
-    left: 50%;
-    z-index: 24;
-    transform: translateX(-50%);
-    padding: 7px 12px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.88);
-    color: var(--color-dark);
-    font-size: 12px;
-    font-weight: 900;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
-    pointer-events: none;
-}
-
-.viewer-message {
-    position: fixed;
-    left: 50%;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 34px);
-    z-index: 30;
-    transform: translateX(-50%);
-    padding: 10px 14px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.92);
-    color: var(--color-dark);
-    font-size: 13px;
-    font-weight: 900;
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
-    pointer-events: none;
 }
 
 /* BACK BUTTON */
@@ -1545,7 +1496,7 @@ body.app-mode .lesson-card {
 }
 
 body.app-mode #viewer {
-    padding: calc(env(safe-area-inset-top, 0px) + 92px) 6px calc(env(safe-area-inset-bottom, 0px) + 18px);
+    padding: calc(env(safe-area-inset-top, 0px) + 92px) 20px calc(env(safe-area-inset-bottom, 0px) + 20px);
 }
 
 /* Compact chapters layout in app-mode — everything fits in one screen */
@@ -1691,11 +1642,7 @@ body.app-mode #whatsappBtn {
     }
     body.app-mode .lesson-card { height: calc(100dvh - 54px); }
     body.app-mode #viewer {
-        padding: calc(env(safe-area-inset-top, 0px) + 80px) 5px calc(env(safe-area-inset-bottom, 0px) + 14px);
-    }
-
-    .viewer-page-counter {
-        top: calc(env(safe-area-inset-top, 0px) + 60px);
+        padding: calc(env(safe-area-inset-top, 0px) + 80px) 10px calc(env(safe-area-inset-bottom, 0px) + 14px);
     }
 
 }

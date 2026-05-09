@@ -2,7 +2,7 @@
   "name": "MagicBook",
   "short_name": "MagicBook",
   "description": "MagicBook quiz e lezioni patente",
-  "start_url": "/home",
+  "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
   "background_color": "#dee0ed",

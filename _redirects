@@ -1,7 +1,1 @@
 https://magicph.netlify.app/* https://www.tmmmagic.eu/:splat 301!
-/login /index.html 200
-/home /index.html 200
-/chapters /index.html 200
-/book/* /index.html 200
-/exam-pdf /index.html 200
-/quiz /quiz.html 200

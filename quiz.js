@@ -3,8 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 const CLIENT_AUTH_RESET_VERSION = "2026-04-device-reset-1";
 const CLIENT_AUTH_RESET_KEY = "client_auth_reset_version";
-const HOME_ROUTE = "/home";
-const QUIZ_ROUTE = "/quiz";
+const HOME_ROUTE = "index.html";
 const RESULT_VIDEO_SOURCES = {
   pass: "pial_vhai%20applauso.mp4",
   fail: "delusione.mp4"
@@ -100,18 +99,8 @@ const QUIZ_MODE_CONFIG = {
   default: { title: "Quiz", timerMinutes: 20 }
 };
 
-function setQuizCleanRoute(title = "MagicBook | Quiz") {
+function setQuizTitle(title = "MagicBook | Quiz") {
   document.title = title;
-  if (!/^https?:$/.test(window.location.protocol) || !window.history) return;
-
-  const nextUrl = QUIZ_ROUTE + window.location.search;
-  if (window.location.pathname + window.location.search === nextUrl) return;
-
-  try {
-    window.history.replaceState({}, title, nextUrl);
-  } catch (err) {
-    console.warn("[quiz] Clean route update unavailable", err);
-  }
 }
 
 function getRequestedQuizMode() {
@@ -331,7 +320,7 @@ let quiz = [];
 let answers = [];
 let current = 0;
 let quizMode = getRequestedQuizMode();
-setQuizCleanRoute(`MagicBook | ${getQuizModeConfig(quizMode).title || "Quiz"}`);
+setQuizTitle(`MagicBook | ${getQuizModeConfig(quizMode).title || "Quiz"}`);
 let quizDurationMinutes = getQuizModeConfig(quizMode).timerMinutes;
 let time = quizDurationMinutes * 60;
 let isFinishing = false;
@@ -685,7 +674,7 @@ async function loadQuiz() {
     const modeConfig = getQuizModeConfig(quizMode);
     const titleEl = document.querySelector(".top-bar h2");
     if (titleEl) titleEl.innerText = data.title || modeConfig.title || "Quiz";
-    setQuizCleanRoute(`MagicBook | ${data.title || modeConfig.title || "Quiz"}`);
+    setQuizTitle(`MagicBook | ${data.title || modeConfig.title || "Quiz"}`);
 
     // inizializza risposte
     answers = quiz.map(q => ({ id: q.id, answer: null }));
