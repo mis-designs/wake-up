@@ -1,0 +1,11 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/login", "destination": "/index.html" },
+    { "source": "/home", "destination": "/index.html" },
+    { "source": "/chapters", "destination": "/index.html" },
+    { "source": "/book/:path*", "destination": "/index.html" },
+    { "source": "/exam-pdf", "destination": "/index.html" },
+    { "source": "/quiz", "destination": "/quiz.html" }
+  ]
+}

@@ -939,11 +939,12 @@ button:active {
     position: fixed;
     inset: 0;
     background: #080a12;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    padding: calc(env(safe-area-inset-top, 0px) + 96px) 6px calc(env(safe-area-inset-bottom, 0px) + 8px);
+    padding: calc(env(safe-area-inset-top, 0px) + 92px) 6px calc(env(safe-area-inset-bottom, 0px) + 18px);
     perspective: 1100px;
-    touch-action: none;
+    touch-action: pan-y pinch-zoom;
 }
 
 .viewer-back-btn {
@@ -969,23 +970,20 @@ button:active {
 #pages {
     position: relative;
     width: 100%;
-    height: 100%;
-    min-height: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    touch-action: none;
+    min-height: calc(100dvh - 116px);
+    display: block;
+    overflow: visible;
+    touch-action: pan-y pinch-zoom;
     user-select: none;
 }
 
 .page {
     position: relative;
-    width: min(calc(100vw - 12px), 900px);
-    max-height: 100%;
-    margin: 0 auto;
-    border: 2px solid rgba(255, 255, 255, 0.22);
-    border-radius: 9px;
+    width: min(calc(100vw - 12px), 980px);
+    max-width: 980px;
+    margin: 0 auto 18px;
+    border: 1.5px solid rgba(255, 255, 255, 0.32);
+    border-radius: 8px;
     overflow: hidden;
     background: #f7f8fb;
     box-shadow: 0 26px 64px rgba(0, 0, 0, 0.38);
@@ -996,11 +994,6 @@ button:active {
 
 .page.is-dragging {
     transition: none;
-}
-
-.page.is-zoomed {
-    z-index: 18;
-    cursor: grab;
 }
 
 .page-enter-next {
@@ -1024,10 +1017,8 @@ button:active {
 }
 
 .viewer-loading {
-    position: absolute;
-    inset: 0;
+    min-height: calc(100dvh - 150px);
     z-index: 12;
-    min-height: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1038,13 +1029,13 @@ button:active {
     font-weight: 800;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1), rgba(8, 10, 18, 0.64) 58%, rgba(8, 10, 18, 0.82));
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.08), rgba(8, 10, 18, 0.34) 58%, transparent);
     pointer-events: none;
 }
 
 .page + .viewer-loading {
-    min-height: 0;
-    padding: 0;
+    min-height: 120px;
+    padding: 24px 0 34px;
 }
 
 .viewer-loading img {
@@ -1058,10 +1049,9 @@ button:active {
 .page img {
     width: 100%;
     max-width: 100%;
-    max-height: calc(100dvh - 112px);
     height: auto;
     display: block;
-    object-fit: contain;
+    object-fit: initial;
     user-select: none;
     -webkit-user-drag: none;
     pointer-events: none;
@@ -1075,7 +1065,7 @@ button:active {
   inset: 0;
   background: transparent;
   z-index: 10; /* sopra l'immagine ma sotto UI */
-  touch-action: none; /* disabilita long press e gestures */
+  touch-action: pan-y pinch-zoom;
   pointer-events: none;
 
 }
@@ -1110,7 +1100,7 @@ button:active {
 .viewer-nav-zone {
     position: fixed;
     top: calc(env(safe-area-inset-top, 0px) + 96px);
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
     z-index: 22;
     width: min(18vw, 96px);
     min-width: 54px;
@@ -1692,7 +1682,7 @@ body.app-mode .lesson-card {
 }
 
 body.app-mode #viewer {
-    padding: calc(env(safe-area-inset-top, 0px) + 96px) 6px calc(env(safe-area-inset-bottom, 0px) + 8px);
+    padding: calc(env(safe-area-inset-top, 0px) + 92px) 6px calc(env(safe-area-inset-bottom, 0px) + 18px);
 }
 
 /* Compact chapters layout in app-mode — everything fits in one screen */
@@ -1838,7 +1828,7 @@ body.app-mode #whatsappBtn {
     }
     body.app-mode .lesson-card { height: calc(100dvh - 54px); }
     body.app-mode #viewer {
-        padding: calc(env(safe-area-inset-top, 0px) + 84px) 5px calc(env(safe-area-inset-bottom, 0px) + 6px);
+        padding: calc(env(safe-area-inset-top, 0px) + 80px) 5px calc(env(safe-area-inset-bottom, 0px) + 14px);
     }
 
     .viewer-page-counter {
@@ -1846,12 +1836,8 @@ body.app-mode #whatsappBtn {
     }
 
     .viewer-nav-zone {
-        top: calc(env(safe-area-inset-top, 0px) + 84px);
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 6px);
-    }
-
-    .page img {
-        max-height: calc(100dvh - 92px);
+        top: calc(env(safe-area-inset-top, 0px) + 80px);
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
     }
 }
 

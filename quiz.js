@@ -3,6 +3,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 const CLIENT_AUTH_RESET_VERSION = "2026-04-device-reset-1";
 const CLIENT_AUTH_RESET_KEY = "client_auth_reset_version";
+const HOME_ROUTE = "/home";
+const QUIZ_ROUTE = "/quiz";
 const RESULT_VIDEO_SOURCES = {
   pass: "pial_vhai%20applauso.mp4",
   fail: "delusione.mp4"
@@ -86,7 +88,7 @@ function hasCurrentClientAuthResetVersion() {
 }
 
 if (!hasCurrentClientAuthResetVersion()) {
-  window.location.href = "index.html";
+  window.location.href = HOME_ROUTE;
   throw new Error("client_auth_reset_required");
 }
 
@@ -97,6 +99,20 @@ const QUIZ_MODE_CONFIG = {
   exam30: { title: "Exam", timerMinutes: 20 },
   default: { title: "Quiz", timerMinutes: 20 }
 };
+
+function setQuizCleanRoute(title = "MagicBook | Quiz") {
+  document.title = title;
+  if (!/^https?:$/.test(window.location.protocol) || !window.history) return;
+
+  const nextUrl = QUIZ_ROUTE + window.location.search;
+  if (window.location.pathname + window.location.search === nextUrl) return;
+
+  try {
+    window.history.replaceState({}, title, nextUrl);
+  } catch (err) {
+    console.warn("[quiz] Clean route update unavailable", err);
+  }
+}
 
 function getRequestedQuizMode() {
   const params = new URLSearchParams(window.location.search);
@@ -162,7 +178,7 @@ function getQuizSession() {
 function requireQuizSession() {
   const session = getQuizSession();
   if (!session) {
-    window.location.href = "index.html";
+    window.location.href = HOME_ROUTE;
     throw new Error("missing_quiz_session");
   }
   return session;
@@ -284,7 +300,7 @@ async function handleQuizAccessError(error) {
     if (isQuizRevokedSessionError(error)) clearQuizSessionDataForLogout();
     await showMessage("Accesso", getQuizAccessErrorMessage(error));
   } finally {
-    window.location.href = "index.html";
+    window.location.href = HOME_ROUTE;
   }
 }
 
@@ -315,6 +331,7 @@ let quiz = [];
 let answers = [];
 let current = 0;
 let quizMode = getRequestedQuizMode();
+setQuizCleanRoute(`MagicBook | ${getQuizModeConfig(quizMode).title || "Quiz"}`);
 let quizDurationMinutes = getQuizModeConfig(quizMode).timerMinutes;
 let time = quizDurationMinutes * 60;
 let isFinishing = false;
@@ -619,7 +636,7 @@ function hideLoading() {
 }
 
 function returnToBook() {
-  window.location.href = "index.html";
+  window.location.href = HOME_ROUTE;
 }
 
 function rifaiScheda() {
@@ -668,6 +685,7 @@ async function loadQuiz() {
     const modeConfig = getQuizModeConfig(quizMode);
     const titleEl = document.querySelector(".top-bar h2");
     if (titleEl) titleEl.innerText = data.title || modeConfig.title || "Quiz";
+    setQuizCleanRoute(`MagicBook | ${data.title || modeConfig.title || "Quiz"}`);
 
     // inizializza risposte
     answers = quiz.map(q => ({ id: q.id, answer: null }));
