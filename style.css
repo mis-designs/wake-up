@@ -941,7 +941,7 @@ button:active {
     background: #080a12;
     overflow: hidden;
     -webkit-overflow-scrolling: touch;
-    padding: calc(env(safe-area-inset-top, 0px) + 74px) 14px calc(env(safe-area-inset-bottom, 0px) + 24px);
+    padding: calc(env(safe-area-inset-top, 0px) + 96px) 6px calc(env(safe-area-inset-bottom, 0px) + 8px);
     perspective: 1100px;
     touch-action: none;
 }
@@ -981,11 +981,11 @@ button:active {
 
 .page {
     position: relative;
-    width: auto;
-    max-width: min(100%, 900px);
+    width: min(calc(100vw - 12px), 900px);
     max-height: 100%;
     margin: 0 auto;
-    border-radius: 10px;
+    border: 2px solid rgba(255, 255, 255, 0.22);
+    border-radius: 9px;
     overflow: hidden;
     background: #f7f8fb;
     box-shadow: 0 26px 64px rgba(0, 0, 0, 0.38);
@@ -996,6 +996,11 @@ button:active {
 
 .page.is-dragging {
     transition: none;
+}
+
+.page.is-zoomed {
+    z-index: 18;
+    cursor: grab;
 }
 
 .page-enter-next {
@@ -1051,9 +1056,9 @@ button:active {
 
 /* PAGE IMAGE */
 .page img {
-    width: auto;
+    width: 100%;
     max-width: 100%;
-    max-height: calc(100dvh - 118px);
+    max-height: calc(100dvh - 112px);
     height: auto;
     display: block;
     object-fit: contain;
@@ -1088,7 +1093,7 @@ button:active {
 
 .viewer-page-counter {
     position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 70px);
+    top: calc(env(safe-area-inset-top, 0px) + 68px);
     left: 50%;
     z-index: 24;
     transform: translateX(-50%);
@@ -1104,8 +1109,8 @@ button:active {
 
 .viewer-nav-zone {
     position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 94px);
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+    top: calc(env(safe-area-inset-top, 0px) + 96px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
     z-index: 22;
     width: min(18vw, 96px);
     min-width: 54px;
@@ -1687,7 +1692,7 @@ body.app-mode .lesson-card {
 }
 
 body.app-mode #viewer {
-    padding-top: 60px;
+    padding: calc(env(safe-area-inset-top, 0px) + 96px) 6px calc(env(safe-area-inset-bottom, 0px) + 8px);
 }
 
 /* Compact chapters layout in app-mode — everything fits in one screen */
@@ -1832,7 +1837,22 @@ body.app-mode #whatsappBtn {
         display: none;
     }
     body.app-mode .lesson-card { height: calc(100dvh - 54px); }
-    body.app-mode #viewer { padding-top: 54px; }
+    body.app-mode #viewer {
+        padding: calc(env(safe-area-inset-top, 0px) + 84px) 5px calc(env(safe-area-inset-bottom, 0px) + 6px);
+    }
+
+    .viewer-page-counter {
+        top: calc(env(safe-area-inset-top, 0px) + 60px);
+    }
+
+    .viewer-nav-zone {
+        top: calc(env(safe-area-inset-top, 0px) + 84px);
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 6px);
+    }
+
+    .page img {
+        max-height: calc(100dvh - 92px);
+    }
 }
 
 @media (max-width: 520px) {

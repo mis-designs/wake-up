@@ -2295,6 +2295,7 @@ function openQuizFromMenu() {
 const MAGIC_BOOK_API = "/api/getPages";
 const PAGE_FLIP_HINT_KEY = "page_flip_hint_seen";
 const VIEWER_SWIPE_THRESHOLD = 60;
+const VIEWER_MAX_ZOOM = 3.5;
 
 let currentBookViewer = {
   book: "magic",
@@ -2309,12 +2310,20 @@ let currentBookViewer = {
 
 let viewerHintTimer = null;
 let viewerLoadToken = 0;
+let viewerPointers = new Map();
 let viewerDragState = {
   dragging: false,
   startX: 0,
   deltaX: 0,
   pointerId: null
 };
+let viewerZoomState = {
+  scale: 1,
+  x: 0,
+  y: 0
+};
+let viewerPinchState = null;
+let viewerPanState = null;
 
 async function fetchMagicBookPage({ type, chapter, page }) {
   const body = {
@@ -2410,6 +2419,11 @@ function cleanupMagicBookViewer({ resetState = true } = {}) {
     pages.style.removeProperty("--viewer-drag-rotate");
   }
 
+  resetViewerZoom();
+  viewerPointers.clear();
+  viewerPinchState = null;
+  viewerPanState = null;
+  viewerDragState.dragging = false;
   revokeCurrentBookObjectUrl();
   hideViewerHint(false);
 
@@ -2564,20 +2578,123 @@ async function renderMagicBookPage(blob, direction = "next") {
 }
 
 function resetViewerDragTransform() {
-  const page = document.querySelector("#pages .page:not(.viewer-empty-page)");
+  const page = getVisibleViewerPage();
   if (!page) return;
   page.classList.remove("is-dragging");
-  page.style.transform = "";
+  applyViewerZoomTransform();
+}
+
+function getVisibleViewerPage() {
+  return document.querySelector("#pages .page:not(.viewer-empty-page)");
+}
+
+function clampViewerZoom(value) {
+  return Math.max(1, Math.min(VIEWER_MAX_ZOOM, value));
+}
+
+function clampViewerPan() {
+  const page = getVisibleViewerPage();
+  const pages = document.getElementById("pages");
+  if (!page || !pages || viewerZoomState.scale <= 1) {
+    viewerZoomState.x = 0;
+    viewerZoomState.y = 0;
+    return;
+  }
+
+  const bounds = pages.getBoundingClientRect();
+  const maxX = Math.max(0, ((page.offsetWidth * viewerZoomState.scale) - bounds.width) / 2 + 24);
+  const maxY = Math.max(0, ((page.offsetHeight * viewerZoomState.scale) - bounds.height) / 2 + 24);
+  viewerZoomState.x = Math.max(-maxX, Math.min(maxX, viewerZoomState.x));
+  viewerZoomState.y = Math.max(-maxY, Math.min(maxY, viewerZoomState.y));
+}
+
+function applyViewerZoomTransform() {
+  const page = getVisibleViewerPage();
+  if (!page) return;
+
+  clampViewerPan();
+  page.classList.toggle("is-zoomed", viewerZoomState.scale > 1.01);
+  page.style.transform = viewerZoomState.scale > 1.01
+    ? `translate3d(${viewerZoomState.x}px, ${viewerZoomState.y}px, 0) scale(${viewerZoomState.scale})`
+    : "";
+}
+
+function resetViewerZoom() {
+  viewerZoomState = { scale: 1, x: 0, y: 0 };
+  viewerPinchState = null;
+  viewerPanState = null;
+  const page = getVisibleViewerPage();
+  if (page) {
+    page.classList.remove("is-zoomed");
+    page.style.transform = "";
+  }
 }
 
 function applyViewerDragTransform(deltaX) {
-  const page = document.querySelector("#pages .page:not(.viewer-empty-page)");
-  if (!page) return;
+  const page = getVisibleViewerPage();
+  if (!page || viewerZoomState.scale > 1.01) return;
 
   const clamped = Math.max(-140, Math.min(140, deltaX));
   const rotate = clamped < 0 ? -8 : 8;
   page.classList.add("is-dragging");
   page.style.transform = `translateX(${clamped}px) rotateY(${rotate}deg)`;
+}
+
+function getViewerPointerPair() {
+  const points = Array.from(viewerPointers.values());
+  if (points.length < 2) return null;
+  return [points[0], points[1]];
+}
+
+function getViewerPointerDistance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function getViewerPointerCenter(a, b) {
+  return {
+    x: (a.x + b.x) / 2,
+    y: (a.y + b.y) / 2
+  };
+}
+
+function startViewerPinch() {
+  const pair = getViewerPointerPair();
+  if (!pair) return;
+
+  const [a, b] = pair;
+  viewerPinchState = {
+    distance: Math.max(1, getViewerPointerDistance(a, b)),
+    center: getViewerPointerCenter(a, b),
+    scale: viewerZoomState.scale,
+    x: viewerZoomState.x,
+    y: viewerZoomState.y
+  };
+  viewerDragState.dragging = false;
+  viewerPanState = null;
+  getVisibleViewerPage()?.classList.add("is-dragging");
+}
+
+function updateViewerPinch() {
+  const pair = getViewerPointerPair();
+  if (!pair || !viewerPinchState) return;
+
+  const [a, b] = pair;
+  const distance = Math.max(1, getViewerPointerDistance(a, b));
+  const center = getViewerPointerCenter(a, b);
+  viewerZoomState.scale = clampViewerZoom(viewerPinchState.scale * (distance / viewerPinchState.distance));
+  viewerZoomState.x = viewerPinchState.x + (center.x - viewerPinchState.center.x);
+  viewerZoomState.y = viewerPinchState.y + (center.y - viewerPinchState.center.y);
+  applyViewerZoomTransform();
+}
+
+function finishViewerPinch() {
+  getVisibleViewerPage()?.classList.remove("is-dragging");
+  if (viewerZoomState.scale < 1.04) {
+    resetViewerZoom();
+  } else {
+    applyViewerZoomTransform();
+  }
+  viewerPinchState = null;
 }
 
 function hideViewerHint(saveSeen = true) {
@@ -2668,17 +2785,52 @@ function handleViewerPointerDown(event) {
   if (currentBookViewer.isLoading || event.button !== 0) return;
 
   hideViewerHint(true);
+  viewerPointers.set(event.pointerId, { id: event.pointerId, x: event.clientX, y: event.clientY });
+  event.currentTarget.setPointerCapture?.(event.pointerId);
+
+  if (viewerPointers.size >= 2) {
+    startViewerPinch();
+    return;
+  }
+
+  if (viewerZoomState.scale > 1.01) {
+    viewerPanState = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      x: viewerZoomState.x,
+      y: viewerZoomState.y
+    };
+    getVisibleViewerPage()?.classList.add("is-dragging");
+    return;
+  }
+
   viewerDragState = {
     dragging: true,
     startX: event.clientX,
     deltaX: 0,
     pointerId: event.pointerId
   };
-
-  event.currentTarget.setPointerCapture?.(event.pointerId);
 }
 
 function handleViewerPointerMove(event) {
+  if (!viewerPointers.has(event.pointerId)) return;
+  viewerPointers.set(event.pointerId, { id: event.pointerId, x: event.clientX, y: event.clientY });
+
+  if (viewerPointers.size >= 2 && viewerPinchState) {
+    event.preventDefault();
+    updateViewerPinch();
+    return;
+  }
+
+  if (viewerPanState && event.pointerId === viewerPanState.pointerId && viewerZoomState.scale > 1.01) {
+    event.preventDefault();
+    viewerZoomState.x = viewerPanState.x + (event.clientX - viewerPanState.startX);
+    viewerZoomState.y = viewerPanState.y + (event.clientY - viewerPanState.startY);
+    applyViewerZoomTransform();
+    return;
+  }
+
   if (!viewerDragState.dragging || event.pointerId !== viewerDragState.pointerId) return;
 
   viewerDragState.deltaX = event.clientX - viewerDragState.startX;
@@ -2689,11 +2841,36 @@ function handleViewerPointerMove(event) {
 }
 
 function handleViewerPointerEnd(event) {
+  viewerPointers.delete(event.pointerId);
+  event.currentTarget.releasePointerCapture?.(event.pointerId);
+
+  if (viewerPinchState) {
+    finishViewerPinch();
+    const pair = getViewerPointerPair();
+    if (pair && viewerZoomState.scale > 1.01) {
+      const remaining = pair[0];
+      viewerPanState = {
+        pointerId: remaining.id,
+        startX: remaining.x,
+        startY: remaining.y,
+        x: viewerZoomState.x,
+        y: viewerZoomState.y
+      };
+    }
+    return;
+  }
+
+  if (viewerPanState && event.pointerId === viewerPanState.pointerId) {
+    getVisibleViewerPage()?.classList.remove("is-dragging");
+    viewerPanState = null;
+    applyViewerZoomTransform();
+    return;
+  }
+
   if (!viewerDragState.dragging || event.pointerId !== viewerDragState.pointerId) return;
 
   const deltaX = viewerDragState.deltaX;
   viewerDragState.dragging = false;
-  event.currentTarget.releasePointerCapture?.(event.pointerId);
 
   if (deltaX < -VIEWER_SWIPE_THRESHOLD) {
     goViewerPage("next");
@@ -2706,6 +2883,7 @@ function handleViewerPointerEnd(event) {
 
 function goViewerPage(direction) {
   if (currentBookViewer.isLoading) return;
+  resetViewerZoom();
 
   if (direction === "prev") {
     if (currentBookViewer.page <= 1) {
