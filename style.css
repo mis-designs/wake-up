@@ -1868,11 +1868,23 @@ body.app-mode #whatsappBtn {
 .qms-badge-exam30 { background: linear-gradient(135deg, #ee2f4b 0%, #ff7a59 100%); }
 .qms-badge-exam-pdf { background: linear-gradient(135deg, #252943 0%, #54607f 100%); }
 
+.qms-badge-photo {
+    overflow: hidden;
+    background: transparent;
+}
+
 .qms-card-badge img {
     width: 28px;
     height: 28px;
     object-fit: contain;
     filter: brightness(0) invert(1);
+}
+
+.qms-badge-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: none;
 }
 
 .qms-card-title {

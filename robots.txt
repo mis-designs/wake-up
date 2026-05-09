@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /icons/
+Disallow: /quiz.html
+
+Sitemap: https://tmmmagic.eu/sitemap.xml
