@@ -60,7 +60,8 @@ const KEYS = {
   quizSessionTokenExpiresAt: "quizSessionTokenExpiresAt",
   session: "user_session",
   legacySession: "session",
-  renewPopupLastShown: "renewPopupLastShown"
+  renewPopupLastShown: "renewPopupLastShown",
+  renewPopupDailyState: "renewPopupDailyState"
 };
 
 const CLIENT_AUTH_RESET_VERSION = "2026-04-device-reset-1";
@@ -310,6 +311,7 @@ async function clearSessionDataForGlobalReset() {
     KEYS.quizSessionToken,
     KEYS.quizSessionTokenExpiresAt,
     KEYS.renewPopupLastShown,
+    KEYS.renewPopupDailyState,
   ].forEach(key => Storage.remove(key));
 
   try {
@@ -325,6 +327,7 @@ async function clearSessionDataForGlobalReset() {
       "quizSessionToken",
       "quizSessionTokenExpiresAt",
       "renewPopupLastShown",
+      "renewPopupDailyState",
     ].forEach(key => localStorage.removeItem(key));
   } catch (err) {
     console.warn("Pulizia reset globale localStorage non disponibile");
@@ -639,7 +642,11 @@ async function login() {
         return;
       }
 
-      if (err) err.textContent = getLoginErrorMessage(data?.error || data?.status);
+      const loginError = data?.error || data?.status;
+      if (loginError === "expired") {
+        setTimeout(showExpiredRenewPopup, 80);
+      }
+      if (err) err.textContent = getLoginErrorMessage(loginError);
       return;
     }
 
@@ -1074,6 +1081,9 @@ function logout(showLogin = true, reason = "revoked") {
     else if (reason === "device_mismatch") msg = "Questo dispositivo non è più autorizzato.";
     else if (reason === "revoked") msg = "Accesso revocato dall'amministratore";
     showLoginScreen(msg);
+    if (reason === "expired") {
+      setTimeout(showExpiredRenewPopup, 120);
+    }
   }
 }
 
@@ -1087,6 +1097,7 @@ function clearSessionData() {
     KEYS.session,
     KEYS.legacySession,
     KEYS.renewPopupLastShown,
+    KEYS.renewPopupDailyState,
   ].forEach(key => Storage.remove(key));
 
   try {
@@ -1098,6 +1109,7 @@ function clearSessionData() {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("accessTokenExpiresAt");
     localStorage.removeItem("renewPopupLastShown");
+    localStorage.removeItem("renewPopupDailyState");
   } catch (err) {
     console.warn("Pulizia localStorage non disponibile");
   }
@@ -1218,24 +1230,205 @@ function getTodayKey() {
     String(d.getDate()).padStart(2, "0");
 }
 
+function toBanglaDigits(value) {
+  const digits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+  return String(value).replace(/\d/g, digit => digits[Number(digit)] || digit);
+}
+
+function getExpiringBanglaMessage(daysLeft) {
+  return [
+    "আসসালামু আলাইকুম,",
+    `আপনার MagicBook অ্যাক্সেস আর মাত্র ${toBanglaDigits(daysLeft)} দিন বাকি আছে। পড়াশোনার ছন্দ একবার ভেঙে গেলে তা আবার শুরু করা কঠিন হয়ে যায়। আপনার প্রস্তুতির গতি ধরে রাখতে এখনই রিনিউ করে নিন।`,
+    "",
+    "✅ রিনিউ প্ল্যান:",
+    "🔹 ১০ ইউরো = ৩০ দিন",
+    "🔹 ২০ ইউরো = ৯০ দিন (সবচেয়ে জনপ্রিয়)",
+    "🔹 ৪০ ইউরো = ৩৬৫ দিন (পুরো বছরের জন্য নিশ্চিন্ত)",
+    "",
+    "📲 রিনিউ করতে আমাদের এই নাম্বারে হোয়াটসঅ্যাপ করুন: +39 366 358 4525।",
+    "পড়াশোনার ছন্দে থাকুন, সফলতার পথে এগিয়ে থাকুন!",
+    "Tmm Bangla Patente"
+  ].join("\n");
+}
+
+function getExpiredBanglaMessage() {
+  return [
+    "আসসালামু আলাইকুম,",
+    "আপনার ম্যাজিকবুক-এর মেয়াদ শেষ হয়ে গেছে। লক্ষ্য পূরণের পথে থেমে থাকা চলবে না! পড়াশোনার ছন্দ ফিরে পেতে এবং ম্যাজিকবুক-এর সব সুবিধা পেতে আজই রিনিউ করুন।",
+    "",
+    "📅 আপনার জন্য প্ল্যান:",
+    "📍 ৩০ দিন = ১০€ | ৯০ দিন = ২০€ | ৩৬৫ দিন = ৪০€",
+    "",
+    "সরাসরি যোগাযোগ করুন এই নাম্বারে: +39 366 358 4525।",
+    "পড়াশোনা হোক আরও সহজ ও আনন্দময়!",
+    "Tmm Bangla Patente"
+  ].join("\n");
+}
+
+function getRenewPopupState() {
+  try {
+    const state = JSON.parse(Storage.get(KEYS.renewPopupDailyState) || "{}");
+    return state && typeof state === "object" ? state : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveRenewPopupState(state) {
+  Storage.set(KEYS.renewPopupDailyState, JSON.stringify(state || {}));
+}
+
 function checkRenewReminder(force = false) {
   const daysLeft = getDaysToExpiry();
   if (daysLeft === null) return;
   if (daysLeft < 0) return;
-  if (daysLeft > 7) return;
+  if (daysLeft > ADMIN_EXPIRING_DAYS) return;
 
   const todayKey = getTodayKey();
-  const lastShown = Storage.get(KEYS.renewPopupLastShown);
+  const state = getRenewPopupState();
+  const sameDay = state.date === todayKey;
+  const count = sameDay ? Number(state.count || 0) : 0;
+  const lastShownAt = sameDay ? Number(state.lastShownAt || 0) : 0;
+  const tooSoon = Date.now() - lastShownAt < 4 * 60 * 60 * 1000;
 
-  if (!force && lastShown === todayKey) return;
+  if (count >= 2) return;
+  if (!force && count > 0 && tooSoon) return;
 
   showRenewPopup(daysLeft);
+  saveRenewPopupState({
+    date: todayKey,
+    count: count + 1,
+    lastShownAt: Date.now()
+  });
   Storage.set(KEYS.renewPopupLastShown, todayKey);
+}
+
+function showBanglaRenewPopup(message, daysLeft = null) {
+  const old = document.getElementById("renewPopupOverlay");
+  if (old) old.remove();
+
+  if (!document.getElementById("renewPopupBanglaStyles")) {
+    const style = document.createElement("style");
+    style.id = "renewPopupBanglaStyles";
+    style.textContent = `
+      @keyframes renewSlideUp {
+        from { opacity: 0; transform: translateY(24px) scale(0.96); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      #renewPopupBox {
+        animation: renewSlideUp 0.34s cubic-bezier(0.22,1,0.36,1) both;
+      }
+      .renew-bn-message {
+        white-space: pre-line;
+        color: #1f2937;
+        font-size: 15px;
+        line-height: 1.62;
+        text-align: left;
+      }
+      .renew-bn-badge {
+        display: inline-flex;
+        margin-bottom: 14px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: #fff7ed;
+        color: #c2410c;
+        font-size: 12px;
+        font-weight: 900;
+      }
+      .renew-bn-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-top: 18px;
+      }
+      .renew-bn-primary,
+      .renew-bn-secondary {
+        min-height: 46px;
+        border-radius: 14px;
+        font-weight: 900;
+      }
+      .renew-bn-primary {
+        background: linear-gradient(135deg, #16a34a, #22c55e);
+        color: #ffffff;
+      }
+      .renew-bn-secondary {
+        background: #f8fafc;
+        color: #64748b;
+        border: 1px solid #e2e8f0;
+        box-shadow: none;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  const overlay = document.createElement("div");
+  overlay.id = "renewPopupOverlay";
+  overlay.style.cssText = [
+    "position:fixed;inset:0;",
+    "background:rgba(10,10,30,0.62);",
+    "backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);",
+    "z-index:999999;",
+    "display:flex;align-items:center;justify-content:center;",
+    "padding:18px;"
+  ].join("");
+
+  const box = document.createElement("div");
+  box.id = "renewPopupBox";
+  box.style.cssText = [
+    "background:#ffffff;",
+    "width:100%;max-width:480px;",
+    "max-height:calc(100dvh - 36px);overflow:auto;",
+    "border-radius:24px;",
+    "padding:22px 18px 18px;",
+    "box-shadow:0 32px 80px rgba(0,0,0,0.24);",
+    "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;"
+  ].join("");
+
+  const badge = document.createElement("div");
+  badge.className = "renew-bn-badge";
+  badge.textContent = daysLeft === null ? "Accesso scaduto" : `${toBanglaDigits(daysLeft)} দিন বাকি`;
+
+  const text = document.createElement("div");
+  text.className = "renew-bn-message";
+  text.textContent = message;
+
+  const actions = document.createElement("div");
+  actions.className = "renew-bn-actions";
+
+  const primary = document.createElement("button");
+  primary.type = "button";
+  primary.className = "renew-bn-primary";
+  primary.textContent = "WhatsApp";
+  primary.onclick = () => {
+    const url = `https://wa.me/${RENEW_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank", "noopener");
+    overlay.remove();
+  };
+
+  const secondary = document.createElement("button");
+  secondary.type = "button";
+  secondary.className = "renew-bn-secondary";
+  secondary.textContent = "পরে";
+  secondary.onclick = () => overlay.remove();
+
+  actions.appendChild(primary);
+  actions.appendChild(secondary);
+  box.appendChild(badge);
+  box.appendChild(text);
+  box.appendChild(actions);
+  overlay.appendChild(box);
+  overlay.addEventListener("click", event => {
+    if (event.target === overlay) overlay.remove();
+  });
+  document.body.appendChild(overlay);
 }
 
 function showRenewPopup(daysLeft) {
   const old = document.getElementById("renewPopupOverlay");
   if (old) old.remove();
+
+  showBanglaRenewPopup(getExpiringBanglaMessage(daysLeft), daysLeft);
+  return;
 
   // Inject styles once
   if (!document.getElementById("renewPopupStyles")) {
@@ -1453,6 +1646,10 @@ function showRenewPopup(daysLeft) {
   box.appendChild(dismiss);
   overlay.appendChild(box);
   document.body.appendChild(overlay);
+}
+
+function showExpiredRenewPopup() {
+  showBanglaRenewPopup(getExpiredBanglaMessage(), null);
 }
 
 /***********************
@@ -3159,6 +3356,51 @@ function updateAdminStats() {
   });
 }
 
+function renderAdminUserCard(user, duplicatePhones = getAdminDuplicatePhones()) {
+  const status = getAdminStatus(user);
+  const isDuplicate = duplicatePhones.has(getAdminPhoneKey(user.phone));
+  const showRenew = isRenewActionVisible(user);
+  const daysText = status.days === null
+    ? "senza scadenza"
+    : status.days < 0
+      ? `${Math.abs(status.days)} giorni fa`
+      : `${status.days} giorni`;
+  const deviceCount = [user.device1, user.device2].filter(Boolean).length;
+
+  return `
+    <article class="admin-user-card is-${status.key}">
+      <div class="admin-user-head">
+        <div class="admin-phone">${escapeHtml(user.phone)}</div>
+        <div class="admin-status">
+          <span class="admin-status-dot"></span>
+          <span>${escapeHtml(status.label)}</span>
+        </div>
+      </div>
+      <div class="admin-meta">
+        <span>Scadenza: ${escapeHtml(formatAdminDate(user.expiry))}</span>
+        <span>${escapeHtml(daysText)}</span>
+        <span>Dispositivi: ${deviceCount}/2</span>
+      </div>
+      ${isDuplicate ? '<div class="admin-duplicate-note">Possibile duplicato: stesso numero presente piu volte.</div>' : ''}
+      <div class="admin-card-actions">
+        <button class="admin-action-btn" type="button" data-admin-action="edit" data-phone="${escapeHtml(user.phone)}" aria-label="Modifica">
+          <img src="assets/admin/edit.png" alt="">
+        </button>
+        ${showRenew ? `<button class="admin-action-btn" type="button" data-admin-action="renew" data-phone="${escapeHtml(user.phone)}" aria-label="Rinnova">
+          <img src="assets/admin/renew.png" alt="">
+        </button>` : ''}
+        ${showRenew ? `<button class="admin-action-btn is-send" type="button" data-admin-action="send" data-phone="${escapeHtml(user.phone)}" aria-label="Invia WhatsApp">Send</button>` : ''}
+        <button class="admin-action-btn" type="button" data-admin-action="reset" data-phone="${escapeHtml(user.phone)}" aria-label="Reset dispositivi">
+          <img src="assets/admin/reset.png" alt="">
+        </button>
+        <button class="admin-action-btn is-danger" type="button" data-admin-action="delete" data-phone="${escapeHtml(user.phone)}" aria-label="Elimina">
+          <img src="assets/admin/trash.png" alt="">
+        </button>
+      </div>
+    </article>
+  `;
+}
+
 function renderAdminUsers() {
   updateAdminStats();
   const list = document.getElementById("adminUserList");
@@ -3170,51 +3412,27 @@ function renderAdminUsers() {
     return;
   }
 
-  list.innerHTML = users.map(user => {
-    const status = getAdminStatus(user);
-    const duplicatePhones = getAdminDuplicatePhones();
-    const isDuplicate = duplicatePhones.has(getAdminPhoneKey(user.phone));
-    const showRenew = isRenewActionVisible(user);
-    const daysText = status.days === null
-      ? "senza scadenza"
-      : status.days < 0
-        ? `${Math.abs(status.days)} giorni fa`
-        : `${status.days} giorni`;
-    const deviceCount = [user.device1, user.device2].filter(Boolean).length;
+  const duplicatePhones = getAdminDuplicatePhones();
+  if (adminState.tab === "duplicates") {
+    const groups = users.reduce((acc, user) => {
+      const phone = getAdminPhoneKey(user.phone);
+      if (!acc.has(phone)) acc.set(phone, []);
+      acc.get(phone).push(user);
+      return acc;
+    }, new Map());
 
-    return `
-      <article class="admin-user-card is-${status.key}">
-        <div class="admin-user-head">
-          <div class="admin-phone">${escapeHtml(user.phone)}</div>
-          <div class="admin-status">
-            <span class="admin-status-dot"></span>
-            <span>${escapeHtml(status.label)}</span>
-          </div>
+    list.innerHTML = Array.from(groups.entries()).map(([phone, group]) => `
+      <section class="admin-duplicate-group">
+        <div class="admin-duplicate-group-title">${escapeHtml(phone)} · ${group.length} record</div>
+        <div class="admin-duplicate-cards">
+          ${group.map(user => renderAdminUserCard(user, duplicatePhones)).join("")}
         </div>
-        <div class="admin-meta">
-          <span>Scadenza: ${escapeHtml(formatAdminDate(user.expiry))}</span>
-          <span>${escapeHtml(daysText)}</span>
-          <span>Dispositivi: ${deviceCount}/2</span>
-        </div>
-        ${isDuplicate ? '<div class="admin-duplicate-note">Possibile duplicato: stesso numero presente piu volte.</div>' : ''}
-        <div class="admin-card-actions">
-          <button class="admin-action-btn" type="button" data-admin-action="edit" data-phone="${escapeHtml(user.phone)}" aria-label="Modifica">
-            <img src="assets/admin/edit.png" alt="">
-          </button>
-          ${showRenew ? `<button class="admin-action-btn" type="button" data-admin-action="renew" data-phone="${escapeHtml(user.phone)}" aria-label="Rinnova">
-            <img src="assets/admin/renew.png" alt="">
-          </button>` : ''}
-          ${showRenew ? `<button class="admin-action-btn is-send" type="button" data-admin-action="send" data-phone="${escapeHtml(user.phone)}" aria-label="Invia WhatsApp">Send</button>` : ''}
-          <button class="admin-action-btn" type="button" data-admin-action="reset" data-phone="${escapeHtml(user.phone)}" aria-label="Reset dispositivi">
-            <img src="assets/admin/reset.png" alt="">
-          </button>
-          <button class="admin-action-btn is-danger" type="button" data-admin-action="delete" data-phone="${escapeHtml(user.phone)}" aria-label="Elimina">
-            <img src="assets/admin/trash.png" alt="">
-          </button>
-        </div>
-      </article>
-    `;
-  }).join("");
+      </section>
+    `).join("");
+    return;
+  }
+
+  list.innerHTML = users.map(user => renderAdminUserCard(user, duplicatePhones)).join("");
 }
 
 function adminOpenUserModal(mode, user = null) {
@@ -3258,7 +3476,7 @@ function adminOpenUserModal(mode, user = null) {
 
   if (mode === "create") resetAdminBulkFields();
 
-  if (title) title.textContent = mode === "create" ? "Nuovo utente" : mode === "renew" ? "Rinnova utente" : "Modifica utente";
+  if (title) title.textContent = mode === "create" ? "+ Utenti Nuovi" : mode === "renew" ? "Rinnova utente" : "Modifica utente";
   if (save) save.textContent = mode === "create" ? "Aggiungi" : mode === "renew" ? "Rinnova" : "Salva";
 
   modal.classList.remove("hidden");
@@ -3472,7 +3690,7 @@ function parseClipboardAdminEntries(text) {
     const dayMatch = rest.match(/\b([1-9]\d{0,3})\b/);
     const days = dayMatch ? Math.min(Number(dayMatch[1]), 3650) : 90;
     entries.push({ phone, days });
-    if (entries.length >= 3) break;
+    if (entries.length >= 6) break;
   }
 
   return entries;
@@ -3511,25 +3729,8 @@ async function adminFillBulkFromClipboard() {
 
 function getAdminWhatsAppText(user) {
   const status = getAdminStatus(user);
-  const plans = "10 euro = 30 din, 20 euro = 90 din, 40 euro = 365 din";
-  const supportNumber = "+39 366 358 4525";
-
-  if (status.key === "expired") {
-    return [
-      "Assalamu alaikum, apnar MagicBook access er meyad shesh hoye geche.",
-      `Renew plan: ${plans}.`,
-      `Renew korte WhatsApp korun: ${supportNumber}.`,
-      "Porashonar rhythm miss korben na, ajkei renew korun."
-    ].join("\n");
-  }
-
-  const days = Math.max(0, Number(status.days) || 0);
-  return [
-    `Assalamu alaikum, apnar MagicBook access ar ${days} din baki ache.`,
-    `Renew plan: ${plans}.`,
-    `Renew korte WhatsApp korun: ${supportNumber}.`,
-    "Porashonar rhythm dhore rakhun, age thekei renew kore nin."
-  ].join("\n");
+  if (status.key === "expired") return getExpiredBanglaMessage();
+  return getExpiringBanglaMessage(Math.max(0, Number(status.days) || 0));
 }
 
 function adminOpenUserWhatsApp(user) {

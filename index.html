@@ -128,12 +128,14 @@ gtag('config', 'G-C5JPY9HFHD', {
 <div class="card hidden" id="home">
   <div class="section-brand">TMM MAGIC book</div>
   <img class="home-promo" src="https://pub-21131aa867534601af79c34beb746fb7.r2.dev/Figure/ourproduct.jpg" alt="Our Products">
-  <button class="home-start-btn" onclick="showChapters()" type="button" aria-label="Apri Magic Book">
-    <img src="assets/images/startbtn.gif" alt="">
-  </button>
-  <button id="adminEntryBtn" class="admin-entry hidden" onclick="showAdminPanel()" type="button" aria-label="Apri pannello admin">
-    <img src="assets/admin/admin.png" alt="">
-  </button>
+  <div class="home-actions">
+    <button class="home-start-btn" onclick="showChapters()" type="button" aria-label="Apri Magic Book">
+      <img src="assets/images/startbtn.gif" alt="">
+    </button>
+    <button id="adminEntryBtn" class="admin-entry hidden" onclick="showAdminPanel()" type="button" aria-label="Apri pannello admin">
+      <img src="assets/admin/admin.png" alt="">
+    </button>
+  </div>
   <a class="watermark-link" data-nosnippet href="https://www.facebook.com/share/14aaeMyWJGw/" target="_blank" rel="noopener noreferrer">
     By MiskatDesigns
     <span class="watermark-tip">Visit</span>
@@ -217,7 +219,7 @@ gtag('config', 'G-C5JPY9HFHD', {
       <input id="adminOriginalPhone" type="hidden" value="">
       <div id="adminBulkFields" class="admin-bulk-fields">
         <div class="admin-bulk-head">
-          <span>Fino a 3 utenti</span>
+          <span></span>
           <button id="adminClipboardBtn" class="admin-secondary-btn" type="button">Incolla clipboard</button>
         </div>
         <div class="admin-bulk-row">
@@ -243,6 +245,36 @@ gtag('config', 'G-C5JPY9HFHD', {
         <div class="admin-bulk-row">
           <label>
             <span>Telefono 3</span>
+            <input class="admin-bulk-phone" type="tel" inputmode="tel" autocomplete="off">
+          </label>
+          <label>
+            <span>Giorni</span>
+            <input class="admin-bulk-days" type="number" min="1" max="3650" value="90">
+          </label>
+        </div>
+        <div class="admin-bulk-row">
+          <label>
+            <span>Telefono 4</span>
+            <input class="admin-bulk-phone" type="tel" inputmode="tel" autocomplete="off">
+          </label>
+          <label>
+            <span>Giorni</span>
+            <input class="admin-bulk-days" type="number" min="1" max="3650" value="90">
+          </label>
+        </div>
+        <div class="admin-bulk-row">
+          <label>
+            <span>Telefono 5</span>
+            <input class="admin-bulk-phone" type="tel" inputmode="tel" autocomplete="off">
+          </label>
+          <label>
+            <span>Giorni</span>
+            <input class="admin-bulk-days" type="number" min="1" max="3650" value="90">
+          </label>
+        </div>
+        <div class="admin-bulk-row">
+          <label>
+            <span>Telefono 6</span>
             <input class="admin-bulk-phone" type="tel" inputmode="tel" autocomplete="off">
           </label>
           <label>

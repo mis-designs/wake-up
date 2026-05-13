@@ -207,6 +207,14 @@ button:active {
     box-shadow: 0 14px 28px rgba(37, 41, 67, 0.12);
 }
 
+.home-actions {
+    position: relative;
+    width: min(100%, 390px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 #home .home-start-btn {
     position: relative;
     width: 206px;
@@ -303,9 +311,15 @@ button:active {
     margin-right: auto;
 }
 
-#home > .home-start-btn {
+#home > .home-start-btn,
+#home > .home-actions {
     width: 206px;
     max-width: 64vw;
+}
+
+#home > .home-actions {
+    width: min(100%, 390px);
+    max-width: 92vw;
 }
 
 #login .login-hero-img {
@@ -2148,12 +2162,15 @@ body.qms-open { overflow: hidden; }
 
 /* Admin panel */
 .admin-entry {
-    width: 52px;
-    height: 52px;
-    min-width: 52px;
-    margin-top: 12px;
+    position: absolute;
+    right: max(12px, calc(50% - 160px));
+    top: 50%;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    margin-top: 0;
     padding: 0;
-    border-radius: 18px;
+    border-radius: 16px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2161,6 +2178,7 @@ body.qms-open { overflow: hidden; }
     color: var(--color-dark);
     border: 1px solid rgba(37, 41, 67, 0.08);
     box-shadow: 0 14px 28px rgba(37, 41, 67, 0.14);
+    transform: translateY(-50%);
 }
 
 .admin-entry.hidden {
@@ -2168,8 +2186,8 @@ body.qms-open { overflow: hidden; }
 }
 
 .admin-entry img {
-    width: 31px;
-    height: 31px;
+    width: 28px;
+    height: 28px;
     object-fit: contain;
 }
 
@@ -2454,6 +2472,24 @@ body.qms-open { overflow: hidden; }
     gap: 12px;
 }
 
+.admin-duplicate-group {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: 8px;
+}
+
+.admin-duplicate-group-title {
+    color: #64748b;
+    font-size: 0.78rem;
+    font-weight: 900;
+}
+
+.admin-duplicate-cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
 .admin-user-card {
     border-radius: 18px;
     padding: 14px;
@@ -2619,6 +2655,10 @@ body.qms-open { overflow: hidden; }
     text-align: left;
 }
 
+.admin-form .hidden {
+    display: none !important;
+}
+
 .admin-check-line {
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
@@ -2645,7 +2685,7 @@ body.qms-open { overflow: hidden; }
 .admin-bulk-head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 10px;
     color: #7c8aa0;
     font-size: 0.76rem;
@@ -2696,6 +2736,15 @@ body.qms-open { overflow: hidden; }
     .admin-user-list {
         grid-template-columns: 1fr;
     }
+
+    .admin-duplicate-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .admin-duplicate-cards .admin-user-card {
+        padding: 11px;
+    }
 }
 
 @media (max-width: 520px) {
@@ -2728,6 +2777,22 @@ body.qms-open { overflow: hidden; }
 
     .admin-bulk-row {
         grid-template-columns: minmax(0, 1fr) 82px;
+    }
+
+    .admin-entry {
+        right: 10px;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+    }
+
+    .admin-entry img {
+        width: 25px;
+        height: 25px;
+    }
+
+    .admin-duplicate-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .admin-modal-actions {
