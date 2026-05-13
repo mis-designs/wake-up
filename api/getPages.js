@@ -4,8 +4,26 @@ const BASE_URL = process.env.R2_BASE_URL;
 const GOOGLE_SCRIPT_URL = process.env.GAS_ACCESS_URL;
 const TOKEN = process.env.GAS_SECRET;
 const SESSION_SECRET = process.env.SESSION_SECRET;
+const ADMIN_PHONE_NUMBERS = (process.env.ADMIN_PHONE_NUMBERS || "")
+  .split(",")
+  .map(normalizePhone)
+  .filter(Boolean);
 const SUPPORTED_BOOKS = new Set(["magic"]);
 const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
+
+function normalizePhone(input) {
+  let phone = String(input || "").trim();
+  phone = phone.replace(/\s+/g, "").replace(/^\+/, "").replace(/\D+/g, "");
+  if (!phone) return "";
+  if (phone.startsWith("00")) phone = phone.slice(2);
+  if (!phone.startsWith("39")) phone = "39" + phone;
+  return phone;
+}
+
+function getSessionRole(phone, authData = {}) {
+  if (authData.role === "admin") return "admin";
+  return ADMIN_PHONE_NUMBERS.includes(normalizePhone(phone)) ? "admin" : "user";
+}
 
 function buildMagicBookPath({ type, chapter, page }) {
   const pageNumber = String(page).padStart(4, "0");
@@ -94,11 +112,12 @@ function signTokenPayload(encodedPayload) {
   return crypto.createHmac("sha256", SESSION_SECRET).update(encodedPayload).digest("base64url");
 }
 
-function createAccessToken(phone, deviceId) {
+function createAccessToken(phone, deviceId, role = "user") {
   const accessTokenExpiresAt = Date.now() + ACCESS_TOKEN_TTL_MS;
   const payload = {
     phone,
     deviceId,
+    role: role === "admin" ? "admin" : "user",
     purpose: "access",
     exp: accessTokenExpiresAt
   };
@@ -168,12 +187,14 @@ export default async function handler(req, res) {
         return res.status(getAuthStatusCode(error)).json({ error });
       }
 
-      const tokenData = createAccessToken(phone, deviceId);
+      const role = getSessionRole(phone, authData);
+      const tokenData = createAccessToken(phone, deviceId, role);
 
       return res.status(200).json({
         success: true,
         phone,
         deviceId,
+        role,
         expiry: authData.expiry,
         accessToken: tokenData.accessToken,
         accessTokenExpiresAt: tokenData.accessTokenExpiresAt,

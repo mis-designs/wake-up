@@ -78,11 +78,12 @@ function signTokenPayload(encodedPayload) {
   return crypto.createHmac("sha256", SESSION_SECRET).update(encodedPayload).digest("base64url");
 }
 
-function createAccessToken(phone, deviceId) {
+function createAccessToken(phone, deviceId, role = "user") {
   const accessTokenExpiresAt = Date.now() + ACCESS_TOKEN_TTL_MS;
   const payload = {
     phone,
     deviceId,
+    role: role === "admin" ? "admin" : "user",
     purpose: "access",
     exp: accessTokenExpiresAt
   };
@@ -244,13 +245,15 @@ async function checkTwilioVerification(phone, code) {
   };
 }
 
-function sendSuccessfulLogin(res, { phone, deviceId, authData, extra = {} }) {
-  const tokenData = createAccessToken(phone, deviceId);
+function sendSuccessfulLogin(res, { phone, deviceId, authData, role = "user", extra = {} }) {
+  const safeRole = role === "admin" ? "admin" : "user";
+  const tokenData = createAccessToken(phone, deviceId, safeRole);
 
   return res.status(200).json({
     success: true,
     phone,
     deviceId,
+    role: safeRole,
     expiry: authData?.expiry,
     accessToken: tokenData.accessToken,
     accessTokenExpiresAt: tokenData.accessTokenExpiresAt,
@@ -377,6 +380,7 @@ export default async function handler(req, res) {
           phone,
           deviceId,
           authData,
+          role: adminPasswordCheck.admin ? "admin" : "user",
           extra: {
             ...(authData.rotated ? { rotated: true } : {}),
             ...(authData.replacedDevice ? { replacedDevice: authData.replacedDevice } : {})
@@ -392,6 +396,7 @@ export default async function handler(req, res) {
             phone,
             deviceId,
             authData: rotationData,
+            role: adminPasswordCheck.admin ? "admin" : "user",
             extra: {
               ...(rotationData.rotated ? { rotated: true } : {}),
               ...(rotationData.replacedDevice ? { replacedDevice: rotationData.replacedDevice } : {})

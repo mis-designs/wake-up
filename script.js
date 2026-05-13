@@ -6,6 +6,7 @@ const RENEW_WHATSAPP_NUMBER = "393663584525";
 const RENEW_MESSAGE = "Ciao, vorrei rinnovare il mio accesso.";
 const WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/LBL1G7nvz2B3SThJj4uRxD";
 const AUTH_API = "/api/auth";
+const ADMIN_API = "/api/admin";
 
 /***********************
  * STORAGE ROBUSTO
@@ -129,6 +130,7 @@ function persistSession(phone, data = {}) {
     loggedIn: true,
     accessToken: data.accessToken || existing.accessToken || Storage.get(KEYS.accessToken) || "",
     accessTokenExpiresAt: data.accessTokenExpiresAt || existing.accessTokenExpiresAt || Number(Storage.get(KEYS.accessTokenExpiresAt) || 0),
+    role: data.role || existing.role || "user",
     lastLogin: data.lastLogin || existing.lastLogin || Date.now(),
     lastValid: data.lastValid || existing.lastValid || Date.now()
   };
@@ -149,6 +151,7 @@ function restoreSession(session) {
   persistSession(session.phone, {
     deviceId: session.deviceId,
     expiry: session.expiry,
+    role: session.role,
     accessToken: session.accessToken,
     accessTokenExpiresAt: session.accessTokenExpiresAt,
     lastValid: session.lastValid || Date.now()
@@ -375,6 +378,7 @@ window.addEventListener("load", async () => {
 
   setupLoginUI();
   setupProfileUI();
+  setupAdminUI();
 
   if (wasReset) {
     showLoginScreen("Effettua nuovamente il login.");
@@ -467,6 +471,7 @@ async function ensureAccessToken(options = {}) {
       persistSession(phone, {
         deviceId,
         expiry: data.expiry,
+        role: data.role,
         accessToken: data.accessToken,
         accessTokenExpiresAt: data.accessTokenExpiresAt,
         lastValid: Date.now()
@@ -495,6 +500,7 @@ async function validateRestoredSession(phone, deviceId) {
       persistSession(phone, {
         deviceId,
         expiry: data.expiry,
+        role: data.role,
         accessToken: data.accessToken,
         accessTokenExpiresAt: data.accessTokenExpiresAt,
         lastValid: Date.now()
@@ -560,6 +566,7 @@ function completeLogin(phone, deviceId, data) {
   persistSession(phone, {
     deviceId,
     expiry: data.expiry,
+    role: data.role,
     accessToken: data.accessToken,
     accessTokenExpiresAt: data.accessTokenExpiresAt,
     lastLogin: Date.now(),
@@ -1812,10 +1819,11 @@ function showWhatsAppGroupPopup() {
  ***********************/
 function hideAll() {
   cleanupMagicBookViewer();
-  ["login", "home", "chapters", "viewer"].forEach(id => {
+  ["login", "home", "chapters", "viewer", "adminPanel"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.add("hidden");
   });
+  document.body.classList.remove("admin-mode");
 }
 
 function showHome() {
@@ -1829,6 +1837,7 @@ function showHome() {
   setProfileIconVisible(true);
   setLoggedInChrome();
   document.title = "MagicBook | Home";
+  updateAdminEntryVisibility();
   maybeShowWhatsAppGroupPopup();
 }
 
@@ -2139,7 +2148,7 @@ function openChapter(cap) {
  * APP HEADER & MENU
  ***********************/
 let currentViewingChapter = null;
-let currentScreen = "login"; // login | home | chapters | viewer | exam | quizMode | examMode
+let currentScreen = "login"; // login | home | chapters | viewer | admin | exam | quizMode | examMode
 
 function setChapterMode(enabled, chapterNum = null) {
   const viewerBackBtn = document.getElementById("viewerBackBtn");
@@ -2870,6 +2879,426 @@ function startMultiQuiz() {
   const chapters = Array.from(qmsMultiSelected).sort((a, b) => a - b).join(",");
   closeQuizModeScreen();
   setTimeout(() => { window.location.href = "quiz.html?chapters=" + encodeURIComponent(chapters); }, 460);
+}
+
+/***********************
+ * ADMIN PANEL
+ ***********************/
+const ADMIN_EXPIRING_DAYS = 30;
+const adminState = {
+  users: [],
+  tab: "users",
+  query: "",
+  loading: false,
+  confirm: null
+};
+
+function getCurrentSessionRole() {
+  const session = readStoredSession();
+  return session?.role || "user";
+}
+
+function isCurrentSessionAdmin() {
+  return getCurrentSessionRole() === "admin";
+}
+
+function updateAdminEntryVisibility() {
+  const btn = document.getElementById("adminEntryBtn");
+  if (!btn) return;
+  btn.classList.toggle("hidden", !isCurrentSessionAdmin());
+}
+
+function getAdminStatus(user) {
+  const expiry = user?.expiry ? new Date(user.expiry) : null;
+  if (!expiry || isNaN(expiry.getTime())) {
+    return { key: "no-expiry", label: "No expiry", days: null };
+  }
+
+  const days = Math.ceil((expiry.getTime() - Date.now()) / 86400000);
+  if (days < 0) return { key: "expired", label: "Scaduto", days };
+  if (days <= ADMIN_EXPIRING_DAYS) return { key: "expiring", label: "In scadenza", days };
+  return { key: "active", label: "Attivo", days };
+}
+
+function formatAdminDate(value) {
+  if (!value) return "Nessuna";
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return "Nessuna";
+  return date.toLocaleDateString("it-IT", { year: "numeric", month: "2-digit", day: "2-digit" });
+}
+
+function formatDateInput(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return "";
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("-");
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function setAdminMessage(message = "", type = "") {
+  const el = document.getElementById("adminMessage");
+  if (!el) return;
+  el.textContent = message;
+  el.classList.toggle("hidden", !message);
+  el.classList.toggle("is-success", type === "success");
+  el.classList.toggle("is-error", type === "error");
+}
+
+function getAdminErrorMessage(error) {
+  if (error === "admin_required") return "Accesso admin richiesto.";
+  if (error === "token_expired" || error === "unauthorized") return "Sessione scaduta. Effettua nuovamente il login.";
+  if (error === "duplicate") return "Questo numero esiste gia.";
+  if (error === "not_found") return "Utente non trovato.";
+  if (error === "bad_phone" || error === "bad_new_phone") return "Numero di telefono non valido.";
+  if (error === "bad_expiry") return "Data di scadenza non valida.";
+  if (error === "missing_server_config") return "Configurazione admin mancante sul server.";
+  return "Operazione non riuscita. Riprova.";
+}
+
+async function adminRequest(action, fields = {}, retry = true) {
+  if (!isCurrentSessionAdmin()) throw new Error("admin_required");
+
+  const hasToken = await ensureAccessToken({ force: !isAccessTokenUsable() });
+  if (!hasToken && !getCurrentAccessToken()) throw new Error("unauthorized");
+
+  const response = await fetch(ADMIN_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action,
+      sessionPhone: getCurrentSessionPhone(),
+      deviceId: getCurrentSessionDeviceId(),
+      accessToken: getCurrentAccessToken(),
+      ...fields
+    })
+  });
+
+  const data = await response.json().catch(() => null);
+  if ((response.status === 401 || response.status === 403) && retry && data?.error === "token_expired") {
+    await ensureAccessToken({ force: true });
+    return adminRequest(action, fields, false);
+  }
+
+  if (!response.ok || !data?.success) {
+    throw new Error(data?.error || "admin_error");
+  }
+
+  return data;
+}
+
+function setupAdminUI() {
+  document.querySelectorAll(".admin-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      adminState.tab = tab.dataset.adminTab || "users";
+      document.querySelectorAll(".admin-tab").forEach(btn => {
+        btn.classList.toggle("is-active", btn === tab);
+      });
+      renderAdminUsers();
+    });
+  });
+
+  const search = document.getElementById("adminSearchInput");
+  search?.addEventListener("input", () => {
+    adminState.query = search.value || "";
+    renderAdminUsers();
+  });
+
+  document.getElementById("adminUserList")?.addEventListener("click", event => {
+    const button = event.target.closest("[data-admin-action]");
+    if (!button) return;
+    const phone = button.dataset.phone || "";
+    const user = adminState.users.find(item => item.phone === phone);
+    if (!user) return;
+
+    const action = button.dataset.adminAction;
+    if (action === "edit") adminOpenUserModal("edit", user);
+    if (action === "renew") adminOpenUserModal("renew", user);
+    if (action === "reset") adminOpenConfirm("reset_devices", user);
+    if (action === "delete") adminOpenConfirm("delete", user);
+  });
+
+  document.getElementById("adminUserForm")?.addEventListener("submit", event => {
+    event.preventDefault();
+    adminSubmitUserModal();
+  });
+}
+
+async function showAdminPanel() {
+  if (!isCurrentSessionAdmin()) {
+    updateAdminEntryVisibility();
+    showHome();
+    return;
+  }
+
+  hideAll();
+  document.getElementById("adminPanel")?.classList.remove("hidden");
+  document.body.classList.add("admin-mode");
+  setChapterMode(false);
+  setProfileIconVisible(false);
+  setLoggedInChrome();
+  currentScreen = "admin";
+  document.title = "MagicBook | Admin";
+  await adminLoadUsers();
+}
+
+async function adminLoadUsers(force = false) {
+  if (!isCurrentSessionAdmin()) return;
+  if (adminState.loading && !force) return;
+
+  adminState.loading = true;
+  renderAdminLoading();
+  setAdminMessage("Caricamento utenti...");
+
+  try {
+    const data = await adminRequest("list");
+    adminState.users = Array.isArray(data.list) ? data.list : [];
+    setAdminMessage("Lista aggiornata.", "success");
+    renderAdminUsers();
+  } catch (err) {
+    setAdminMessage(getAdminErrorMessage(err.message), "error");
+    renderAdminUsers();
+  } finally {
+    adminState.loading = false;
+  }
+}
+
+function renderAdminLoading() {
+  const list = document.getElementById("adminUserList");
+  if (list) list.innerHTML = '<div class="admin-loading">Caricamento...</div>';
+}
+
+function getFilteredAdminUsers() {
+  const query = normalizePhone(adminState.query);
+  return adminState.users.filter(user => {
+    const status = getAdminStatus(user);
+    if (query && !String(user.phone || "").includes(query)) return false;
+    if (adminState.tab === "expiring") return status.key === "expiring";
+    if (adminState.tab === "expired") return status.key === "expired";
+    return true;
+  });
+}
+
+function updateAdminStats() {
+  const totals = adminState.users.reduce((acc, user) => {
+    const status = getAdminStatus(user);
+    acc.total += 1;
+    if (status.key === "active") acc.active += 1;
+    if (status.key === "expiring") acc.expiring += 1;
+    if (status.key === "expired") acc.expired += 1;
+    return acc;
+  }, { total: 0, active: 0, expiring: 0, expired: 0 });
+
+  const map = {
+    adminStatTotal: totals.total,
+    adminStatActive: totals.active,
+    adminStatExpiring: totals.expiring,
+    adminStatExpired: totals.expired
+  };
+
+  Object.entries(map).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(value);
+  });
+}
+
+function renderAdminUsers() {
+  updateAdminStats();
+  const list = document.getElementById("adminUserList");
+  if (!list) return;
+
+  const users = getFilteredAdminUsers();
+  if (!users.length) {
+    list.innerHTML = '<div class="admin-empty">Nessun utente trovato.</div>';
+    return;
+  }
+
+  list.innerHTML = users.map(user => {
+    const status = getAdminStatus(user);
+    const daysText = status.days === null
+      ? "senza scadenza"
+      : status.days < 0
+        ? `${Math.abs(status.days)} giorni fa`
+        : `${status.days} giorni`;
+    const deviceCount = [user.device1, user.device2].filter(Boolean).length;
+
+    return `
+      <article class="admin-user-card is-${status.key}">
+        <div class="admin-user-head">
+          <div class="admin-phone">${escapeHtml(user.phone)}</div>
+          <div class="admin-status">
+            <span class="admin-status-dot"></span>
+            <span>${escapeHtml(status.label)}</span>
+          </div>
+        </div>
+        <div class="admin-meta">
+          <span>Scadenza: ${escapeHtml(formatAdminDate(user.expiry))}</span>
+          <span>${escapeHtml(daysText)}</span>
+          <span>Dispositivi: ${deviceCount}/2</span>
+        </div>
+        <div class="admin-card-actions">
+          <button class="admin-action-btn" type="button" data-admin-action="edit" data-phone="${escapeHtml(user.phone)}" aria-label="Modifica">
+            <img src="edit.png" alt="">
+          </button>
+          <button class="admin-action-btn" type="button" data-admin-action="renew" data-phone="${escapeHtml(user.phone)}" aria-label="Rinnova">
+            <img src="renew.png" alt="">
+          </button>
+          <button class="admin-action-btn" type="button" data-admin-action="reset" data-phone="${escapeHtml(user.phone)}" aria-label="Reset dispositivi">
+            <img src="reset.png" alt="">
+          </button>
+          <button class="admin-action-btn is-danger" type="button" data-admin-action="delete" data-phone="${escapeHtml(user.phone)}" aria-label="Elimina">
+            <img src="trash.png" alt="">
+          </button>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function adminOpenUserModal(mode, user = null) {
+  if (!isCurrentSessionAdmin()) return;
+
+  const modal = document.getElementById("adminUserModal");
+  const title = document.getElementById("adminModalTitle");
+  const modeInput = document.getElementById("adminModalMode");
+  const originalPhone = document.getElementById("adminOriginalPhone");
+  const phone = document.getElementById("adminModalPhone");
+  const expiry = document.getElementById("adminModalExpiry");
+  const days = document.getElementById("adminModalDays");
+  const daysField = document.getElementById("adminDaysField");
+  const expiryField = document.getElementById("adminExpiryField");
+  const renewModeField = document.getElementById("adminRenewModeField");
+  const addMode = document.getElementById("adminRenewAddMode");
+  const save = document.getElementById("adminModalSave");
+
+  if (!modal || !modeInput || !phone || !expiry || !days) return;
+
+  modeInput.value = mode;
+  originalPhone.value = user?.phone || "";
+  phone.value = user?.phone || "";
+  phone.readOnly = mode === "renew";
+  expiry.value = formatDateInput(user?.expiry);
+  days.value = "90";
+
+  daysField?.classList.toggle("hidden", mode === "edit");
+  expiryField?.classList.toggle("hidden", false);
+  renewModeField?.classList.toggle("hidden", mode !== "renew");
+  if (addMode) addMode.checked = true;
+
+  if (title) title.textContent = mode === "create" ? "Nuovo utente" : mode === "renew" ? "Rinnova utente" : "Modifica utente";
+  if (save) save.textContent = mode === "create" ? "Crea" : mode === "renew" ? "Rinnova" : "Salva";
+
+  modal.classList.remove("hidden");
+  setTimeout(() => phone.focus(), 40);
+}
+
+function adminCloseUserModal() {
+  document.getElementById("adminUserModal")?.classList.add("hidden");
+}
+
+async function adminSubmitUserModal() {
+  const mode = document.getElementById("adminModalMode")?.value || "create";
+  const originalPhone = normalizePhone(document.getElementById("adminOriginalPhone")?.value || "");
+  const phone = normalizePhone(document.getElementById("adminModalPhone")?.value || "");
+  const expiry = document.getElementById("adminModalExpiry")?.value || "";
+  const days = Number(document.getElementById("adminModalDays")?.value || 0);
+  const addMode = document.getElementById("adminRenewAddMode")?.checked;
+  const save = document.getElementById("adminModalSave");
+
+  if (!phone) {
+    setAdminMessage("Inserisci un numero valido.", "error");
+    return;
+  }
+
+  const originalText = save?.textContent || "Salva";
+  if (save) {
+    save.disabled = true;
+    save.textContent = "Salvataggio...";
+  }
+
+  try {
+    if (mode === "create") {
+      await adminRequest("create", { phone, days: days || 90, expiry });
+      setAdminMessage("Utente creato.", "success");
+    } else if (mode === "edit") {
+      await adminRequest("update", { phone: originalPhone, newPhone: phone, expiry });
+      setAdminMessage("Utente aggiornato.", "success");
+    } else {
+      await adminRequest("renew", { phone: originalPhone || phone, days: days || 90, expiry, mode: addMode ? "add" : "set" });
+      setAdminMessage("Rinnovo completato.", "success");
+    }
+
+    adminCloseUserModal();
+    await adminLoadUsers(true);
+  } catch (err) {
+    setAdminMessage(getAdminErrorMessage(err.message), "error");
+  } finally {
+    if (save) {
+      save.disabled = false;
+      save.textContent = originalText;
+    }
+  }
+}
+
+function adminOpenConfirm(action, user) {
+  const modal = document.getElementById("adminConfirmModal");
+  const title = document.getElementById("adminConfirmTitle");
+  const text = document.getElementById("adminConfirmText");
+  const button = document.getElementById("adminConfirmAction");
+  if (!modal || !button || !user) return;
+
+  adminState.confirm = { action, phone: user.phone };
+  if (title) title.textContent = action === "delete" ? "Elimina utente" : "Reset dispositivi";
+  if (text) {
+    text.textContent = action === "delete"
+      ? `Vuoi eliminare l'utente ${user.phone}?`
+      : `Vuoi svuotare device1 e device2 per ${user.phone}?`;
+  }
+  button.textContent = action === "delete" ? "Elimina" : "Reset";
+  button.onclick = adminRunConfirm;
+  modal.classList.remove("hidden");
+}
+
+function adminCloseConfirm() {
+  adminState.confirm = null;
+  document.getElementById("adminConfirmModal")?.classList.add("hidden");
+}
+
+async function adminRunConfirm() {
+  const confirm = adminState.confirm;
+  const button = document.getElementById("adminConfirmAction");
+  if (!confirm) return;
+
+  const originalText = button?.textContent || "Conferma";
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Attendi...";
+  }
+
+  try {
+    await adminRequest(confirm.action, { phone: confirm.phone });
+    setAdminMessage(confirm.action === "delete" ? "Utente eliminato." : "Dispositivi resettati.", "success");
+    adminCloseConfirm();
+    await adminLoadUsers(true);
+  } catch (err) {
+    setAdminMessage(getAdminErrorMessage(err.message), "error");
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
 }
 
 /***********************

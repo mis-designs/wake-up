@@ -131,10 +131,119 @@ gtag('config', 'G-C5JPY9HFHD', {
   <button class="home-start-btn" onclick="showChapters()" type="button" aria-label="Apri Magic Book">
     <img src="startbtn.gif" alt="">
   </button>
+  <button id="adminEntryBtn" class="admin-entry hidden" onclick="showAdminPanel()" type="button" aria-label="Apri pannello admin">
+    <img src="admin.png" alt="">
+    <span>Admin Panel</span>
+  </button>
   <a class="watermark-link" data-nosnippet href="https://www.facebook.com/share/14aaeMyWJGw/" target="_blank" rel="noopener noreferrer">
     By MiskatDesigns
     <span class="watermark-tip">Visit</span>
   </a>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="admin-panel hidden">
+  <header class="admin-topbar">
+    <button class="admin-icon-btn" type="button" onclick="showHome()" aria-label="Home">
+      <img src="home.png" alt="">
+    </button>
+    <div class="admin-title">
+      <img src="admin.png" alt="">
+      <div>
+        <span>Admin Panel</span>
+        <small>MagicBook accessi</small>
+      </div>
+    </div>
+    <button class="admin-icon-btn" type="button" onclick="adminLoadUsers(true)" aria-label="Aggiorna">
+      <img src="update.png" alt="">
+    </button>
+  </header>
+
+  <main class="admin-shell">
+    <section class="admin-toolbar">
+      <div class="admin-tabs" role="tablist" aria-label="Filtri utenti">
+        <button class="admin-tab is-active" type="button" data-admin-tab="users">Users</button>
+        <button class="admin-tab" type="button" data-admin-tab="expiring">In scadenza</button>
+        <button class="admin-tab" type="button" data-admin-tab="expired">Scaduti</button>
+      </div>
+      <div class="admin-tools-row">
+        <label class="admin-search">
+          <span>Cerca</span>
+          <input id="adminSearchInput" type="tel" placeholder="Telefono" inputmode="tel">
+        </label>
+        <button class="admin-new-btn" type="button" onclick="adminOpenUserModal('create')">Nuovo utente</button>
+      </div>
+    </section>
+
+    <section class="admin-stats" aria-label="Statistiche utenti">
+      <div class="admin-stat-card">
+        <span>Totale</span>
+        <strong id="adminStatTotal">0</strong>
+      </div>
+      <div class="admin-stat-card">
+        <span>Attivi</span>
+        <strong id="adminStatActive">0</strong>
+      </div>
+      <div class="admin-stat-card">
+        <span>In scadenza</span>
+        <strong id="adminStatExpiring">0</strong>
+      </div>
+      <div class="admin-stat-card">
+        <span>Scaduti</span>
+        <strong id="adminStatExpired">0</strong>
+      </div>
+    </section>
+
+    <div id="adminMessage" class="admin-message hidden" role="status" aria-live="polite"></div>
+    <section id="adminUserList" class="admin-user-list" aria-live="polite"></section>
+  </main>
+</div>
+
+<div id="adminUserModal" class="admin-modal hidden" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
+  <div class="admin-modal-card">
+    <div class="admin-modal-head">
+      <h2 id="adminModalTitle">Nuovo utente</h2>
+      <button class="admin-modal-close" type="button" onclick="adminCloseUserModal()" aria-label="Chiudi">&times;</button>
+    </div>
+    <form id="adminUserForm" class="admin-form">
+      <input id="adminModalMode" type="hidden" value="create">
+      <input id="adminOriginalPhone" type="hidden" value="">
+      <label>
+        <span>Telefono</span>
+        <input id="adminModalPhone" type="tel" inputmode="tel" autocomplete="off" required>
+      </label>
+      <label id="adminExpiryField">
+        <span>Scadenza</span>
+        <input id="adminModalExpiry" type="date">
+      </label>
+      <label id="adminDaysField">
+        <span>Giorni abbonamento</span>
+        <input id="adminModalDays" type="number" min="1" max="3650" value="90">
+      </label>
+      <label id="adminRenewModeField" class="admin-check-line hidden">
+        <input id="adminRenewAddMode" type="checkbox" checked>
+        <span>Aggiungi giorni alla scadenza attuale</span>
+      </label>
+      <div class="admin-modal-actions">
+        <button class="admin-secondary-btn" type="button" onclick="adminCloseUserModal()">Annulla</button>
+        <button id="adminModalSave" class="admin-primary-btn" type="submit">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="adminConfirmModal" class="admin-modal hidden" role="dialog" aria-modal="true" aria-labelledby="adminConfirmTitle">
+  <div class="admin-modal-card admin-confirm-card">
+    <div class="admin-modal-head">
+      <h2 id="adminConfirmTitle">Conferma</h2>
+      <button class="admin-modal-close" type="button" onclick="adminCloseConfirm()" aria-label="Chiudi">&times;</button>
+    </div>
+    <p id="adminConfirmText"></p>
+    <div class="admin-modal-actions">
+      <button class="admin-secondary-btn" type="button" onclick="adminCloseConfirm()">Annulla</button>
+      <button id="adminConfirmAction" class="admin-danger-btn" type="button">Conferma</button>
+    </div>
+  </div>
 </div>
 
 <!-- CAPITOLI -->
