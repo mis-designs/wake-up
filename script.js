@@ -1720,7 +1720,7 @@ function showWhatsAppGroupPopup() {
   icon.className = "wgp-icon";
   icon.setAttribute("aria-hidden", "true");
   const iconImg = document.createElement("img");
-  iconImg.src = "whatsapp.png";
+  iconImg.src = "assets/images/whatsapp.png";
   iconImg.alt = "";
   iconImg.onerror = () => {
     icon.textContent = "☎";
@@ -3149,16 +3149,16 @@ function renderAdminUsers() {
         </div>
         <div class="admin-card-actions">
           <button class="admin-action-btn" type="button" data-admin-action="edit" data-phone="${escapeHtml(user.phone)}" aria-label="Modifica">
-            <img src="edit.png" alt="">
+            <img src="assets/admin/edit.png" alt="">
           </button>
           <button class="admin-action-btn" type="button" data-admin-action="renew" data-phone="${escapeHtml(user.phone)}" aria-label="Rinnova">
-            <img src="renew.png" alt="">
+            <img src="assets/admin/renew.png" alt="">
           </button>
           <button class="admin-action-btn" type="button" data-admin-action="reset" data-phone="${escapeHtml(user.phone)}" aria-label="Reset dispositivi">
-            <img src="reset.png" alt="">
+            <img src="assets/admin/reset.png" alt="">
           </button>
           <button class="admin-action-btn is-danger" type="button" data-admin-action="delete" data-phone="${escapeHtml(user.phone)}" aria-label="Elimina">
-            <img src="trash.png" alt="">
+            <img src="assets/admin/trash.png" alt="">
           </button>
         </div>
       </article>

@@ -1,10 +1,7 @@
 /icons/*
   X-Robots-Tag: noindex, noimageindex
 
-/whatsapp.png
-  X-Robots-Tag: noindex, noimageindex
-
-/startbtn.gif
+/assets/*
   X-Robots-Tag: noindex, noimageindex
 
 /quiz.html

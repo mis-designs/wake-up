@@ -5,8 +5,8 @@ const CLIENT_AUTH_RESET_VERSION = "2026-04-device-reset-1";
 const CLIENT_AUTH_RESET_KEY = "client_auth_reset_version";
 const HOME_ROUTE = "index.html";
 const RESULT_VIDEO_SOURCES = {
-  pass: "pial_vhai%20applauso.mp4",
-  fail: "delusione.mp4"
+  pass: "assets/videos/pial_vhai%20applauso.mp4",
+  fail: "assets/videos/delusione.mp4"
 };
 const PASSING_SCORE_RATIO = 0.9;
 
