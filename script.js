@@ -2884,7 +2884,7 @@ function startMultiQuiz() {
 /***********************
  * ADMIN PANEL
  ***********************/
-const ADMIN_EXPIRING_DAYS = 30;
+const ADMIN_EXPIRING_DAYS = 16;
 const adminState = {
   users: [],
   tab: "users",
@@ -2918,6 +2918,33 @@ function getAdminStatus(user) {
   if (days < 0) return { key: "expired", label: "Scaduto", days };
   if (days <= ADMIN_EXPIRING_DAYS) return { key: "expiring", label: "In scadenza", days };
   return { key: "active", label: "Attivo", days };
+}
+
+function getAdminPhoneKey(phone) {
+  return normalizePhone(phone);
+}
+
+function getAdminDuplicatePhones(users = adminState.users) {
+  const counts = users.reduce((acc, user) => {
+    const phone = getAdminPhoneKey(user.phone);
+    if (phone) acc.set(phone, (acc.get(phone) || 0) + 1);
+    return acc;
+  }, new Map());
+  return new Set(Array.from(counts.entries()).filter(([, count]) => count > 1).map(([phone]) => phone));
+}
+
+function getAdminRegistrationTime(user) {
+  const date = user?.registration_date ? new Date(user.registration_date) : null;
+  return date && !isNaN(date.getTime()) ? date.getTime() : 0;
+}
+
+function normalizeAdminSearch(input) {
+  return String(input || "").replace(/\D+/g, "");
+}
+
+function isRenewActionVisible(user) {
+  const status = getAdminStatus(user);
+  return status.key === "expiring" || status.key === "expired";
 }
 
 function formatAdminDate(value) {
@@ -3010,9 +3037,19 @@ function setupAdminUI() {
   });
 
   const search = document.getElementById("adminSearchInput");
+  const clearSearch = document.getElementById("adminSearchClear");
   search?.addEventListener("input", () => {
     adminState.query = search.value || "";
+    clearSearch?.classList.toggle("hidden", !adminState.query);
     renderAdminUsers();
+  });
+
+  clearSearch?.addEventListener("click", () => {
+    if (search) search.value = "";
+    adminState.query = "";
+    clearSearch.classList.add("hidden");
+    renderAdminUsers();
+    search?.focus();
   });
 
   document.getElementById("adminUserList")?.addEventListener("click", event => {
@@ -3027,12 +3064,15 @@ function setupAdminUI() {
     if (action === "renew") adminOpenUserModal("renew", user);
     if (action === "reset") adminOpenConfirm("reset_devices", user);
     if (action === "delete") adminOpenConfirm("delete", user);
+    if (action === "send") adminOpenUserWhatsApp(user);
   });
 
   document.getElementById("adminUserForm")?.addEventListener("submit", event => {
     event.preventDefault();
     adminSubmitUserModal();
   });
+
+  document.getElementById("adminClipboardBtn")?.addEventListener("click", adminFillBulkFromClipboard);
 }
 
 async function showAdminPanel() {
@@ -3063,7 +3103,8 @@ async function adminLoadUsers(force = false) {
 
   try {
     const data = await adminRequest("list");
-    adminState.users = Array.isArray(data.list) ? data.list : [];
+    adminState.users = (Array.isArray(data.list) ? data.list : [])
+      .sort((a, b) => getAdminRegistrationTime(b) - getAdminRegistrationTime(a));
     setAdminMessage("Lista aggiornata.", "success");
     renderAdminUsers();
   } catch (err) {
@@ -3080,17 +3121,21 @@ function renderAdminLoading() {
 }
 
 function getFilteredAdminUsers() {
-  const query = normalizePhone(adminState.query);
+  const query = normalizeAdminSearch(adminState.query);
+  const duplicates = getAdminDuplicatePhones();
   return adminState.users.filter(user => {
     const status = getAdminStatus(user);
-    if (query && !String(user.phone || "").includes(query)) return false;
+    const phoneDigits = normalizeAdminSearch(user.phone);
+    if (query && !phoneDigits.includes(query)) return false;
     if (adminState.tab === "expiring") return status.key === "expiring";
     if (adminState.tab === "expired") return status.key === "expired";
+    if (adminState.tab === "duplicates") return duplicates.has(getAdminPhoneKey(user.phone));
     return true;
   });
 }
 
 function updateAdminStats() {
+  const duplicates = getAdminDuplicatePhones();
   const totals = adminState.users.reduce((acc, user) => {
     const status = getAdminStatus(user);
     acc.total += 1;
@@ -3104,7 +3149,8 @@ function updateAdminStats() {
     adminStatTotal: totals.total,
     adminStatActive: totals.active,
     adminStatExpiring: totals.expiring,
-    adminStatExpired: totals.expired
+    adminStatExpired: totals.expired,
+    adminStatDuplicates: duplicates.size
   };
 
   Object.entries(map).forEach(([id, value]) => {
@@ -3126,6 +3172,9 @@ function renderAdminUsers() {
 
   list.innerHTML = users.map(user => {
     const status = getAdminStatus(user);
+    const duplicatePhones = getAdminDuplicatePhones();
+    const isDuplicate = duplicatePhones.has(getAdminPhoneKey(user.phone));
+    const showRenew = isRenewActionVisible(user);
     const daysText = status.days === null
       ? "senza scadenza"
       : status.days < 0
@@ -3147,13 +3196,15 @@ function renderAdminUsers() {
           <span>${escapeHtml(daysText)}</span>
           <span>Dispositivi: ${deviceCount}/2</span>
         </div>
+        ${isDuplicate ? '<div class="admin-duplicate-note">Possibile duplicato: stesso numero presente piu volte.</div>' : ''}
         <div class="admin-card-actions">
           <button class="admin-action-btn" type="button" data-admin-action="edit" data-phone="${escapeHtml(user.phone)}" aria-label="Modifica">
             <img src="assets/admin/edit.png" alt="">
           </button>
-          <button class="admin-action-btn" type="button" data-admin-action="renew" data-phone="${escapeHtml(user.phone)}" aria-label="Rinnova">
+          ${showRenew ? `<button class="admin-action-btn" type="button" data-admin-action="renew" data-phone="${escapeHtml(user.phone)}" aria-label="Rinnova">
             <img src="assets/admin/renew.png" alt="">
-          </button>
+          </button>` : ''}
+          ${showRenew ? `<button class="admin-action-btn is-send" type="button" data-admin-action="send" data-phone="${escapeHtml(user.phone)}" aria-label="Invia WhatsApp">Send</button>` : ''}
           <button class="admin-action-btn" type="button" data-admin-action="reset" data-phone="${escapeHtml(user.phone)}" aria-label="Reset dispositivi">
             <img src="assets/admin/reset.png" alt="">
           </button>
@@ -3173,8 +3224,11 @@ function adminOpenUserModal(mode, user = null) {
   const title = document.getElementById("adminModalTitle");
   const modeInput = document.getElementById("adminModalMode");
   const originalPhone = document.getElementById("adminOriginalPhone");
+  const bulkFields = document.getElementById("adminBulkFields");
+  const phoneField = document.getElementById("adminPhoneField");
   const phone = document.getElementById("adminModalPhone");
   const expiry = document.getElementById("adminModalExpiry");
+  const expiryLabel = document.querySelector("#adminExpiryField > span");
   const days = document.getElementById("adminModalDays");
   const daysField = document.getElementById("adminDaysField");
   const expiryField = document.getElementById("adminExpiryField");
@@ -3188,23 +3242,93 @@ function adminOpenUserModal(mode, user = null) {
   originalPhone.value = user?.phone || "";
   phone.value = user?.phone || "";
   phone.readOnly = mode === "renew";
-  expiry.value = formatDateInput(user?.expiry);
+  expiry.value = mode === "renew" ? "" : formatDateInput(user?.expiry);
   days.value = "90";
 
-  daysField?.classList.toggle("hidden", mode === "edit");
-  expiryField?.classList.toggle("hidden", false);
+  bulkFields?.classList.toggle("hidden", mode !== "create");
+  phoneField?.classList.toggle("hidden", mode === "create");
+  daysField?.classList.toggle("hidden", mode === "edit" || mode === "create");
+  expiryField?.classList.toggle("hidden", mode === "create");
   renewModeField?.classList.toggle("hidden", mode !== "renew");
   if (addMode) addMode.checked = true;
+  if (expiryLabel) expiryLabel.textContent = mode === "renew" ? "Scadenza manuale opzionale" : "Scadenza";
+  phone.disabled = mode === "create";
+  expiry.disabled = mode === "create";
+  days.disabled = mode === "create" || mode === "edit";
+
+  if (mode === "create") resetAdminBulkFields();
 
   if (title) title.textContent = mode === "create" ? "Nuovo utente" : mode === "renew" ? "Rinnova utente" : "Modifica utente";
-  if (save) save.textContent = mode === "create" ? "Crea" : mode === "renew" ? "Rinnova" : "Salva";
+  if (save) save.textContent = mode === "create" ? "Aggiungi" : mode === "renew" ? "Rinnova" : "Salva";
 
   modal.classList.remove("hidden");
-  setTimeout(() => phone.focus(), 40);
+  const firstBulkPhone = document.querySelector(".admin-bulk-phone");
+  setTimeout(() => (mode === "create" ? firstBulkPhone : phone)?.focus(), 40);
 }
 
 function adminCloseUserModal() {
   document.getElementById("adminUserModal")?.classList.add("hidden");
+}
+
+function resetAdminBulkFields() {
+  document.querySelectorAll(".admin-bulk-row").forEach(row => {
+    const phone = row.querySelector(".admin-bulk-phone");
+    const days = row.querySelector(".admin-bulk-days");
+    if (phone) phone.value = "";
+    if (days) days.value = "90";
+  });
+}
+
+function getAdminBulkEntries() {
+  const rows = Array.from(document.querySelectorAll(".admin-bulk-row"));
+  return rows.map(row => {
+    const rawPhone = row.querySelector(".admin-bulk-phone")?.value || "";
+    const phone = normalizePhone(rawPhone);
+    const daysValue = Number(row.querySelector(".admin-bulk-days")?.value || 90);
+    return {
+      rawPhone,
+      phone,
+      days: Number.isFinite(daysValue) && daysValue > 0 ? Math.min(Math.floor(daysValue), 3650) : 90
+    };
+  }).filter(entry => String(entry.rawPhone || "").trim());
+}
+
+function getExistingAdminUser(phone) {
+  const normalized = getAdminPhoneKey(phone);
+  return adminState.users.find(user => getAdminPhoneKey(user.phone) === normalized) || null;
+}
+
+function setAdminTab(tabName) {
+  adminState.tab = tabName;
+  document.querySelectorAll(".admin-tab").forEach(btn => {
+    btn.classList.toggle("is-active", btn.dataset.adminTab === tabName);
+  });
+}
+
+function showAdminDuplicateUsers(phones) {
+  const uniquePhones = Array.from(new Set(phones.map(getAdminPhoneKey).filter(Boolean)));
+  if (!uniquePhones.length) return;
+
+  const search = document.getElementById("adminSearchInput");
+  if (search) search.value = "";
+  adminState.query = "";
+  document.getElementById("adminSearchClear")?.classList.add("hidden");
+
+  setAdminTab("users");
+  const phoneSet = new Set(uniquePhones);
+  const originalQuery = adminState.query;
+  adminState.query = "";
+  renderAdminUsers();
+
+  const list = document.getElementById("adminUserList");
+  if (!list) return;
+  const duplicateUsers = adminState.users.filter(user => phoneSet.has(getAdminPhoneKey(user.phone)));
+  if (!duplicateUsers.length) return;
+  const oldUsers = adminState.users;
+  adminState.users = duplicateUsers;
+  renderAdminUsers();
+  adminState.users = oldUsers;
+  adminState.query = originalQuery;
 }
 
 async function adminSubmitUserModal() {
@@ -3217,6 +3341,10 @@ async function adminSubmitUserModal() {
   const save = document.getElementById("adminModalSave");
 
   if (!phone) {
+    if (mode === "create") {
+      await adminSubmitBulkCreate(save);
+      return;
+    }
     setAdminMessage("Inserisci un numero valido.", "error");
     return;
   }
@@ -3249,6 +3377,170 @@ async function adminSubmitUserModal() {
       save.textContent = originalText;
     }
   }
+}
+
+async function adminSubmitBulkCreate(save) {
+  const entries = getAdminBulkEntries();
+  if (!entries.length) {
+    setAdminMessage("Inserisci almeno un numero.", "error");
+    return;
+  }
+
+  const invalidEntries = entries.filter(entry => !isValidPhoneNumber(entry.phone));
+  if (invalidEntries.length) {
+    setAdminMessage("Uno o piu numeri non sono validi.", "error");
+    return;
+  }
+
+  const seen = new Set();
+  const duplicatedInBatch = [];
+  const uniqueEntries = [];
+  entries.forEach(entry => {
+    if (seen.has(entry.phone)) {
+      duplicatedInBatch.push(entry.phone);
+      return;
+    }
+    seen.add(entry.phone);
+    uniqueEntries.push(entry);
+  });
+
+  const existing = [];
+  const toCreate = [];
+  uniqueEntries.forEach(entry => {
+    const existingUser = getExistingAdminUser(entry.phone);
+    if (existingUser) existing.push(existingUser.phone);
+    else toCreate.push(entry);
+  });
+
+  const originalText = save?.textContent || "Aggiungi";
+  if (save) {
+    save.disabled = true;
+    save.textContent = "Aggiungo...";
+  }
+
+  const created = [];
+  const failed = [];
+  const backendDuplicates = [];
+
+  try {
+    for (const entry of toCreate) {
+      try {
+        await adminRequest("create", { phone: entry.phone, days: entry.days });
+        created.push(entry.phone);
+      } catch (err) {
+        if (err.message === "duplicate") backendDuplicates.push(entry.phone);
+        else failed.push({ phone: entry.phone, error: err.message });
+      }
+    }
+
+    await adminLoadUsers(true);
+    adminCloseUserModal();
+
+    const allDuplicates = [...existing, ...duplicatedInBatch, ...backendDuplicates];
+    const parts = [];
+    if (created.length) parts.push(`${created.length} utenti aggiunti`);
+    if (allDuplicates.length) parts.push(`${allDuplicates.length} gia esistenti`);
+    if (failed.length) parts.push(`${failed.length} non aggiunti`);
+
+    setAdminMessage(parts.join(", ") || "Nessun utente aggiunto.", failed.length ? "error" : "success");
+    if (allDuplicates.length) showAdminDuplicateUsers(allDuplicates);
+  } finally {
+    if (save) {
+      save.disabled = false;
+      save.textContent = originalText;
+    }
+  }
+}
+
+function parseClipboardAdminEntries(text) {
+  const lines = String(text || "")
+    .split(/\r?\n|;/)
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  const entries = [];
+  const sourceLines = lines.length ? lines : [String(text || "")];
+
+  for (const line of sourceLines) {
+    const phoneMatch = line.match(/(?:\+|00)?\d[\d\s().-]{7,}\d/);
+    if (!phoneMatch) continue;
+
+    const phone = normalizePhone(phoneMatch[0]);
+    if (!phone || entries.some(entry => entry.phone === phone)) continue;
+
+    const rest = line.replace(phoneMatch[0], " ");
+    const dayMatch = rest.match(/\b([1-9]\d{0,3})\b/);
+    const days = dayMatch ? Math.min(Number(dayMatch[1]), 3650) : 90;
+    entries.push({ phone, days });
+    if (entries.length >= 3) break;
+  }
+
+  return entries;
+}
+
+async function adminFillBulkFromClipboard() {
+  if (!navigator.clipboard?.readText) {
+    setAdminMessage("Clipboard non disponibile su questo browser.", "error");
+    return;
+  }
+
+  try {
+    const text = await navigator.clipboard.readText();
+    const entries = parseClipboardAdminEntries(text);
+    if (!entries.length) {
+      setAdminMessage("Nessun numero valido trovato nella clipboard.", "error");
+      return;
+    }
+
+    resetAdminBulkFields();
+    const rows = Array.from(document.querySelectorAll(".admin-bulk-row"));
+    entries.forEach((entry, index) => {
+      const row = rows[index];
+      if (!row) return;
+      const phone = row.querySelector(".admin-bulk-phone");
+      const days = row.querySelector(".admin-bulk-days");
+      if (phone) phone.value = entry.phone;
+      if (days) days.value = String(entry.days || 90);
+    });
+
+    setAdminMessage(`${entries.length} numeri caricati dalla clipboard.`, "success");
+  } catch {
+    setAdminMessage("Permesso clipboard negato o non disponibile.", "error");
+  }
+}
+
+function getAdminWhatsAppText(user) {
+  const status = getAdminStatus(user);
+  const plans = "10 euro = 30 din, 20 euro = 90 din, 40 euro = 365 din";
+  const supportNumber = "+39 366 358 4525";
+
+  if (status.key === "expired") {
+    return [
+      "Assalamu alaikum, apnar MagicBook access er meyad shesh hoye geche.",
+      `Renew plan: ${plans}.`,
+      `Renew korte WhatsApp korun: ${supportNumber}.`,
+      "Porashonar rhythm miss korben na, ajkei renew korun."
+    ].join("\n");
+  }
+
+  const days = Math.max(0, Number(status.days) || 0);
+  return [
+    `Assalamu alaikum, apnar MagicBook access ar ${days} din baki ache.`,
+    `Renew plan: ${plans}.`,
+    `Renew korte WhatsApp korun: ${supportNumber}.`,
+    "Porashonar rhythm dhore rakhun, age thekei renew kore nin."
+  ].join("\n");
+}
+
+function adminOpenUserWhatsApp(user) {
+  const phone = normalizePhone(user?.phone);
+  if (!phone) {
+    setAdminMessage("Numero utente non valido.", "error");
+    return;
+  }
+
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(getAdminWhatsAppText(user))}`;
+  window.open(url, "_blank", "noopener");
 }
 
 function adminOpenConfirm(action, user) {

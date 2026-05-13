@@ -2148,15 +2148,15 @@ body.qms-open { overflow: hidden; }
 
 /* Admin panel */
 .admin-entry {
-    width: auto;
-    min-width: 174px;
-    margin-top: 14px;
-    padding: 11px 16px;
-    border-radius: 16px;
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    margin-top: 12px;
+    padding: 0;
+    border-radius: 18px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
     background: rgba(255, 255, 255, 0.86);
     color: var(--color-dark);
     border: 1px solid rgba(37, 41, 67, 0.08);
@@ -2168,8 +2168,8 @@ body.qms-open { overflow: hidden; }
 }
 
 .admin-entry img {
-    width: 25px;
-    height: 25px;
+    width: 31px;
+    height: 31px;
     object-fit: contain;
 }
 
@@ -2219,6 +2219,7 @@ body.qms-open { overflow: hidden; }
     justify-content: center;
     gap: 10px;
     font-weight: 900;
+    text-align: center;
 }
 
 .admin-title img {
@@ -2230,7 +2231,7 @@ body.qms-open { overflow: hidden; }
 .admin-title span,
 .admin-title small {
     display: block;
-    text-align: left;
+    text-align: center;
 }
 
 .admin-title span {
@@ -2275,7 +2276,7 @@ body.qms-open { overflow: hidden; }
 
 .admin-tabs {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 7px;
     padding: 5px;
     border-radius: 15px;
@@ -2312,6 +2313,11 @@ body.qms-open { overflow: hidden; }
     text-align: left;
 }
 
+.admin-search-box {
+    position: relative;
+    display: block;
+}
+
 .admin-search span,
 .admin-form label > span {
     color: #7c8aa0;
@@ -2330,6 +2336,32 @@ body.qms-open { overflow: hidden; }
     color: #1e293b;
     font: inherit;
     font-weight: 700;
+}
+
+.admin-search input {
+    padding-right: 42px;
+}
+
+.admin-search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    width: 30px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0;
+    transform: translateY(-50%);
+    border-radius: 999px;
+    background: rgba(30, 41, 59, 0.08);
+    color: #64748b;
+    box-shadow: none;
+    font-size: 20px;
+    line-height: 1;
+}
+
+.admin-search-clear:hover {
+    transform: translateY(-50%);
+    box-shadow: none;
 }
 
 .admin-search input:focus,
@@ -2373,7 +2405,7 @@ body.qms-open { overflow: hidden; }
 
 .admin-stats {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 10px;
 }
 
@@ -2507,6 +2539,14 @@ body.qms-open { overflow: hidden; }
     border-color: #fee2e2;
 }
 
+.admin-action-btn.is-send {
+    background: #effdf4;
+    border-color: #c7f5d8;
+    color: #12833d;
+    font-size: 0.72rem;
+    font-weight: 900;
+}
+
 .admin-empty,
 .admin-loading {
     grid-column: 1 / -1;
@@ -2593,6 +2633,47 @@ body.qms-open { overflow: hidden; }
     min-height: 18px;
 }
 
+.admin-bulk-fields {
+    display: grid;
+    gap: 12px;
+}
+
+.admin-bulk-fields.hidden {
+    display: none !important;
+}
+
+.admin-bulk-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    color: #7c8aa0;
+    font-size: 0.76rem;
+    font-weight: 900;
+}
+
+.admin-bulk-head .admin-secondary-btn {
+    min-height: 36px;
+    padding: 8px 11px;
+    font-size: 0.76rem;
+}
+
+.admin-bulk-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 96px;
+    gap: 10px;
+}
+
+.admin-duplicate-note {
+    grid-column: 1 / -1;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-size: 0.76rem;
+    font-weight: 900;
+}
+
 .admin-modal-actions {
     display: flex;
     justify-content: flex-end;
@@ -2624,7 +2705,7 @@ body.qms-open { overflow: hidden; }
     }
 
     .admin-title {
-        justify-content: flex-start;
+        justify-content: center;
     }
 
     .admin-tools-row {
@@ -2641,8 +2722,12 @@ body.qms-open { overflow: hidden; }
 
     .admin-tab {
         min-height: 36px;
-        padding: 8px 6px;
-        font-size: 0.72rem;
+        padding: 8px 4px;
+        font-size: 0.68rem;
+    }
+
+    .admin-bulk-row {
+        grid-template-columns: minmax(0, 1fr) 82px;
     }
 
     .admin-modal-actions {
