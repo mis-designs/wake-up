@@ -3863,7 +3863,9 @@ if (whatsappBtn) {
  ***********************/
 (function initPwaInstallPrompt() {
   const INSTALLED_KEY = "magicbook_pwa_installed";
-  const SESSION_DISMISSED_KEY = "magicbook_pwa_prompt_dismissed";
+  const ACCEPTED_KEY = "magicbook_pwa_prompt_accepted";
+  const SNOOZE_UNTIL_KEY = "magicbook_pwa_prompt_snooze_until";
+  const DISMISS_SNOOZE_MS = 3 * 24 * 60 * 60 * 1000;
   const promptEl = document.getElementById("installPrompt");
   const promptBtn = document.getElementById("installPromptBtn");
   const promptClose = document.getElementById("installPromptClose");
@@ -3877,13 +3879,18 @@ if (whatsappBtn) {
   function markInstalled() {
     try {
       localStorage.setItem(INSTALLED_KEY, "1");
+      localStorage.setItem(ACCEPTED_KEY, "1");
+      localStorage.removeItem(SNOOZE_UNTIL_KEY);
     } catch {}
     hidePrompt();
   }
 
   function shouldSkipPrompt() {
     try {
-      return localStorage.getItem(INSTALLED_KEY) === "1" || sessionStorage.getItem(SESSION_DISMISSED_KEY) === "1";
+      const snoozeUntil = Number(localStorage.getItem(SNOOZE_UNTIL_KEY) || 0);
+      return localStorage.getItem(INSTALLED_KEY) === "1"
+        || localStorage.getItem(ACCEPTED_KEY) === "1"
+        || snoozeUntil > Date.now();
     } catch {
       return true;
     }
@@ -3897,7 +3904,7 @@ if (whatsappBtn) {
         : "Aggiungi alla schermata Home.";
     }
     if (promptBtn) {
-      promptBtn.textContent = mode === "ios" ? "OK" : "Aggiungi";
+      promptBtn.textContent = "Download";
       promptBtn.dataset.mode = mode;
     }
     promptEl.classList.remove("hidden");
@@ -3927,15 +3934,23 @@ if (whatsappBtn) {
   window.addEventListener("appinstalled", markInstalled);
 
   promptBtn?.addEventListener("click", async () => {
+    try {
+      localStorage.setItem(ACCEPTED_KEY, "1");
+      localStorage.removeItem(SNOOZE_UNTIL_KEY);
+    } catch {}
+
     if (promptBtn.dataset.mode === "ios") {
-      try {
-        sessionStorage.setItem(SESSION_DISMISSED_KEY, "1");
-      } catch {}
       hidePrompt();
+      if (!isStandalone()) {
+        window.open(window.location.href, "_blank", "noopener");
+      }
       return;
     }
 
-    if (!deferredInstallPrompt) return;
+    if (!deferredInstallPrompt) {
+      hidePrompt();
+      return;
+    }
     deferredInstallPrompt.prompt();
     const choice = await deferredInstallPrompt.userChoice.catch(() => null);
     if (choice?.outcome === "accepted") markInstalled();
@@ -3945,7 +3960,7 @@ if (whatsappBtn) {
 
   promptClose?.addEventListener("click", () => {
     try {
-      sessionStorage.setItem(SESSION_DISMISSED_KEY, "1");
+      localStorage.setItem(SNOOZE_UNTIL_KEY, String(Date.now() + DISMISS_SNOOZE_MS));
     } catch {}
     hidePrompt();
   });
