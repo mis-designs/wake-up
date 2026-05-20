@@ -7,6 +7,96 @@ const RENEW_MESSAGE = "Ciao, vorrei rinnovare il mio accesso.";
 const WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/LBL1G7nvz2B3SThJj4uRxD";
 const AUTH_API = "/api/auth";
 const ADMIN_API = "/api/admin";
+const APP_TITLE = "MagicBook";
+let applyingRouteFromHistory = false;
+
+function normalizeRoutePath(path = window.location.pathname) {
+  return String(path || "/").replace(/\/+$/, "") || "/";
+}
+
+function getChapterPath(chapter) {
+  return `/magic-book/capitolo-${String(chapter).padStart(2, "0")}`;
+}
+
+function getQuizPath(params = {}) {
+  if (params.mode === "exam80") return "/quiz/esame-80";
+  if (params.mode === "exam30") return "/quiz/esame-30";
+  if (params.chapters) {
+    const chapters = String(params.chapters);
+    if (/^\d+$/.test(chapters)) return `/quiz/capitolo-${chapters.padStart(2, "0")}`;
+    return `/quiz/multi?chapters=${encodeURIComponent(chapters)}`;
+  }
+  return "/quiz";
+}
+
+function getAppRoute(state = {}) {
+  if (state.screen === "login") return "/";
+  if (state.screen === "home") return "/home";
+  if (state.screen === "chapters") return "/magic-book";
+  if (state.screen === "admin") return "/admin";
+  if (state.screen === "exam") return "/magic-book/esame-pdf";
+  if (state.screen === "viewer" && state.chapter) return getChapterPath(state.chapter);
+  return "/home";
+}
+
+function getRouteTitle(state = {}) {
+  if (state.screen === "login") return `${APP_TITLE} | Accesso`;
+  if (state.screen === "home") return `${APP_TITLE} | Home`;
+  if (state.screen === "chapters") return `${APP_TITLE} | Capitoli`;
+  if (state.screen === "admin") return `${APP_TITLE} | Admin`;
+  if (state.screen === "exam") return `${APP_TITLE} | Esame PDF`;
+  if (state.screen === "viewer" && state.chapter) return `${APP_TITLE} | Capitolo ${state.chapter}`;
+  return APP_TITLE;
+}
+
+function setAppRoute(state = {}, options = {}) {
+  document.title = getRouteTitle(state);
+  if (applyingRouteFromHistory) return;
+
+  const path = getAppRoute(state);
+  const current = normalizeRoutePath();
+  if (current === path) return;
+
+  const method = options.replace ? "replaceState" : "pushState";
+  window.history[method](state, "", path);
+}
+
+function getRouteStateFromLocation() {
+  const path = normalizeRoutePath();
+  const chapterMatch = path.match(/^\/magic-book\/capitolo-(\d{1,2})$/);
+  if (chapterMatch) {
+    return { screen: "viewer", chapter: clampChapter(Number(chapterMatch[1])) };
+  }
+  if (path === "/magic-book/esame-pdf") return { screen: "exam" };
+  if (path === "/magic-book" || path === "/capitoli") return { screen: "chapters" };
+  if (path === "/admin") return { screen: "admin" };
+  if (path === "/home") return { screen: "home" };
+  return { screen: "home" };
+}
+
+function openRouteState(state = getRouteStateFromLocation()) {
+  const nextState = state.screen === "admin" && !isCurrentSessionAdmin()
+    ? { screen: "home" }
+    : state;
+
+  applyingRouteFromHistory = true;
+  try {
+    if (nextState.screen === "admin") {
+      showAdminPanel();
+    } else if (nextState.screen === "chapters") {
+      showChapters();
+    } else if (nextState.screen === "viewer") {
+      openMagicBookPages({ type: "chapter", chapter: nextState.chapter });
+    } else if (nextState.screen === "exam") {
+      openMagicBookPages({ type: "exam" });
+    } else {
+      showHome();
+    }
+  } finally {
+    applyingRouteFromHistory = false;
+  }
+  setAppRoute(nextState, { replace: true });
+}
 
 /***********************
  * STORAGE ROBUSTO
@@ -408,7 +498,7 @@ window.addEventListener("load", async () => {
   deviceId = await getRobustDeviceId();
 
   if ((session || logged === "true") && phone && deviceId) {
-    showHome();
+    openRouteState(getRouteStateFromLocation());
     checkRenewReminder();
     startAccessValidationTimer();
     if (shouldRefreshAccessToken()) {
@@ -581,7 +671,7 @@ function completeLogin(phone, deviceId, data) {
   pendingOtpLogin = null;
   hideAdminPasswordUI();
   hideOtpUI();
-  showHome();
+  openRouteState(getRouteStateFromLocation());
   startAccessValidationTimer();
   checkRenewReminder(true);
   maybeShowWhatsAppGroupPopup();
@@ -1128,7 +1218,7 @@ function showLoginScreen(message = "") {
   updateProfileUI(false);
   setProfileIconVisible(false);
   setLoggedOutChrome();
-  document.title = "MagicBook | Login";
+  document.title = "MagicBook | Accesso";
   updateLoginButtonState();
 }
 
@@ -1204,7 +1294,7 @@ function setupProfileUI() {
 
   logoutBtn.addEventListener("click", () => {
     logout(true, "manual");
-    window.location.href = "index.html";
+    window.location.href = "/";
   });
 }
 
@@ -2033,7 +2123,7 @@ function showHome() {
   updateProfileUI(true);
   setProfileIconVisible(true);
   setLoggedInChrome();
-  document.title = "MagicBook | Home";
+  setAppRoute({ screen: "home" });
   updateAdminEntryVisibility();
   maybeShowWhatsAppGroupPopup();
 }
@@ -2047,7 +2137,7 @@ function showChapters() {
   currentScreen = "chapters";
   updateProfileUI(true);
   setProfileIconVisible(false);
-  document.title = "MagicBook | Capitoli";
+  setAppRoute({ screen: "chapters" });
   requestAnimationFrame(() => updateCardTrack());
 }
 
@@ -2326,7 +2416,7 @@ function startExamQuiz(mode) {
 
   closeExamModeScreen();
   setTimeout(() => {
-    window.location.href = "quiz.html?mode=" + encodeURIComponent(mode);
+    window.location.href = getQuizPath({ mode });
   }, 460);
 }
 
@@ -2487,6 +2577,14 @@ function goHome() {
   closeChapterMenu();
   showHome();
 }
+
+window.addEventListener("popstate", () => {
+  if (readStoredSession() || Storage.get(KEYS.loggedIn) === "true") {
+    openRouteState(getRouteStateFromLocation());
+  } else {
+    showLoginScreen("");
+  }
+});
 
 function openExamFromMenu() {
   closeChapterMenu();
@@ -2820,13 +2918,13 @@ async function openMagicBookPages({ type, chapter = null }) {
   if (type === "chapter") {
     currentScreen = "viewer";
     setChapterMode(true, chapter);
-    document.title = `MagicBook | Capitolo ${chapter}`;
+    setAppRoute({ screen: "viewer", chapter });
   } else if (type === "exam") {
     currentScreen = "exam";
     setChapterMode(false);
     document.body.classList.add("app-mode");
     showAppHeader("exam");
-    document.title = "MagicBook | Exam PDF";
+    setAppRoute({ screen: "exam" });
   }
 
   const pages = document.getElementById("pages");
@@ -3061,21 +3159,21 @@ function _buildQMSMultiPills() {
 
 function startMixQuiz() {
   closeQuizModeScreen();
-  setTimeout(() => { window.location.href = "quiz.html"; }, 460);
+  setTimeout(() => { window.location.href = getQuizPath(); }, 460);
 }
 
 function startCapQuiz() {
   if (qmsCapSelected === null) return;
   const ch = qmsCapSelected;
   closeQuizModeScreen();
-  setTimeout(() => { window.location.href = "quiz.html?chapters=" + ch; }, 460);
+  setTimeout(() => { window.location.href = getQuizPath({ chapters: String(ch) }); }, 460);
 }
 
 function startMultiQuiz() {
   if (qmsMultiSelected.size < 2) return;
   const chapters = Array.from(qmsMultiSelected).sort((a, b) => a - b).join(",");
   closeQuizModeScreen();
-  setTimeout(() => { window.location.href = "quiz.html?chapters=" + encodeURIComponent(chapters); }, 460);
+  setTimeout(() => { window.location.href = getQuizPath({ chapters }); }, 460);
 }
 
 /***********************
@@ -3286,7 +3384,7 @@ async function showAdminPanel() {
   setProfileIconVisible(false);
   setLoggedInChrome();
   currentScreen = "admin";
-  document.title = "MagicBook | Admin";
+  setAppRoute({ screen: "admin" });
   await adminLoadUsers();
 }
 

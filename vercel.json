@@ -1,0 +1,65 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.tmmmagic.eu"
+        }
+      ],
+      "destination": "https://tmmmagic.eu/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/quiz.html",
+      "destination": "/quiz",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/home",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/magic-book",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/magic-book/capitolo-:chapter",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/magic-book/esame-pdf",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/quiz",
+      "destination": "/quiz.html"
+    },
+    {
+      "source": "/quiz/capitolo-:chapter",
+      "destination": "/quiz.html"
+    },
+    {
+      "source": "/quiz/multi",
+      "destination": "/quiz.html"
+    },
+    {
+      "source": "/quiz/esame-:mode",
+      "destination": "/quiz.html"
+    }
+  ]
+}

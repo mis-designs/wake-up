@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 const CLIENT_AUTH_RESET_VERSION = "2026-04-device-reset-1";
 const CLIENT_AUTH_RESET_KEY = "client_auth_reset_version";
-const HOME_ROUTE = "index.html";
+const HOME_ROUTE = "/magic-book";
 const RESULT_VIDEO_SOURCES = {
   pass: "assets/videos/pial_vhai%20applauso.mp4",
   fail: "assets/videos/delusione.mp4"
@@ -103,9 +103,29 @@ function setQuizTitle(title = "MagicBook | Quiz") {
   document.title = title;
 }
 
-function getRequestedQuizMode() {
+function getQuizRouteInfo() {
+  const path = window.location.pathname.replace(/\/+$/, "") || "/quiz";
   const params = new URLSearchParams(window.location.search);
-  const mode = params.get("mode") || "";
+  const chapterMatch = path.match(/^\/quiz\/capitolo-(\d{1,2})$/);
+  const examMatch = path.match(/^\/quiz\/esame-(80|30)$/);
+
+  if (chapterMatch) {
+    return { chapters: String(Number(chapterMatch[1])), mode: "default" };
+  }
+  if (examMatch) {
+    return { chapters: "", mode: examMatch[1] === "80" ? "exam80" : "exam30" };
+  }
+  if (path === "/quiz/multi") {
+    return { chapters: params.get("chapters") || "", mode: "default" };
+  }
+  return {
+    chapters: params.get("chapters") || "",
+    mode: params.get("mode") || ""
+  };
+}
+
+function getRequestedQuizMode() {
+  const mode = getQuizRouteInfo().mode || "";
   return Object.prototype.hasOwnProperty.call(QUIZ_MODE_CONFIG, mode) ? mode : "default";
 }
 
@@ -650,8 +670,8 @@ async function loadQuiz() {
   showLoading("Caricamento quiz...");
 
   try {
-    const params   = new URLSearchParams(window.location.search);
-    const chapters = params.get("chapters") || "";
+    const routeInfo = getQuizRouteInfo();
+    const chapters = routeInfo.chapters || "";
     quizMode = getRequestedQuizMode();
     const url = buildQuizApiUrl("getQuiz", { chapters, mode: quizMode === "default" ? "" : quizMode });
     const data = await fetchQuizJson(url);

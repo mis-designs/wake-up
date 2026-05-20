@@ -1,9 +1,12 @@
-const CACHE_NAME = "magicbook-pwa-v3";
+const CACHE_NAME = "magicbook-pwa-v4";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
+  "/quiz.html",
   "/style.css?v=4",
-  "/script.js?v=3",
+  "/mystyle.css?v=22",
+  "/script.js?v=4",
+  "/quiz.js?v=24",
   "/manifest.webmanifest",
   "/icons/mg_logo.png"
 ];
@@ -41,6 +44,11 @@ self.addEventListener("fetch", event => {
         caches.open(CACHE_NAME).then(cache => cache.put(request, copy)).catch(() => {});
         return response;
       })
-      .catch(() => caches.match(request))
+      .catch(() => {
+        if (request.mode === "navigate") {
+          return caches.match(url.pathname.startsWith("/quiz") ? "/quiz.html" : "/index.html");
+        }
+        return caches.match(request);
+      })
   );
 });
