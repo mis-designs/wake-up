@@ -20,7 +20,17 @@
     },
     {
       "source": "/quiz.html",
-      "destination": "/quiz",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/index.html/",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/quiz.html/",
+      "destination": "/",
       "permanent": true
     }
   ],

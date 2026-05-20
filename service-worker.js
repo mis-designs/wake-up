@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v5";
+const CACHE_NAME = "magicbook-pwa-v6";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -36,6 +36,11 @@ self.addEventListener("fetch", event => {
   const url = new URL(request.url);
 
   if (request.method !== "GET" || url.pathname.startsWith("/api/")) return;
+
+  if (request.mode === "navigate" && (url.pathname === "/index.html" || url.pathname === "/quiz.html")) {
+    event.respondWith(Response.redirect("/", 302));
+    return;
+  }
 
   event.respondWith(
     fetch(request)
