@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v4";
+const CACHE_NAME = "magicbook-pwa-v5";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -40,6 +40,11 @@ self.addEventListener("fetch", event => {
   event.respondWith(
     fetch(request)
       .then(response => {
+        if (request.mode === "navigate" && !response.ok) {
+          return caches.match(url.pathname.startsWith("/quiz") ? "/quiz.html" : "/index.html")
+            .then(cached => cached || response);
+        }
+
         const copy = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(request, copy)).catch(() => {});
         return response;
