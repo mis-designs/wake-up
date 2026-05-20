@@ -572,10 +572,10 @@ async function ensureAccessToken(options = {}) {
       return true;
     }
 
-    return false;
+    return isAccessTokenUsable();
   } catch (err) {
     console.warn("Access token refresh unavailable, keeping current session", err);
-    return false;
+    return isAccessTokenUsable();
   }
 }
 
@@ -1098,7 +1098,7 @@ function getLoginErrorMessage(error) {
   if (error === "device_mismatch") return "Questo dispositivo non è più autorizzato.";
   if (error === "otp_send_failed") return "Non siamo riusciti a inviare il codice OTP. Riprova più tardi.";
   if (error === "missing_twilio_config") return "Servizio OTP non configurato correttamente.";
-  if (error === "temporary_error" || error === "server_error") return "Servizio momentaneamente non disponibile.";
+  if (error === "temporary_error" || error === "server_error" || error === "busy") return "Servizio momentaneamente non disponibile.";
   return "Numero non valido o accesso non autorizzato.";
 }
 
@@ -2600,6 +2600,7 @@ function openQuizFromMenu() {
  * VIEWER
  ***********************/
 const MAGIC_BOOK_API = "/api/getPages";
+const MAGIC_BOOK_PUBLIC_BASE_URL = "https://pub-21131aa867534601af79c34beb746fb7.r2.dev";
 let currentBookViewer = {
   book: "magic",
   type: null,
@@ -2614,6 +2615,38 @@ let magicBookViewerRequestId = 0;
 let magicBookScrollHandlerInstalled = false;
 let magicBookLoadObserver = null;
 
+function buildMagicBookPublicPath({ type, chapter, page }) {
+  const pageNumber = String(page).padStart(4, "0");
+
+  if (type === "exam") {
+    return `books/magic-book/exam/exam_page-${pageNumber}.jpg`;
+  }
+
+  if (type === "chapter") {
+    return `books/magic-book/cap${chapter}/magic book-${chapter}_page-${pageNumber}.jpg`;
+  }
+
+  return "";
+}
+
+function buildMagicBookPublicUrl({ type, chapter, page }) {
+  const path = buildMagicBookPublicPath({ type, chapter, page });
+  if (!path) return "";
+  return new URL(path, `${MAGIC_BOOK_PUBLIC_BASE_URL}/`).toString();
+}
+
+async function fetchPublicMagicBookPage({ type, chapter, page }) {
+  const url = buildMagicBookPublicUrl({ type, chapter, page });
+  if (!url) throw new Error("Invalid Magic Book public path");
+
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve(url);
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
 async function fetchMagicBookPage({ type, chapter, page }) {
   const body = {
     book: "magic",
@@ -2626,13 +2659,20 @@ async function fetchMagicBookPage({ type, chapter, page }) {
 
   if (type === "chapter") body.chapter = chapter;
 
-  const response = await fetch(MAGIC_BOOK_API, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(body)
-  });
+  let response = null;
+
+  try {
+    response = await fetch(MAGIC_BOOK_API, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+  } catch (err) {
+    console.warn("Magic Book API non raggiungibile, provo il bucket pubblico", err);
+    return fetchPublicMagicBookPage({ type, chapter, page });
+  }
 
   const contentType = response.headers.get("Content-Type") || "";
 
@@ -2651,6 +2691,9 @@ async function fetchMagicBookPage({ type, chapter, page }) {
   }
 
   if (response.status === 404) {
+    const publicPage = await fetchPublicMagicBookPage({ type, chapter, page });
+    if (publicPage) return publicPage;
+
     if (page === 1) {
       console.error("Failed to load page", {
         status: response.status,
@@ -2667,22 +2710,23 @@ async function fetchMagicBookPage({ type, chapter, page }) {
       endpoint: MAGIC_BOOK_API,
       request: body
     });
-    throw new Error(`Unable to load Magic Book page ${page}: ${response.status}`);
+    return fetchPublicMagicBookPage({ type, chapter, page });
   }
 
   if (!contentType.toLowerCase().includes("image/jpeg")) {
     const text = await response.text();
-    throw new Error(`Invalid Magic Book response type: ${contentType || "empty"} ${text.slice(0, 120)}`);
+    console.warn(`Invalid Magic Book response type: ${contentType || "empty"} ${text.slice(0, 120)}`);
+    return fetchPublicMagicBookPage({ type, chapter, page });
   }
 
   const blob = await response.blob();
 
   if (!blob || blob.size === 0) {
-    throw new Error(`Empty Magic Book page ${page}`);
+    return fetchPublicMagicBookPage({ type, chapter, page });
   }
 
   if (blob.type && blob.type !== "image/jpeg") {
-    throw new Error(`Invalid Magic Book image type: ${blob.type}`);
+    return fetchPublicMagicBookPage({ type, chapter, page });
   }
 
   return blob;
@@ -2775,11 +2819,15 @@ function setMagicBookLoading(pages, visible, { active = true } = {}) {
   pages.appendChild(loader);
 }
 
-function appendMagicBookPage(pages, blob) {
+function appendMagicBookPage(pages, pageSource) {
   const img = new Image();
-  const url = URL.createObjectURL(blob);
-  img.src = url;
-  img.dataset.objectUrl = url;
+  if (pageSource instanceof Blob) {
+    const url = URL.createObjectURL(pageSource);
+    img.src = url;
+    img.dataset.objectUrl = url;
+  } else {
+    img.src = String(pageSource || "");
+  }
   img.alt = "";
   img.draggable = false;
 

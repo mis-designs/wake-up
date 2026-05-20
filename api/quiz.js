@@ -109,11 +109,12 @@ function isConfigured() {
 
 function getAuthError(authData) {
   const error = authData?.error || authData?.status;
-  if (["expired", "not_found", "device_replaced", "device_mismatch", "device_limit"].includes(error)) return error;
+  if (["expired", "not_found", "device_replaced", "device_mismatch", "device_limit", "busy", "temporary_error", "server_error"].includes(error)) return error;
   return "unauthorized";
 }
 
 function getAuthStatusCode(error) {
+  if (error === "busy" || error === "temporary_error" || error === "server_error") return 503;
   if (error === "device_replaced" || error === "device_mismatch" || error === "device_limit") return 403;
   return 401;
 }

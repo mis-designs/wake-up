@@ -84,13 +84,17 @@ function getAuthError(authData) {
     "not_found",
     "device_replaced",
     "device_mismatch",
-    "device_limit"
+    "device_limit",
+    "busy",
+    "temporary_error",
+    "server_error"
   ]);
 
   return knownErrors.has(error) ? error : "unauthorized";
 }
 
 function getAuthStatusCode(error) {
+  if (error === "busy" || error === "temporary_error" || error === "server_error") return 503;
   if (error === "device_replaced" || error === "device_mismatch" || error === "device_limit") return 403;
   return 401;
 }
