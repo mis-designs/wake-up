@@ -27,43 +27,43 @@
   "rewrites": [
     {
       "source": "/home",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/magic-book",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/capitoli",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/magic-book/capitolo-:chapter",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/magic-book/esame-pdf",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/admin",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/quiz",
-      "destination": "/quiz.html"
+      "destination": "/quiz"
     },
     {
       "source": "/quiz/capitolo-:chapter",
-      "destination": "/quiz.html"
+      "destination": "/quiz"
     },
     {
       "source": "/quiz/multi",
-      "destination": "/quiz.html"
+      "destination": "/quiz"
     },
     {
       "source": "/quiz/esame-:mode",
-      "destination": "/quiz.html"
+      "destination": "/quiz"
     }
   ]
 }
