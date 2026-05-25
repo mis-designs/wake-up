@@ -10,6 +10,18 @@ const RESULT_VIDEO_SOURCES = {
 };
 const PASSING_SCORE_RATIO = 0.9;
 
+function syncQuizViewportHeight() {
+  const height = window.visualViewport?.height || window.innerHeight;
+  if (!height) return;
+  document.documentElement.style.setProperty("--quiz-viewport-height", `${Math.round(height)}px`);
+}
+
+syncQuizViewportHeight();
+window.addEventListener("pageshow", syncQuizViewportHeight);
+window.addEventListener("resize", syncQuizViewportHeight);
+window.addEventListener("orientationchange", syncQuizViewportHeight);
+window.visualViewport?.addEventListener("resize", syncQuizViewportHeight);
+
 function calculateQuizResult(correctAnswers, totalQuestions) {
   const total = Number(totalQuestions) || 0;
   const correct = Number(correctAnswers) || 0;

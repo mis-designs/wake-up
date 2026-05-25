@@ -1,4 +1,5 @@
 :root {
+  --quiz-viewport-height: 100vh;
   --color-primary: #3a4efb;
   --color-secondary: #33a4fa;
   --color-accent: #e3ff3b;
@@ -15,6 +16,12 @@
   --gradient-main: linear-gradient(135deg, #3a4efb 0%, #33a4fa 100%);
 }
 
+@supports (height: 100svh) {
+  :root {
+    --quiz-viewport-height: 100svh;
+  }
+}
+
 /* RESET */
 * {
   margin: 0;
@@ -22,8 +29,14 @@
   box-sizing: border-box;
 }
 
+html,
 body {
-  min-height: 100dvh;
+  height: var(--quiz-viewport-height);
+  overflow: hidden;
+}
+
+body {
+  min-height: 0;
   background: linear-gradient(180deg, #eef2ff 0%, #dee0ed 100%);
   font-family: Arial;
   color: var(--color-text);
@@ -40,7 +53,8 @@ body.loading-open {
 /* CONTAINER */
 .quiz-container {
   width: min(100%, 560px);
-  height: 100dvh;
+  height: var(--quiz-viewport-height);
+  max-height: var(--quiz-viewport-height);
   margin: 0 auto;
   padding:
     calc(env(safe-area-inset-top, 0px) + 14px)
@@ -425,8 +439,8 @@ body.loading-open {
 .modal-overlay.modal-fullscreen .modal-card {
   width: 100%;
   max-width: 100%;
-  height: 100dvh;
-  max-height: 100dvh;
+  height: var(--quiz-viewport-height);
+  max-height: var(--quiz-viewport-height);
   border-radius: 0;
   box-shadow: none;
   animation: none;
@@ -948,7 +962,7 @@ body.loading-open {
   }
 
   .quiz-container {
-    height: min(900px, calc(100dvh - 48px));
+    height: min(900px, calc(var(--quiz-viewport-height) - 48px));
     margin: 24px auto;
     padding: 18px;
     border-radius: 30px;
