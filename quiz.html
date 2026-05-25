@@ -16,7 +16,7 @@
     <link rel="icon" type="image/png" href="https://pub-21131aa867534601af79c34beb746fb7.r2.dev/mg_logo.png">
     <link rel="apple-touch-icon" href="https://pub-21131aa867534601af79c34beb746fb7.r2.dev/mg_logo.png">
     <link rel="manifest" href="manifest.webmanifest">
-    <link rel="stylesheet" href="mystyle.css?v=22">
+    <link rel="stylesheet" href="mystyle.css?v=23">
 </head>
 
 <body>
@@ -50,6 +50,9 @@
             <button class="audio-btn" onclick="playBanglaAudio()" aria-label="Ascolta in Bengali">
                 <img src="icons/bangla.png" alt="">
             </button>
+            <button id="explanation-btn" class="explanation-btn hidden" type="button" onclick="openExplanation()" aria-label="Apri spiegazione">
+                Spiega
+            </button>
         </div>
 
         <div class="controls">
@@ -78,6 +81,15 @@
             </button>
         </div>
 
+    </div>
+
+    <div id="explanation-modal" class="modal-overlay explanation-overlay hidden" aria-hidden="true">
+        <div class="explanation-card" role="dialog" aria-modal="true" aria-label="Spiegazione">
+            <button id="explanation-close" class="explanation-close" type="button" aria-label="Chiudi spiegazione">&times;</button>
+            <p id="explanation-loading" class="explanation-state">Caricamento...</p>
+            <img id="explanation-image" class="explanation-image hidden" alt="Spiegazione della domanda">
+            <p id="explanation-error" class="explanation-state hidden">Spiegazione non disponibile.</p>
+        </div>
     </div>
 
     <div id="custom-modal" class="modal-overlay hidden" aria-hidden="true">
@@ -136,7 +148,7 @@
 
     <div id="audio-toast" class="audio-toast" aria-live="assertive" aria-atomic="true"></div>
 
-    <script src="quiz.js?v=24"></script>
+    <script src="quiz.js?v=26"></script>
 </body>
 
 </html>

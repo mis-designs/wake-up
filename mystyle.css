@@ -1016,6 +1016,73 @@ body.loading-open {
   pointer-events: none;
 }
 
+.explanation-btn {
+  height: 48px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 16px;
+  background: var(--gradient-main);
+  color: var(--color-white);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(58, 78, 251, 0.2);
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+.explanation-btn:active {
+  transform: scale(0.96);
+}
+
+.explanation-overlay {
+  z-index: 1050;
+}
+
+.explanation-card {
+  position: relative;
+  width: min(100%, 520px);
+  max-height: min(88dvh, 760px);
+  min-height: 170px;
+  padding: 52px 16px 16px;
+  border-radius: 22px;
+  background: var(--color-white);
+  box-shadow: 0 24px 48px rgba(37, 41, 67, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.explanation-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.explanation-image {
+  display: block;
+  width: 100%;
+  max-height: calc(88dvh - 70px);
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.explanation-state {
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: center;
+}
+
 @keyframes audioLoading {
   0%, 100% { opacity: 0.75; transform: scale(1); }
   50%       { opacity: 0.45; transform: scale(0.90); }

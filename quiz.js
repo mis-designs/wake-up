@@ -92,7 +92,10 @@ if (!hasCurrentClientAuthResetVersion()) {
 }
 
 const QUIZ_API = "/api/quiz";
-const BASE_IMG_URL = "https://pub-21131aa867534601af79c34beb746fb7.r2.dev/Figure/";
+const BASE_ASSET_URL = "https://pub-21131aa867534601af79c34beb746fb7.r2.dev";
+const BASE_IMG_URL = `${BASE_ASSET_URL}/Figure/`;
+const BASE_EXPLANATION_URL = `${BASE_ASSET_URL}/explanations/`;
+const EXPLANATION_EXTENSIONS = ["png", "webp", "jpg", "jpeg"];
 const QUIZ_MODE_CONFIG = {
   exam80: { title: "Exam", timerMinutes: 50 },
   exam30: { title: "Exam", timerMinutes: 20 },
@@ -234,6 +237,14 @@ function getQuizSessionToken() {
   return quizSessionToken;
 }
 
+function createQuizDrawId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
+}
+
 function buildQuizApiUrl(action, params = {}) {
   const query = new URLSearchParams({
     action,
@@ -244,6 +255,7 @@ function buildQuizApiUrl(action, params = {}) {
 
   const activeQuizToken = getQuizSessionToken();
   if (activeQuizToken) query.set("quizSessionToken", activeQuizToken);
+  if (action === "getQuiz") query.set("draw", createQuizDrawId());
 
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") {
@@ -381,6 +393,13 @@ const prevButton = document.getElementById("prev-btn");
 const nextButton = document.getElementById("next-btn");
 const nextIconWrap = document.getElementById("next-icon-wrap");
 const nextLabel = document.getElementById("next-label");
+const explanationButton = document.getElementById("explanation-btn");
+const explanationModal = document.getElementById("explanation-modal");
+const explanationClose = document.getElementById("explanation-close");
+const explanationLoading = document.getElementById("explanation-loading");
+const explanationImage = document.getElementById("explanation-image");
+const explanationError = document.getElementById("explanation-error");
+let explanationLoadId = 0;
 
 /***********************
  * AUDIO
@@ -595,6 +614,73 @@ function playBanglaAudio() {
  * IMAGE LOADER
  ***********************/
 
+function getExplanationValue(question) {
+  const value = String(question?.explanations ?? question?.Explanations ?? "").trim();
+  return value === "0" || value === "1" ? value : null;
+}
+
+function getFigureKey(question) {
+  const figure = String(question?.figure ?? "").trim();
+  const normalized = figure.toLowerCase();
+  if (!figure || ["0", "false", "null", "undefined"].includes(normalized)) return "";
+  return figure;
+}
+
+function updateExplanationButton(question) {
+  if (!explanationButton) return;
+  const available = getExplanationValue(question) !== null && Boolean(getFigureKey(question));
+  explanationButton.classList.toggle("hidden", !available);
+  explanationButton.disabled = !available;
+  if (!available && explanationModal && !explanationModal.classList.contains("hidden")) {
+    closeExplanation();
+  }
+}
+
+function closeExplanation() {
+  explanationLoadId += 1;
+  explanationModal?.classList.add("hidden");
+  explanationModal?.setAttribute("aria-hidden", "true");
+  explanationImage?.classList.add("hidden");
+  explanationImage?.removeAttribute("src");
+  document.body.classList.remove("modal-open");
+}
+
+function loadExplanationCandidate(sources, index, loadId) {
+  if (!explanationImage || loadId !== explanationLoadId) return;
+  if (index >= sources.length) {
+    explanationLoading?.classList.add("hidden");
+    explanationError?.classList.remove("hidden");
+    return;
+  }
+
+  explanationImage.onload = () => {
+    if (loadId !== explanationLoadId) return;
+    explanationLoading?.classList.add("hidden");
+    explanationImage.classList.remove("hidden");
+  };
+  explanationImage.onerror = () => loadExplanationCandidate(sources, index + 1, loadId);
+  explanationImage.src = sources[index];
+}
+
+function openExplanation() {
+  const question = quiz[current];
+  const explanationValue = getExplanationValue(question);
+  const figure = getFigureKey(question);
+  if (!explanationModal || explanationValue === null || !figure) return;
+
+  const loadId = ++explanationLoadId;
+  const imageName = `${encodeURIComponent(figure)}_${explanationValue}`;
+  const sources = EXPLANATION_EXTENSIONS.map(extension => `${BASE_EXPLANATION_URL}${imageName}.${extension}`);
+
+  explanationImage?.classList.add("hidden");
+  explanationError?.classList.add("hidden");
+  explanationLoading?.classList.remove("hidden");
+  explanationModal.classList.remove("hidden");
+  explanationModal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+  loadExplanationCandidate(sources, 0, loadId);
+}
+
 function loadQuizImage(q) {
   const img        = document.getElementById("figure");
   const figureWrap = document.getElementById("figure-wrap");
@@ -649,6 +735,14 @@ function returnToBook() {
 }
 
 function rifaiScheda() {
+  if (quizMode === "exam80" || quizMode === "exam30") {
+    stopAllAudio();
+    current = 0;
+    isFinishing = false;
+    loadQuiz();
+    return;
+  }
+
   if (!lastQuizSet || !lastQuizSet.length) {
     returnToBook();
     return;
@@ -674,7 +768,7 @@ async function loadQuiz() {
     const chapters = routeInfo.chapters || "";
     quizMode = getRequestedQuizMode();
     const url = buildQuizApiUrl("getQuiz", { chapters, mode: quizMode === "default" ? "" : quizMode });
-    const data = await fetchQuizJson(url);
+    const data = await fetchQuizJson(url, { cache: "no-store" });
 
     if (data.accessToken && data.accessTokenExpiresAt) {
       saveQuizAccessToken(data.accessToken, data.accessTokenExpiresAt);
@@ -855,7 +949,8 @@ function openModal({
       isPassed ? "OK" : "X"
     );
 
-    // Show "Rifai scheda" button
+    // In exam mode, starting again must draw a new randomized exam.
+    modalRifai.innerText = quizMode === "exam80" || quizMode === "exam30" ? "Nuovo Exam" : "Rifai scheda";
     modalRifai.style.display = "block";
 
     // ── Stats banner (fully inline — immune to CSS caching) ──
@@ -1162,6 +1257,10 @@ modalRifai.addEventListener("click", () => closeModal("rifai"));
 modal.addEventListener("click", event => {
   if (event.target === modal) closeModal(false);
 });
+explanationClose?.addEventListener("click", closeExplanation);
+explanationModal?.addEventListener("click", event => {
+  if (event.target === explanationModal) closeExplanation();
+});
 
 /***********************
  * PROGRESS BAR
@@ -1259,6 +1358,7 @@ function showQuestion() {
   updateProgressBar();
 
   loadQuizImage(q);
+  updateExplanationButton(q);
 
   // reset bottoni
   veroBtn.classList.remove("selected", "tap-feedback");

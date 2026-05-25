@@ -272,6 +272,7 @@ async function forwardGetAction({ action, chapters, text, mode, limit, count, qu
     token: QUIZ_PROXY_SECRET
   });
 
+  if (action === "getQuiz") params.set("draw", crypto.randomUUID());
   if (chapters) params.set("chapters", chapters);
   if (text) params.set("text", text);
   if (mode) params.set("mode", mode);
@@ -321,7 +322,8 @@ function normalizeQuestionRow(row) {
     question: getMappedValue(row, ["question", "Question"]),
     figure: getMappedValue(row, ["figure", "Figure"]),
     correct: getMappedValue(row, ["correct", "Correct"]),
-    question_bd: getMappedValue(row, ["question_bd", "Question_BD", "questionBD", "questionBd"])
+    question_bd: getMappedValue(row, ["question_bd", "Question_BD", "questionBD", "questionBd"]),
+    explanations: getMappedValue(row, ["explanations", "Explanations"])
   };
 }
 
@@ -551,6 +553,10 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "GET" && action === "getQuiz") {
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      res.setHeader("CDN-Cache-Control", "no-store");
+      res.setHeader("Vercel-CDN-Cache-Control", "no-store");
+
       const access = await ensureAccess({ phone, deviceId, accessToken, forceValidate: true });
       if (!access.ok) {
         return res.status(access.statusCode || 401).json({ error: access.error || "unauthorized" });
