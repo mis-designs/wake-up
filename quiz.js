@@ -367,6 +367,7 @@ let quizMode = getRequestedQuizMode();
 setQuizTitle(`MagicBook | ${getQuizModeConfig(quizMode).title || "Quiz"}`);
 let quizDurationMinutes = getQuizModeConfig(quizMode).timerMinutes;
 let time = quizDurationMinutes * 60;
+let quizStartedAt = 0;
 let isFinishing = false;
 let lastQuizSet = null;
 let isAdmin = false;
@@ -949,6 +950,7 @@ function openModal({
     const sbagliate   = Math.max(0, total - corrette - nonRisposte);
     const isPassed    = normalizedResult.passed === true;
     const passingScore = normalizedResult.passingScore;
+    const elapsedSeconds = Math.max(0, Number(normalizedResult._elapsedSeconds) || 0);
 
     console.log("[quiz] result →", { corrette, nonRisposte, sbagliate, total, isPassed });
 
@@ -1010,6 +1012,7 @@ function openModal({
         <span>Risultato: ${corrette}/${total} corrette</span>
         <span>Percentuale: ${pct}%</span>
         <span>Minimo richiesto: ${passingScore}/${total}</span>
+        <span>Tempo impiegato: ${formatTimer(elapsedSeconds)}</span>
       </div>
     `;
 
@@ -1434,9 +1437,16 @@ function prev() {
 // TIMER
 let timerInterval = null;
 
+function getElapsedQuizSeconds() {
+  const maxSeconds = quizDurationMinutes * 60;
+  if (!quizStartedAt) return Math.max(0, maxSeconds - time);
+  return Math.min(maxSeconds, Math.max(0, Math.floor((Date.now() - quizStartedAt) / 1000)));
+}
+
 function startTimer() {
   clearInterval(timerInterval);
   time = quizDurationMinutes * 60;
+  quizStartedAt = Date.now();
   document.getElementById("timer").innerText = formatTimer(time);
   timerInterval = setInterval(() => {
     time--;
@@ -1469,6 +1479,7 @@ async function finishQuiz(forceFinish = false) {
   }
 
   isFinishing = true;
+  const elapsedSeconds = getElapsedQuizSeconds();
   showLoading("Controllo risultato...");
 
   // Count unanswered questions before sending
@@ -1507,7 +1518,9 @@ async function finishQuiz(forceFinish = false) {
 
     const result = normalizeQuizResult(data, payload.length);
     result._nonRisposte = nonRisposte;
+    result._elapsedSeconds = elapsedSeconds;
 
+    clearInterval(timerInterval);
     hideLoading();
     const action = await showResult(result);
 
