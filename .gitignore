@@ -1,0 +1,25 @@
+# Local editor and assistant settings
+.claude/
+.vscode/
+.idea/
+
+# Local secrets and environment configuration
+.env
+.env.*
+!.env.example
+*.local
+
+# Dependencies, build output and tooling caches
+node_modules/
+.vercel/
+coverage/
+dist/
+*.log
+*.tmp
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Google Apps Script sources are deployed outside this Vercel project
+*_gas.js
