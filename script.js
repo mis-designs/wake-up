@@ -2600,8 +2600,6 @@ function openQuizFromMenu() {
  * VIEWER
  ***********************/
 const MAGIC_BOOK_API = "/api/getPages";
-const MAGIC_BOOK_FLIP_QUERY = "(min-width: 768px)";
-const MAGIC_BOOK_FLIP_MODE_KEY = "magicbook_flip_page_mode";
 let currentBookViewer = {
   book: "magic",
   type: null,
@@ -2610,352 +2608,11 @@ let currentBookViewer = {
   isLoading: false,
   hasNext: false,
   userAdvanced: false,
-  loaderInView: false,
-  flipMode: false,
-  pageMode: "single",
-  viewPage: 1
+  loaderInView: false
 };
 let magicBookViewerRequestId = 0;
 let magicBookScrollHandlerInstalled = false;
-let magicBookFlipControlsInstalled = false;
-let magicBookFlipKeyboardInstalled = false;
 let magicBookLoadObserver = null;
-let magicBookTurnAssetsPromise = null;
-
-function shouldUseMagicBookFlipMode() {
-  return Boolean(window.matchMedia?.(MAGIC_BOOK_FLIP_QUERY).matches);
-}
-
-function getDefaultMagicBookPageMode() {
-  return window.innerWidth >= 980 ? "double" : "single";
-}
-
-function getStoredMagicBookPageMode() {
-  try {
-    const value = localStorage.getItem(MAGIC_BOOK_FLIP_MODE_KEY);
-    return value === "single" || value === "double" ? value : getDefaultMagicBookPageMode();
-  } catch {
-    return getDefaultMagicBookPageMode();
-  }
-}
-
-function storeMagicBookPageMode(mode) {
-  try {
-    localStorage.setItem(MAGIC_BOOK_FLIP_MODE_KEY, mode);
-  } catch {}
-}
-
-function loadScriptOnce(src) {
-  const existing = document.querySelector(`script[data-magic-src="${src}"]`);
-  if (existing) {
-    return existing.dataset.loaded === "true"
-      ? Promise.resolve()
-      : new Promise((resolve, reject) => {
-          existing.addEventListener("load", resolve, { once: true });
-          existing.addEventListener("error", reject, { once: true });
-        });
-  }
-
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.async = false;
-    script.dataset.magicSrc = src;
-    script.onload = () => {
-      script.dataset.loaded = "true";
-      resolve();
-    };
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-}
-
-async function ensureMagicBookTurnAssets() {
-  if (window.jQuery?.fn?.turn) return true;
-
-  if (!magicBookTurnAssetsPromise) {
-    magicBookTurnAssetsPromise = loadScriptOnce("assets/vendor/jquery.js")
-      .then(() => loadScriptOnce("assets/vendor/turn.js"))
-      .then(() => Boolean(window.jQuery?.fn?.turn));
-  }
-
-  try {
-    return await magicBookTurnAssetsPromise;
-  } catch (err) {
-    console.warn("Flip book assets non disponibili", err);
-    return false;
-  }
-}
-
-function getMagicBookTurnData(pages) {
-  if (!pages || !window.jQuery) return null;
-  try {
-    return window.jQuery(pages).data()?.turn || null;
-  } catch {
-    return null;
-  }
-}
-
-function getMagicBookSpreadStep() {
-  return currentBookViewer.pageMode === "double" ? 2 : 1;
-}
-
-function getMagicBookFlipDisplay() {
-  return currentBookViewer.pageMode === "double" ? "double" : "single";
-}
-
-function getMagicBookFlipSize() {
-  const viewer = document.getElementById("viewer");
-  const controlsHeight = document.getElementById("flipControls")?.offsetHeight || 0;
-  const availableWidth = Math.max((viewer?.clientWidth || window.innerWidth) - 48, 320);
-  const availableHeight = Math.max((viewer?.clientHeight || window.innerHeight) - controlsHeight - 120, 320);
-  const display = getMagicBookFlipDisplay();
-  const pageRatio = 0.707;
-  const bookRatio = display === "double" ? pageRatio * 2 : pageRatio;
-
-  let width = Math.min(availableWidth, display === "double" ? 1180 : 640);
-  let height = width / bookRatio;
-
-  if (height > availableHeight) {
-    height = availableHeight;
-    width = height * bookRatio;
-  }
-
-  return {
-    width: Math.round(width),
-    height: Math.round(height),
-    display
-  };
-}
-
-function destroyMagicBookFlipbook() {
-  const pages = document.getElementById("pages");
-  if (pages && getMagicBookTurnData(pages)) {
-    try {
-      window.jQuery(pages).turn("destroy");
-    } catch (err) {
-      console.warn("Flip book cleanup non completato", err);
-    }
-  }
-
-  pages?.classList.remove("magic-flipbook");
-  pages?.removeAttribute("style");
-  document.getElementById("viewer")?.classList.remove("viewer-flip-mode");
-  document.getElementById("flipControls")?.classList.add("hidden");
-}
-
-function setupMagicBookViewerMode(enabled) {
-  const viewer = document.getElementById("viewer");
-  const pages = document.getElementById("pages");
-  const controls = document.getElementById("flipControls");
-
-  viewer?.classList.toggle("viewer-flip-mode", enabled);
-  pages?.classList.toggle("magic-flipbook", enabled);
-  controls?.classList.toggle("hidden", !enabled);
-
-  if (!enabled) {
-    destroyMagicBookFlipbook();
-    return;
-  }
-
-  ensureMagicBookFlipControls();
-  syncMagicBookFlipModeToggle();
-  updateMagicBookFlipControls();
-}
-
-function syncMagicBookFlipModeToggle() {
-  const single = document.getElementById("flipModeSingle");
-  const double = document.getElementById("flipModeDouble");
-  const mode = currentBookViewer.pageMode === "double" ? "double" : "single";
-
-  single?.classList.toggle("is-active", mode === "single");
-  double?.classList.toggle("is-active", mode === "double");
-  single?.setAttribute("aria-pressed", mode === "single" ? "true" : "false");
-  double?.setAttribute("aria-pressed", mode === "double" ? "true" : "false");
-}
-
-function resetMagicBookFlipPagesForMode() {
-  const pages = document.getElementById("pages");
-  if (!pages || !currentBookViewer.flipMode) return;
-
-  pages.querySelectorAll("img[data-object-url]").forEach(img => {
-    URL.revokeObjectURL(img.dataset.objectUrl);
-  });
-  destroyMagicBookFlipbook();
-  pages.innerHTML = "";
-
-  currentBookViewer.page = 0;
-  currentBookViewer.viewPage = 1;
-  currentBookViewer.hasNext = true;
-  currentBookViewer.userAdvanced = false;
-  currentBookViewer.loaderInView = false;
-  currentBookViewer.isLoading = false;
-
-  setupMagicBookViewerMode(true);
-  loadNextMagicBookPage();
-}
-
-function setMagicBookPageMode(mode) {
-  const nextMode = mode === "double" ? "double" : "single";
-  if (!currentBookViewer.flipMode) return;
-  if (currentBookViewer.pageMode === nextMode) return;
-
-  currentBookViewer.pageMode = nextMode;
-  storeMagicBookPageMode(nextMode);
-  syncMagicBookFlipModeToggle();
-  resetMagicBookFlipPagesForMode();
-}
-
-function refreshMagicBookFlipbook() {
-  if (!currentBookViewer.flipMode) return;
-
-  const pages = document.getElementById("pages");
-  if (!pages) return;
-  renderMagicBookSpread();
-  updateMagicBookFlipControls();
-}
-
-function getMagicBookCurrentTurnPage() {
-  return currentBookViewer.viewPage || 1;
-}
-
-function getMagicBookCurrentRealPage() {
-  return getMagicBookCurrentTurnPage();
-}
-
-function getMagicBookPageElement(pageNumber) {
-  return document.querySelector(`#pages .page[data-page="${pageNumber}"]`);
-}
-
-function renderMagicBookSpread() {
-  const pages = document.getElementById("pages");
-  if (!pages || !currentBookViewer.flipMode) return;
-
-  const start = Math.max(1, currentBookViewer.viewPage || 1);
-  const end = currentBookViewer.pageMode === "double" ? start + 1 : start;
-
-  pages.querySelectorAll(".page").forEach(page => {
-    const pageNumber = Number(page.dataset.page);
-    const active = pageNumber >= start && pageNumber <= end;
-    page.classList.toggle("is-active-spread", active);
-    page.classList.toggle("is-left-page", active && currentBookViewer.pageMode === "double" && pageNumber === start);
-    page.classList.toggle("is-right-page", active && currentBookViewer.pageMode === "double" && pageNumber === end);
-  });
-
-  pages.classList.toggle("is-single-page", currentBookViewer.pageMode !== "double");
-  pages.classList.toggle("is-double-page", currentBookViewer.pageMode === "double");
-}
-
-function animateMagicBookSpread(direction) {
-  const pages = document.getElementById("pages");
-  if (!pages) return;
-
-  pages.classList.remove("is-flipping-next", "is-flipping-prev");
-  void pages.offsetWidth;
-  pages.classList.add(direction === "prev" ? "is-flipping-prev" : "is-flipping-next");
-  window.setTimeout(() => {
-    pages.classList.remove("is-flipping-next", "is-flipping-prev");
-  }, 260);
-}
-
-function updateMagicBookFlipControls() {
-  const controls = document.getElementById("flipControls");
-  if (!controls || !currentBookViewer.flipMode) return;
-
-  const prev = document.getElementById("flipPrevBtn");
-  const next = document.getElementById("flipNextBtn");
-  const label = document.getElementById("flipPageLabel");
-  const turnPage = getMagicBookCurrentTurnPage();
-  const page = getMagicBookCurrentRealPage();
-  const loaded = currentBookViewer.page || 0;
-  const display = getMagicBookFlipDisplay();
-  const visibleEnd = display === "double" ? Math.min(page + 1, loaded) : Math.min(page, loaded);
-
-  if (label) {
-    label.textContent = loaded
-      ? (display === "double" && visibleEnd > page ? `${page}-${visibleEnd} / ${loaded}` : `${Math.min(page, loaded)} / ${loaded}`)
-      : "0 / 0";
-  }
-  if (prev) prev.disabled = page <= 1 || currentBookViewer.isLoading;
-  if (next) next.disabled = currentBookViewer.isLoading || (!currentBookViewer.hasNext && visibleEnd >= loaded);
-  syncMagicBookFlipModeToggle();
-}
-
-async function turnMagicBookPage(direction) {
-  if (!currentBookViewer.flipMode) return;
-
-  const pages = document.getElementById("pages");
-  if (!pages) return;
-
-  const currentPage = getMagicBookCurrentRealPage();
-  const step = getMagicBookSpreadStep();
-
-  if (direction < 0 && currentPage <= 1) {
-    updateMagicBookFlipControls();
-    return;
-  }
-
-  let targetPage = direction > 0
-    ? currentPage + step
-    : Math.max(1, currentPage - step);
-
-  while (direction > 0 && targetPage > currentBookViewer.page && currentBookViewer.hasNext) {
-    await loadNextMagicBookPage();
-  }
-
-  if (direction > 0 && targetPage > currentBookViewer.page) {
-    updateMagicBookFlipControls();
-    return;
-  }
-
-  currentBookViewer.viewPage = targetPage;
-  animateMagicBookSpread(direction > 0 ? "next" : "prev");
-  renderMagicBookSpread();
-  updateMagicBookFlipControls();
-
-  const visibleEnd = currentBookViewer.pageMode === "double" ? targetPage + 1 : targetPage;
-  if (visibleEnd >= currentBookViewer.page - step && currentBookViewer.hasNext) {
-    loadNextMagicBookPage();
-  }
-}
-
-function ensureMagicBookFlipControls() {
-  if (!magicBookFlipControlsInstalled) {
-    document.getElementById("flipPrevBtn")?.addEventListener("click", () => {
-      turnMagicBookPage(-1);
-    });
-    document.getElementById("flipNextBtn")?.addEventListener("click", () => {
-      turnMagicBookPage(1);
-    });
-    document.querySelectorAll("[data-flip-mode]").forEach(button => {
-      button.addEventListener("click", () => {
-        setMagicBookPageMode(button.dataset.flipMode);
-      });
-    });
-    magicBookFlipControlsInstalled = true;
-  }
-
-  if (!magicBookFlipKeyboardInstalled) {
-    window.addEventListener("keydown", event => {
-      if (!currentBookViewer.flipMode || document.getElementById("viewer")?.classList.contains("hidden")) return;
-      if (event.key === "ArrowRight") {
-        event.preventDefault();
-        turnMagicBookPage(1);
-      } else if (event.key === "ArrowLeft") {
-        event.preventDefault();
-        turnMagicBookPage(-1);
-      }
-    });
-
-    window.addEventListener("resize", () => {
-      if (currentBookViewer.flipMode) {
-        window.requestAnimationFrame(refreshMagicBookFlipbook);
-      }
-    }, { passive: true });
-
-    magicBookFlipKeyboardInstalled = true;
-  }
-}
 
 async function fetchMagicBookPage({ type, chapter, page }) {
   const body = {
@@ -3049,12 +2706,8 @@ function cleanupMagicBookViewer({ resetState = true } = {}) {
     pages.querySelectorAll("img[data-object-url]").forEach(img => {
       URL.revokeObjectURL(img.dataset.objectUrl);
     });
-    destroyMagicBookFlipbook();
     pages.innerHTML = "";
-  } else {
-    destroyMagicBookFlipbook();
   }
-  document.querySelector("#viewer > .viewer-loading")?.remove();
 
   if (resetState) {
     currentBookViewer = {
@@ -3065,10 +2718,7 @@ function cleanupMagicBookViewer({ resetState = true } = {}) {
       isLoading: false,
       hasNext: false,
       userAdvanced: false,
-      loaderInView: false,
-      flipMode: false,
-      pageMode: getStoredMagicBookPageMode(),
-      viewPage: 1
+      loaderInView: false
     };
   }
 }
@@ -3096,10 +2746,7 @@ function getMagicBookAccessErrorMessage(error) {
 function setMagicBookLoading(pages, visible, { active = true } = {}) {
   if (!pages) return;
 
-  const host = currentBookViewer.flipMode
-    ? document.getElementById("viewer") || pages
-    : pages;
-  const existing = Array.from(host.children).find(child => child.classList?.contains("viewer-loading"));
+  const existing = pages.querySelector(".viewer-loading");
 
   if (!visible) {
     magicBookLoadObserver?.disconnect();
@@ -3116,7 +2763,6 @@ function setMagicBookLoading(pages, visible, { active = true } = {}) {
 
   const loader = document.createElement("div");
   loader.className = "viewer-loading";
-  loader.classList.toggle("viewer-loading-flip", currentBookViewer.flipMode);
   loader.classList.toggle("is-active", active);
   loader.setAttribute("role", "status");
   loader.setAttribute("aria-live", "polite");
@@ -3134,54 +2780,30 @@ function setMagicBookLoading(pages, visible, { active = true } = {}) {
 
   loader.appendChild(img);
   loader.appendChild(text);
-  host.appendChild(loader);
+  pages.appendChild(loader);
 }
 
-function createMagicBookPageElement(pageSource) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    let objectUrl = "";
-
-    img.onload = () => {
-      const box = document.createElement("div");
-      box.className = "page";
-
-      const shield = document.createElement("div");
-      shield.className = "shield";
-      shield.oncontextmenu = e => e.preventDefault();
-
-      box.appendChild(img);
-      box.appendChild(shield);
-      resolve(box);
-    };
-
-    img.onerror = () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-      reject(new Error("page_image_load_failed"));
-    };
-
-    if (pageSource instanceof Blob) {
-      objectUrl = URL.createObjectURL(pageSource);
-      img.src = objectUrl;
-      img.dataset.objectUrl = objectUrl;
-    } else {
-      img.src = String(pageSource || "");
-    }
-
-    img.alt = "";
-    img.draggable = false;
-
-    if (!img.src) reject(new Error("empty_page_source"));
-  });
-}
-
-function insertMagicBookPageElement(pages, box, pageNumber = currentBookViewer.page + 1) {
-  if (currentBookViewer.flipMode) {
-    box.dataset.page = String(pageNumber);
-    pages.appendChild(box);
-    renderMagicBookSpread();
-    return;
+function appendMagicBookPage(pages, pageSource) {
+  const img = new Image();
+  if (pageSource instanceof Blob) {
+    const url = URL.createObjectURL(pageSource);
+    img.src = url;
+    img.dataset.objectUrl = url;
+  } else {
+    img.src = String(pageSource || "");
   }
+  img.alt = "";
+  img.draggable = false;
+
+  const box = document.createElement("div");
+  box.className = "page";
+
+  const shield = document.createElement("div");
+  shield.className = "shield";
+  shield.oncontextmenu = e => e.preventDefault();
+
+  box.appendChild(img);
+  box.appendChild(shield);
 
   const loader = pages.querySelector(".viewer-loading");
   pages.insertBefore(box, loader || null);
@@ -3196,7 +2818,6 @@ function shouldLoadNextMagicBookPage(viewer) {
 function checkMagicBookScrollLoad() {
   const viewer = document.getElementById("viewer");
   if (!viewer) return;
-  if (currentBookViewer.flipMode) return;
   if (!currentBookViewer.type || currentBookViewer.isLoading || !currentBookViewer.hasNext) return;
   if (!currentBookViewer.userAdvanced) return;
 
@@ -3206,8 +2827,6 @@ function checkMagicBookScrollLoad() {
 }
 
 function observeMagicBookContinuationLoader() {
-  if (currentBookViewer.flipMode) return;
-
   const viewer = document.getElementById("viewer");
   const loader = document.querySelector("#pages .viewer-loading");
   if (!viewer || !loader) return;
@@ -3244,10 +2863,6 @@ function ensureMagicBookScrollLoading() {
   magicBookScrollHandlerInstalled = true;
 }
 
-function getMagicBookLoadBatchSize() {
-  return currentBookViewer.flipMode ? 2 : 1;
-}
-
 async function loadNextMagicBookPage() {
   const pages = document.getElementById("pages");
   if (!pages) return;
@@ -3256,45 +2871,26 @@ async function loadNextMagicBookPage() {
   const requestId = magicBookViewerRequestId;
   const type = currentBookViewer.type;
   const chapter = currentBookViewer.chapter;
-  const firstPage = currentBookViewer.page + 1;
-  const batchSize = getMagicBookLoadBatchSize();
+  const nextPage = currentBookViewer.page + 1;
 
   currentBookViewer.isLoading = true;
   setMagicBookLoading(pages, true, { active: true });
 
   try {
-    let loadedCount = 0;
+    const blob = await fetchMagicBookPage({ type, chapter, page: nextPage });
+    if (requestId !== magicBookViewerRequestId) return;
 
-    for (let offset = 0; offset < batchSize; offset++) {
-      const pageNumber = currentBookViewer.page + 1;
-      const blob = await fetchMagicBookPage({ type, chapter, page: pageNumber });
-      if (requestId !== magicBookViewerRequestId) return;
-
-      if (!blob) {
-        currentBookViewer.hasNext = false;
-        if (pageNumber === 1) showMagicBookError("Nessuna pagina trovata.");
-        break;
-      }
-
-      const pageElement = await createMagicBookPageElement(blob);
-      if (requestId !== magicBookViewerRequestId) return;
-
-      insertMagicBookPageElement(pages, pageElement, pageNumber);
-      currentBookViewer.page = pageNumber;
-      loadedCount++;
-    }
-
-    if (currentBookViewer.flipMode) {
+    if (!blob) {
+      currentBookViewer.hasNext = false;
       setMagicBookLoading(pages, false);
-      refreshMagicBookFlipbook();
-    } else {
-      if (loadedCount > 0) {
-        setMagicBookLoading(pages, true, { active: false });
-        observeMagicBookContinuationLoader();
-      } else {
-        setMagicBookLoading(pages, false);
-      }
+      if (nextPage === 1) showMagicBookError("Nessuna pagina trovata.");
+      return;
     }
+
+    appendMagicBookPage(pages, blob);
+    currentBookViewer.page = nextPage;
+    setMagicBookLoading(pages, true, { active: false });
+    observeMagicBookContinuationLoader();
   } catch (err) {
     if (requestId !== magicBookViewerRequestId) return;
 
@@ -3316,14 +2912,11 @@ async function loadNextMagicBookPage() {
     }
 
     setMagicBookLoading(pages, false);
-    if (firstPage === 1) showMagicBookError("Errore caricamento pagina.");
+    if (nextPage === 1) showMagicBookError("Errore caricamento pagina.");
   } finally {
     if (requestId === magicBookViewerRequestId) {
       currentBookViewer.isLoading = false;
-      updateMagicBookFlipControls();
-      if (!currentBookViewer.flipMode) {
-        window.setTimeout(checkMagicBookScrollLoad, 0);
-      }
+      window.setTimeout(checkMagicBookScrollLoad, 0);
     }
   }
 }
@@ -3351,9 +2944,8 @@ async function openMagicBookPages({ type, chapter = null }) {
 
   const viewer = document.getElementById("viewer");
   if (viewer) viewer.scrollTop = 0;
+  ensureMagicBookScrollLoading();
   magicBookViewerRequestId++;
-  const flipMode = shouldUseMagicBookFlipMode();
-  const pageMode = getStoredMagicBookPageMode();
   currentBookViewer = {
     book: "magic",
     type,
@@ -3362,15 +2954,10 @@ async function openMagicBookPages({ type, chapter = null }) {
     isLoading: false,
     hasNext: true,
     userAdvanced: false,
-    loaderInView: false,
-    flipMode,
-    pageMode,
-    viewPage: 1
+    loaderInView: false
   };
 
   pages.innerHTML = "";
-  setupMagicBookViewerMode(flipMode);
-  if (!flipMode) ensureMagicBookScrollLoading();
   setMagicBookLoading(pages, true);
 
   const accessReady = await ensureAccessToken({ force: true });
