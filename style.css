@@ -199,12 +199,45 @@ button:active {
     color: var(--color-dark);
 }
 
-#home .home-promo {
+#home .home-promo,
+#home .home-promo-embed {
     width: 100%;
     max-width: 390px;
     margin-bottom: 18px;
     border-radius: 20px;
     box-shadow: 0 14px 28px rgba(37, 41, 67, 0.12);
+}
+
+#home .home-promo-embed {
+    position: relative;
+    aspect-ratio: 100 / 150.3704;
+    overflow: hidden;
+    background: #fff;
+}
+
+#home .home-promo-embed iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+#home .home-promo-credit {
+    margin: -8px 0 12px;
+    color: rgba(37, 41, 67, 0.6);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+#home .home-promo-credit a {
+    color: inherit;
+    text-decoration: none;
+}
+
+#home .home-promo-credit a:hover {
+    color: var(--color-dark);
 }
 
 .home-actions {
@@ -1503,12 +1536,26 @@ body.app-mode #home .section-brand {
     line-height: 1.2;
 }
 
-body.app-mode #home .home-promo {
+body.app-mode #home .home-promo,
+body.app-mode #home .home-promo-embed {
     width: auto;
     max-width: min(100%, 330px);
     max-height: calc(100dvh - 260px);
     margin-bottom: 10px;
+}
+
+body.app-mode #home .home-promo {
     object-fit: contain;
+}
+
+body.app-mode #home .home-promo-embed {
+    width: min(100%, 41dvh, 330px);
+}
+
+body.app-mode #home .home-promo-credit {
+    margin-top: -6px;
+    margin-bottom: 8px;
+    font-size: 10px;
 }
 
 body.app-mode #home .home-start-btn {
@@ -1665,10 +1712,17 @@ body.app-mode #whatsappBtn {
         height: calc(100dvh - 54px);
         padding-top: 8px;
     }
-    body.app-mode #home .home-promo {
+    body.app-mode #home .home-promo,
+    body.app-mode #home .home-promo-embed {
         max-width: min(100%, 285px);
         max-height: calc(100dvh - 215px);
         margin-bottom: 8px;
+    }
+    body.app-mode #home .home-promo-embed {
+        width: min(100%, 36dvh, 285px);
+    }
+    body.app-mode #home .home-promo-credit {
+        margin-bottom: 6px;
     }
     body.app-mode #home .home-start-btn {
         width: clamp(92px, 17dvh, 116px);
@@ -1753,7 +1807,8 @@ body.app-mode #whatsappBtn {
         font-size: 1.35rem;
     }
 
-    #home .home-promo {
+    #home .home-promo,
+    #home .home-promo-embed {
         max-width: min(100%, 320px);
     }
 
