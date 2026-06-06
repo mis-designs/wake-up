@@ -2790,6 +2790,26 @@ function syncMagicBookFlipModeToggle() {
   double?.setAttribute("aria-pressed", mode === "double" ? "true" : "false");
 }
 
+function resetMagicBookFlipPagesForMode() {
+  const pages = document.getElementById("pages");
+  if (!pages || !currentBookViewer.flipMode) return;
+
+  pages.querySelectorAll("img[data-object-url]").forEach(img => {
+    URL.revokeObjectURL(img.dataset.objectUrl);
+  });
+  destroyMagicBookFlipbook();
+  pages.innerHTML = "";
+
+  currentBookViewer.page = 0;
+  currentBookViewer.hasNext = true;
+  currentBookViewer.userAdvanced = false;
+  currentBookViewer.loaderInView = false;
+  currentBookViewer.isLoading = false;
+
+  setupMagicBookViewerMode(true);
+  loadNextMagicBookPage();
+}
+
 function setMagicBookPageMode(mode) {
   const nextMode = mode === "double" ? "double" : "single";
   if (!currentBookViewer.flipMode) return;
@@ -2798,11 +2818,7 @@ function setMagicBookPageMode(mode) {
   currentBookViewer.pageMode = nextMode;
   storeMagicBookPageMode(nextMode);
   syncMagicBookFlipModeToggle();
-  refreshMagicBookFlipbook();
-
-  if (currentBookViewer.hasNext && currentBookViewer.page < 2) {
-    loadNextMagicBookPage();
-  }
+  resetMagicBookFlipPagesForMode();
 }
 
 function refreshMagicBookFlipbook() {
@@ -2830,8 +2846,10 @@ function refreshMagicBookFlipbook() {
       when: {
         turned: function (_event, page) {
           updateMagicBookFlipControls();
+          const realPage = getMagicBookRealPageFromTurnPage(page);
+          const visibleEnd = getMagicBookFlipDisplay() === "double" ? realPage + 1 : realPage;
           const preloadDistance = getMagicBookFlipDisplay() === "double" ? 2 : 1;
-          if (page >= currentBookViewer.page - preloadDistance) {
+          if (visibleEnd >= currentBookViewer.page - preloadDistance) {
             loadNextMagicBookPage();
           }
         }
@@ -2893,9 +2911,17 @@ async function turnMagicBookPage(direction) {
 
   const $book = window.jQuery(pages);
   const currentPage = getMagicBookCurrentRealPage();
+  const currentVisibleEnd = getMagicBookFlipDisplay() === "double"
+    ? Math.min(currentPage + 1, currentBookViewer.page)
+    : currentPage;
 
-  if (direction > 0 && currentPage >= currentBookViewer.page && currentBookViewer.hasNext) {
+  if (direction > 0 && currentVisibleEnd >= currentBookViewer.page && currentBookViewer.hasNext) {
     await loadNextMagicBookPage();
+  }
+
+  if (direction > 0 && currentVisibleEnd >= currentBookViewer.page && !currentBookViewer.hasNext) {
+    updateMagicBookFlipControls();
+    return;
   }
 
   if (direction > 0) {
@@ -3124,28 +3150,45 @@ function setMagicBookLoading(pages, visible, { active = true } = {}) {
   host.appendChild(loader);
 }
 
-function appendMagicBookPage(pages, pageSource, pageNumber = currentBookViewer.page + 1) {
-  const img = new Image();
-  if (pageSource instanceof Blob) {
-    const url = URL.createObjectURL(pageSource);
-    img.src = url;
-    img.dataset.objectUrl = url;
-  } else {
-    img.src = String(pageSource || "");
-  }
-  img.alt = "";
-  img.draggable = false;
+function createMagicBookPageElement(pageSource) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    let objectUrl = "";
 
-  const box = document.createElement("div");
-  box.className = "page";
+    img.onload = () => {
+      const box = document.createElement("div");
+      box.className = "page";
 
-  const shield = document.createElement("div");
-  shield.className = "shield";
-  shield.oncontextmenu = e => e.preventDefault();
+      const shield = document.createElement("div");
+      shield.className = "shield";
+      shield.oncontextmenu = e => e.preventDefault();
 
-  box.appendChild(img);
-  box.appendChild(shield);
+      box.appendChild(img);
+      box.appendChild(shield);
+      resolve(box);
+    };
 
+    img.onerror = () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      reject(new Error("page_image_load_failed"));
+    };
+
+    if (pageSource instanceof Blob) {
+      objectUrl = URL.createObjectURL(pageSource);
+      img.src = objectUrl;
+      img.dataset.objectUrl = objectUrl;
+    } else {
+      img.src = String(pageSource || "");
+    }
+
+    img.alt = "";
+    img.draggable = false;
+
+    if (!img.src) reject(new Error("empty_page_source"));
+  });
+}
+
+function insertMagicBookPageElement(pages, box, pageNumber = currentBookViewer.page + 1) {
   if (currentBookViewer.flipMode && pageNumber === 1 && currentBookViewer.pageMode === "double") {
     ensureMagicBookSpacerPage(pages);
   }
@@ -3248,7 +3291,10 @@ async function loadNextMagicBookPage() {
         break;
       }
 
-      appendMagicBookPage(pages, blob, pageNumber);
+      const pageElement = await createMagicBookPageElement(blob);
+      if (requestId !== magicBookViewerRequestId) return;
+
+      insertMagicBookPageElement(pages, pageElement, pageNumber);
       currentBookViewer.page = pageNumber;
       loadedCount++;
     }
