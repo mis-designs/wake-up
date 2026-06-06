@@ -2600,7 +2600,7 @@ function openQuizFromMenu() {
  * VIEWER
  ***********************/
 const MAGIC_BOOK_API = "/api/getPages";
-const MAGIC_BOOK_PUBLIC_BASE_URL = "https://pub-21131aa867534601af79c34beb746fb7.r2.dev";
+const MAGIC_BOOK_FLIP_QUERY = "(min-width: 768px)";
 let currentBookViewer = {
   book: "magic",
   type: null,
@@ -2609,42 +2609,252 @@ let currentBookViewer = {
   isLoading: false,
   hasNext: false,
   userAdvanced: false,
-  loaderInView: false
+  loaderInView: false,
+  flipMode: false
 };
 let magicBookViewerRequestId = 0;
 let magicBookScrollHandlerInstalled = false;
+let magicBookFlipControlsInstalled = false;
+let magicBookFlipKeyboardInstalled = false;
 let magicBookLoadObserver = null;
+let magicBookTurnAssetsPromise = null;
 
-function buildMagicBookPublicPath({ type, chapter, page }) {
-  const pageNumber = String(page).padStart(4, "0");
-
-  if (type === "exam") {
-    return `books/magic-book/exam/exam_page-${pageNumber}.jpg`;
-  }
-
-  if (type === "chapter") {
-    return `books/magic-book/cap${chapter}/magic book-${chapter}_page-${pageNumber}.jpg`;
-  }
-
-  return "";
+function shouldUseMagicBookFlipMode() {
+  return Boolean(window.matchMedia?.(MAGIC_BOOK_FLIP_QUERY).matches);
 }
 
-function buildMagicBookPublicUrl({ type, chapter, page }) {
-  const path = buildMagicBookPublicPath({ type, chapter, page });
-  if (!path) return "";
-  return new URL(path, `${MAGIC_BOOK_PUBLIC_BASE_URL}/`).toString();
-}
+function loadScriptOnce(src) {
+  const existing = document.querySelector(`script[data-magic-src="${src}"]`);
+  if (existing) {
+    return existing.dataset.loaded === "true"
+      ? Promise.resolve()
+      : new Promise((resolve, reject) => {
+          existing.addEventListener("load", resolve, { once: true });
+          existing.addEventListener("error", reject, { once: true });
+        });
+  }
 
-async function fetchPublicMagicBookPage({ type, chapter, page }) {
-  const url = buildMagicBookPublicUrl({ type, chapter, page });
-  if (!url) throw new Error("Invalid Magic Book public path");
-
-  return new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => resolve(url);
-    img.onerror = () => resolve(null);
-    img.src = url;
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = false;
+    script.dataset.magicSrc = src;
+    script.onload = () => {
+      script.dataset.loaded = "true";
+      resolve();
+    };
+    script.onerror = reject;
+    document.head.appendChild(script);
   });
+}
+
+async function ensureMagicBookTurnAssets() {
+  if (window.jQuery?.fn?.turn) return true;
+
+  if (!magicBookTurnAssetsPromise) {
+    magicBookTurnAssetsPromise = loadScriptOnce("assets/vendor/jquery.js")
+      .then(() => loadScriptOnce("assets/vendor/turn.js"))
+      .then(() => Boolean(window.jQuery?.fn?.turn));
+  }
+
+  try {
+    return await magicBookTurnAssetsPromise;
+  } catch (err) {
+    console.warn("Flip book assets non disponibili", err);
+    return false;
+  }
+}
+
+function getMagicBookTurnData(pages) {
+  if (!pages || !window.jQuery) return null;
+  try {
+    return window.jQuery(pages).data()?.turn || null;
+  } catch {
+    return null;
+  }
+}
+
+function getMagicBookFlipDisplay() {
+  return window.innerWidth >= 980 ? "double" : "single";
+}
+
+function getMagicBookFlipSize() {
+  const viewer = document.getElementById("viewer");
+  const controlsHeight = document.getElementById("flipControls")?.offsetHeight || 0;
+  const availableWidth = Math.max((viewer?.clientWidth || window.innerWidth) - 48, 320);
+  const availableHeight = Math.max((viewer?.clientHeight || window.innerHeight) - controlsHeight - 120, 320);
+  const display = getMagicBookFlipDisplay();
+  const pageRatio = 0.707;
+  const bookRatio = display === "double" ? pageRatio * 2 : pageRatio;
+
+  let width = Math.min(availableWidth, display === "double" ? 1180 : 640);
+  let height = width / bookRatio;
+
+  if (height > availableHeight) {
+    height = availableHeight;
+    width = height * bookRatio;
+  }
+
+  return {
+    width: Math.round(width),
+    height: Math.round(height),
+    display
+  };
+}
+
+function destroyMagicBookFlipbook() {
+  const pages = document.getElementById("pages");
+  if (pages && getMagicBookTurnData(pages)) {
+    try {
+      window.jQuery(pages).turn("destroy");
+    } catch (err) {
+      console.warn("Flip book cleanup non completato", err);
+    }
+  }
+
+  pages?.classList.remove("magic-flipbook");
+  pages?.removeAttribute("style");
+  document.getElementById("viewer")?.classList.remove("viewer-flip-mode");
+  document.getElementById("flipControls")?.classList.add("hidden");
+}
+
+function setupMagicBookViewerMode(enabled) {
+  const viewer = document.getElementById("viewer");
+  const pages = document.getElementById("pages");
+  const controls = document.getElementById("flipControls");
+
+  viewer?.classList.toggle("viewer-flip-mode", enabled);
+  pages?.classList.toggle("magic-flipbook", enabled);
+  controls?.classList.toggle("hidden", !enabled);
+
+  if (!enabled) {
+    destroyMagicBookFlipbook();
+    return;
+  }
+
+  ensureMagicBookFlipControls();
+  updateMagicBookFlipControls();
+}
+
+function refreshMagicBookFlipbook() {
+  if (!currentBookViewer.flipMode) return;
+
+  const pages = document.getElementById("pages");
+  if (!pages || !window.jQuery?.fn?.turn) return;
+  if (!pages.querySelector(".page")) return;
+
+  const $book = window.jQuery(pages);
+  const size = getMagicBookFlipSize();
+  const turnData = getMagicBookTurnData(pages);
+
+  if (!turnData) {
+    $book.turn({
+      width: size.width,
+      height: size.height,
+      display: size.display,
+      autoCenter: true,
+      acceleration: true,
+      gradients: true,
+      elevation: 50,
+      when: {
+        turned: function (_event, page) {
+          updateMagicBookFlipControls();
+          const preloadDistance = getMagicBookFlipDisplay() === "double" ? 2 : 1;
+          if (page >= currentBookViewer.page - preloadDistance) {
+            loadNextMagicBookPage();
+          }
+        }
+      }
+    });
+  } else {
+    $book.turn("display", size.display);
+    $book.turn("size", size.width, size.height);
+    $book.turn("update");
+    $book.turn("center");
+  }
+
+  updateMagicBookFlipControls();
+}
+
+function getMagicBookCurrentTurnPage() {
+  const pages = document.getElementById("pages");
+  if (!pages || !getMagicBookTurnData(pages)) return 1;
+
+  try {
+    return window.jQuery(pages).turn("page") || 1;
+  } catch {
+    return 1;
+  }
+}
+
+function updateMagicBookFlipControls() {
+  const controls = document.getElementById("flipControls");
+  if (!controls || !currentBookViewer.flipMode) return;
+
+  const prev = document.getElementById("flipPrevBtn");
+  const next = document.getElementById("flipNextBtn");
+  const label = document.getElementById("flipPageLabel");
+  const page = getMagicBookCurrentTurnPage();
+  const loaded = currentBookViewer.page || 0;
+
+  if (label) label.textContent = loaded ? `${Math.min(page, loaded)} / ${loaded}` : "0 / 0";
+  if (prev) prev.disabled = page <= 1 || currentBookViewer.isLoading;
+  if (next) next.disabled = currentBookViewer.isLoading || (!currentBookViewer.hasNext && page >= loaded);
+}
+
+async function turnMagicBookPage(direction) {
+  if (!currentBookViewer.flipMode) return;
+
+  const pages = document.getElementById("pages");
+  if (!pages || !getMagicBookTurnData(pages)) return;
+
+  const $book = window.jQuery(pages);
+  const currentPage = getMagicBookCurrentTurnPage();
+
+  if (direction > 0 && currentPage >= currentBookViewer.page && currentBookViewer.hasNext) {
+    await loadNextMagicBookPage();
+  }
+
+  if (direction > 0) {
+    $book.turn("next");
+  } else {
+    $book.turn("previous");
+  }
+
+  updateMagicBookFlipControls();
+}
+
+function ensureMagicBookFlipControls() {
+  if (!magicBookFlipControlsInstalled) {
+    document.getElementById("flipPrevBtn")?.addEventListener("click", () => {
+      turnMagicBookPage(-1);
+    });
+    document.getElementById("flipNextBtn")?.addEventListener("click", () => {
+      turnMagicBookPage(1);
+    });
+    magicBookFlipControlsInstalled = true;
+  }
+
+  if (!magicBookFlipKeyboardInstalled) {
+    window.addEventListener("keydown", event => {
+      if (!currentBookViewer.flipMode || document.getElementById("viewer")?.classList.contains("hidden")) return;
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        turnMagicBookPage(1);
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        turnMagicBookPage(-1);
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      if (currentBookViewer.flipMode) {
+        window.requestAnimationFrame(refreshMagicBookFlipbook);
+      }
+    }, { passive: true });
+
+    magicBookFlipKeyboardInstalled = true;
+  }
 }
 
 async function fetchMagicBookPage({ type, chapter, page }) {
@@ -2670,8 +2880,8 @@ async function fetchMagicBookPage({ type, chapter, page }) {
       body: JSON.stringify(body)
     });
   } catch (err) {
-    console.warn("Magic Book API non raggiungibile, provo il bucket pubblico", err);
-    return fetchPublicMagicBookPage({ type, chapter, page });
+    console.warn("Magic Book API non raggiungibile", err);
+    return null;
   }
 
   const contentType = response.headers.get("Content-Type") || "";
@@ -2691,9 +2901,6 @@ async function fetchMagicBookPage({ type, chapter, page }) {
   }
 
   if (response.status === 404) {
-    const publicPage = await fetchPublicMagicBookPage({ type, chapter, page });
-    if (publicPage) return publicPage;
-
     if (page === 1) {
       console.error("Failed to load page", {
         status: response.status,
@@ -2710,23 +2917,23 @@ async function fetchMagicBookPage({ type, chapter, page }) {
       endpoint: MAGIC_BOOK_API,
       request: body
     });
-    return fetchPublicMagicBookPage({ type, chapter, page });
+    return null;
   }
 
   if (!contentType.toLowerCase().includes("image/jpeg")) {
     const text = await response.text();
     console.warn(`Invalid Magic Book response type: ${contentType || "empty"} ${text.slice(0, 120)}`);
-    return fetchPublicMagicBookPage({ type, chapter, page });
+    return null;
   }
 
   const blob = await response.blob();
 
   if (!blob || blob.size === 0) {
-    return fetchPublicMagicBookPage({ type, chapter, page });
+    return null;
   }
 
   if (blob.type && blob.type !== "image/jpeg") {
-    return fetchPublicMagicBookPage({ type, chapter, page });
+    return null;
   }
 
   return blob;
@@ -2736,6 +2943,7 @@ function cleanupMagicBookViewer({ resetState = true } = {}) {
   magicBookViewerRequestId++;
   magicBookLoadObserver?.disconnect();
   magicBookLoadObserver = null;
+  destroyMagicBookFlipbook();
 
   const pages = document.getElementById("pages");
   if (pages) {
@@ -2744,6 +2952,7 @@ function cleanupMagicBookViewer({ resetState = true } = {}) {
     });
     pages.innerHTML = "";
   }
+  document.querySelector("#viewer > .viewer-loading")?.remove();
 
   if (resetState) {
     currentBookViewer = {
@@ -2754,7 +2963,8 @@ function cleanupMagicBookViewer({ resetState = true } = {}) {
       isLoading: false,
       hasNext: false,
       userAdvanced: false,
-      loaderInView: false
+      loaderInView: false,
+      flipMode: false
     };
   }
 }
@@ -2782,7 +2992,10 @@ function getMagicBookAccessErrorMessage(error) {
 function setMagicBookLoading(pages, visible, { active = true } = {}) {
   if (!pages) return;
 
-  const existing = pages.querySelector(".viewer-loading");
+  const host = currentBookViewer.flipMode
+    ? document.getElementById("viewer") || pages
+    : pages;
+  const existing = Array.from(host.children).find(child => child.classList?.contains("viewer-loading"));
 
   if (!visible) {
     magicBookLoadObserver?.disconnect();
@@ -2799,6 +3012,7 @@ function setMagicBookLoading(pages, visible, { active = true } = {}) {
 
   const loader = document.createElement("div");
   loader.className = "viewer-loading";
+  loader.classList.toggle("viewer-loading-flip", currentBookViewer.flipMode);
   loader.classList.toggle("is-active", active);
   loader.setAttribute("role", "status");
   loader.setAttribute("aria-live", "polite");
@@ -2816,10 +3030,10 @@ function setMagicBookLoading(pages, visible, { active = true } = {}) {
 
   loader.appendChild(img);
   loader.appendChild(text);
-  pages.appendChild(loader);
+  host.appendChild(loader);
 }
 
-function appendMagicBookPage(pages, pageSource) {
+function appendMagicBookPage(pages, pageSource, pageNumber = currentBookViewer.page + 1) {
   const img = new Image();
   if (pageSource instanceof Blob) {
     const url = URL.createObjectURL(pageSource);
@@ -2841,6 +3055,11 @@ function appendMagicBookPage(pages, pageSource) {
   box.appendChild(img);
   box.appendChild(shield);
 
+  if (currentBookViewer.flipMode && getMagicBookTurnData(pages)) {
+    window.jQuery(pages).turn("addPage", box, pageNumber);
+    return;
+  }
+
   const loader = pages.querySelector(".viewer-loading");
   pages.insertBefore(box, loader || null);
 }
@@ -2854,6 +3073,7 @@ function shouldLoadNextMagicBookPage(viewer) {
 function checkMagicBookScrollLoad() {
   const viewer = document.getElementById("viewer");
   if (!viewer) return;
+  if (currentBookViewer.flipMode) return;
   if (!currentBookViewer.type || currentBookViewer.isLoading || !currentBookViewer.hasNext) return;
   if (!currentBookViewer.userAdvanced) return;
 
@@ -2863,6 +3083,8 @@ function checkMagicBookScrollLoad() {
 }
 
 function observeMagicBookContinuationLoader() {
+  if (currentBookViewer.flipMode) return;
+
   const viewer = document.getElementById("viewer");
   const loader = document.querySelector("#pages .viewer-loading");
   if (!viewer || !loader) return;
@@ -2923,10 +3145,15 @@ async function loadNextMagicBookPage() {
       return;
     }
 
-    appendMagicBookPage(pages, blob);
+    appendMagicBookPage(pages, blob, nextPage);
     currentBookViewer.page = nextPage;
-    setMagicBookLoading(pages, true, { active: false });
-    observeMagicBookContinuationLoader();
+    if (currentBookViewer.flipMode) {
+      setMagicBookLoading(pages, false);
+      refreshMagicBookFlipbook();
+    } else {
+      setMagicBookLoading(pages, true, { active: false });
+      observeMagicBookContinuationLoader();
+    }
   } catch (err) {
     if (requestId !== magicBookViewerRequestId) return;
 
@@ -2952,7 +3179,10 @@ async function loadNextMagicBookPage() {
   } finally {
     if (requestId === magicBookViewerRequestId) {
       currentBookViewer.isLoading = false;
-      window.setTimeout(checkMagicBookScrollLoad, 0);
+      updateMagicBookFlipControls();
+      if (!currentBookViewer.flipMode) {
+        window.setTimeout(checkMagicBookScrollLoad, 0);
+      }
     }
   }
 }
@@ -2980,8 +3210,8 @@ async function openMagicBookPages({ type, chapter = null }) {
 
   const viewer = document.getElementById("viewer");
   if (viewer) viewer.scrollTop = 0;
-  ensureMagicBookScrollLoading();
   magicBookViewerRequestId++;
+  const flipMode = shouldUseMagicBookFlipMode() && await ensureMagicBookTurnAssets();
   currentBookViewer = {
     book: "magic",
     type,
@@ -2990,10 +3220,13 @@ async function openMagicBookPages({ type, chapter = null }) {
     isLoading: false,
     hasNext: true,
     userAdvanced: false,
-    loaderInView: false
+    loaderInView: false,
+    flipMode
   };
 
   pages.innerHTML = "";
+  setupMagicBookViewerMode(flipMode);
+  if (!flipMode) ensureMagicBookScrollLoading();
   setMagicBookLoading(pages, true);
 
   const accessReady = await ensureAccessToken({ force: true });

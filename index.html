@@ -19,12 +19,12 @@ if (window.location.pathname === "/index.html") {
 <meta property="og:title" content="MagicBook TMM Bangla Patente">
 <meta property="og:description" content="Studia il libro, esercitati con 786 quiz importanti, crea schede, prova diverse modalit&agrave; quiz e simula l'esame con MagicBook.">
 <meta property="og:url" content="https://tmmmagic.eu/">
-<meta property="og:image" content="https://pub-21131aa867534601af79c34beb746fb7.r2.dev/Figure/ourproduct.jpg">
+<meta property="og:image" content="https://tmmmagic.eu/api/asset?name=ourproduct">
 <meta property="og:image:alt" content="MagicBook TMM Bangla Patente">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="MagicBook TMM Bangla Patente">
 <meta name="twitter:description" content="Studia il libro, esercitati con 786 quiz importanti, crea schede, prova diverse modalit&agrave; quiz e simula l'esame con MagicBook.">
-<meta name="twitter:image" content="https://pub-21131aa867534601af79c34beb746fb7.r2.dev/Figure/ourproduct.jpg">
+<meta name="twitter:image" content="https://tmmmagic.eu/api/asset?name=ourproduct">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -32,7 +32,7 @@ if (window.location.pathname === "/index.html") {
   "name": "MagicBook TMM Bangla Patente",
   "alternateName": "MagicBook",
   "url": "https://tmmmagic.eu/",
-  "image": "https://pub-21131aa867534601af79c34beb746fb7.r2.dev/Figure/ourproduct.jpg",
+  "image": "https://tmmmagic.eu/api/asset?name=ourproduct",
   "description": "Web app di TMM Bangla Patente per studiare il libro, esercitarsi con 786 quiz importanti, creare schede, provare diverse modalit\u00e0 quiz e simulare l'esame.",
   "applicationCategory": "EducationalApplication",
   "operatingSystem": "Web",
@@ -76,8 +76,8 @@ gtag('config', 'G-C5JPY9HFHD', {
 });
 </script>
 
-<link rel="icon" type="image/png" href="https://pub-21131aa867534601af79c34beb746fb7.r2.dev/mg_logo.png">
-<link rel="apple-touch-icon" href="https://pub-21131aa867534601af79c34beb746fb7.r2.dev/mg_logo.png">
+<link rel="icon" type="image/png" href="/api/asset?name=mg_logo">
+<link rel="apple-touch-icon" href="/api/asset?name=mg_logo">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#dee0ed">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -133,7 +133,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <!-- HOME -->
 <div class="card hidden" id="home">
   <div class="section-brand">TMM MAGIC book</div>
-  <div class="home-promo-embed" aria-label="Packages MiskatDesigns">
+  <div class="home-promo-embed" aria-label="Packages TMM Bangla Patente">
     <iframe
       loading="lazy"
       src="https://www.canva.com/design/DAHLyZHWUYo/qHS9sfdQAw2ku5raxvnX6Q/view?embed"
@@ -149,7 +149,7 @@ gtag('config', 'G-C5JPY9HFHD', {
       rel="noopener">
       Packages
     </a>
-    <span>by MiskatDesigns</span>
+    <span>by TMM Bangla Patente</span>
   </div>
   <div class="home-actions">
     <button class="home-start-btn" onclick="showChapters()" type="button" aria-label="Apri Magic Book">
@@ -423,7 +423,7 @@ gtag('config', 'G-C5JPY9HFHD', {
   <div class="menu-container">
     <!-- MENU HEADER -->
     <div class="menu-header">
-      <img src="https://pub-21131aa867534601af79c34beb746fb7.r2.dev/mg_logo.png" alt="" class="menu-logo">
+      <img src="/api/asset?name=mg_logo" alt="" class="menu-logo">
       <span class="menu-brand">Magic Book</span>
       <button class="menu-close-btn" onclick="closeChapterMenu()">&#x2715;</button>
     </div>
@@ -464,6 +464,15 @@ gtag('config', 'G-C5JPY9HFHD', {
     Indietro
   </button>
   <div id="pages"></div>
+  <div id="flipControls" class="flip-controls hidden" aria-label="Controlli libro">
+    <button id="flipPrevBtn" class="flip-btn" type="button" aria-label="Pagina precedente">
+      <img src="icons/back.png" alt="">
+    </button>
+    <span id="flipPageLabel" class="flip-page-label">0 / 0</span>
+    <button id="flipNextBtn" class="flip-btn" type="button" aria-label="Pagina successiva">
+      <img src="icons/next.png" alt="">
+    </button>
+  </div>
 </div>
 
 <!-- QUIZ MODE SELECTION OVERLAY -->
@@ -545,7 +554,7 @@ gtag('config', 'G-C5JPY9HFHD', {
       <div class="qms-card" id="examCard80">
         <div class="qms-card-header">
           <div class="qms-card-badge qms-badge-exam80 qms-badge-photo">
-            <img src="https://pub-21131aa867534601af79c34beb746fb7.r2.dev/Figure/quiz_opt_1.jpg" alt="">
+            <img src="/api/asset?name=quiz_opt_1" alt="">
           </div>
           <div class="qms-card-info">
             <div class="qms-card-title">Mix Quiz 80</div>
@@ -561,7 +570,7 @@ gtag('config', 'G-C5JPY9HFHD', {
       <div class="qms-card" id="examCard30">
         <div class="qms-card-header">
           <div class="qms-card-badge qms-badge-exam30 qms-badge-photo">
-            <img src="https://pub-21131aa867534601af79c34beb746fb7.r2.dev/Figure/quiz_opt_2.jpg" alt="">
+            <img src="/api/asset?name=quiz_opt_2" alt="">
           </div>
           <div class="qms-card-info">
             <div class="qms-card-title">Mix Quiz 30</div>

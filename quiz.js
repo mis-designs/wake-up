@@ -104,9 +104,7 @@ if (!hasCurrentClientAuthResetVersion()) {
 }
 
 const QUIZ_API = "/api/quiz";
-const BASE_ASSET_URL = "https://pub-21131aa867534601af79c34beb746fb7.r2.dev";
-const BASE_IMG_URL = `${BASE_ASSET_URL}/Figure/`;
-const BASE_EXPLANATION_URL = `${BASE_ASSET_URL}/explanations/`;
+const ASSET_API = "/api/asset";
 const EXPLANATION_EXTENSIONS = ["png", "webp", "jpg", "jpeg"];
 const QUIZ_MODE_CONFIG = {
   exam80: { title: "Exam", timerMinutes: 50 },
@@ -116,6 +114,24 @@ const QUIZ_MODE_CONFIG = {
 
 function setQuizTitle(title = "MagicBook | Quiz") {
   document.title = title;
+}
+
+function buildAssetUrl(params) {
+  const search = new URLSearchParams(params);
+  return `${ASSET_API}?${search.toString()}`;
+}
+
+function buildFigureImageUrl(figure) {
+  return buildAssetUrl({ kind: "figure", figure: String(figure || "").trim() });
+}
+
+function buildExplanationImageUrl(figure, value, ext) {
+  return buildAssetUrl({
+    kind: "explanation",
+    figure: String(figure || "").trim(),
+    value: String(value || "").trim(),
+    ext
+  });
 }
 
 function getQuizRouteInfo() {
@@ -682,8 +698,7 @@ function openExplanation() {
   if (!explanationModal || explanationValue === null || !figure) return;
 
   const loadId = ++explanationLoadId;
-  const imageName = `${encodeURIComponent(figure)}_${explanationValue}`;
-  const sources = EXPLANATION_EXTENSIONS.map(extension => `${BASE_EXPLANATION_URL}${imageName}.${extension}`);
+  const sources = EXPLANATION_EXTENSIONS.map(extension => buildExplanationImageUrl(figure, explanationValue, extension));
 
   explanationImage?.classList.add("hidden");
   explanationError?.classList.add("hidden");
@@ -727,7 +742,7 @@ function loadQuizImage(q) {
   img.onload = reveal;
   img.src    = noFigure
     ? "icons/wearetmm.svg"
-    : BASE_IMG_URL + q.figure + ".jpg";
+    : buildFigureImageUrl(q.figure);
 }
 
 function showLoading(message = "Caricamento...") {
@@ -1254,7 +1269,7 @@ function renderAnswerReview(items = []) {
       const img = document.createElement("img");
       img.className = "modal-review-img";
       img.alt = "";
-      img.src = BASE_IMG_URL + item.figure + ".jpg";
+      img.src = buildFigureImageUrl(item.figure);
       img.onerror = function () { this.remove(); };
       row.appendChild(img);
     }
