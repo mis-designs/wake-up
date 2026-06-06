@@ -105,6 +105,17 @@ if (!hasCurrentClientAuthResetVersion()) {
 
 const QUIZ_API = "/api/quiz";
 const ASSET_API = "/api/asset";
+const QUIZ_LOADING_FIGURES = [
+  "fig1",
+  "fig8",
+  "fig25",
+  "fig50",
+  "fig120",
+  "fig220",
+  "fig350",
+  "fig440",
+  "fig550"
+];
 const EXPLANATION_EXTENSIONS = ["png", "webp", "jpg", "jpeg"];
 const QUIZ_MODE_CONFIG = {
   exam80: { title: "Exam", timerMinutes: 50 },
@@ -123,6 +134,33 @@ function buildAssetUrl(params) {
 
 function buildFigureImageUrl(figure) {
   return buildAssetUrl({ kind: "figure", figure: String(figure || "").trim() });
+}
+
+function stopQuizLoadingFigures() {
+  if (window.quizLoadingFigureTimer) {
+    window.clearInterval(window.quizLoadingFigureTimer);
+    window.quizLoadingFigureTimer = null;
+  }
+}
+
+function startQuizLoadingFigures() {
+  const img = document.getElementById("quiz-loading-figure-img");
+  if (!img || window.quizLoadingFigureTimer) return;
+
+  let index = Math.floor(Math.random() * QUIZ_LOADING_FIGURES.length);
+
+  const showNext = () => {
+    const figure = QUIZ_LOADING_FIGURES[index % QUIZ_LOADING_FIGURES.length];
+    index++;
+    img.classList.remove("is-sliding");
+    void img.offsetWidth;
+    img.src = buildFigureImageUrl(figure);
+    img.classList.add("is-sliding");
+  };
+
+  img.onerror = showNext;
+  showNext();
+  window.quizLoadingFigureTimer = window.setInterval(showNext, 1500);
 }
 
 function buildExplanationImageUrl(figure, value, ext) {
@@ -750,9 +788,11 @@ function showLoading(message = "Caricamento...") {
   loadingOverlay.classList.remove("hidden");
   loadingOverlay.setAttribute("aria-hidden", "false");
   document.body.classList.add("loading-open");
+  startQuizLoadingFigures();
 }
 
 function hideLoading() {
+  stopQuizLoadingFigures();
   loadingOverlay.classList.add("hidden");
   loadingOverlay.setAttribute("aria-hidden", "true");
   document.body.classList.remove("loading-open");
