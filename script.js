@@ -2644,11 +2644,21 @@ function startViewerLoadingAnimation(loader) {
   const img = loader?.querySelector(".viewer-loading-figure-img");
   if (!loader || !img || loader._figureTimer) return;
 
-  let index = Math.floor(Math.random() * VIEWER_LOADING_FIGURES.length);
+  let lastFigure = "";
+
+  const getRandomFigure = () => {
+    if (VIEWER_LOADING_FIGURES.length <= 1) return VIEWER_LOADING_FIGURES[0] || "";
+    let next = "";
+    do {
+      next = VIEWER_LOADING_FIGURES[Math.floor(Math.random() * VIEWER_LOADING_FIGURES.length)];
+    } while (next === lastFigure);
+    lastFigure = next;
+    return next;
+  };
 
   const showNext = () => {
-    const figure = VIEWER_LOADING_FIGURES[index % VIEWER_LOADING_FIGURES.length];
-    index++;
+    const figure = getRandomFigure();
+    if (!figure) return;
     img.classList.remove("is-sliding");
     void img.offsetWidth;
     img.src = buildViewerLoadingFigureUrl(figure);

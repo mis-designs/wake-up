@@ -147,11 +147,21 @@ function startQuizLoadingFigures() {
   const img = document.getElementById("quiz-loading-figure-img");
   if (!img || window.quizLoadingFigureTimer) return;
 
-  let index = Math.floor(Math.random() * QUIZ_LOADING_FIGURES.length);
+  let lastFigure = "";
+
+  const getRandomFigure = () => {
+    if (QUIZ_LOADING_FIGURES.length <= 1) return QUIZ_LOADING_FIGURES[0] || "";
+    let next = "";
+    do {
+      next = QUIZ_LOADING_FIGURES[Math.floor(Math.random() * QUIZ_LOADING_FIGURES.length)];
+    } while (next === lastFigure);
+    lastFigure = next;
+    return next;
+  };
 
   const showNext = () => {
-    const figure = QUIZ_LOADING_FIGURES[index % QUIZ_LOADING_FIGURES.length];
-    index++;
+    const figure = getRandomFigure();
+    if (!figure) return;
     img.classList.remove("is-sliding");
     void img.offsetWidth;
     img.src = buildFigureImageUrl(figure);
