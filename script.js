@@ -2600,6 +2600,17 @@ function openQuizFromMenu() {
  * VIEWER
  ***********************/
 const MAGIC_BOOK_API = "/api/getPages";
+const VIEWER_LOADING_FIGURES = [
+  "fig1",
+  "fig8",
+  "fig25",
+  "fig50",
+  "fig120",
+  "fig220",
+  "fig350",
+  "fig440",
+  "fig550"
+];
 let currentBookViewer = {
   book: "magic",
   type: null,
@@ -2613,6 +2624,41 @@ let currentBookViewer = {
 let magicBookViewerRequestId = 0;
 let magicBookScrollHandlerInstalled = false;
 let magicBookLoadObserver = null;
+
+function buildViewerLoadingFigureUrl(figure) {
+  const params = new URLSearchParams({
+    kind: "figure",
+    figure
+  });
+  return `/api/asset?${params.toString()}`;
+}
+
+function stopViewerLoadingAnimation(loader) {
+  if (loader?._figureTimer) {
+    window.clearInterval(loader._figureTimer);
+    loader._figureTimer = null;
+  }
+}
+
+function startViewerLoadingAnimation(loader) {
+  const img = loader?.querySelector(".viewer-loading-figure-img");
+  if (!loader || !img || loader._figureTimer) return;
+
+  let index = Math.floor(Math.random() * VIEWER_LOADING_FIGURES.length);
+
+  const showNext = () => {
+    const figure = VIEWER_LOADING_FIGURES[index % VIEWER_LOADING_FIGURES.length];
+    index++;
+    img.classList.remove("is-sliding");
+    void img.offsetWidth;
+    img.src = buildViewerLoadingFigureUrl(figure);
+    img.classList.add("is-sliding");
+  };
+
+  img.onerror = showNext;
+  showNext();
+  loader._figureTimer = window.setInterval(showNext, 1500);
+}
 
 async function fetchMagicBookPage({ type, chapter, page }) {
   const body = {
@@ -2703,6 +2749,7 @@ function cleanupMagicBookViewer({ resetState = true } = {}) {
 
   const pages = document.getElementById("pages");
   if (pages) {
+    stopViewerLoadingAnimation(pages.querySelector(".viewer-loading"));
     pages.querySelectorAll("img[data-object-url]").forEach(img => {
       URL.revokeObjectURL(img.dataset.objectUrl);
     });
@@ -2752,12 +2799,18 @@ function setMagicBookLoading(pages, visible, { active = true } = {}) {
     magicBookLoadObserver?.disconnect();
     magicBookLoadObserver = null;
     currentBookViewer.loaderInView = false;
+    stopViewerLoadingAnimation(existing);
     existing?.remove();
     return;
   }
 
   if (existing) {
     existing.classList.toggle("is-active", active);
+    if (active) {
+      startViewerLoadingAnimation(existing);
+    } else {
+      stopViewerLoadingAnimation(existing);
+    }
     return;
   }
 
@@ -2771,16 +2824,32 @@ function setMagicBookLoading(pages, visible, { active = true } = {}) {
     checkMagicBookScrollLoad();
   });
 
+  const figureShell = document.createElement("div");
+  figureShell.className = "viewer-loading-figure";
+
   const img = document.createElement("img");
-  img.src = "icons/loading.gif";
+  img.className = "viewer-loading-figure-img";
   img.alt = "";
+  img.draggable = false;
+
+  figureShell.appendChild(img);
 
   const text = document.createElement("span");
-  text.textContent = "Caricamento...";
+  text.className = "viewer-loading-text";
+  text.textContent = "Loading...";
 
-  loader.appendChild(img);
+  const progress = document.createElement("div");
+  progress.className = "viewer-loading-bar";
+
+  const progressFill = document.createElement("span");
+  progress.appendChild(progressFill);
+
+  loader.appendChild(figureShell);
   loader.appendChild(text);
+  loader.appendChild(progress);
   pages.appendChild(loader);
+
+  if (active) startViewerLoadingAnimation(loader);
 }
 
 function appendMagicBookPage(pages, pageSource) {

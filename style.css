@@ -1062,19 +1062,58 @@ button:active {
     padding: 24px 0;
 }
 
-.viewer-loading img {
-    width: 74px;
-    height: 74px;
-    object-fit: contain;
+.viewer-loading-figure {
+    width: min(230px, 72vw);
+    aspect-ratio: 16 / 10;
+    border: 1px solid rgba(37, 41, 67, 0.12);
+    border-radius: 18px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #eef2ff, #ffffff);
+    box-shadow: 0 16px 34px rgba(37, 41, 67, 0.16);
     opacity: 0;
     transform: translateY(8px);
     transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
-.viewer-loading span {
+.viewer-loading-figure-img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+    padding: 8px;
+    background: #fff;
+    border-radius: inherit;
+}
+
+.viewer-loading-figure-img.is-sliding {
+    animation: loadingFigureSlide 1.5s ease-in-out both;
+}
+
+.viewer-loading-text {
     opacity: 0;
     transform: translateY(8px);
     transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.viewer-loading-bar {
+    width: min(260px, 74vw);
+    height: 8px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(37, 41, 67, 0.08);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.viewer-loading-bar span {
+    display: block;
+    width: 62%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #3a4efb, #00d4ff, #e3ff3b, #ff4d8d, #3a4efb);
+    background-size: 240% 100%;
+    animation: loadingGradientBar 1.15s linear infinite;
 }
 
 .viewer-loading.is-active {
@@ -1082,10 +1121,41 @@ button:active {
     box-shadow: 0 22px 54px rgba(0, 0, 0, 0.48);
 }
 
-.viewer-loading.is-active img,
-.viewer-loading.is-active span {
+.viewer-loading.is-active .viewer-loading-figure,
+.viewer-loading.is-active .viewer-loading-text,
+.viewer-loading.is-active .viewer-loading-bar {
     opacity: 1;
     transform: translateY(0);
+}
+
+@keyframes loadingFigureSlide {
+    0% {
+        opacity: 0;
+        transform: translateX(100%) scale(0.96);
+    }
+    16% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+    72% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-100%) scale(0.96);
+    }
+}
+
+@keyframes loadingGradientBar {
+    from {
+        transform: translateX(-72%);
+        background-position: 0% 50%;
+    }
+    to {
+        transform: translateX(172%);
+        background-position: 100% 50%;
+    }
 }
 
 /* PAGE IMAGE */
