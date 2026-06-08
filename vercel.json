@@ -40,6 +40,14 @@
       "destination": "/"
     },
     {
+      "source": "/login",
+      "destination": "/"
+    },
+    {
+      "source": "/join",
+      "destination": "/"
+    },
+    {
       "source": "/magic-book",
       "destination": "/"
     },

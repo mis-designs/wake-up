@@ -114,6 +114,79 @@ gtag('config', 'G-C5JPY9HFHD', {
   <button id="logoutBtn" type="button">Logout</button>
 </div>
 
+<!-- PUBLIC LANDING -->
+<main class="public-landing hidden" id="landing">
+  <section class="landing-panel" aria-label="Magic Book accesso">
+    <div class="public-logo public-logo-dark">
+      <strong>Magic Book</strong>
+      <span>BY TMM BANGLA PATENTE</span>
+    </div>
+
+    <div class="landing-actions" aria-label="Scegli accesso">
+      <button class="landing-choice" type="button" onclick="showJoinScreen()" aria-label="Join">
+        <span class="landing-choice-art">
+          <img src="icons/join.svg" alt="">
+        </span>
+        <span class="landing-choice-label">Join</span>
+      </button>
+
+      <img class="landing-wave" src="icons/wave.svg" alt="" aria-hidden="true">
+
+      <button class="landing-choice" type="button" onclick="showLoginScreen()" aria-label="Login">
+        <span class="landing-choice-art">
+          <img src="icons/login.svg" alt="">
+        </span>
+        <span class="landing-choice-label">Login</span>
+      </button>
+    </div>
+  </section>
+</main>
+
+<!-- JOIN PACKAGES -->
+<main class="join-screen hidden" id="join">
+  <button class="public-back-btn" type="button" onclick="showLandingScreen()" aria-label="Indietro">
+    <img src="icons/go-back.png" alt="">
+  </button>
+
+  <div class="public-logo public-logo-light">
+    <strong>Magic Book</strong>
+    <span>BY TMM BANGLA PATENTE</span>
+  </div>
+
+  <section class="join-packages" aria-label="Pacchetti Magic Book">
+    <article class="join-package">
+      <div>
+        <span class="join-package-duration">30 giorni</span>
+        <strong>10&euro;</strong>
+      </div>
+      <button type="button" onclick="openJoinWhatsApp('10&euro;', '30 giorni')">
+        WhatsApp
+      </button>
+    </article>
+
+    <article class="join-package is-popular">
+      <div>
+        <span class="join-package-duration">90 giorni</span>
+        <strong>20&euro;</strong>
+        <em>Pi&ugrave; scelto</em>
+      </div>
+      <button type="button" onclick="openJoinWhatsApp('20&euro;', '90 giorni')">
+        WhatsApp
+      </button>
+    </article>
+
+    <article class="join-package">
+      <div>
+        <span class="join-package-duration">365 giorni</span>
+        <strong>40&euro;</strong>
+      </div>
+      <button type="button" onclick="openJoinWhatsApp('40&euro;', '365 giorni')">
+        WhatsApp
+      </button>
+    </article>
+  </section>
+</main>
+
 <!-- LOGIN -->
 <div class="card" id="login">
     <img class="login-hero-img" src="icons/login_img.svg" alt="TMM Bangla Patente">

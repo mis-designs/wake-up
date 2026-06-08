@@ -30,7 +30,9 @@ function getQuizPath(params = {}) {
 }
 
 function getAppRoute(state = {}) {
-  if (state.screen === "login") return "/";
+  if (state.screen === "welcome") return "/";
+  if (state.screen === "login") return "/login";
+  if (state.screen === "join") return "/join";
   if (state.screen === "home") return "/home";
   if (state.screen === "chapters") return "/magic-book";
   if (state.screen === "admin") return "/admin";
@@ -40,7 +42,9 @@ function getAppRoute(state = {}) {
 }
 
 function getRouteTitle(state = {}) {
+  if (state.screen === "welcome") return APP_TITLE;
   if (state.screen === "login") return `${APP_TITLE} | Accesso`;
+  if (state.screen === "join") return `${APP_TITLE} | Join`;
   if (state.screen === "home") return `${APP_TITLE} | Home`;
   if (state.screen === "chapters") return `${APP_TITLE} | Capitoli`;
   if (state.screen === "admin") return `${APP_TITLE} | Admin`;
@@ -70,14 +74,20 @@ function getRouteStateFromLocation() {
   if (path === "/magic-book/esame-pdf") return { screen: "exam" };
   if (path === "/magic-book" || path === "/capitoli") return { screen: "chapters" };
   if (path === "/admin") return { screen: "admin" };
+  if (path === "/login") return { screen: "login" };
+  if (path === "/join") return { screen: "join" };
   if (path === "/home") return { screen: "home" };
-  return { screen: "home" };
+  return { screen: "welcome" };
 }
 
 function openRouteState(state = getRouteStateFromLocation()) {
-  const nextState = state.screen === "admin" && !isCurrentSessionAdmin()
+  const publicScreens = ["welcome", "login", "join"];
+  const requestedState = publicScreens.includes(state.screen)
     ? { screen: "home" }
     : state;
+  const nextState = requestedState.screen === "admin" && !isCurrentSessionAdmin()
+    ? { screen: "home" }
+    : requestedState;
 
   applyingRouteFromHistory = true;
   try {
@@ -505,7 +515,14 @@ window.addEventListener("load", async () => {
       validateRestoredSession(phone, deviceId);
     }
   } else {
-    showLoginScreen("");
+    const publicRoute = getRouteStateFromLocation();
+    if (publicRoute.screen === "login") {
+      showLoginScreen("", { replace: true });
+    } else if (publicRoute.screen === "join") {
+      showJoinScreen({ replace: true });
+    } else {
+      showLandingScreen({ replace: true });
+    }
   }
 });
 
@@ -1208,17 +1225,50 @@ function clearSessionData() {
   Storage.remove(KEYS.legacySession);
 }
 
-function showLoginScreen(message = "") {
+function showLandingScreen(options = {}) {
+  hideAll();
+  document.getElementById("landing")?.classList.remove("hidden");
+  setChapterMode(false);
+  document.body.classList.add("public-mode");
+  updateProfileUI(false);
+  setProfileIconVisible(false);
+  setLoggedOutChrome();
+  currentScreen = "welcome";
+  setAppRoute({ screen: "welcome" }, { replace: options.replace === true });
+}
+
+function showJoinScreen(options = {}) {
+  hideAll();
+  document.getElementById("join")?.classList.remove("hidden");
+  setChapterMode(false);
+  document.body.classList.add("public-mode");
+  updateProfileUI(false);
+  setProfileIconVisible(false);
+  setLoggedOutChrome();
+  currentScreen = "join";
+  setAppRoute({ screen: "join" }, { replace: options.replace === true });
+}
+
+function openJoinWhatsApp(price, duration) {
+  const msgText = `Ciao, voglio attivare il pacchetto MagicBook ${price} (${duration}).`;
+  const url = `https://wa.me/${RENEW_WHATSAPP_NUMBER}?text=${encodeURIComponent(msgText)}`;
+  window.open(url, "_blank", "noopener");
+}
+
+function showLoginScreen(message = "", options = {}) {
   hideAll();
   pendingOtpLogin = null;
   hideOtpUI();
   document.getElementById("login")?.classList.remove("hidden");
+  setChapterMode(false);
   const err = document.getElementById("err");
   if (err) err.textContent = message;
   updateProfileUI(false);
   setProfileIconVisible(false);
   setLoggedOutChrome();
+  currentScreen = "login";
   document.title = "MagicBook | Accesso";
+  setAppRoute({ screen: "login" }, { replace: options.replace === true });
   updateLoginButtonState();
 }
 
@@ -2106,11 +2156,11 @@ function showWhatsAppGroupPopup() {
  ***********************/
 function hideAll() {
   cleanupMagicBookViewer();
-  ["login", "home", "chapters", "viewer", "adminPanel"].forEach(id => {
+  ["landing", "join", "login", "home", "chapters", "viewer", "adminPanel"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.add("hidden");
   });
-  document.body.classList.remove("admin-mode");
+  document.body.classList.remove("admin-mode", "app-mode", "public-mode");
 }
 
 function showHome() {
@@ -2435,7 +2485,7 @@ function openChapter(cap) {
  * APP HEADER & MENU
  ***********************/
 let currentViewingChapter = null;
-let currentScreen = "login"; // login | home | chapters | viewer | admin | exam | quizMode | examMode
+let currentScreen = "welcome"; // welcome | join | login | home | chapters | viewer | admin | exam | quizMode | examMode
 
 function setChapterMode(enabled, chapterNum = null) {
   const viewerBackBtn = document.getElementById("viewerBackBtn");
@@ -2566,6 +2616,8 @@ function goBack() {
     showChapters();
   } else if (currentScreen === "chapters") {
     showHome();
+  } else if (currentScreen === "join" || currentScreen === "login") {
+    showLandingScreen();
   }
   // On home screen the back button is hidden, so nothing needed
 }
@@ -2582,7 +2634,10 @@ window.addEventListener("popstate", () => {
   if (readStoredSession() || Storage.get(KEYS.loggedIn) === "true") {
     openRouteState(getRouteStateFromLocation());
   } else {
-    showLoginScreen("");
+    const state = getRouteStateFromLocation();
+    if (state.screen === "login") showLoginScreen("", { replace: true });
+    else if (state.screen === "join") showJoinScreen({ replace: true });
+    else showLandingScreen({ replace: true });
   }
 });
 

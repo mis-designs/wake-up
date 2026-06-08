@@ -4,6 +4,8 @@ https://magicph.netlify.app/* https://tmmmagic.eu/:splat 301!
 /quiz.html / 301!
 /quiz.html/ / 301!
 /home /index.html 200
+/login /index.html 200
+/join /index.html 200
 /magic-book /index.html 200
 /capitoli /index.html 200
 /magic-book/capitolo-* /index.html 200
