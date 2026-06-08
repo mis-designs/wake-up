@@ -1,7 +1,7 @@
 :root {
     --color-primary: #3a4efb;
     --color-secondary: #33a4fa;
-    --color-accent: #e3ff3b;
+    --color-accent: #c9f41d;
     --color-dark: #252943;
     --color-light: #dee0ed;
     --color-white: #ffffff;
@@ -12,7 +12,7 @@
     --color-overlay: rgba(0, 0, 0, 0.52);
     --color-shadow: rgba(37, 41, 67, 0.18);
     --color-card-border: rgba(255, 255, 255, 0.4);
-    --color-card-glow: rgba(227, 255, 59, 0.18);
+    --color-card-glow: rgba(201, 244, 29, 0.18);
     --color-soft-shadow: 0 22px 48px rgba(37, 41, 67, 0.2);
     --gradient-main: linear-gradient(135deg, #3a4efb 0%, #33a4fa 100%);
     --gradient-dark: linear-gradient(135deg, #252943 0%, #303659 100%);
@@ -31,7 +31,7 @@ body {
     min-height: 100dvh;
     background:
         radial-gradient(circle at 12% 14%, rgba(58, 78, 251, 0.16), transparent 42%),
-        radial-gradient(circle at 88% 8%, rgba(227, 255, 59, 0.2), transparent 36%),
+        radial-gradient(circle at 88% 8%, rgba(201, 244, 29, 0.2), transparent 36%),
         linear-gradient(180deg, #eef1fb 0%, #e5e9f8 48%, #dee4f4 100%);
     display: block;
     color: var(--color-text);
@@ -307,7 +307,7 @@ button:active {
     min-height: 30px;
     margin: 0 7px 6px;
     border-radius: 8px;
-    background: #cfff00;
+    background: #c9f41d;
     color: #111111;
     display: flex;
     align-items: center;
@@ -323,7 +323,7 @@ button:active {
     align-self: center;
     object-fit: contain;
     animation: publicWaveSpin 1.7s linear infinite;
-    filter: drop-shadow(0 0 8px rgba(207, 255, 0, 0.38));
+    filter: drop-shadow(0 0 8px rgba(201, 244, 29, 0.42));
 }
 
 @keyframes publicWaveSpin {
@@ -365,7 +365,7 @@ button:active {
     padding: 18px 20px 14px;
     border-radius: 14px;
     border: 1.5px dashed rgba(18, 18, 18, 0.85);
-    background: rgba(207, 255, 0, 0.94);
+    background: rgba(201, 244, 29, 0.94);
     color: #101010;
     box-shadow: 0 18px 34px rgba(0, 0, 0, 0.2);
     display: flex;
@@ -375,7 +375,7 @@ button:active {
 }
 
 .join-package.is-popular {
-    background: rgba(207, 255, 0, 0.98);
+    background: rgba(201, 244, 29, 0.98);
 }
 
 .join-package-duration {
@@ -424,6 +424,133 @@ button:active {
     margin-right: 5px;
     vertical-align: -4px;
     background: url("assets/images/whatsapp.png") center / contain no-repeat;
+}
+
+@media (min-width: 760px) {
+    .public-landing {
+        align-items: flex-start;
+        padding-top: max(env(safe-area-inset-top, 0px), 0px);
+    }
+
+    .landing-panel {
+        width: min(720px, calc(100% - 72px));
+        min-height: 330px;
+        padding: 34px 54px 42px;
+        border-radius: 0 0 34px 34px;
+    }
+
+    .landing-panel::before {
+        height: 122px;
+        transform: translateY(-34px) scaleX(1.12);
+    }
+
+    .public-logo strong {
+        font-size: 3rem;
+    }
+
+    .public-logo span {
+        font-size: 0.58rem;
+    }
+
+    .landing-actions {
+        width: 390px;
+        grid-template-columns: minmax(0, 1fr) 54px minmax(0, 1fr);
+        gap: 18px;
+        margin-top: 44px;
+    }
+
+    .landing-choice {
+        border-radius: 20px;
+    }
+
+    .landing-choice-art {
+        height: 142px;
+        padding: 16px 12px 8px;
+    }
+
+    .landing-choice-label {
+        min-height: 38px;
+        margin-bottom: 8px;
+        font-size: 1.2rem;
+    }
+
+    .landing-wave {
+        width: 48px;
+        height: 48px;
+    }
+
+    .public-logo-light {
+        width: 330px;
+        margin-top: calc(env(safe-area-inset-top, 0px) + 36px);
+        margin-bottom: 58px;
+    }
+
+    .public-logo-light strong {
+        font-size: 2.8rem;
+    }
+
+    .join-packages {
+        width: min(920px, calc(100% - 64px));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: stretch;
+        gap: 22px;
+    }
+
+    .join-package {
+        min-height: 230px;
+        padding: 24px;
+    }
+
+    .join-package strong {
+        font-size: 2.55rem;
+    }
+
+    .join-package button {
+        min-height: 40px;
+        font-size: 0.92rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .landing-panel {
+        min-height: 250px;
+        padding: 22px 22px 24px;
+    }
+
+    .public-logo strong {
+        font-size: 1.95rem;
+    }
+
+    .landing-actions {
+        width: min(100%, 232px);
+        grid-template-columns: minmax(0, 1fr) 32px minmax(0, 1fr);
+        gap: 8px;
+        margin-top: 30px;
+    }
+
+    .landing-choice-art {
+        height: 78px;
+        padding: 9px 7px 3px;
+    }
+
+    .landing-choice-label {
+        min-height: 28px;
+        font-size: 0.94rem;
+    }
+
+    .landing-wave {
+        width: 30px;
+        height: 30px;
+    }
+
+    .join-packages {
+        width: min(100%, 230px);
+        gap: 16px;
+    }
+
+    .join-package {
+        min-height: 134px;
+    }
 }
 
 /* HOME (POST LOGIN) */
@@ -525,7 +652,7 @@ button:active {
 
 #home .home-start-btn::before {
     z-index: -1;
-    background: radial-gradient(circle, rgba(227, 255, 59, 0.48), rgba(58, 78, 251, 0.18) 46%, transparent 72%);
+    background: radial-gradient(circle, rgba(201, 244, 29, 0.48), rgba(58, 78, 251, 0.18) 46%, transparent 72%);
     filter: blur(5px);
     opacity: 0.8;
     animation: startGlow 1.8s ease-in-out infinite;
@@ -811,7 +938,7 @@ button:active {
     padding: 8px 14px;
     border-radius: 999px;
     margin-bottom: 12px;
-    background: rgba(227, 255, 59, 0.9);
+    background: rgba(201, 244, 29, 0.9);
     color: var(--color-dark);
     font-size: 12px;
     font-weight: 800;
@@ -905,7 +1032,7 @@ button:active {
     height: 10px;
     border-radius: 50%;
     background: var(--color-accent);
-    box-shadow: 0 0 0 7px rgba(227, 255, 59, 0.18);
+    box-shadow: 0 0 0 7px rgba(201, 244, 29, 0.18);
     flex-shrink: 0;
 }
 
@@ -1159,9 +1286,9 @@ button:active {
 @keyframes engineBoot {
     0%   { transform: scale(1);    filter: drop-shadow(0 0 4px rgba(58, 78, 251, 0.22)); }
     18%  { transform: scale(0.87); filter: drop-shadow(0 0 3px rgba(58, 78, 251, 0.1)); }
-    58%  { transform: scale(1.12); filter: drop-shadow(0 0 24px rgba(227, 255, 59, 0.95)); }
-    78%  { transform: scale(0.97); filter: drop-shadow(0 0 18px rgba(227, 255, 59, 0.7)); }
-    100% { transform: scale(1);    filter: drop-shadow(0 0 12px rgba(227, 255, 59, 0.45)); }
+    58%  { transform: scale(1.12); filter: drop-shadow(0 0 24px rgba(201, 244, 29, 0.95)); }
+    78%  { transform: scale(0.97); filter: drop-shadow(0 0 18px rgba(201, 244, 29, 0.7)); }
+    100% { transform: scale(1);    filter: drop-shadow(0 0 12px rgba(201, 244, 29, 0.45)); }
 }
 
 /* Screen shake */
@@ -1186,7 +1313,7 @@ button:active {
 .engine-flash {
     position: fixed;
     inset: 0;
-    background: radial-gradient(circle at 50% 60%, rgba(227, 255, 59, 0.2) 0%, transparent 65%);
+    background: radial-gradient(circle at 50% 60%, rgba(201, 244, 29, 0.2) 0%, transparent 65%);
     pointer-events: none;
     z-index: 2000;
     animation: flashFade 0.55s ease-out forwards;
@@ -1221,9 +1348,9 @@ button:active {
 }
 
 .lesson-tool-exam {
-    background: linear-gradient(135deg, #e3ff3b 0%, #d1ff38 100%);
+    background: linear-gradient(135deg, #c9f41d 0%, #b8e314 100%);
     color: var(--color-dark);
-    box-shadow: 0 16px 28px rgba(227, 255, 59, 0.22);
+    box-shadow: 0 16px 28px rgba(201, 244, 29, 0.22);
 }
 
 .lesson-tool-quiz {
@@ -1365,7 +1492,7 @@ button:active {
     width: 62%;
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, #3a4efb, #00d4ff, #e3ff3b, #ff4d8d, #3a4efb);
+    background: linear-gradient(90deg, #3a4efb, #00d4ff, #c9f41d, #ff4d8d, #3a4efb);
     background-size: 240% 100%;
     animation: loadingGradientBar 1.15s linear infinite;
 }
@@ -1742,8 +1869,8 @@ button:active {
     margin-top: 4px;
 }
 
-.menu-home:hover { background: rgba(227, 255, 59, 0.16); }
-.menu-home:active { background: rgba(227, 255, 59, 0.24); }
+.menu-home:hover { background: rgba(201, 244, 29, 0.16); }
+.menu-home:active { background: rgba(201, 244, 29, 0.24); }
 
 .menu-icon {
     width: 22px;
@@ -1820,8 +1947,8 @@ button:active {
     color: var(--color-dark);
 }
 
-.menu-exam:hover  { background: rgba(227, 255, 59, 0.14); }
-.menu-exam:active { background: rgba(227, 255, 59, 0.22); }
+.menu-exam:hover  { background: rgba(201, 244, 29, 0.14); }
+.menu-exam:active { background: rgba(201, 244, 29, 0.22); }
 
 .menu-quiz {
     font-weight: 600;
@@ -2309,7 +2436,7 @@ body.app-mode #whatsappBtn {
 }
 
 .qms-badge-mix   { background: linear-gradient(135deg, #3a4efb 0%, #33a4fa 100%); }
-.qms-badge-cap   { background: linear-gradient(135deg, #e3ff3b 0%, #c8ef00 100%); }
+.qms-badge-cap   { background: linear-gradient(135deg, #c9f41d 0%, #b8e314 100%); }
 .qms-badge-multi { background: linear-gradient(135deg, #ff8c00 0%, #f8c000 100%); }
 .qms-badge-exam80 { background: linear-gradient(135deg, #15d66b 0%, #0fb858 100%); }
 .qms-badge-exam30 { background: linear-gradient(135deg, #ee2f4b 0%, #ff7a59 100%); }

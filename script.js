@@ -484,7 +484,14 @@ window.addEventListener("load", async () => {
   setupAdminUI();
 
   if (wasReset) {
-    showLoginScreen("Effettua nuovamente il login.");
+    const publicRoute = getRouteStateFromLocation();
+    if (publicRoute.screen === "login") {
+      showLoginScreen("Effettua nuovamente il login.", { replace: true });
+    } else if (publicRoute.screen === "join") {
+      showJoinScreen({ replace: true });
+    } else {
+      showLandingScreen({ replace: true });
+    }
     return;
   }
 
