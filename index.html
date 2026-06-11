@@ -41,7 +41,7 @@ if (window.location.pathname === "/index.html") {
     "@type": "Organization",
     "name": "TMM Bangla Patente",
     "sameAs": [
-      "https://www.facebook.com/share/14aaeMyWJGw/"
+      "https://www.facebook.com/TMMBanglaPatente"
     ]
   },
   "offers": {
@@ -79,6 +79,9 @@ gtag('config', 'G-C5JPY9HFHD', {
 <link rel="icon" type="image/png" href="/api/asset?name=mg_logo">
 <link rel="apple-touch-icon" href="/api/asset?name=mg_logo">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <meta name="theme-color" content="#dee0ed">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MagicBook">
@@ -116,27 +119,19 @@ gtag('config', 'G-C5JPY9HFHD', {
 
 <!-- PUBLIC LANDING -->
 <main class="public-landing hidden" id="landing">
-  <section class="landing-panel" aria-label="Magic Book accesso">
+  <section class="landing-panel" aria-label="TMM Bangla Patente accesso">
     <div class="public-logo public-logo-dark">
-      <strong>Magic Book</strong>
-      <span>BY TMM BANGLA PATENTE</span>
+      <span>Studia, esercitati, supera l'esame</span>
+      <strong>MagicBook</strong>
     </div>
-
     <div class="landing-actions" aria-label="Scegli accesso">
-      <button class="landing-choice" type="button" onclick="showJoinScreen()" aria-label="Join">
-        <span class="landing-choice-art">
-          <img src="icons/join.svg" alt="">
-        </span>
-        <span class="landing-choice-label">Join</span>
-      </button>
-
-      <img class="landing-wave" src="icons/wave.svg" alt="" aria-hidden="true">
-
-      <button class="landing-choice" type="button" onclick="showLoginScreen()" aria-label="Login">
-        <span class="landing-choice-art">
-          <img src="icons/login.svg" alt="">
-        </span>
+      <button class="landing-choice glass-button" type="button" onclick="showLoginScreen()" aria-label="Login">
         <span class="landing-choice-label">Login</span>
+        <span class="button-shine" aria-hidden="true"></span>
+      </button>
+      <button class="landing-choice glass-button" type="button" onclick="showJoinScreen()" aria-label="Join">
+        <span class="landing-choice-label">Join</span>
+        <span class="button-shine" aria-hidden="true"></span>
       </button>
     </div>
   </section>
@@ -144,47 +139,104 @@ gtag('config', 'G-C5JPY9HFHD', {
 
 <!-- JOIN PACKAGES -->
 <main class="join-screen hidden" id="join">
-  <button class="public-back-btn" type="button" onclick="showLandingScreen()" aria-label="Indietro">
-    <img src="icons/go-back.png" alt="">
-  </button>
+  <div class="pricing-frame" aria-label="Pacchetti MagicBook">
+    <div class="pricing-content">
+      <header class="pricing-header">
+        <div class="pricing-brand-row">
+          <button class="pricing-back-btn" type="button" onclick="showLandingScreen()" aria-label="Indietro"></button>
+          <div class="pricing-meta">
+            TMM Bangla Patente
+          </div>
+        </div>
+        <nav class="pricing-nav" aria-label="MagicBook">
+          <a href="#join" onclick="event.preventDefault()">Pacchetti</a>
+          <a href="#login" onclick="event.preventDefault(); showLoginScreen()">Login</a>
+          <a href="https://www.facebook.com/TMMBanglaPatente" target="_blank" rel="noopener noreferrer">Connect</a>
+        </nav>
+      </header>
 
-  <div class="public-logo public-logo-light">
-    <strong>Magic Book</strong>
-    <span>BY TMM BANGLA PATENTE</span>
+      <section class="pricing-hero" aria-label="MagicBook">
+        <span>Studia, esercitati, supera l'esame</span>
+        <h1>MagicBook</h1>
+      </section>
+
+      <section class="pricing-intro" aria-label="Scegli abbonamento">
+        <h2>Pacchetti MagicBook</h2>
+        <p>Accesso alla web app TMM Bangla Patente con libro, 786 quiz importanti, schede personali e simulazione esame.</p>
+      </section>
+
+      <section class="join-packages" aria-label="Pacchetti MagicBook">
+        <article class="join-package">
+          <div class="join-package-head">
+            <h3>Starter</h3>
+            <span class="join-package-duration">30 giorni</span>
+          </div>
+          <div class="join-package-price">
+            <strong>10&euro;</strong>
+            <span>/ accesso</span>
+          </div>
+          <ul>
+            <li>Libro MagicBook completo</li>
+            <li>Quiz importanti inclusi</li>
+            <li>Accesso rapido da telefono</li>
+          </ul>
+          <button type="button" onclick="openJoinWhatsApp('10&euro;', '30 giorni')">
+            Richiedi su WhatsApp
+          </button>
+        </article>
+
+        <article class="join-package is-popular">
+          <div class="join-package-head">
+            <h3>Plus</h3>
+            <span class="join-package-duration">90 giorni</span>
+            <em>Pi&ugrave; scelto</em>
+          </div>
+          <div class="join-package-price">
+            <strong>20&euro;</strong>
+            <span>/ accesso</span>
+          </div>
+          <ul>
+            <li>Tutto del pacchetto Starter</li>
+            <li>Tempo extra per ripasso</li>
+            <li>Exam e modalit&agrave; quiz</li>
+            <li>Supporto WhatsApp</li>
+          </ul>
+          <button type="button" onclick="openJoinWhatsApp('20&euro;', '90 giorni')">
+            Scegli Plus
+          </button>
+        </article>
+
+        <article class="join-package">
+          <div class="join-package-head">
+            <h3>Complete</h3>
+            <span class="join-package-duration">365 giorni</span>
+          </div>
+          <div class="join-package-price">
+            <strong>40&euro;</strong>
+            <span>/ accesso</span>
+          </div>
+          <ul>
+            <li>Tutto del pacchetto Plus</li>
+            <li>Un anno di studio e ripasso</li>
+            <li>Perfetto per preparazione lunga</li>
+          </ul>
+          <button type="button" onclick="openJoinWhatsApp('40&euro;', '365 giorni')">
+            Scegli Complete
+          </button>
+        </article>
+      </section>
+    </div>
+
+    <footer class="pricing-footer">
+      <div>MagicBook</div>
+      <nav aria-label="Link MagicBook">
+        <a href="#login" onclick="event.preventDefault(); showLoginScreen()">Login</a>
+        <a href="https://www.facebook.com/share/14aaeMyWJGw/" target="_blank" rel="noopener noreferrer">MiskatDesigns</a>
+        <a href="#join" onclick="event.preventDefault()">Pacchetti</a>
+      </nav>
+      <small>&copy; 2026 TMM Bangla Patente. MagicBook by MiskatDesigns.</small>
+    </footer>
   </div>
-
-  <section class="join-packages" aria-label="Pacchetti Magic Book">
-    <article class="join-package">
-      <div>
-        <span class="join-package-duration">30 giorni</span>
-        <strong>10&euro;</strong>
-      </div>
-      <button type="button" onclick="openJoinWhatsApp('10&euro;', '30 giorni')">
-        WhatsApp
-      </button>
-    </article>
-
-    <article class="join-package is-popular">
-      <div>
-        <span class="join-package-duration">90 giorni</span>
-        <strong>20&euro;</strong>
-        <em>Pi&ugrave; scelto</em>
-      </div>
-      <button type="button" onclick="openJoinWhatsApp('20&euro;', '90 giorni')">
-        WhatsApp
-      </button>
-    </article>
-
-    <article class="join-package">
-      <div>
-        <span class="join-package-duration">365 giorni</span>
-        <strong>40&euro;</strong>
-      </div>
-      <button type="button" onclick="openJoinWhatsApp('40&euro;', '365 giorni')">
-        WhatsApp
-      </button>
-    </article>
-  </section>
 </main>
 
 <!-- LOGIN -->

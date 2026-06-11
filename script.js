@@ -4155,7 +4155,7 @@ if (whatsappBtn) {
         : "Aggiungi alla schermata Home.";
     }
     if (promptBtn) {
-      promptBtn.textContent = "Download";
+      promptBtn.textContent = "Aggiungi";
       promptBtn.dataset.mode = mode;
     }
     promptEl.classList.remove("hidden");
