@@ -119,9 +119,11 @@ gtag('config', 'G-C5JPY9HFHD', {
 
 <!-- PUBLIC LANDING -->
 <main class="public-landing hidden" id="landing">
+  <div class="aura-background-component" aria-hidden="true">
+    <div data-us-project="SrJYfPcDUR4StI3maLL6" class="aura-background-canvas"></div>
+  </div>
   <section class="landing-panel" aria-label="TMM Bangla Patente accesso">
     <div class="public-logo public-logo-dark">
-      <span>Studia, esercitati, supera l'esame</span>
       <strong>MagicBook</strong>
     </div>
     <div class="landing-actions" aria-label="Scegli accesso">
@@ -719,6 +721,40 @@ gtag('config', 'G-C5JPY9HFHD', {
   </div>
 </div>
 
+<script>
+(function () {
+  function startUnicorn() {
+    if (!document.querySelector("[data-us-project]")) return;
+    if (window.UnicornStudio?.isInitialized) {
+      window.dispatchEvent(new Event("resize"));
+      return;
+    }
+    if (window.UnicornStudio?.init) {
+      window.UnicornStudio.init();
+      window.UnicornStudio.isInitialized = true;
+      return;
+    }
+    if (window.UnicornStudio?.isLoading) return;
+    window.UnicornStudio = window.UnicornStudio || { isInitialized: false };
+    window.UnicornStudio.isLoading = true;
+
+    var script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.1.0-1/dist/unicornStudio.umd.js";
+    script.onload = function () {
+      window.UnicornStudio.isLoading = false;
+      startUnicorn();
+    };
+    script.onerror = function () {
+      window.UnicornStudio.isLoading = false;
+    };
+    (document.head || document.body).appendChild(script);
+  }
+
+  window.initHomeAura = function () {
+    requestAnimationFrame(startUnicorn);
+  };
+})();
+</script>
 <script src="script.js?v=6"></script>
 </body>
 </html>

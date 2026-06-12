@@ -1235,6 +1235,7 @@ function clearSessionData() {
 function showLandingScreen(options = {}) {
   hideAll();
   document.getElementById("landing")?.classList.remove("hidden");
+  window.initHomeAura?.();
   setChapterMode(false);
   document.body.classList.add("public-mode");
   updateProfileUI(false);
