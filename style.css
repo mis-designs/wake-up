@@ -114,8 +114,8 @@ button:active {
 
 .profile-btn {
     position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 16px);
-    right: 16px;
+    top: calc(env(safe-area-inset-top, 0px) + 9px);
+    right: 12px;
     width: 42px;
     height: 42px;
     padding: 0;
@@ -139,8 +139,8 @@ button:active {
 
 .profile-panel {
     position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 70px);
-    right: 16px;
+    top: calc(env(safe-area-inset-top, 0px) + 66px);
+    right: 12px;
     width: min(260px, calc(100vw - 32px));
     padding: 14px;
     border-radius: 16px;
@@ -722,7 +722,7 @@ button:active {
     filter:
         drop-shadow(0 0.11em 0.16em rgba(0, 0, 0, 0.26))
         drop-shadow(0 -0.012em 0 rgba(255, 255, 255, 0.46));
-    text-shadow: 0 0.25em 0.05em rgba(0, 0, 0, 0);
+    text-shadow: 0 0.25em 0.05em rgba(0, 0, 0, 0.021);
     mix-blend-mode: screen;
 }
 
@@ -1453,7 +1453,7 @@ button:active {
 }
 
 #home {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 22px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
 }
 
 #home::before {
@@ -1475,7 +1475,7 @@ button:active {
 #home .home-promo-embed {
     width: 100%;
     max-width: 390px;
-    margin-bottom: 18px;
+    margin-bottom: 12px;
     border-radius: 20px;
     box-shadow: 0 14px 28px rgba(37, 41, 67, 0.12);
 }
@@ -1493,23 +1493,6 @@ button:active {
     width: 100%;
     height: 100%;
     border: 0;
-}
-
-#home .home-promo-credit {
-    margin: -8px 0 12px;
-    color: rgba(37, 41, 67, 0.6);
-    font-size: 0.78rem;
-    font-weight: 700;
-    text-align: center;
-}
-
-#home .home-promo-credit a {
-    color: inherit;
-    text-decoration: none;
-}
-
-#home .home-promo-credit a:hover {
-    color: var(--color-dark);
 }
 
 .home-actions {
@@ -2894,12 +2877,6 @@ body.app-mode #home .home-promo-embed {
     width: min(100%, 41dvh, 330px);
 }
 
-body.app-mode #home .home-promo-credit {
-    margin-top: -6px;
-    margin-bottom: 8px;
-    font-size: 10px;
-}
-
 body.app-mode #home .home-start-btn {
     width: clamp(104px, 18dvh, 138px);
     max-width: 42vw;
@@ -3016,6 +2993,12 @@ body.app-mode #whatsappBtn {
    ===================== */
 @media (max-height: 620px) {
     .app-header { height: 54px; }
+    .profile-btn {
+        top: calc(env(safe-area-inset-top, 0px) + 6px);
+    }
+    .profile-panel {
+        top: calc(env(safe-area-inset-top, 0px) + 60px);
+    }
     body.app-mode { padding-top: 54px; }
     #login:not(.hidden) {
         padding-top: calc(env(safe-area-inset-top, 0px) + 18px);
@@ -3062,9 +3045,6 @@ body.app-mode #whatsappBtn {
     }
     body.app-mode #home .home-promo-embed {
         width: min(100%, 36dvh, 285px);
-    }
-    body.app-mode #home .home-promo-credit {
-        margin-bottom: 6px;
     }
     body.app-mode #home .home-start-btn {
         width: clamp(92px, 17dvh, 116px);
