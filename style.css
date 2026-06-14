@@ -784,20 +784,19 @@ button:active {
     border-radius: 999px;
     outline: none;
     background:
-        linear-gradient(-75deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.035)),
-        linear-gradient(180deg, rgba(43, 44, 48, 0.94), rgba(10, 11, 14, 0.92));
+        linear-gradient(180deg, rgba(42, 43, 47, 0.98), rgba(4, 5, 7, 0.98));
     color: #1a1818;
     box-shadow:
-        inset 0 0.125em 0.125em rgba(255, 255, 255, 0.16),
-        inset 0 -0.18em 0.2em rgba(0, 0, 0, 0.58),
-        0 0.3em 0.25em -0.16em rgba(0, 0, 0, 0.48),
-        0 0 0.08em 0.18em rgba(255, 255, 255, 0.08) inset,
-        0 0 0 0 rgba(255, 255, 255, 0.5);
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        inset 0 -16px 26px rgba(0, 0, 0, 0.62),
+        0 12px 26px rgba(0, 0, 0, 0.36),
+        0 0 0 1px rgba(255, 255, 255, 0.08);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     position: relative;
     overflow: hidden;
+    isolation: isolate;
     backdrop-filter: blur(clamp(1px, 0.125em, 4px));
     -webkit-backdrop-filter: blur(clamp(1px, 0.125em, 4px));
     transition:
@@ -806,15 +805,35 @@ button:active {
         backdrop-filter 400ms cubic-bezier(0.25, 1, 0.5, 1);
 }
 
+.public-landing .landing-choice::before {
+    content: "";
+    position: absolute;
+    inset: -56% -22%;
+    z-index: 0;
+    border-radius: inherit;
+    background:
+        linear-gradient(105deg, transparent 4%, rgba(255, 255, 255, 0.06) 22%, rgba(255, 255, 255, 0.28) 33%, rgba(244, 170, 30, 0.14) 43%, transparent 58%),
+        radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.1), transparent 44%);
+    background-size: 220% 100%, 120% 120%;
+    background-position: -130% 50%, 50% 50%;
+    filter: blur(0.2px) saturate(1.15);
+    opacity: 0.72;
+    transform: skewX(-8deg);
+    mix-blend-mode: screen;
+    pointer-events: none;
+    animation: landingProductWave 4.8s cubic-bezier(0.42, 0, 0.2, 1) infinite;
+}
+
 .public-landing .landing-choice::after {
     content: "";
     position: absolute;
     inset: -1px;
+    z-index: 3;
     border-radius: inherit;
     padding: 1px;
     background:
-        conic-gradient(from var(--angle-1) at 50% 50%, rgba(244, 170, 30, 0.32), rgba(255, 255, 255, 0.08) 8% 34%, rgba(101, 163, 255, 0.22) 48%, rgba(255, 255, 255, 0.08) 62% 90%, rgba(244, 170, 30, 0.32)),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(0, 0, 0, 0.36));
+        conic-gradient(from var(--angle-1) at 50% 50%, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.04) 8% 42%, rgba(244, 170, 30, 0.24) 52%, rgba(255, 255, 255, 0.04) 64% 92%, rgba(255, 255, 255, 0.28)),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(0, 0, 0, 0.34));
     mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     mask-composite: exclude;
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -827,17 +846,20 @@ button:active {
 .public-landing .landing-choice:hover {
     transform: scale(0.975);
     background:
-        linear-gradient(115deg, rgba(244, 170, 30, 0.16), transparent 24% 64%, rgba(101, 163, 255, 0.13)),
-        linear-gradient(180deg, rgba(54, 56, 61, 0.98), rgba(11, 12, 15, 0.96));
+        linear-gradient(180deg, rgba(52, 53, 58, 0.99), rgba(5, 6, 8, 0.99));
     backdrop-filter: blur(0.01em);
     -webkit-backdrop-filter: blur(0.01em);
     box-shadow:
-        inset 0 0.125em 0.125em rgba(255, 255, 255, 0.1),
-        inset 0 -0.18em 0.2em rgba(0, 0, 0, 0.64),
-        0 0.18em 0.09em -0.1em rgba(0, 0, 0, 0.5),
-        0 0 0.08em 0.14em rgba(244, 170, 30, 0.1) inset,
-        0 0 20px rgba(20, 24, 30, 0.42),
-        0 0 18px rgba(244, 170, 30, 0.13);
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        inset 0 -18px 30px rgba(0, 0, 0, 0.68),
+        0 12px 30px rgba(0, 0, 0, 0.42),
+        0 0 24px rgba(244, 170, 30, 0.14),
+        0 0 0 1px rgba(244, 170, 30, 0.18);
+}
+
+.public-landing .landing-choice:hover::before {
+    opacity: 0.95;
+    animation-duration: 3.4s;
 }
 
 .public-landing .landing-choice:hover::after {
@@ -867,15 +889,17 @@ button:active {
     padding: 0 24px;
     border-radius: 0;
     background: transparent;
-    color: rgba(245, 247, 250, 0.9);
+    color: rgba(255, 255, 255, 0.94);
     font-size: 17px;
     font-weight: 500;
     line-height: 48px;
     letter-spacing: 0;
     text-transform: none;
     position: relative;
-    z-index: 1;
-    text-shadow: 0 0.25em 0.05em rgba(0, 0, 0, 0.1);
+    z-index: 2;
+    text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.08),
+        0 0.25em 0.05em rgba(0, 0, 0, 0.22);
     transition: text-shadow 400ms cubic-bezier(0.25, 1, 0.5, 1);
 }
 
@@ -894,14 +918,15 @@ button:active {
     width: calc(100% - 1px);
     height: calc(100% - 1px);
     background:
-        linear-gradient(var(--angle-2), transparent 0%, rgba(244, 170, 30, 0.2) 36% 43%, rgba(95, 158, 255, 0.16) 48% 53%, transparent 60%),
-        radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.1), transparent 28%);
-    background-size: 200% 200%;
-    background-position: 0% 50%;
+        linear-gradient(var(--angle-2), transparent 0%, rgba(255, 255, 255, 0.22) 38% 44%, rgba(244, 170, 30, 0.18) 48% 52%, transparent 62%);
+    background-size: 260% 180%;
+    background-position: -120% 50%;
     background-repeat: no-repeat;
-    mix-blend-mode: color-dodge;
-    opacity: 0.62;
+    mix-blend-mode: screen;
+    opacity: 0.5;
     pointer-events: none;
+    z-index: 1;
+    animation: landingButtonShimmer 4.8s ease-in-out infinite;
     transition:
         opacity 500ms cubic-bezier(0.25, 1, 0.5, 1),
         background-position 500ms cubic-bezier(0.25, 1, 0.5, 1),
@@ -923,6 +948,51 @@ button:active {
     outline-offset: 3px;
 }
 
+@keyframes landingProductWave {
+    0% {
+        background-position: -130% 50%, 50% 50%;
+        opacity: 0.34;
+    }
+
+    42% {
+        opacity: 0.9;
+    }
+
+    68% {
+        background-position: 130% 50%, 50% 50%;
+        opacity: 0.62;
+    }
+
+    100% {
+        background-position: 130% 50%, 50% 50%;
+        opacity: 0.34;
+    }
+}
+
+@keyframes landingButtonShimmer {
+    0% {
+        background-position: -120% 50%;
+        opacity: 0.24;
+    }
+
+    50% {
+        background-position: 35% 50%;
+        opacity: 0.72;
+    }
+
+    100% {
+        background-position: 140% 50%;
+        opacity: 0.24;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .public-landing .landing-choice::before,
+    .public-landing .button-shine {
+        animation: none;
+    }
+}
+
 @media (min-width: 760px) {
     .public-landing .landing-panel {
         padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 40px);
@@ -936,10 +1006,18 @@ button:active {
 
 @media (max-width: 720px) {
     .public-landing .landing-actions {
-        width: min(calc(100% - 32px), 380px);
+        width: max-content;
+        max-width: calc(100% - 32px);
         padding: 28px;
         grid-template-columns: 1fr;
+        justify-items: center;
         gap: 22px;
+    }
+
+    .public-landing .landing-choice {
+        width: auto;
+        min-width: 152px;
+        padding: 0 10px;
     }
 }
 
@@ -962,12 +1040,15 @@ button:active {
     }
 
     .public-landing .landing-actions {
-        width: min(100%, 360px);
+        width: max-content;
+        max-width: 100%;
         padding: 24px 20px;
         gap: 24px;
     }
 
     .public-landing .landing-choice {
+        width: auto;
+        min-width: 150px;
         min-height: 46px;
     }
 
