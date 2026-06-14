@@ -81,11 +81,12 @@ gtag('config', 'G-C5JPY9HFHD', {
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400&family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <meta name="theme-color" content="#dee0ed">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MagicBook">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=17">
+<link rel="stylesheet" href="homebg.css?v=2">
 </head>
 <body>
 
@@ -122,19 +123,219 @@ gtag('config', 'G-C5JPY9HFHD', {
   <div class="aura-background-component" aria-hidden="true">
     <div data-us-project="SrJYfPcDUR4StI3maLL6" class="aura-background-canvas"></div>
   </div>
+  <div class="spline-container" aria-hidden="true">
+    <iframe src="https://my.spline.design/3dglassherobg-xhxFCKvVSQv5b7qPD9xIZ5yC" frameborder="0" width="100%" height="100%" id="aura-spline" title="Decorative 3D glass background"></iframe>
+  </div>
   <section class="landing-panel" aria-label="TMM Bangla Patente accesso">
     <div class="public-logo public-logo-dark">
       <strong>MagicBook</strong>
     </div>
     <div class="landing-actions" aria-label="Scegli accesso">
-      <button class="landing-choice glass-button" type="button" onclick="showLoginScreen()" aria-label="Login">
-        <span class="landing-choice-label">Login</span>
+      <button class="landing-choice glass-button" type="button" onclick="showLandingScreen()" aria-label="Home">
+        <span class="landing-choice-label">HOME</span>
+        <span class="button-shine" aria-hidden="true"></span>
+      </button>
+      <button class="landing-choice glass-button is-highlight" type="button" onclick="showLoginScreen()" aria-label="Login">
+        <span class="landing-choice-label">LOGIN</span>
         <span class="button-shine" aria-hidden="true"></span>
       </button>
       <button class="landing-choice glass-button" type="button" onclick="showJoinScreen()" aria-label="Join">
-        <span class="landing-choice-label">Join</span>
+        <span class="landing-choice-label">JOIN</span>
         <span class="button-shine" aria-hidden="true"></span>
       </button>
+      <button class="landing-choice glass-button" type="button" onclick="showAboutScreen()" aria-label="About">
+        <span class="landing-choice-label">ABOUT</span>
+        <span class="button-shine" aria-hidden="true"></span>
+      </button>
+    </div>
+  </section>
+</main>
+
+<!-- ABOUT -->
+<main class="about-screen hidden" id="about">
+  <section class="about-onepage" aria-labelledby="aboutTitle">
+    <header class="about-topbar">
+      <button class="about-back-btn" type="button" onclick="showLandingScreen()" aria-label="Indietro">HOME</button>
+      <a href="https://www.facebook.com/TMMBanglaPatente/" target="_blank" rel="noopener noreferrer">Facebook</a>
+    </header>
+
+    <div class="about-onepage-grid about-onepage-grid-v2">
+      <div class="about-copy">
+        <p class="about-kicker" lang="en">About TMM</p>
+        <h1 id="aboutTitle" class="about-brand-title" lang="en">TMM Bangla Patente</h1>
+        <p lang="en"><strong>Welcome to TMM Bangla Patente</strong>, a trusted learning platform created to make the Italian driving licence journey easier for the Bangladeshi community in Italy.</p>
+        <p lang="en">We simplify the difficult rules, road signs, and technical words of the Italian patente theory exam with clear guidance, practical learning tools, and a study system built for real students.</p>
+        <p lang="en">Alongside the hard-copy books, TMM also offers other books, mobile apps, and web apps like MagicBook, so students can read, practise quizzes, revise chapters, and prepare for the exam from one organized system.</p>
+        <p lang="en">Our goal is to help every student study with confidence, understand the theory clearly, and move closer to the dream of driving safely on Italian roads.</p>
+
+        <div class="about-mini-sections">
+          <div>
+            <span lang="en">MagicBook System</span>
+            <p lang="en">MagicBook is the digital version of the hard-copy book, upgraded with important quizzes, chapter practice, mix quiz, exam preparation, and more smart study features in one place.</p>
+          </div>
+          <div>
+            <span lang="en">Learning Made Simple</span>
+            <p lang="en">Lessons, Bangla explanations, official quiz practice, and daily guidance are arranged to make preparation clearer, faster, and easier to follow from mobile.</p>
+          </div>
+        </div>
+      </div>
+
+      <aside class="about-proof" aria-label="Community impact">
+        <span class="impact-proof-label" lang="en">Community trust</span>
+        <div class="follower-counter" aria-label="Facebook followers">
+          <span class="follower-count" data-count="123000">0</span>
+          <span class="follower-plus">+</span>
+        </div>
+        <p lang="en">A large Facebook community follows TMM Bangla Patente for lessons, updates, support, and exam preparation guidance.</p>
+
+        <div class="about-magic-note">
+          <span lang="en">Why students choose us</span>
+          <p lang="en">Clear learning, student-first support, trusted books, mobile apps, and the MagicBook web app work together to make preparation more complete.</p>
+        </div>
+
+        <div class="about-trust-list">
+          <div>
+            <strong lang="en">Students first</strong>
+            <span lang="en">A clear step-by-step learning path for students who want to understand, not just memorize.</span>
+          </div>
+          <div>
+            <strong lang="en">Bangla guidance</strong>
+            <span lang="en">Italian rules, road signs, and technical terms explained in simple Bangla.</span>
+          </div>
+          <div>
+            <strong lang="en">People's choice</strong>
+            <span lang="en">Trusted by a growing community with regular updates and useful digital tools.</span>
+          </div>
+        </div>
+
+        <div class="about-actions">
+          <button type="button" onclick="showJoinScreen()">JOIN</button>
+          <button type="button" onclick="showLoginScreen()">LOGIN</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<!-- ABOUT LEGACY - not routed -->
+<main class="about-screen hidden" id="aboutLegacy">
+  <section class="about-onepage" aria-labelledby="aboutTitleBn">
+    <header class="about-topbar">
+      <button class="about-back-btn" type="button" onclick="showLandingScreen()" aria-label="Indietro">HOME</button>
+      <a href="https://www.facebook.com/TMMBanglaPatente/" target="_blank" rel="noopener noreferrer">Facebook</a>
+    </header>
+
+    <div class="about-onepage-grid about-onepage-grid-v2" lang="bn">
+      <div class="about-copy">
+        <p class="about-kicker" lang="en">About TMM</p>
+        <h1 id="aboutTitleBn" class="about-brand-title" lang="en">TMM Bangla Patente</h1>
+        <p><strong>টিএমএম বাংলা পাতেনতে (TMM Bangla Patente)-এ আপনাকে স্বাগতম</strong> - ভাষার বাধা দূর করে ইতালীয় ড্রাইভিং লাইসেন্স জয়ের একটি বিশ্বস্ত বাংলা মাধ্যম।</p>
+        <p>ইতালিতে বসবাসরত প্রবাসী বাংলাদেশি ভাই-বোনদের জন্য আমরা একটি অনলাইন ই-লার্নিং প্ল্যাটফর্ম তৈরি করেছি, যেখানে ইতালীয় ড্রাইভিং লাইসেন্সের কঠিন নিয়মকানুন এবং জটিল টেকনিক্যাল শব্দগুলো সহজ বাংলায় ব্যাখ্যা করা হয়।</p>
+        <p>আমাদের শিক্ষার্থীদের জন্য হার্ড কপি বইয়ের পাশাপাশি আরও বই, মোবাইল অ্যাপ এবং MagicBook-এর মতো ওয়েব অ্যাপ তৈরি করা হয়েছে, যাতে শেখা, অনুশীলন এবং পরীক্ষার প্রস্তুতি একই সিস্টেমের মধ্যে আরও সহজ হয়।</p>
+        <p>আমাদের লক্ষ্য হলো সঠিক ও আধুনিক শিক্ষা উপকরণের মাধ্যমে প্রতিটি শিক্ষার্থীকে আত্মবিশ্বাসী করে তোলা, যেন তারা পরিষ্কার ধারণা নিয়ে থিওরি পরীক্ষার প্রস্তুতি নিতে পারেন। ভিডিও লেকচার, অফিসিয়াল কুইজ, MagicBook এবং নিয়মিত গাইডলাইনের সাহায্যে আপনার লাইসেন্স পাওয়ার পথকে আমরা আরও সহজ, নিরাপদ ও সংগঠিত করি।</p>
+        <p>আজই আমাদের সাথে যুক্ত হোন এবং ইতালির রাস্তায় আপনার গাড়ি চালানোর স্বপ্ন পূরণের প্রস্তুতি শুরু করুন।</p>
+
+        <div class="about-mini-sections">
+          <div>
+            <span>MagicBook System</span>
+            <p lang="en">MagicBook is the digital version of the hard-copy book, upgraded with important quizzes, chapter practice, mix quiz, exam preparation, and more smart study features in one place.</p>
+          </div>
+          <div>
+            <span>সহজ শেখার পথ</span>
+            <p>প্রতিটি বিষয় সহজ বাংলায়, ধাপে ধাপে এবং মোবাইল থেকে দ্রুত পড়ার মতো করে সাজানো, যাতে ব্যস্ত জীবনের মধ্যেও নিয়মিত প্রস্তুতি নেওয়া যায়।</p>
+          </div>
+        </div>
+      </div>
+
+      <aside class="about-proof" aria-label="Community impact">
+        <span class="impact-proof-label">কমিউনিটির আস্থা</span>
+        <div class="follower-counter" aria-label="Facebook followers">
+          <span class="follower-count" data-count="123000">0</span>
+          <span class="follower-plus">+</span>
+        </div>
+        <p>Facebook-এ TMM Bangla Patente অনুসরণ করেন এমন একটি বড় কমিউনিটি, যারা লেসন, আপডেট এবং সহায়তার জন্য আমাদের সাথে যুক্ত।</p>
+
+        <div class="about-magic-note">
+          <span>কেন মানুষ আমাদের বেছে নেয়</span>
+          <p>হার্ড কপি বইয়ের পরিচিত অভিজ্ঞতাকে ডিজিটাল করে, তার সাথে কুইজ অপশন ও অতিরিক্ত প্রস্তুতি ফিচার যুক্ত করাই MagicBook-এর সবচেয়ে বড় সুবিধা।</p>
+        </div>
+
+        <div class="about-trust-list">
+          <div>
+            <strong>শিক্ষার্থী আগে</strong>
+            <span>যারা সত্যি বুঝে শিখতে চায়, তাদের জন্য পরিষ্কার ও ধাপে ধাপে প্রস্তুতি।</span>
+          </div>
+          <div>
+            <strong>সহজ বাংলা</strong>
+            <span>ইতালীয় নিয়ম, সিগন্যাল ও টেকনিক্যাল শব্দ সহজ বাংলায় ব্যাখ্যা করা হয়।</span>
+          </div>
+          <div>
+            <strong>মানুষের পছন্দ</strong>
+            <span>বড় কমিউনিটির আস্থা, নিয়মিত আপডেট এবং ব্যবহারবান্ধব MagicBook সিস্টেম।</span>
+          </div>
+        </div>
+
+        <div class="about-actions">
+          <button type="button" onclick="showJoinScreen()">JOIN</button>
+          <button type="button" onclick="showLoginScreen()">LOGIN</button>
+        </div>
+      </aside>
+    </div>
+
+    <div class="about-onepage-grid" lang="bn">
+      <div class="about-copy">
+        <p class="about-kicker" lang="en">About TMM</p>
+        <h1 id="aboutTitle" class="about-brand-title" lang="en">TMM Bangla Patente</h1>
+        <p><strong>টিএমএম বাংলা পাতেনতে (TMM Bangla Patente)-এ আপনাকে স্বাগতম</strong> – ভাষার বাধা দূর করে ইতালীয় ড্রাইভিং লাইসেন্স জয়ের বিশ্বস্ত মাধ্যম।</p>
+        <p>টিএমএম বাংলা পাতেনতে হলো ইতালিতে বসবাসরত প্রবাসী বাংলাদেশি ভাই-বোনদের জন্য তৈরি একটি শীর্ষস্থানীয় অনলাইন ই-লার্নিং প্ল্যাটফর্ম। ইতালীয় ড্রাইভিং লাইসেন্সের (Patente) কঠিন নিয়মকানুন এবং জটিল টেকনিক্যাল শব্দগুলোকে সহজ বাংলায় রূপান্তর করে উপস্থাপন করাই আমাদের মূল কাজ।</p>
+        <p>আমাদের শিক্ষার্থীদের জন্য হার্ড কপি বইয়ের পাশাপাশি আরও বই, মোবাইল অ্যাপ এবং MagicBook-এর মতো ওয়েব অ্যাপ তৈরি করা হয়েছে, যাতে শেখা, অনুশীলন এবং পরীক্ষার প্রস্তুতি একই সিস্টেমের মধ্যে আরও সহজ হয়।</p>
+        <p>আমাদের লক্ষ্য হলো সঠিক ও আধুনিক শিক্ষা উপকরণের মাধ্যমে প্রতিটি প্রবাসীকে আত্মনির্ভরশীল করে তোলা, যেন তারা আত্মবিশ্বাসের সাথে থিওরি পরীক্ষার প্রস্তুতি নিতে পারেন।</p>
+
+        <div class="about-mini-sections">
+          <div>
+            <span>MagicBook System</span>
+            <p lang="en">MagicBook is the digital version of the hard-copy book, upgraded with important quizzes, chapter practice, mix quiz, exam preparation, and more smart study features in one place.</p>
+          </div>
+          <div>
+            <span>সহজ শেখার পথ</span>
+            <p>ভিডিও লেকচার, সহজ বাংলা ব্যাখ্যা এবং নিয়মিত গাইডলাইনের মাধ্যমে প্রস্তুতিকে আরও পরিষ্কার, নিরাপদ ও আত্মবিশ্বাসী করে তোলা আমাদের উদ্দেশ্য।</p>
+          </div>
+        </div>
+      </div>
+
+      <aside class="about-proof" aria-label="Community impact">
+        <span class="impact-proof-label">কমিউনিটির আস্থা</span>
+        <div class="follower-counter" aria-label="Facebook followers">
+          <span class="follower-count" data-count="123000">0</span>
+          <span class="follower-plus">+</span>
+        </div>
+        <p>Facebook-এ TMM Bangla Patente অনুসরণ করেন এমন একটি বড় কমিউনিটি, যারা লেসন, আপডেট এবং সহায়তার জন্য আমাদের সাথে যুক্ত।</p>
+
+        <div class="about-magic-note">
+          <span>কেন মানুষ আমাদের বেছে নেয়</span>
+          <p>হার্ড কপি বইয়ের পরিচিত অভিজ্ঞতাকে ডিজিটাল করে, তার সাথে কুইজ অপশন ও অতিরিক্ত প্রস্তুতি ফিচার যুক্ত করাই MagicBook-এর সবচেয়ে বড় সুবিধা।</p>
+        </div>
+
+        <div class="about-trust-list">
+          <div>
+            <strong>শিক্ষার্থী আগে</strong>
+            <span>যারা সত্যি বুঝে শিখতে চায়, তাদের জন্য ধাপে ধাপে পরিষ্কার প্রস্তুতি।</span>
+          </div>
+          <div>
+            <strong>সহজ বাংলা</strong>
+            <span>ইতালীয় নিয়ম ও টেকনিক্যাল শব্দ সহজ বাংলায় ব্যাখ্যা করা হয়।</span>
+          </div>
+          <div>
+            <strong>মানুষের পছন্দ</strong>
+            <span>কমিউনিটির আস্থা, নিয়মিত সাপোর্ট এবং ব্যবহারবান্ধব MagicBook সিস্টেম।</span>
+          </div>
+        </div>
+
+        <div class="about-actions">
+          <button type="button" onclick="showJoinScreen()">JOIN</button>
+          <button type="button" onclick="showLoginScreen()">LOGIN</button>
+        </div>
+      </aside>
     </div>
   </section>
 </main>
@@ -259,6 +460,10 @@ gtag('config', 'G-C5JPY9HFHD', {
 
 <!-- HOME -->
 <div class="card hidden" id="home">
+  <nav class="home-glass-nav" aria-label="Home navigation">
+    <button class="home-glass-nav-btn" type="button" onclick="document.querySelector('#home .home-promo-embed')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">ABOUT</button>
+    <button class="home-glass-nav-btn" type="button" onclick="showHome()">HOME</button>
+  </nav>
   <div class="home-promo-embed" aria-label="Packages TMM Bangla Patente">
     <iframe
       loading="lazy"

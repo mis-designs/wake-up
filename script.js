@@ -33,6 +33,7 @@ function getAppRoute(state = {}) {
   if (state.screen === "welcome") return "/";
   if (state.screen === "login") return "/login";
   if (state.screen === "join") return "/join";
+  if (state.screen === "about") return "/about";
   if (state.screen === "home") return "/home";
   if (state.screen === "chapters") return "/magic-book";
   if (state.screen === "admin") return "/admin";
@@ -45,6 +46,7 @@ function getRouteTitle(state = {}) {
   if (state.screen === "welcome") return APP_TITLE;
   if (state.screen === "login") return `${APP_TITLE} | Accesso`;
   if (state.screen === "join") return `${APP_TITLE} | Join`;
+  if (state.screen === "about") return `${APP_TITLE} | About`;
   if (state.screen === "home") return `${APP_TITLE} | Home`;
   if (state.screen === "chapters") return `${APP_TITLE} | Capitoli`;
   if (state.screen === "admin") return `${APP_TITLE} | Admin`;
@@ -76,12 +78,13 @@ function getRouteStateFromLocation() {
   if (path === "/admin") return { screen: "admin" };
   if (path === "/login") return { screen: "login" };
   if (path === "/join") return { screen: "join" };
+  if (path === "/about") return { screen: "about" };
   if (path === "/home") return { screen: "home" };
   return { screen: "welcome" };
 }
 
 function openRouteState(state = getRouteStateFromLocation()) {
-  const publicScreens = ["welcome", "login", "join"];
+  const publicScreens = ["welcome", "login", "join", "about"];
   const requestedState = publicScreens.includes(state.screen)
     ? { screen: "home" }
     : state;
@@ -489,6 +492,8 @@ window.addEventListener("load", async () => {
       showLoginScreen("Effettua nuovamente il login.", { replace: true });
     } else if (publicRoute.screen === "join") {
       showJoinScreen({ replace: true });
+    } else if (publicRoute.screen === "about") {
+      showAboutScreen({ replace: true });
     } else {
       showLandingScreen({ replace: true });
     }
@@ -527,6 +532,8 @@ window.addEventListener("load", async () => {
       showLoginScreen("", { replace: true });
     } else if (publicRoute.screen === "join") {
       showJoinScreen({ replace: true });
+    } else if (publicRoute.screen === "about") {
+      showAboutScreen({ replace: true });
     } else {
       showLandingScreen({ replace: true });
     }
@@ -1255,6 +1262,44 @@ function showJoinScreen(options = {}) {
   setLoggedOutChrome();
   currentScreen = "join";
   setAppRoute({ screen: "join" }, { replace: options.replace === true });
+}
+
+function showAboutScreen(options = {}) {
+  hideAll();
+  document.getElementById("about")?.classList.remove("hidden");
+  setChapterMode(false);
+  document.body.classList.add("public-mode");
+  updateProfileUI(false);
+  setProfileIconVisible(false);
+  setLoggedOutChrome();
+  currentScreen = "about";
+  setAppRoute({ screen: "about" }, { replace: options.replace === true });
+  requestAnimationFrame(animateFollowerCounters);
+}
+
+function formatCompactCount(value) {
+  if (value >= 1000000) return `${Math.floor(value / 1000000)}M`;
+  if (value >= 1000) return `${Math.floor(value / 1000)}K`;
+  return String(Math.floor(value));
+}
+
+function animateFollowerCounters() {
+  document.querySelectorAll(".follower-count").forEach(counter => {
+    const target = Number(counter.dataset.count || "0");
+    if (!target) return;
+    const duration = 1500;
+    const startTime = performance.now();
+
+    function tick(now) {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      counter.textContent = formatCompactCount(target * eased);
+      if (progress < 1) requestAnimationFrame(tick);
+      else counter.textContent = formatCompactCount(target);
+    }
+
+    requestAnimationFrame(tick);
+  });
 }
 
 function openJoinWhatsApp(price, duration) {
@@ -2164,7 +2209,7 @@ function showWhatsAppGroupPopup() {
  ***********************/
 function hideAll() {
   cleanupMagicBookViewer();
-  ["landing", "join", "login", "home", "chapters", "viewer", "adminPanel"].forEach(id => {
+  ["landing", "about", "join", "login", "home", "chapters", "viewer", "adminPanel"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.add("hidden");
   });
@@ -2493,7 +2538,7 @@ function openChapter(cap) {
  * APP HEADER & MENU
  ***********************/
 let currentViewingChapter = null;
-let currentScreen = "welcome"; // welcome | join | login | home | chapters | viewer | admin | exam | quizMode | examMode
+let currentScreen = "welcome"; // welcome | about | join | login | home | chapters | viewer | admin | exam | quizMode | examMode
 
 function setChapterMode(enabled, chapterNum = null) {
   const viewerBackBtn = document.getElementById("viewerBackBtn");
@@ -2624,7 +2669,7 @@ function goBack() {
     showChapters();
   } else if (currentScreen === "chapters") {
     showHome();
-  } else if (currentScreen === "join" || currentScreen === "login") {
+  } else if (currentScreen === "join" || currentScreen === "login" || currentScreen === "about") {
     showLandingScreen();
   }
   // On home screen the back button is hidden, so nothing needed
@@ -2645,6 +2690,7 @@ window.addEventListener("popstate", () => {
     const state = getRouteStateFromLocation();
     if (state.screen === "login") showLoginScreen("", { replace: true });
     else if (state.screen === "join") showJoinScreen({ replace: true });
+    else if (state.screen === "about") showAboutScreen({ replace: true });
     else showLandingScreen({ replace: true });
   }
 });

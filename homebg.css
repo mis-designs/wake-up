@@ -1,0 +1,60 @@
+/*
+  Home background file.
+  Change this file when you want a new public home/landing background.
+*/
+
+:root {
+    --home-bg-base: #111827;
+    --home-bg-layer: transparent;
+    --home-bg-overlay:
+        linear-gradient(90deg, rgba(0, 0, 0, 0.18) 0%, transparent 18%, transparent 82%, rgba(0, 0, 0, 0.16) 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 30%, rgba(0, 0, 0, 0.22) 100%);
+    --home-bg-canvas-opacity: 0;
+}
+
+.public-landing {
+    background: var(--home-bg-base);
+}
+
+.public-landing .aura-background-component {
+    background: var(--home-bg-layer);
+}
+
+.public-landing .aura-background-canvas {
+    opacity: var(--home-bg-canvas-opacity);
+}
+
+.public-landing .spline-container {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.public-landing #aura-spline {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+.public-landing::before {
+    background: var(--home-bg-overlay);
+}
+
+/*
+  Example: paste or edit your background code here.
+
+  :root {
+      --home-bg-base: #eef2f6;
+      --home-bg-layer:
+          radial-gradient(circle at 30% 45%, rgba(90, 170, 255, 0.45), transparent 28%),
+          radial-gradient(circle at 65% 38%, rgba(255, 180, 70, 0.5), transparent 30%);
+      --home-bg-canvas-opacity: 0.35;
+  }
+*/
