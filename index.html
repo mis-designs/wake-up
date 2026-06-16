@@ -90,6 +90,17 @@ gtag('config', 'G-C5JPY9HFHD', {
 </head>
 <body>
 
+<svg class="smooth-electric-filter" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="smooth-electric" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.015 0.05" numOctaves="4" result="noise">
+        <animate attributeName="seed" from="1" to="100" dur="5s" repeatCount="indefinite" />
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+  </defs>
+</svg>
+
 <!-- WHATSAPP FLOATING BUTTON -->
 <div id="whatsappBtn" class="hidden">
   <img src="assets/images/whatsapp.png" alt="">
