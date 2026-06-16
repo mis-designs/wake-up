@@ -456,18 +456,11 @@ gtag('config', 'G-C5JPY9HFHD', {
 
 <!-- HOME -->
 <div class="card hidden" id="home">
-  <nav class="home-glass-nav" aria-label="Home navigation">
-    <button class="home-glass-nav-btn" type="button" onclick="document.querySelector('#home .home-promo-embed')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">ABOUT</button>
-    <button class="home-glass-nav-btn" type="button" onclick="showHome()">HOME</button>
-  </nav>
   <div class="home-promo-embed" aria-label="Packages TMM Bangla Patente">
-    <iframe
+    <img
       loading="lazy"
-      src="https://www.canva.com/design/DAHLyZHWUYo/qHS9sfdQAw2ku5raxvnX6Q/view?embed"
-      allowfullscreen="allowfullscreen"
-      allow="fullscreen"
-      title="Packages">
-    </iframe>
+      src="/api/asset?name=ourproduct"
+      alt="Packages TMM Bangla Patente">
   </div>
   <div class="home-actions">
     <button class="home-start-btn" onclick="showChapters()" type="button" aria-label="Apri Magic Book">
