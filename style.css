@@ -2742,9 +2742,19 @@ button:active {
     padding-top: 150.3704%;
     padding-bottom: 0;
     overflow: hidden;
-    background: #fff;
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(238, 242, 255, 0.9)),
+        #ffffff;
     border-radius: 8px;
     will-change: transform;
+}
+
+#home .home-promo-embed::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: #ffffff;
+    z-index: 0;
 }
 
 #home .home-promo-embed iframe {
@@ -2758,6 +2768,7 @@ button:active {
     border: none;
     padding: 0;
     margin: 0;
+    z-index: 1;
 }
 
 .home-actions {

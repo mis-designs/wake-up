@@ -2216,6 +2216,18 @@ function hideAll() {
   document.body.classList.remove("admin-mode", "app-mode", "public-mode");
 }
 
+function loadHomePromoEmbed() {
+  const iframe = document.querySelector("#home .home-promo-embed iframe");
+  if (!iframe) return;
+
+  const src = iframe.dataset.src || iframe.getAttribute("src");
+  if (!src || iframe.getAttribute("src") === src) return;
+
+  requestAnimationFrame(() => {
+    iframe.setAttribute("src", src);
+  });
+}
+
 function showHome() {
   hideAll();
   document.getElementById("home")?.classList.remove("hidden");
@@ -2228,6 +2240,7 @@ function showHome() {
   setLoggedInChrome();
   setAppRoute({ screen: "home" });
   updateAdminEntryVisibility();
+  loadHomePromoEmbed();
   maybeShowWhatsAppGroupPopup();
 }
 
