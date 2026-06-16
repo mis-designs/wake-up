@@ -2727,7 +2727,7 @@ button:active {
 }
 
 #home .home-promo,
-#home .home-promo-frame {
+#home .home-promo-embed {
     width: 100%;
     max-width: 390px;
     margin-bottom: 12px;
@@ -2735,40 +2735,25 @@ button:active {
     box-shadow: 0 14px 28px rgba(37, 41, 67, 0.12);
 }
 
-#home .home-promo-frame {
-    --electric-radius: 24px;
-    --electric-border-inset: 0px;
-    --electric-frame-gap: 10px;
-    padding: var(--electric-frame-gap);
-    overflow: visible;
-    background: transparent;
-}
-
-#home .home-promo-frame::before {
-    z-index: 0;
-}
-
 #home .home-promo-embed {
-    position: relative;
-    width: 100%;
-    max-width: none;
-    margin-bottom: 0;
+    --electric-radius: 20px;
+    --electric-border-inset: 4px;
+    --electric-frame-gap: 10px;
     aspect-ratio: 1080 / 1624;
     overflow: hidden;
     background: #fff;
-    border-radius: calc(var(--electric-radius) - var(--electric-frame-gap));
-    box-shadow: none;
-    z-index: 1;
+    padding: var(--electric-frame-gap);
+    background-clip: content-box;
 }
 
 #home .home-promo-embed iframe {
     position: absolute;
-    left: -24px;
-    right: -24px;
-    top: -10px;
-    bottom: -34px;
-    width: calc(100% + 48px);
-    height: calc(100% + 44px);
+    left: calc(var(--electric-frame-gap) - 24px);
+    right: calc(var(--electric-frame-gap) - 24px);
+    top: calc(var(--electric-frame-gap) - 10px);
+    bottom: calc(var(--electric-frame-gap) - 34px);
+    width: calc(100% - (var(--electric-frame-gap) * 2) + 48px);
+    height: calc(100% - (var(--electric-frame-gap) * 2) + 44px);
     border: 0;
     z-index: 1;
 }
@@ -4147,7 +4132,7 @@ body.app-mode #home .section-brand {
 }
 
 body.app-mode #home .home-promo,
-body.app-mode #home .home-promo-frame {
+body.app-mode #home .home-promo-embed {
     width: auto;
     max-width: min(100%, 330px);
     max-height: calc(100dvh - 322px);
@@ -4158,7 +4143,7 @@ body.app-mode #home .home-promo {
     object-fit: contain;
 }
 
-body.app-mode #home .home-promo-frame {
+body.app-mode #home .home-promo-embed {
     width: min(100%, 41dvh, 330px);
 }
 
@@ -4323,12 +4308,12 @@ body.app-mode #whatsappBtn {
         padding-top: 64px;
     }
     body.app-mode #home .home-promo,
-    body.app-mode #home .home-promo-frame {
+    body.app-mode #home .home-promo-embed {
         max-width: min(100%, 285px);
         max-height: calc(100dvh - 276px);
         margin-bottom: 8px;
     }
-    body.app-mode #home .home-promo-frame {
+    body.app-mode #home .home-promo-embed {
         width: min(100%, 36dvh, 285px);
     }
     body.app-mode #home .home-start-btn {
@@ -4430,7 +4415,7 @@ body.app-mode #whatsappBtn {
     }
 
     #home .home-promo,
-    #home .home-promo-frame {
+    #home .home-promo-embed {
         max-width: min(100%, 320px);
     }
 
