@@ -120,11 +120,73 @@ button:active {
     transform: translateY(0) scale(0.99);
 }
 
-.smooth-electric-filter {
+.electric-border-filter {
     position: absolute;
     width: 0;
     height: 0;
     overflow: hidden;
+}
+
+.electric-card {
+    --electric-radius: 20px;
+    --electric-border-inset: 4px;
+    --electric-border-width: 2px;
+    --electric-cycle-duration: 18s;
+    --electric-cyan: #00d2ff;
+    --electric-blue-glow: rgba(0, 102, 255, 0.4);
+    --electric-purple: #a246ff;
+    --electric-purple-glow: rgba(124, 34, 255, 0.4);
+    --electric-orange: #ff6a00;
+    --electric-orange-glow: rgba(255, 55, 0, 0.4);
+    position: relative;
+    border-radius: var(--electric-radius);
+    isolation: isolate;
+}
+
+.electric-card::before {
+    content: "";
+    position: absolute;
+    inset: var(--electric-border-inset);
+    border: var(--electric-border-width) solid var(--electric-cyan);
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 3;
+    filter:
+        url(#smooth-electric)
+        drop-shadow(0 0 5px rgba(0, 210, 255, 0.6))
+        drop-shadow(0 0 15px var(--electric-blue-glow));
+    animation: electricCardColorCycle var(--electric-cycle-duration) linear infinite;
+    will-change: filter, border-color;
+}
+
+@keyframes electricCardColorCycle {
+    0%, 100% {
+        border-color: var(--electric-cyan);
+        filter:
+            url(#smooth-electric)
+            drop-shadow(0 0 5px rgba(0, 210, 255, 0.6))
+            drop-shadow(0 0 15px var(--electric-blue-glow));
+    }
+    33% {
+        border-color: var(--electric-purple);
+        filter:
+            url(#smooth-electric)
+            drop-shadow(0 0 5px rgba(162, 70, 255, 0.6))
+            drop-shadow(0 0 15px var(--electric-purple-glow));
+    }
+    66% {
+        border-color: var(--electric-orange);
+        filter:
+            url(#smooth-electric)
+            drop-shadow(0 0 5px rgba(255, 106, 0, 0.6))
+            drop-shadow(0 0 15px var(--electric-orange-glow));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .electric-card::before {
+        animation-duration: 36s;
+    }
 }
 
 .profile-btn {
@@ -2673,25 +2735,10 @@ button:active {
 }
 
 #home .home-promo-embed {
-    position: relative;
+    --electric-radius: 20px;
     aspect-ratio: 1080 / 1624;
     overflow: hidden;
     background: #fff;
-    isolation: isolate;
-}
-
-#home .home-promo-embed::before {
-    content: "";
-    position: absolute;
-    inset: 4px;
-    border: 2px solid #00d2ff;
-    border-radius: inherit;
-    pointer-events: none;
-    z-index: 2;
-    filter: url(#smooth-electric)
-            drop-shadow(0 0 5px rgba(0, 210, 255, 0.6))
-            drop-shadow(0 0 15px rgba(0, 102, 255, 0.4));
-    animation: promoElectricColorCycle 14s linear infinite;
 }
 
 #home .home-promo-embed iframe {
@@ -2704,27 +2751,6 @@ button:active {
     height: calc(100% + 44px);
     border: 0;
     z-index: 1;
-}
-
-@keyframes promoElectricColorCycle {
-    0%, 100% {
-        border-color: #00d2ff;
-        filter: url(#smooth-electric)
-                drop-shadow(0 0 5px rgba(0, 210, 255, 0.6))
-                drop-shadow(0 0 15px rgba(0, 102, 255, 0.4));
-    }
-    33% {
-        border-color: #a246ff;
-        filter: url(#smooth-electric)
-                drop-shadow(0 0 5px rgba(162, 70, 255, 0.6))
-                drop-shadow(0 0 15px rgba(124, 34, 255, 0.4));
-    }
-    66% {
-        border-color: #ff6a00;
-        filter: url(#smooth-electric)
-                drop-shadow(0 0 5px rgba(255, 106, 0, 0.6))
-                drop-shadow(0 0 15px rgba(255, 55, 0, 0.4));
-    }
 }
 
 .home-actions {

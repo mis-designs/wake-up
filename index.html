@@ -90,13 +90,13 @@ gtag('config', 'G-C5JPY9HFHD', {
 </head>
 <body>
 
-<svg class="smooth-electric-filter" aria-hidden="true" focusable="false">
+<svg class="electric-border-filter" aria-hidden="true" focusable="false">
   <defs>
     <filter id="smooth-electric" x="-30%" y="-30%" width="160%" height="160%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.015 0.05" numOctaves="4" result="noise">
-        <animate attributeName="seed" from="1" to="100" dur="5s" repeatCount="indefinite" />
+      <feTurbulence type="fractalNoise" baseFrequency="0.012 0.035" numOctaves="4" result="noise">
+        <animate attributeName="seed" from="1" to="80" dur="7s" repeatCount="indefinite" />
       </feTurbulence>
-      <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" />
     </filter>
   </defs>
 </svg>
@@ -467,7 +467,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 
 <!-- HOME -->
 <div class="card hidden" id="home">
-  <div class="home-promo-embed" aria-label="Packages TMM Bangla Patente">
+  <div class="home-promo-embed electric-card" aria-label="Packages TMM Bangla Patente">
     <iframe
       loading="lazy"
       src="https://www.canva.com/design/DAHLyZHWUYo/qHS9sfdQAw2ku5raxvnX6Q/view?embed"
