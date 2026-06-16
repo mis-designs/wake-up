@@ -2737,25 +2737,23 @@ button:active {
 
 #home .home-promo-embed {
     --electric-radius: 20px;
-    --electric-border-inset: 4px;
-    --electric-frame-gap: 10px;
+    --electric-border-inset: -3px;
+    --electric-frame-gap: 0px;
     aspect-ratio: 1080 / 1624;
     overflow: hidden;
     background: #fff;
-    padding: var(--electric-frame-gap);
-    background-clip: content-box;
 }
 
 #home .home-promo-embed iframe {
     position: absolute;
-    left: calc(var(--electric-frame-gap) - 24px);
-    right: calc(var(--electric-frame-gap) - 24px);
-    top: calc(var(--electric-frame-gap) - 10px);
-    bottom: calc(var(--electric-frame-gap) - 34px);
-    width: calc(100% - (var(--electric-frame-gap) * 2) + 48px);
-    height: calc(100% - (var(--electric-frame-gap) * 2) + 44px);
+    left: 50%;
+    top: 0;
+    width: 100%;
+    height: 100%;
     border: 0;
     z-index: 1;
+    transform: translateX(-50%) scale(1.24);
+    transform-origin: top center;
 }
 
 .home-actions {
