@@ -129,8 +129,9 @@ button:active {
 
 .electric-card {
     --electric-radius: 20px;
-    --electric-border-inset: 4px;
+    --electric-border-inset: 0px;
     --electric-border-width: 2px;
+    --electric-frame-gap: 8px;
     --electric-cycle-duration: 18s;
     --electric-cyan: #00d2ff;
     --electric-blue-glow: rgba(0, 102, 255, 0.4);
@@ -2726,7 +2727,7 @@ button:active {
 }
 
 #home .home-promo,
-#home .home-promo-embed {
+#home .home-promo-frame {
     width: 100%;
     max-width: 390px;
     margin-bottom: 12px;
@@ -2734,11 +2735,30 @@ button:active {
     box-shadow: 0 14px 28px rgba(37, 41, 67, 0.12);
 }
 
+#home .home-promo-frame {
+    --electric-radius: 24px;
+    --electric-border-inset: 0px;
+    --electric-frame-gap: 10px;
+    padding: var(--electric-frame-gap);
+    overflow: visible;
+    background: transparent;
+}
+
+#home .home-promo-frame::before {
+    z-index: 0;
+}
+
 #home .home-promo-embed {
-    --electric-radius: 20px;
+    position: relative;
+    width: 100%;
+    max-width: none;
+    margin-bottom: 0;
     aspect-ratio: 1080 / 1624;
     overflow: hidden;
     background: #fff;
+    border-radius: calc(var(--electric-radius) - var(--electric-frame-gap));
+    box-shadow: none;
+    z-index: 1;
 }
 
 #home .home-promo-embed iframe {
@@ -4127,7 +4147,7 @@ body.app-mode #home .section-brand {
 }
 
 body.app-mode #home .home-promo,
-body.app-mode #home .home-promo-embed {
+body.app-mode #home .home-promo-frame {
     width: auto;
     max-width: min(100%, 330px);
     max-height: calc(100dvh - 322px);
@@ -4138,7 +4158,7 @@ body.app-mode #home .home-promo {
     object-fit: contain;
 }
 
-body.app-mode #home .home-promo-embed {
+body.app-mode #home .home-promo-frame {
     width: min(100%, 41dvh, 330px);
 }
 
@@ -4303,12 +4323,12 @@ body.app-mode #whatsappBtn {
         padding-top: 64px;
     }
     body.app-mode #home .home-promo,
-    body.app-mode #home .home-promo-embed {
+    body.app-mode #home .home-promo-frame {
         max-width: min(100%, 285px);
         max-height: calc(100dvh - 276px);
         margin-bottom: 8px;
     }
-    body.app-mode #home .home-promo-embed {
+    body.app-mode #home .home-promo-frame {
         width: min(100%, 36dvh, 285px);
     }
     body.app-mode #home .home-start-btn {
@@ -4410,7 +4430,7 @@ body.app-mode #whatsappBtn {
     }
 
     #home .home-promo,
-    #home .home-promo-embed {
+    #home .home-promo-frame {
         max-width: min(100%, 320px);
     }
 
