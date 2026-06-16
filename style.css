@@ -2748,11 +2748,13 @@ button:active {
 }
 
 #home .home-promo-embed iframe {
+    display: block;
     position: absolute;
     width: 100%;
     height: 100%;
     top: 0;
     left: 0;
+    background: #ffffff;
     border: none;
     padding: 0;
     margin: 0;
@@ -4136,7 +4138,6 @@ body.app-mode #home .home-promo,
 body.app-mode #home .home-promo-embed {
     width: auto;
     max-width: min(100%, 330px);
-    max-height: calc(100dvh - 238px);
     margin-bottom: 0;
 }
 
@@ -4311,7 +4312,6 @@ body.app-mode #whatsappBtn {
     body.app-mode #home .home-promo,
     body.app-mode #home .home-promo-embed {
         max-width: min(100%, 285px);
-        max-height: calc(100dvh - 210px);
         margin-bottom: 0;
     }
     body.app-mode #home .home-promo-embed {
