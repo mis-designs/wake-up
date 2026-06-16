@@ -2736,21 +2736,26 @@ button:active {
 }
 
 #home .home-promo-embed {
-    --electric-radius: 20px;
-    --electric-border-inset: -3px;
-    --electric-frame-gap: 0px;
-    aspect-ratio: 1080 / 1624;
+    box-sizing: content-box;
+    position: relative;
+    height: 0;
+    padding-top: 150.3704%;
+    padding-bottom: 0;
     overflow: hidden;
     background: #fff;
+    border-radius: 8px;
+    will-change: transform;
 }
 
 #home .home-promo-embed iframe {
     position: absolute;
-    inset: 0;
     width: 100%;
     height: 100%;
-    border: 0;
-    z-index: 1;
+    top: 0;
+    left: 0;
+    border: none;
+    padding: 0;
+    margin: 0;
 }
 
 .home-actions {
