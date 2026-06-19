@@ -1945,88 +1945,154 @@ function injectWhatsAppGroupPopupStyles() {
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 18px;
-      background: rgba(6, 18, 20, 0.68);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
+      background:
+        linear-gradient(180deg, rgba(4, 13, 16, 0.58), rgba(6, 18, 20, 0.76)),
+        rgba(6, 18, 20, 0.68);
+      backdrop-filter: blur(16px) saturate(118%);
+      -webkit-backdrop-filter: blur(16px) saturate(118%);
       animation: whatsappGroupFadeIn 0.22s ease-out both;
     }
     #whatsappGroupPopupCard {
       position: relative;
       width: 100%;
-      max-width: 420px;
+      max-width: 432px;
       overflow: hidden;
-      border-radius: 26px;
-      background: linear-gradient(180deg, #ffffff 0%, #f7fffb 100%);
-      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.28);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      border-radius: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.78);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(245, 255, 250, 0.98) 100%);
+      box-shadow:
+        0 34px 90px rgba(0, 0, 0, 0.34),
+        0 2px 0 rgba(255, 255, 255, 0.72) inset;
+      font-family: 'Hind Siliguri', 'Noto Sans Bengali', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      isolation: isolate;
       animation: whatsappGroupSlideUp 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
+    #whatsappGroupPopupCard::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        linear-gradient(135deg, rgba(34, 197, 94, 0.14), transparent 38%),
+        linear-gradient(315deg, rgba(20, 184, 166, 0.12), transparent 42%);
+      pointer-events: none;
+    }
     .wgp-accent {
-      height: 7px;
-      background: linear-gradient(90deg, #16a34a 0%, #22c55e 48%, #86efac 100%);
+      height: 6px;
+      background: linear-gradient(90deg, #0f9f4a 0%, #25d366 46%, #9af5bd 100%);
     }
     .wgp-content {
-      padding: 24px 20px 20px;
+      padding: 23px 22px 22px;
       text-align: center;
     }
     .wgp-lang {
       position: absolute;
-      top: 14px;
-      right: 14px;
+      top: 15px;
+      right: 15px;
       display: inline-flex;
       gap: 2px;
       padding: 2px;
       border-radius: 999px;
-      background: #edfdf4;
-      border: 1px solid #c7f5d8;
+      background: rgba(237, 253, 244, 0.92);
+      border: 1px solid rgba(165, 243, 192, 0.9);
+      box-shadow: 0 10px 26px rgba(15, 118, 61, 0.12);
+      z-index: 2;
     }
     .wgp-lang button {
-      min-width: 30px;
-      height: 24px;
+      min-width: 42px;
+      height: 28px;
       border: 0;
       border-radius: 999px;
       background: transparent;
       color: #12833d;
-      font: 800 11px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font: 800 11px/1 Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      letter-spacing: 0.02em;
       cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
     }
     .wgp-lang button.is-active {
-      background: #16a34a;
+      background: linear-gradient(135deg, #119948, #22c55e);
       color: #ffffff;
-      box-shadow: 0 6px 14px rgba(22, 163, 74, 0.25);
+      box-shadow: 0 8px 18px rgba(22, 163, 74, 0.26);
+    }
+    .wgp-close {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      width: 34px;
+      height: 34px;
+      border: 1px solid rgba(209, 250, 229, 0.9);
+      border-radius: 999px;
+      background: rgba(247, 255, 251, 0.84);
+      color: #4f6f5d;
+      font: 800 18px/1 Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(15, 118, 61, 0.1);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .wgp-close::before,
+    .wgp-close::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 14px;
+      height: 2px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+    .wgp-close::before {
+      transform: translate(-50%, -50%) rotate(45deg);
+    }
+    .wgp-close::after {
+      transform: translate(-50%, -50%) rotate(-45deg);
+    }
+    .wgp-close:focus-visible,
+    .wgp-lang button:focus-visible,
+    .wgp-primary:focus-visible,
+    .wgp-secondary:focus-visible {
+      outline: 3px solid rgba(37, 211, 102, 0.28);
+      outline-offset: 3px;
     }
     .wgp-icon {
-      width: 70px;
-      height: 70px;
-      margin: 42px auto 16px;
-      border-radius: 22px;
+      width: 72px;
+      height: 72px;
+      margin: 40px auto 17px;
+      border-radius: 24px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at 30% 20%, #dcfce7 0%, #22c55e 62%, #128c45 100%);
+      background: linear-gradient(145deg, #78f2a4 0%, #25d366 52%, #099143 100%);
       color: #ffffff;
       font-size: 36px;
-      box-shadow: 0 18px 32px rgba(22, 163, 74, 0.28);
+      box-shadow:
+        0 18px 36px rgba(22, 163, 74, 0.3),
+        0 1px 0 rgba(255, 255, 255, 0.48) inset;
     }
     .wgp-icon img {
-      width: 42px;
-      height: 42px;
+      width: 44px;
+      height: 44px;
       object-fit: contain;
     }
     .wgp-title {
-      margin: 0 6px 10px;
+      margin: 0 auto 10px;
+      max-width: 372px;
       color: #10251a;
-      font-size: 23px;
-      font-weight: 850;
-      line-height: 1.22;
+      font-size: clamp(21px, 5.2vw, 24px);
+      font-weight: 800;
+      line-height: 1.16;
+      letter-spacing: 0;
+      text-wrap: balance;
     }
     .wgp-message {
       margin: 0 auto 18px;
-      max-width: 340px;
-      color: #53615a;
+      max-width: 352px;
+      color: #506259;
       font-size: 15px;
-      line-height: 1.55;
+      line-height: 1.48;
+      text-wrap: pretty;
     }
     .wgp-actions {
       display: grid;
@@ -2036,23 +2102,26 @@ function injectWhatsAppGroupPopupStyles() {
     .wgp-primary,
     .wgp-secondary {
       min-height: 48px;
-      border-radius: 15px;
+      border-radius: 16px;
       border: 0;
-      font: 800 15px/1.2 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font: 800 15px/1.2 'Hind Siliguri', 'Noto Sans Bengali', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       cursor: pointer;
       transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
       -webkit-tap-highlight-color: transparent;
     }
     .wgp-primary {
       color: #ffffff;
-      background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
-      box-shadow: 0 13px 28px rgba(22, 163, 74, 0.26);
+      background: linear-gradient(135deg, #0f9f4a 0%, #25d366 100%);
+      box-shadow:
+        0 16px 30px rgba(22, 163, 74, 0.3),
+        0 1px 0 rgba(255, 255, 255, 0.3) inset;
     }
     .wgp-secondary {
-      color: #29543a;
-      background: #eefaf3;
-      border: 1px solid #d6f2df;
+      color: #27533a;
+      background: rgba(239, 252, 245, 0.9);
+      border: 1px solid rgba(190, 242, 208, 0.9);
     }
+    .wgp-close:active,
     .wgp-primary:active,
     .wgp-secondary:active {
       transform: scale(0.985);
@@ -2060,15 +2129,17 @@ function injectWhatsAppGroupPopupStyles() {
     .wgp-note {
       margin: 13px 0 0;
       color: #789083;
-      font-size: 12px;
-      line-height: 1.4;
+      font-size: 12.5px;
+      line-height: 1.35;
     }
     @media (max-width: 380px) {
+      #whatsappGroupPopupOverlay { padding-left: 14px; padding-right: 14px; }
       .wgp-content { padding: 22px 16px 18px; }
-      .wgp-title { font-size: 20px; }
+      .wgp-title { font-size: 20px; max-width: 310px; }
       .wgp-message { font-size: 14px; }
       .wgp-lang { top: 12px; right: 12px; }
-      .wgp-lang button { min-width: 28px; height: 22px; font-size: 10px; }
+      .wgp-lang button { min-width: 36px; height: 26px; font-size: 10px; }
+      .wgp-close { top: 12px; left: 12px; width: 32px; height: 32px; }
       .wgp-icon { margin-top: 38px; }
     }
   `;
@@ -2097,6 +2168,12 @@ function showWhatsAppGroupPopup() {
 
   const langToggle = document.createElement("div");
   langToggle.className = "wgp-lang";
+  langToggle.setAttribute("aria-label", "Language");
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "wgp-close";
+  closeBtn.setAttribute("aria-label", "Close");
 
   const bnBtn = document.createElement("button");
   bnBtn.type = "button";
@@ -2139,6 +2216,7 @@ function showWhatsAppGroupPopup() {
 
   function renderLanguage() {
     const text = WHATSAPP_GROUP_POPUP_TEXT[lang];
+    card.setAttribute("lang", lang === "bn" ? "bn" : "it");
     title.textContent = text.title;
     message.textContent = text.message;
     primary.textContent = text.primary;
@@ -2171,6 +2249,11 @@ function showWhatsAppGroupPopup() {
     overlay.remove();
   });
 
+  closeBtn.addEventListener("click", () => {
+    Storage.set(WHATSAPP_GROUP_DISMISSED_AT_KEY, String(Date.now()));
+    overlay.remove();
+  });
+
   overlay.addEventListener("click", event => {
     if (event.target === overlay) {
       Storage.set(WHATSAPP_GROUP_DISMISSED_AT_KEY, String(Date.now()));
@@ -2183,6 +2266,7 @@ function showWhatsAppGroupPopup() {
   actions.appendChild(primary);
   actions.appendChild(secondary);
   content.appendChild(langToggle);
+  content.appendChild(closeBtn);
   content.appendChild(icon);
   content.appendChild(title);
   content.appendChild(message);
