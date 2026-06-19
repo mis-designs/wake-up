@@ -5498,14 +5498,14 @@ body.qms-open { overflow: hidden; }
     width: min(calc(100% - 28px), 460px);
     min-height: 68px;
     transform: translateX(-50%);
-    padding: 10px 44px 10px 10px;
+    padding: 10px;
     border-radius: 14px;
     background: rgba(250, 248, 243, 0.97);
     box-shadow: 0 18px 42px rgba(26, 24, 24, 0.18);
     display: grid;
-    grid-template-columns: 46px minmax(0, 1fr) auto;
+    grid-template-columns: 46px minmax(0, 1fr) auto 30px;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     border: 1px solid rgba(26, 24, 24, 0.12);
     backdrop-filter: blur(12px);
 }
@@ -5552,6 +5552,7 @@ body.qms-open { overflow: hidden; }
 }
 
 .install-prompt-btn {
+    width: auto;
     height: 38px;
     padding: 0 14px;
     border: none;
@@ -5570,11 +5571,11 @@ body.qms-open { overflow: hidden; }
 }
 
 .install-prompt-close {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 28px;
-    height: 28px;
+    position: static;
+    justify-self: end;
+    width: 30px;
+    height: 38px;
+    padding: 0;
     border: none;
     border-radius: 8px;
     background: rgba(26, 24, 24, 0.08);
@@ -5583,6 +5584,9 @@ body.qms-open { overflow: hidden; }
     line-height: 1;
     cursor: pointer;
     box-shadow: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .install-prompt-close:hover {
@@ -5593,12 +5597,31 @@ body.qms-open { overflow: hidden; }
 
 @media (max-width: 420px) {
     .install-prompt {
-        grid-template-columns: 42px minmax(0, 1fr);
-        padding-right: 42px;
+        grid-template-columns: 42px minmax(0, 1fr) 30px;
+        grid-template-rows: auto auto;
+    }
+
+    .install-prompt-icon {
+        grid-row: 1 / span 2;
+        width: 42px;
+        height: 42px;
+    }
+
+    .install-prompt-copy {
+        grid-column: 2;
+        grid-row: 1;
     }
 
     .install-prompt-btn {
         grid-column: 2;
+        grid-row: 2;
+        justify-self: start;
         width: max-content;
+        height: 34px;
+    }
+
+    .install-prompt-close {
+        grid-column: 3;
+        grid-row: 1 / span 2;
     }
 }
