@@ -161,61 +161,75 @@ a:focus-visible {
     --electric-border-inset: 0px;
     --electric-border-width: 2px;
     --electric-frame-gap: 8px;
-    --electric-cycle-duration: 18s;
-    --electric-cyan: #00d2ff;
-    --electric-blue-glow: rgba(0, 102, 255, 0.4);
-    --electric-purple: #a246ff;
-    --electric-purple-glow: rgba(124, 34, 255, 0.4);
-    --electric-orange: #ff6a00;
-    --electric-orange-glow: rgba(255, 55, 0, 0.4);
+    --electric-cycle-duration: 8s;
+    --electric-cyan: #18d9ff;
+    --electric-purple: #b84cff;
+    --electric-pink: #ff4bc8;
+    --electric-orange: #ff8a1f;
     position: relative;
     border-radius: var(--electric-radius);
     isolation: isolate;
 }
 
-.electric-card::before {
+.electric-card::before,
+.electric-card::after {
     content: "";
     position: absolute;
     inset: var(--electric-border-inset);
-    border: var(--electric-border-width) solid var(--electric-cyan);
     border-radius: inherit;
     pointer-events: none;
-    z-index: 3;
-    filter:
-        url(#smooth-electric)
-        drop-shadow(0 0 5px rgba(0, 210, 255, 0.6))
-        drop-shadow(0 0 15px var(--electric-blue-glow));
-    animation: electricCardColorCycle var(--electric-cycle-duration) linear infinite;
-    will-change: filter, border-color;
+    padding: var(--electric-border-width);
+    background:
+        linear-gradient(
+            135deg,
+            var(--electric-cyan) 0%,
+            var(--electric-purple) 30%,
+            var(--electric-pink) 56%,
+            var(--electric-orange) 76%,
+            var(--electric-cyan) 100%
+        );
+    -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
 }
 
-@keyframes electricCardColorCycle {
+.electric-card::before {
+    z-index: 3;
+    filter:
+        drop-shadow(0 0 4px rgba(24, 217, 255, 0.64))
+        drop-shadow(0 0 13px rgba(184, 76, 255, 0.42));
+    animation: electricCardGlow var(--electric-cycle-duration) ease-in-out infinite;
+}
+
+.electric-card::after {
+    inset: calc(var(--electric-border-inset) - 2px);
+    z-index: 2;
+    opacity: 0.42;
+    filter: blur(8px);
+    animation: electricCardGlow var(--electric-cycle-duration) ease-in-out infinite reverse;
+}
+
+@keyframes electricCardGlow {
     0%, 100% {
-        border-color: var(--electric-cyan);
         filter:
-            url(#smooth-electric)
-            drop-shadow(0 0 5px rgba(0, 210, 255, 0.6))
-            drop-shadow(0 0 15px var(--electric-blue-glow));
+            hue-rotate(0deg)
+            drop-shadow(0 0 4px rgba(24, 217, 255, 0.62))
+            drop-shadow(0 0 14px rgba(184, 76, 255, 0.38));
     }
-    33% {
-        border-color: var(--electric-purple);
+    50% {
         filter:
-            url(#smooth-electric)
-            drop-shadow(0 0 5px rgba(162, 70, 255, 0.6))
-            drop-shadow(0 0 15px var(--electric-purple-glow));
-    }
-    66% {
-        border-color: var(--electric-orange);
-        filter:
-            url(#smooth-electric)
-            drop-shadow(0 0 5px rgba(255, 106, 0, 0.6))
-            drop-shadow(0 0 15px var(--electric-orange-glow));
+            hue-rotate(42deg)
+            drop-shadow(0 0 5px rgba(255, 75, 200, 0.62))
+            drop-shadow(0 0 16px rgba(255, 138, 31, 0.4));
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .electric-card::before {
-        animation-duration: 36s;
+    .electric-card::before,
+    .electric-card::after {
+        animation: none;
     }
 }
 

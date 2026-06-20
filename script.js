@@ -740,7 +740,7 @@ async function login() {
     loginButton.textContent = "Verifica...";
   }
 
-  if (err) err.textContent = "Verifica in corso...";
+  if (err) err.textContent = "";
 
   try {
     const data = await requestAuthAction({
