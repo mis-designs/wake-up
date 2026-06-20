@@ -161,11 +161,9 @@ a:focus-visible {
     --electric-border-inset: 0px;
     --electric-border-width: 2px;
     --electric-frame-gap: 8px;
-    --electric-cycle-duration: 8s;
-    --electric-cyan: #18d9ff;
-    --electric-purple: #b84cff;
-    --electric-pink: #ff4bc8;
-    --electric-orange: #ff8a1f;
+    --electric-border-color: #dd8448;
+    --electric-light-color: #ffc16f;
+    --electric-gradient-color: rgba(221, 132, 72, 0.24);
     position: relative;
     border-radius: var(--electric-radius);
     isolation: isolate;
@@ -178,58 +176,34 @@ a:focus-visible {
     inset: var(--electric-border-inset);
     border-radius: inherit;
     pointer-events: none;
-    padding: var(--electric-border-width);
-    background:
-        linear-gradient(
-            135deg,
-            var(--electric-cyan) 0%,
-            var(--electric-purple) 30%,
-            var(--electric-pink) 56%,
-            var(--electric-orange) 76%,
-            var(--electric-cyan) 100%
-        );
-    -webkit-mask:
-        linear-gradient(#000 0 0) content-box,
-        linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
 }
 
 .electric-card::before {
-    z-index: 3;
+    z-index: 2;
+    border: var(--electric-border-width) solid var(--electric-border-color);
     filter:
-        drop-shadow(0 0 4px rgba(24, 217, 255, 0.64))
-        drop-shadow(0 0 13px rgba(184, 76, 255, 0.42));
-    animation: electricCardGlow var(--electric-cycle-duration) ease-in-out infinite;
+        url(#turbulent-displace)
+        drop-shadow(0 0 3px rgba(255, 193, 111, 0.86))
+        drop-shadow(0 0 12px rgba(221, 132, 72, 0.72));
 }
 
 .electric-card::after {
-    inset: calc(var(--electric-border-inset) - 2px);
-    z-index: 2;
-    opacity: 0.42;
-    filter: blur(8px);
-    animation: electricCardGlow var(--electric-cycle-duration) ease-in-out infinite reverse;
-}
-
-@keyframes electricCardGlow {
-    0%, 100% {
-        filter:
-            hue-rotate(0deg)
-            drop-shadow(0 0 4px rgba(24, 217, 255, 0.62))
-            drop-shadow(0 0 14px rgba(184, 76, 255, 0.38));
-    }
-    50% {
-        filter:
-            hue-rotate(42deg)
-            drop-shadow(0 0 5px rgba(255, 75, 200, 0.62))
-            drop-shadow(0 0 16px rgba(255, 138, 31, 0.4));
-    }
+    inset: calc(var(--electric-border-inset) - 4px);
+    z-index: 1;
+    opacity: 0.58;
+    background:
+        linear-gradient(-30deg, var(--electric-gradient-color), transparent 42%, rgba(255, 193, 111, 0.28)),
+        linear-gradient(135deg, transparent, rgba(221, 132, 72, 0.2), transparent);
+    box-shadow:
+        0 0 0 1px rgba(255, 193, 111, 0.18),
+        0 0 18px rgba(221, 132, 72, 0.46),
+        0 0 38px rgba(221, 132, 72, 0.34);
+    filter: blur(5px);
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .electric-card::before,
-    .electric-card::after {
-        animation: none;
+    .electric-border-filter animate {
+        display: none;
     }
 }
 
@@ -2791,7 +2765,8 @@ a:focus-visible {
     box-shadow: none;
 }
 
-#home .home-promo-shell::before {
+#home .home-promo-shell::before,
+#home .home-promo-shell::after {
     z-index: 0;
 }
 
