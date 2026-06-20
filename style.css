@@ -3609,42 +3609,41 @@ a:focus-visible {
 }
 
 .viewer-loading {
-    max-width: 900px;
-    min-height: min(70dvh, 820px);
+    width: min(100%, 360px);
+    min-height: min(64dvh, 560px);
     margin: 20px auto;
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    border-radius: 8px;
+    padding: clamp(18px, 4vw, 28px) 0;
     z-index: 12;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 14px;
-    color: var(--color-dark);
-    font-size: 14px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
+    gap: 13px;
+    color: #031b46;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    background: #fff;
-    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.42);
+    background: transparent;
+    box-shadow: none;
     cursor: default;
     pointer-events: auto;
-    transition: box-shadow 0.22s ease, transform 0.22s ease;
+    transition: opacity 0.22s ease, transform 0.22s ease;
 }
 
 .page + .viewer-loading {
-    min-height: 220px;
-    padding: 24px 0;
+    min-height: 190px;
+    padding: 24px 0 10px;
 }
 
 .viewer-loading-figure {
     width: min(230px, 72vw);
     aspect-ratio: 16 / 10;
-    border: 1px solid rgba(37, 41, 67, 0.12);
-    border-radius: 18px;
+    border: 1px solid rgba(3, 27, 70, 0.14);
+    border-radius: 17px;
     overflow: hidden;
-    background: linear-gradient(135deg, #eef2ff, #ffffff);
-    box-shadow: 0 16px 34px rgba(37, 41, 67, 0.16);
+    background: #ffffff;
+    box-shadow: 0 18px 46px rgba(3, 27, 70, 0.12);
     opacity: 0;
     transform: translateY(8px);
     transition: opacity 0.18s ease, transform 0.18s ease;
@@ -3655,7 +3654,7 @@ a:focus-visible {
     height: 100%;
     display: block;
     object-fit: contain;
-    padding: 8px;
+    padding: 12px;
     background: #fff;
     border-radius: inherit;
 }
@@ -3672,10 +3671,10 @@ a:focus-visible {
 
 .viewer-loading-bar {
     width: min(260px, 74vw);
-    height: 8px;
+    height: 7px;
     border-radius: 999px;
     overflow: hidden;
-    background: rgba(37, 41, 67, 0.08);
+    background: rgba(3, 27, 70, 0.09);
     opacity: 0;
     transform: translateY(8px);
     transition: opacity 0.18s ease, transform 0.18s ease;
@@ -3686,14 +3685,13 @@ a:focus-visible {
     width: 62%;
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, #3a4efb, #00d4ff, #c9f41d, #ff4d8d, #3a4efb);
+    background: linear-gradient(90deg, #58db9a, #c9f41d, #f1b44c, #ff5f7d);
     background-size: 240% 100%;
     animation: loadingGradientBar 1.15s linear infinite;
 }
 
 .viewer-loading.is-active {
     cursor: progress;
-    box-shadow: 0 22px 54px rgba(0, 0, 0, 0.48);
 }
 
 .viewer-loading.is-active .viewer-loading-figure,
