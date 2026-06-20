@@ -1,9 +1,9 @@
-const CACHE_NAME = "magicbook-pwa-v13";
+const CACHE_NAME = "magicbook-pwa-v14";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
-  "/style.css?v=6",
+  "/style.css?v=21",
   "/mystyle.css?v=24",
   "/script.js?v=6",
   "/quiz.js?v=28",
@@ -50,8 +50,10 @@ self.addEventListener("fetch", event => {
             .then(cached => cached || response);
         }
 
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(request, copy)).catch(() => {});
+        if (url.origin === self.location.origin && response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, copy)).catch(() => {});
+        }
         return response;
       })
       .catch(() => {

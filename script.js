@@ -10,6 +10,12 @@ const ADMIN_API = "/api/admin";
 const APP_TITLE = "MagicBook";
 let applyingRouteFromHistory = false;
 
+function openExternalUrl(url) {
+  const opened = window.open(url, "_blank", "noopener,noreferrer");
+  if (opened) opened.opener = null;
+  return opened;
+}
+
 function normalizeRoutePath(path = window.location.pathname) {
   return String(path || "/").replace(/\/+$/, "") || "/";
 }
@@ -1305,7 +1311,7 @@ function animateFollowerCounters() {
 function openJoinWhatsApp(price, duration) {
   const msgText = `Ciao, voglio attivare il pacchetto MagicBook ${price} (${duration}).`;
   const url = `https://wa.me/${RENEW_WHATSAPP_NUMBER}?text=${encodeURIComponent(msgText)}`;
-  window.open(url, "_blank", "noopener");
+  openExternalUrl(url);
 }
 
 function showLoginScreen(message = "", options = {}) {
@@ -1594,7 +1600,7 @@ function showBanglaRenewPopup(message, daysLeft = null) {
   primary.textContent = "WhatsApp";
   primary.onclick = () => {
     const url = `https://wa.me/${RENEW_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank", "noopener");
+    openExternalUrl(url);
     overlay.remove();
   };
 
@@ -1814,7 +1820,7 @@ function showRenewPopup(daysLeft) {
       const phone = Storage.get(KEYS.phone) || "";
       const msgText = `Ciao, voglio attivare il pacchetto ${pkg.msgPrice} (${pkg.msgDays} giorni)${phone ? `. Numero: ${phone}` : ""}`;
       const url = `https://wa.me/${RENEW_WHATSAPP_NUMBER}?text=${encodeURIComponent(msgText)}`;
-      window.open(url, "_blank");
+      openExternalUrl(url);
       overlay.remove();
     };
 
@@ -1915,13 +1921,13 @@ function openWhatsAppGroupLink() {
     window.location.href = intentUrl;
 
     setTimeout(() => {
-      window.open(normalLink, "_blank");
+      openExternalUrl(normalLink);
     }, 1200);
 
     return;
   }
 
-  window.open(normalLink, "_blank");
+  openExternalUrl(normalLink);
 }
 
 function injectWhatsAppGroupPopupStyles() {
@@ -4123,7 +4129,7 @@ function adminOpenUserWhatsApp(user) {
   }
 
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(getAdminWhatsAppText(user))}`;
-  window.open(url, "_blank", "noopener");
+  openExternalUrl(url);
 }
 
 function adminOpenConfirm(action, user) {
@@ -4232,10 +4238,7 @@ if (whatsappBtn) {
 
   whatsappBtn.addEventListener("click", () => {
     if (!moved) {
-      window.open(
-        "https://api.whatsapp.com/send/?phone=393663584525&text&type=phone_number&app_absent=0",
-        "_blank"
-      );
+      openExternalUrl("https://api.whatsapp.com/send/?phone=393663584525&text&type=phone_number&app_absent=0");
     }
   });
 }
@@ -4324,7 +4327,7 @@ if (whatsappBtn) {
     if (promptBtn.dataset.mode === "ios") {
       hidePrompt();
       if (!isStandalone()) {
-        window.open(window.location.href, "_blank", "noopener");
+        openExternalUrl(window.location.href);
       }
       return;
     }
