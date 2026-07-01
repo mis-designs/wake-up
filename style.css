@@ -205,6 +205,10 @@ a:focus-visible {
     .electric-border-filter animate {
         display: none;
     }
+
+    .app-unicorn-layer {
+        display: none;
+    }
 }
 
 .profile-btn {
@@ -2580,12 +2584,58 @@ a:focus-visible {
 }
 
 #home {
+    position: relative;
     padding-top: calc(env(safe-area-inset-top, 0px) + 28px);
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 38px);
+    background: #ffffff;
+    overflow: hidden;
 }
 
 #home::before {
     display: none;
+}
+
+#home > :not(.app-unicorn-bg),
+#chapters > :not(.app-unicorn-bg) {
+    position: relative;
+    z-index: 1;
+}
+
+.app-unicorn-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    background: #ffffff;
+}
+
+.app-unicorn-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.42)),
+        radial-gradient(circle at 50% 100%, rgba(255, 255, 255, 0.48), transparent 54%);
+    pointer-events: none;
+}
+
+.app-unicorn-layer,
+.app-unicorn-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.app-unicorn-layer {
+    opacity: 0.72;
+}
+
+.app-unicorn-canvas {
+    transform: scale(1.02);
 }
 
 .home-glass-nav {
@@ -2881,13 +2931,13 @@ a:focus-visible {
 }
 
 #login > :not(.watermark-link),
-#home > :not(.watermark-link) {
+#home > :not(.watermark-link):not(.app-unicorn-bg) {
     width: min(100%, 460px);
     margin-left: auto;
     margin-right: auto;
 }
 
-#chapters > :not(.watermark-link) {
+#chapters > :not(.watermark-link):not(.app-unicorn-bg) {
     width: min(100%, 820px);
     margin-left: auto;
     margin-right: auto;
@@ -3117,6 +3167,8 @@ a:focus-visible {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 26px);
     display: flex;
     flex-direction: column;
+    background: #ffffff;
+    overflow: hidden;
 }
 
 .lesson-head {

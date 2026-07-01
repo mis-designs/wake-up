@@ -1,14 +1,16 @@
-const CACHE_NAME = "magicbook-pwa-v14";
+const CACHE_NAME = "magicbook-pwa-v15";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
-  "/style.css?v=21",
-  "/mystyle.css?v=24",
-  "/script.js?v=6",
-  "/quiz.js?v=28",
-  "/manifest.webmanifest",
-  "/icons/mg_logo.png"
+  "/style.css?v=22",
+  "/homebg.css?v=3",
+  "/mystyle.css?v=25",
+  "/script.js?v=7",
+  "/quiz.js?v=29",
+  "/manifest.webmanifest?v=15",
+  "/icons/mg_logo.png",
+  "/icons/intro01.jpg?v=20260701"
 ];
 
 self.addEventListener("install", event => {

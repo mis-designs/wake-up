@@ -2309,6 +2309,7 @@ function hideAll() {
 function showHome() {
   hideAll();
   document.getElementById("home")?.classList.remove("hidden");
+  window.initHomeAura?.();
   setChapterMode(false);
   document.body.classList.add("app-mode");
   showAppHeader("home");
@@ -2324,6 +2325,7 @@ function showHome() {
 function showChapters() {
   hideAll();
   document.getElementById("chapters")?.classList.remove("hidden");
+  window.initHomeAura?.();
   setChapterMode(false);
   document.body.classList.add("app-mode");
   showAppHeader("chapters");
@@ -4306,7 +4308,10 @@ if (whatsappBtn) {
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+      navigator.serviceWorker
+        .register("/service-worker.js?v=15", { updateViaCache: "none" })
+        .then(registration => registration.update())
+        .catch(() => {});
     });
   }
 

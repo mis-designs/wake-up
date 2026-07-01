@@ -4,5 +4,19 @@
 /assets/*
   X-Robots-Tag: noindex, noimageindex
 
+/
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/index.html
+  Cache-Control: no-cache, no-store, must-revalidate
+
 /quiz.html
+  Cache-Control: no-cache, no-store, must-revalidate
   X-Robots-Tag: noindex, nofollow, noimageindex
+
+/service-worker.js
+  Cache-Control: no-cache, no-store, must-revalidate
+  Service-Worker-Allowed: /
+
+/manifest.webmanifest
+  Cache-Control: no-cache, must-revalidate
