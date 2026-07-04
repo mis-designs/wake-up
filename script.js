@@ -2324,7 +2324,6 @@ function showHome() {
 function showChapters() {
   hideAll();
   document.getElementById("chapters")?.classList.remove("hidden");
-  window.initHomeAura?.();
   setChapterMode(false);
   document.body.classList.add("app-mode");
   showAppHeader("chapters");
@@ -4308,7 +4307,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("/service-worker.js?v=16", { updateViaCache: "none" })
+        .register("/service-worker.js?v=17", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });

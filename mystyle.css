@@ -37,7 +37,7 @@ body {
 
 body {
   min-height: 0;
-  background: linear-gradient(180deg, #eef2ff 0%, #dee0ed 100%);
+  background: #ffffff;
   font-family: Arial;
   color: var(--color-text);
 }
@@ -1024,7 +1024,7 @@ body.loading-open {
 
 @media (min-width: 768px) {
   body {
-    background: var(--color-light);
+    background: #ffffff;
   }
 
   .quiz-container {
