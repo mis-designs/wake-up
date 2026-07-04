@@ -1,12 +1,12 @@
-const CACHE_NAME = "magicbook-pwa-v15";
+const CACHE_NAME = "magicbook-pwa-v16";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
-  "/style.css?v=22",
+  "/style.css?v=23",
   "/homebg.css?v=3",
   "/mystyle.css?v=25",
-  "/script.js?v=7",
+  "/script.js?v=8",
   "/quiz.js?v=29",
   "/manifest.webmanifest?v=15",
   "/icons/mg_logo.png",
@@ -16,7 +16,9 @@ const STATIC_ASSETS = [
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(STATIC_ASSETS))
+      .then(cache => Promise.allSettled(
+        STATIC_ASSETS.map(asset => cache.add(asset))
+      ))
       .catch(() => {})
   );
   self.skipWaiting();

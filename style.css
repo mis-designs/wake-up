@@ -149,63 +149,7 @@ a:focus-visible {
     outline-offset: 3px;
 }
 
-.electric-border-filter {
-    position: absolute;
-    width: 0;
-    height: 0;
-    overflow: hidden;
-}
-
-.electric-card {
-    --electric-radius: 20px;
-    --electric-border-inset: 0px;
-    --electric-border-width: 2px;
-    --electric-frame-gap: 8px;
-    --electric-border-color: #dd8448;
-    --electric-light-color: #ffc16f;
-    --electric-gradient-color: rgba(221, 132, 72, 0.24);
-    position: relative;
-    border-radius: var(--electric-radius);
-    isolation: isolate;
-}
-
-.electric-card::before,
-.electric-card::after {
-    content: "";
-    position: absolute;
-    inset: var(--electric-border-inset);
-    border-radius: inherit;
-    pointer-events: none;
-}
-
-.electric-card::before {
-    z-index: 2;
-    border: var(--electric-border-width) solid var(--electric-border-color);
-    filter:
-        url(#turbulent-displace)
-        drop-shadow(0 0 3px rgba(255, 193, 111, 0.86))
-        drop-shadow(0 0 12px rgba(221, 132, 72, 0.72));
-}
-
-.electric-card::after {
-    inset: calc(var(--electric-border-inset) - 4px);
-    z-index: 1;
-    opacity: 0.58;
-    background:
-        linear-gradient(-30deg, var(--electric-gradient-color), transparent 42%, rgba(255, 193, 111, 0.28)),
-        linear-gradient(135deg, transparent, rgba(221, 132, 72, 0.2), transparent);
-    box-shadow:
-        0 0 0 1px rgba(255, 193, 111, 0.18),
-        0 0 18px rgba(221, 132, 72, 0.46),
-        0 0 38px rgba(221, 132, 72, 0.34);
-    filter: blur(5px);
-}
-
 @media (prefers-reduced-motion: reduce) {
-    .electric-border-filter animate {
-        display: none;
-    }
-
     .app-unicorn-layer {
         display: none;
     }
@@ -2805,19 +2749,9 @@ a:focus-visible {
 }
 
 #home .home-promo-shell {
-    --electric-radius: 24px;
-    --electric-border-inset: 7px;
-    --electric-border-width: 2px;
-    --electric-cycle-duration: 18s;
-    padding: 15px;
-    overflow: visible;
-    background: transparent;
-    box-shadow: none;
-}
-
-#home .home-promo-shell::before,
-#home .home-promo-shell::after {
-    z-index: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #ffffff;
 }
 
 #home .home-promo-embed {

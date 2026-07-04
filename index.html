@@ -90,42 +90,10 @@ gtag('config', 'G-C5JPY9HFHD', {
 <meta name="theme-color" content="#dee0ed">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MagicBook">
-<link rel="stylesheet" href="style.css?v=22">
+<link rel="stylesheet" href="style.css?v=23">
 <link rel="stylesheet" href="homebg.css?v=3">
 </head>
 <body>
-
-<svg class="electric-border-filter" aria-hidden="true" focusable="false">
-  <defs>
-    <filter id="turbulent-displace" color-interpolation-filters="sRGB" x="-20%" y="-20%" width="140%" height="140%">
-      <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="10" result="noise1" seed="1" />
-      <feOffset in="noise1" dx="0" dy="0" result="offsetNoise1">
-        <animate attributeName="dy" values="700; 0" dur="6s" repeatCount="indefinite" calcMode="linear" />
-      </feOffset>
-
-      <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="10" result="noise2" seed="1" />
-      <feOffset in="noise2" dx="0" dy="0" result="offsetNoise2">
-        <animate attributeName="dy" values="0; -700" dur="6s" repeatCount="indefinite" calcMode="linear" />
-      </feOffset>
-
-      <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="10" result="noise3" seed="2" />
-      <feOffset in="noise3" dx="0" dy="0" result="offsetNoise3">
-        <animate attributeName="dx" values="490; 0" dur="6s" repeatCount="indefinite" calcMode="linear" />
-      </feOffset>
-
-      <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="10" result="noise4" seed="2" />
-      <feOffset in="noise4" dx="0" dy="0" result="offsetNoise4">
-        <animate attributeName="dx" values="0; -490" dur="6s" repeatCount="indefinite" calcMode="linear" />
-      </feOffset>
-
-      <feComposite in="offsetNoise1" in2="offsetNoise2" result="part1" />
-      <feComposite in="offsetNoise3" in2="offsetNoise4" result="part2" />
-      <feBlend in="part1" in2="part2" mode="color-dodge" result="combinedNoise" />
-
-      <feDisplacementMap in="SourceGraphic" in2="combinedNoise" scale="24" xChannelSelector="R" yChannelSelector="B" />
-    </filter>
-  </defs>
-</svg>
 
 <!-- WHATSAPP FLOATING BUTTON -->
 <div id="whatsappBtn" class="hidden">
@@ -494,19 +462,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 
 <!-- HOME -->
 <div class="card hidden" id="home">
-  <div class="app-unicorn-bg" aria-hidden="true">
-    <div class="app-unicorn-layer">
-      <div
-        data-us-project="WdVna2EGJHojbGLRHA52"
-        data-us-dpi="1.5"
-        data-us-fps="60"
-        data-us-lazyload="true"
-        data-us-production="true"
-        class="app-unicorn-canvas">
-      </div>
-    </div>
-  </div>
-  <div class="home-promo-shell electric-card" aria-label="Packages TMM Bangla Patente">
+  <div class="home-promo-shell" aria-label="Packages TMM Bangla Patente">
     <div class="home-promo-embed" style="position: relative; width: 100%; height: 0; padding-top: 150.3704%; padding-bottom: 0; box-shadow: 0 2px 8px 0 rgba(63,69,81,0.16); margin-top: 0; margin-bottom: 0; overflow: hidden; border-radius: 8px; will-change: transform;">
       <iframe loading="lazy" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; border: none; padding: 0; margin: 0;"
         src="https://www.canva.com/design/DAHLyZHWUYo/qHS9sfdQAw2ku5raxvnX6Q/view?embed" allowfullscreen="allowfullscreen" allow="fullscreen" title="Packages" referrerpolicy="strict-origin-when-cross-origin">
@@ -1006,6 +962,6 @@ gtag('config', 'G-C5JPY9HFHD', {
   };
 })();
 </script>
-<script src="script.js?v=7"></script>
+<script src="script.js?v=8"></script>
 </body>
 </html>
