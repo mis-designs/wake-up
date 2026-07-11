@@ -2959,8 +2959,9 @@ function cleanupMagicBookViewer({ resetState = true } = {}) {
   const pages = document.getElementById("pages");
   if (pages) {
     stopViewerLoadingAnimation(pages.querySelector(".viewer-loading"));
-    pages.querySelectorAll("img[data-object-url]").forEach(img => {
-      URL.revokeObjectURL(img.dataset.objectUrl);
+    pages.querySelectorAll(".page canvas").forEach(canvas => {
+      canvas.width = 0;
+      canvas.height = 0;
     });
     pages.innerHTML = "";
   }
@@ -3061,17 +3062,49 @@ function setMagicBookLoading(pages, visible, { active = true } = {}) {
   if (active) startViewerLoadingAnimation(loader);
 }
 
-function appendMagicBookPage(pages, pageSource) {
-  const img = new Image();
-  if (pageSource instanceof Blob) {
-    const url = URL.createObjectURL(pageSource);
-    img.src = url;
-    img.dataset.objectUrl = url;
-  } else {
-    img.src = String(pageSource || "");
+async function decodeMagicBookPage(pageBlob) {
+  if (typeof createImageBitmap === "function") {
+    const bitmap = await createImageBitmap(pageBlob);
+    return { source: bitmap, width: bitmap.width, height: bitmap.height };
   }
-  img.alt = "";
-  img.draggable = false;
+
+  const objectUrl = URL.createObjectURL(pageBlob);
+  const image = new Image();
+
+  try {
+    image.decoding = "async";
+    image.src = objectUrl;
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error("Impossibile decodificare la pagina MagicBook."));
+    });
+    return { source: image, width: image.naturalWidth, height: image.naturalHeight };
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+async function createMagicBookPage(pageBlob) {
+  const decoded = await decodeMagicBookPage(pageBlob);
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d", { alpha: false });
+
+  if (!context) {
+    decoded.source.close?.();
+    throw new Error("Canvas 2D non disponibile.");
+  }
+
+  canvas.width = decoded.width;
+  canvas.height = decoded.height;
+  canvas.setAttribute("aria-label", "Pagina MagicBook");
+  canvas.setAttribute("role", "img");
+  canvas.setAttribute("draggable", "false");
+
+  try {
+    context.drawImage(decoded.source, 0, 0, canvas.width, canvas.height);
+  } finally {
+    decoded.source.close?.();
+  }
 
   const box = document.createElement("div");
   box.className = "page";
@@ -3080,11 +3113,9 @@ function appendMagicBookPage(pages, pageSource) {
   shield.className = "shield";
   shield.oncontextmenu = e => e.preventDefault();
 
-  box.appendChild(img);
+  box.appendChild(canvas);
   box.appendChild(shield);
-
-  const loader = pages.querySelector(".viewer-loading");
-  pages.insertBefore(box, loader || null);
+  return box;
 }
 
 function shouldLoadNextMagicBookPage(viewer) {
@@ -3165,7 +3196,17 @@ async function loadNextMagicBookPage() {
       return;
     }
 
-    appendMagicBookPage(pages, blob);
+    const pageBox = await createMagicBookPage(blob);
+    if (requestId !== magicBookViewerRequestId) {
+      pageBox.querySelectorAll("canvas").forEach(canvas => {
+        canvas.width = 0;
+        canvas.height = 0;
+      });
+      return;
+    }
+
+    const loader = pages.querySelector(".viewer-loading");
+    pages.insertBefore(pageBox, loader || null);
     currentBookViewer.page = nextPage;
     setMagicBookLoading(pages, true, { active: false });
     observeMagicBookContinuationLoader();
