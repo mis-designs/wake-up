@@ -1357,10 +1357,12 @@ function updateProfileUI(isLoggedIn = true) {
 function setProfileIconVisible(visible) {
   const profileBtn = document.getElementById("profileBtn");
   const profilePanel = document.getElementById("profilePanel");
+  const adminEntryBtn = document.getElementById("adminEntryBtn");
   if (!profileBtn) return;
 
   const hasPhone = Boolean(getCurrentSessionPhone());
   profileBtn.classList.toggle("hidden", !visible || !hasPhone);
+  adminEntryBtn?.classList.toggle("hidden", !visible || !hasPhone || !isCurrentSessionAdmin());
   if (!visible) {
     profilePanel?.classList.add("hidden");
     profileBtn.setAttribute("aria-expanded", "false");

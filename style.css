@@ -4819,23 +4819,25 @@ body.qms-open { overflow: hidden; }
 
 /* Admin panel */
 .admin-entry {
-    position: absolute;
-    right: max(12px, calc(50% - 160px));
-    top: 50%;
-    width: 48px;
-    height: 48px;
-    min-width: 48px;
-    margin-top: 0;
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 9px);
+    right: 64px;
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
     padding: 0;
-    border-radius: 16px;
+    border-radius: 50%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.86);
+    background: rgba(255, 255, 255, 0.42);
     color: var(--color-dark);
-    border: 1px solid rgba(37, 41, 67, 0.08);
-    box-shadow: 0 14px 28px rgba(37, 41, 67, 0.14);
-    transform: translateY(-50%);
+    border: 1px solid rgba(255, 255, 255, 0.56);
+    box-shadow: 0 12px 24px rgba(37, 41, 67, 0.16);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    cursor: pointer;
+    z-index: 1200;
 }
 
 .admin-entry.hidden {
@@ -4843,8 +4845,8 @@ body.qms-open { overflow: hidden; }
 }
 
 .admin-entry img {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     object-fit: contain;
 }
 
@@ -5434,10 +5436,10 @@ body.qms-open { overflow: hidden; }
     }
 
     .admin-entry {
-        right: 10px;
-        width: 44px;
-        height: 44px;
-        min-width: 44px;
+        right: 62px;
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
     }
 
     .admin-entry img {
