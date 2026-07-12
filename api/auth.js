@@ -129,7 +129,7 @@ function normalizePhone(input) {
 }
 
 const ADMIN_PHONE_NUMBERS = (process.env.ADMIN_PHONE_NUMBERS || "")
-  .split(",")
+  .split(/[\s,;]+/)
   .map(normalizePhone)
   .filter(Boolean);
 

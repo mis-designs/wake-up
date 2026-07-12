@@ -5,7 +5,7 @@ const GOOGLE_SCRIPT_URL = process.env.GAS_ACCESS_URL;
 const TOKEN = process.env.GAS_SECRET;
 const SESSION_SECRET = process.env.SESSION_SECRET;
 const ADMIN_PHONE_NUMBERS = (process.env.ADMIN_PHONE_NUMBERS || "")
-  .split(",")
+  .split(/[\s,;]+/)
   .map(normalizePhone)
   .filter(Boolean);
 const SUPPORTED_BOOKS = new Set(["magic"]);

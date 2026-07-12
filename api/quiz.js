@@ -6,7 +6,7 @@ const QUIZ_GAS_URL = process.env.QUIZ_GAS_URL;
 const QUIZ_PROXY_SECRET = process.env.QUIZ_PROXY_SECRET;
 const SESSION_SECRET = process.env.SESSION_SECRET;
 const ADMIN_PHONE_NUMBERS = (process.env.ADMIN_PHONE_NUMBERS || "")
-  .split(",")
+  .split(/[\s,;]+/)
   .map(normalizePhoneNumber)
   .filter(Boolean);
 

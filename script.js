@@ -606,6 +606,7 @@ async function ensureAccessToken(options = {}) {
         accessTokenExpiresAt: data.accessTokenExpiresAt,
         lastValid: Date.now()
       });
+      updateAdminEntryVisibility();
       return true;
     }
 
@@ -635,6 +636,7 @@ async function validateRestoredSession(phone, deviceId) {
         accessTokenExpiresAt: data.accessTokenExpiresAt,
         lastValid: Date.now()
       });
+      updateAdminEntryVisibility();
       checkRenewReminder();
       return;
     }
