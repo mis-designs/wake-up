@@ -21,10 +21,12 @@ function normalizePhone(input) {
 }
 
 export function getSessionRole(phone, tokenStatus, adminPhoneNumbers = ADMIN_PHONE_NUMBERS) {
-  // Preserve admin only when the previous role was issued in a server-signed
-  // token and the phone is still configured as admin on Vercel. A phone number
-  // or a role supplied by the client alone must never elevate the session.
-  const hasSignedAdminRole = tokenStatus?.ok === true && tokenStatus.payload?.role === "admin";
+  // A validation request may arrive just after expiration (especially when a
+  // mobile browser resumes suspended timers). Preserve the role when the old
+  // token was cryptographically verified, even if it has just expired. The
+  // backend subscription check above and the current Vercel admin allow-list
+  // are still required, so client-supplied data can never elevate a session.
+  const hasSignedAdminRole = tokenStatus?.signatureValid === true && tokenStatus.payload?.role === "admin";
   const isConfiguredAdmin = adminPhoneNumbers.includes(normalizePhone(phone));
   return hasSignedAdminRole && isConfiguredAdmin ? "admin" : "user";
 }
@@ -165,10 +167,10 @@ function verifyAccessToken(token, phone, deviceId) {
   }
 
   if (!payload.exp || payload.exp <= Date.now()) {
-    return { ok: false, error: "token_expired" };
+    return { ok: false, error: "token_expired", signatureValid: true, payload };
   }
 
-  return { ok: true, payload };
+  return { ok: true, signatureValid: true, payload };
 }
 
 export default async function handler(req, res) {
