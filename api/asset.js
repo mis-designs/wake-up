@@ -27,7 +27,7 @@ const IMAGE_CONTENT_TYPES = {
 };
 
 function isSafeFilePart(value) {
-  return /^[a-zA-Z0-9._ ()-]+$/.test(value) && !value.includes("..");
+  return value.length <= 120 && /^[a-zA-Z0-9._ ()-]+$/.test(value) && !value.includes("..");
 }
 
 function getDynamicAsset(query = {}) {

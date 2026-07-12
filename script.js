@@ -4,7 +4,7 @@
 // numero whatsapp per rinnovo
 const RENEW_WHATSAPP_NUMBER = "393663584525";
 const RENEW_MESSAGE = "Ciao, vorrei rinnovare il mio accesso.";
-const WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/LBL1G7nvz2B3SThJj4uRxD";
+const WHATSAPP_GROUP_CODE = "LBL1G7nvz2B3SThJj4uRxD";
 const AUTH_API = "/api/auth";
 const ADMIN_API = "/api/admin";
 const APP_TITLE = "MagicBook";
@@ -1129,6 +1129,7 @@ function getLoginErrorMessage(error) {
   if (error === "admin_password_required") return "Inserisci la password amministratore.";
   if (error === "admin_password_invalid") return "Password amministratore non corretta.";
   if (error === "missing_admin_password_config") return "Password amministratore non configurata.";
+  if (error === "too_many_attempts") return "Troppi tentativi. Attendi qualche minuto prima di riprovare.";
   if (error === "expired") return "Accesso scaduto. Contatta il supporto per rinnovare.";
   if (error === "not_found") return "Numero non autorizzato.";
   if (error === "device_replaced") return "Questo dispositivo non è più autorizzato perché l’accesso è stato spostato su un altro dispositivo.";
@@ -1248,7 +1249,6 @@ function clearSessionData() {
 function showLandingScreen(options = {}) {
   hideAll();
   document.getElementById("landing")?.classList.remove("hidden");
-  window.initHomeAura?.();
   setChapterMode(false);
   document.body.classList.add("public-mode");
   updateProfileUI(false);
@@ -1910,7 +1910,7 @@ function maybeShowWhatsAppGroupPopup() {
 }
 
 function openWhatsAppGroupLink() {
-  const groupCode = "LBL1G7nvz2B3SThJj4uRxD";
+  const groupCode = WHATSAPP_GROUP_CODE;
   const normalLink = "https://chat.whatsapp.com/" + groupCode;
   const isAndroid = /Android/i.test(navigator.userAgent);
 

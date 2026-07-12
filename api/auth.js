@@ -10,6 +10,106 @@ const ADMIN_LOGIN_PASSWORD = process.env.ADMIN_LOGIN_PASSWORD || "";
 
 const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
 const OTP_COOLDOWN_SECONDS = 120;
+const ADMIN_LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const ADMIN_LOGIN_MAX_FAILURES = 5;
+const adminLoginFailures = new Map();
+const USER_LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const USER_LOGIN_MAX_FAILURES_PER_IP = 10;
+const USER_LOGIN_MAX_FAILURES_PER_PHONE = 5;
+const userLoginIpFailures = new Map();
+const userLoginPhoneFailures = new Map();
+
+function getClientIp(req) {
+  return String(req.headers?.["x-forwarded-for"] || req.socket?.remoteAddress || "unknown")
+    .split(",")[0]
+    .trim()
+    .slice(0, 64);
+}
+
+function getAdminRateLimitKey(req, phone) {
+  return `${getClientIp(req)}:${phone}`;
+}
+
+function getAdminLoginLimit(key) {
+  const now = Date.now();
+  const state = adminLoginFailures.get(key);
+  if (!state || state.resetAt <= now) {
+    adminLoginFailures.delete(key);
+    return { blocked: false, retryAfter: 0 };
+  }
+  return {
+    blocked: state.count >= ADMIN_LOGIN_MAX_FAILURES,
+    retryAfter: Math.max(1, Math.ceil((state.resetAt - now) / 1000))
+  };
+}
+
+function recordAdminLoginFailure(key) {
+  const now = Date.now();
+  const state = adminLoginFailures.get(key);
+  if (!state || state.resetAt <= now) {
+    if (adminLoginFailures.size >= 1000) {
+      for (const [storedKey, storedState] of adminLoginFailures) {
+        if (storedState.resetAt <= now) adminLoginFailures.delete(storedKey);
+      }
+      if (adminLoginFailures.size >= 1000) {
+        adminLoginFailures.delete(adminLoginFailures.keys().next().value);
+      }
+    }
+    adminLoginFailures.set(key, { count: 1, resetAt: now + ADMIN_LOGIN_WINDOW_MS });
+    return;
+  }
+  state.count += 1;
+}
+
+function readFailureLimit(store, key, maxFailures) {
+  const now = Date.now();
+  const state = store.get(key);
+  if (!state || state.resetAt <= now) {
+    store.delete(key);
+    return { blocked: false, retryAfter: 0 };
+  }
+  return {
+    blocked: state.count >= maxFailures,
+    retryAfter: Math.max(1, Math.ceil((state.resetAt - now) / 1000))
+  };
+}
+
+function recordFailure(store, key, windowMs) {
+  const now = Date.now();
+  const state = store.get(key);
+  if (state && state.resetAt > now) {
+    state.count += 1;
+    return;
+  }
+
+  if (store.size >= 5000) {
+    for (const [storedKey, storedState] of store) {
+      if (storedState.resetAt <= now) store.delete(storedKey);
+    }
+    if (store.size >= 5000) store.delete(store.keys().next().value);
+  }
+  store.set(key, { count: 1, resetAt: now + windowMs });
+}
+
+function getUserLoginLimit(req, phone) {
+  const ipKey = getClientIp(req);
+  const ipLimit = readFailureLimit(userLoginIpFailures, ipKey, USER_LOGIN_MAX_FAILURES_PER_IP);
+  const phoneLimit = readFailureLimit(userLoginPhoneFailures, phone, USER_LOGIN_MAX_FAILURES_PER_PHONE);
+  return {
+    blocked: ipLimit.blocked || phoneLimit.blocked,
+    retryAfter: Math.max(ipLimit.retryAfter, phoneLimit.retryAfter),
+    ipKey
+  };
+}
+
+function recordUserLoginFailure(ipKey, phone) {
+  recordFailure(userLoginIpFailures, ipKey, USER_LOGIN_WINDOW_MS);
+  recordFailure(userLoginPhoneFailures, phone, USER_LOGIN_WINDOW_MS);
+}
+
+function shouldCountUserLoginFailure(error) {
+  return !["busy", "temporary_error", "server_error", "auth_backend_error"].includes(error);
+}
 
 function hasCoreConfig() {
   return Boolean(GAS_ACCESS_URL && GAS_SECRET && SESSION_SECRET);
@@ -358,13 +458,31 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, error: "bad_phone" });
     }
 
-    if (!deviceId) {
+    if (!/^[A-Za-z0-9_-]{8,128}$/.test(deviceId)) {
       return res.status(400).json({ success: false, error: "bad_device" });
     }
 
     if (action === "login") {
+      const userLimit = getUserLoginLimit(req, phone);
+      if (userLimit.blocked) {
+        res.setHeader("Retry-After", String(userLimit.retryAfter));
+        return res.status(429).json({ success: false, error: "too_many_attempts" });
+      }
+
+      const adminRateLimitKey = getAdminRateLimitKey(req, phone);
+      if (isAdminPhone(phone)) {
+        const limit = getAdminLoginLimit(adminRateLimitKey);
+        if (limit.blocked) {
+          res.setHeader("Retry-After", String(limit.retryAfter));
+          return res.status(429).json({ success: false, error: "too_many_attempts" });
+        }
+      }
+
       const adminPasswordCheck = validateAdminLoginPassword(phone, body.adminPassword);
       if (!adminPasswordCheck.ok) {
+        if (adminPasswordCheck.admin && adminPasswordCheck.error === "admin_password_invalid") {
+          recordAdminLoginFailure(adminRateLimitKey);
+        }
         return res.status(adminPasswordCheck.statusCode || 200).json({
           success: false,
           error: adminPasswordCheck.error
@@ -376,6 +494,8 @@ export default async function handler(req, res) {
       });
 
       if (isAuthSuccess(authData)) {
+        userLoginPhoneFailures.delete(phone);
+        if (adminPasswordCheck.admin) adminLoginFailures.delete(adminRateLimitKey);
         return sendSuccessfulLogin(res, {
           phone,
           deviceId,
@@ -392,6 +512,7 @@ export default async function handler(req, res) {
         const rotationData = await callAccessBackend("confirm_device_rotation", phone, deviceId);
 
         if (isAuthSuccess(rotationData)) {
+          userLoginPhoneFailures.delete(phone);
           return sendSuccessfulLogin(res, {
             phone,
             deviceId,
@@ -404,10 +525,18 @@ export default async function handler(req, res) {
           });
         }
 
-        return res.status(200).json({ success: false, error: getAuthError(rotationData) });
+        const rotationError = getAuthError(rotationData);
+        if (shouldCountUserLoginFailure(rotationError)) {
+          recordUserLoginFailure(userLimit.ipKey, phone);
+        }
+        return res.status(200).json({ success: false, error: rotationError });
       }
 
-      return res.status(200).json({ success: false, error: getAuthError(authData) });
+      const authError = getAuthError(authData);
+      if (shouldCountUserLoginFailure(authError)) {
+        recordUserLoginFailure(userLimit.ipKey, phone);
+      }
+      return res.status(200).json({ success: false, error: authError });
     }
 
     if (action === "resendOtp") {

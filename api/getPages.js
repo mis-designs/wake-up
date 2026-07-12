@@ -4,10 +4,6 @@ const BASE_URL = process.env.R2_BASE_URL;
 const GOOGLE_SCRIPT_URL = process.env.GAS_ACCESS_URL;
 const TOKEN = process.env.GAS_SECRET;
 const SESSION_SECRET = process.env.SESSION_SECRET;
-const ADMIN_PHONE_NUMBERS = (process.env.ADMIN_PHONE_NUMBERS || "")
-  .split(",")
-  .map(normalizePhone)
-  .filter(Boolean);
 const SUPPORTED_BOOKS = new Set(["magic"]);
 const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
 
@@ -20,9 +16,11 @@ function normalizePhone(input) {
   return phone;
 }
 
-function getSessionRole(phone, authData = {}) {
-  if (authData.role === "admin") return "admin";
-  return ADMIN_PHONE_NUMBERS.includes(normalizePhone(phone)) ? "admin" : "user";
+export function getSessionRole() {
+  // This endpoint only validates an ordinary subscription. Admin elevation must
+  // happen through /api/auth, where the additional admin password is checked.
+  // Deriving the role from a phone number here allowed that check to be bypassed.
+  return "user";
 }
 
 function buildMagicBookPath({ type, chapter, page }) {
@@ -211,11 +209,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "invalid_book" });
     }
 
-    if (!Number.isInteger(pageNumber) || !pageNumber || pageNumber < 1) {
+    if (!Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > 10000) {
       return res.status(400).json({ error: "invalid_page" });
     }
 
-    if (type === "chapter" && (!Number.isInteger(chapterNumber) || !chapterNumber || chapterNumber < 1)) {
+    if (type === "chapter" && (!Number.isInteger(chapterNumber) || chapterNumber < 1 || chapterNumber > 100)) {
       return res.status(400).json({ error: "invalid_chapter" });
     }
 

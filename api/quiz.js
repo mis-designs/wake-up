@@ -136,9 +136,15 @@ function signTokenPayload(encodedPayload) {
   return crypto.createHmac("sha256", SESSION_SECRET).update(encodedPayload).digest("base64url");
 }
 
-function createSignedToken({ phone, deviceId, purpose, ttlMs }) {
+function createSignedToken({ phone, deviceId, purpose, ttlMs, role = "user" }) {
   const expiresAt = Date.now() + ttlMs;
-  const payload = { phone, deviceId, purpose, exp: expiresAt };
+  const payload = {
+    phone,
+    deviceId,
+    purpose,
+    role: role === "admin" ? "admin" : "user",
+    exp: expiresAt
+  };
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
   const signature = signTokenPayload(encodedPayload);
 
@@ -184,7 +190,7 @@ function verifySignedToken(token, { phone, deviceId, purpose }) {
 async function ensureAccess({ phone, deviceId, accessToken, forceValidate = false }) {
   const tokenStatus = verifySignedToken(accessToken, { phone, deviceId, purpose: "access" });
   if (tokenStatus.ok && !forceValidate) {
-    return { ok: true, usedAccessToken: true };
+    return { ok: true, usedAccessToken: true, role: tokenStatus.payload.role || "user" };
   }
 
   const authData = await validateAccess(phone, deviceId);
@@ -194,19 +200,21 @@ async function ensureAccess({ phone, deviceId, accessToken, forceValidate = fals
   }
 
   if (tokenStatus.ok) {
-    return { ok: true, usedAccessToken: true };
+    return { ok: true, usedAccessToken: true, role: tokenStatus.payload.role || "user" };
   }
 
   const access = createSignedToken({
     phone,
     deviceId,
     purpose: "access",
-    ttlMs: ACCESS_TOKEN_TTL_MS
+    ttlMs: ACCESS_TOKEN_TTL_MS,
+    role: "user"
   });
 
   return {
     ok: true,
     usedAccessToken: false,
+    role: "user",
     accessToken: access.token,
     accessTokenExpiresAt: access.expiresAt
   };
@@ -264,6 +272,14 @@ function getRequestData(req) {
     text: body.text || query.text,
     answers: body.answers
   };
+}
+
+function hasValidRequestShape({ phone, deviceId, text, chapters }) {
+  if (!/^\d{6,15}$/.test(String(phone || "").replace(/\D/g, ""))) return false;
+  if (!/^[A-Za-z0-9_-]{8,128}$/.test(String(deviceId || ""))) return false;
+  if (String(text || "").length > 500) return false;
+  if (String(chapters || "").length > 200) return false;
+  return true;
 }
 
 async function forwardGetAction({ action, chapters, text, mode, limit, count, questionCount }) {
@@ -552,6 +568,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "missing_action" });
     }
 
+    if (!hasValidRequestShape({ phone, deviceId, text, chapters })) {
+      return res.status(400).json({ error: "invalid_request" });
+    }
+
     if (req.method === "GET" && action === "getQuiz") {
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
       res.setHeader("CDN-Cache-Control", "no-store");
@@ -564,7 +584,7 @@ export default async function handler(req, res) {
 
       const modeConfig = getExamModeConfig(mode);
       const data = modeConfig ? null : await forwardGetAction({ action, chapters, text });
-      const admin = isAdminPhone(phone);
+      const admin = access.role === "admin" && isAdminPhone(phone);
       const rows = modeConfig ? await fetchExamRows(action, text, modeConfig) : getQuizRows(data);
       const quiz = modeConfig ? buildExamQuiz(rows, modeConfig) : rows;
       const quizForClient = admin ? await addAdminCorrectAnswers(quiz) : quiz;
@@ -572,7 +592,8 @@ export default async function handler(req, res) {
         phone,
         deviceId,
         purpose: "quiz",
-        ttlMs: modeConfig?.sessionTtlMs || QUIZ_SESSION_TOKEN_TTL_MS
+        ttlMs: modeConfig?.sessionTtlMs || QUIZ_SESSION_TOKEN_TTL_MS,
+        role: admin ? "admin" : "user"
       });
 
       return res.status(200).json({
@@ -608,7 +629,7 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: quizSession.error });
       }
 
-      if (!Array.isArray(answers)) {
+      if (!Array.isArray(answers) || answers.length < 1 || answers.length > 100) {
         return res.status(400).json({ error: "missing_answers" });
       }
 

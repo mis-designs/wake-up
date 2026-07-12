@@ -129,9 +129,6 @@ gtag('config', 'G-C5JPY9HFHD', {
 
 <!-- PUBLIC LANDING -->
 <main class="public-landing hidden" id="landing">
-  <div class="aura-background-component" aria-hidden="true">
-    <div data-us-project="SrJYfPcDUR4StI3maLL6" class="aura-background-canvas"></div>
-  </div>
   <div class="spline-container" aria-hidden="true">
     <iframe src="https://my.spline.design/3dglassherobg-xhxFCKvVSQv5b7qPD9xIZ5yC" frameborder="0" width="100%" height="100%" id="aura-spline" title="Decorative 3D glass background" referrerpolicy="strict-origin-when-cross-origin"></iframe>
   </div>
@@ -915,42 +912,6 @@ gtag('config', 'G-C5JPY9HFHD', {
   </div>
 </div>
 
-<script>
-(function () {
-  function startUnicorn() {
-    if (!document.querySelector("[data-us-project]")) return;
-    if (window.UnicornStudio?.isInitialized) {
-      window.dispatchEvent(new Event("resize"));
-      return;
-    }
-    if (window.UnicornStudio?.init) {
-      window.UnicornStudio.init();
-      window.UnicornStudio.isInitialized = true;
-      return;
-    }
-    if (window.UnicornStudio?.isLoading) return;
-    window.UnicornStudio = window.UnicornStudio || { isInitialized: false };
-    window.UnicornStudio.isLoading = true;
-
-    var script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.1.0-1/dist/unicornStudio.umd.js";
-    script.crossOrigin = "anonymous";
-    script.referrerPolicy = "strict-origin-when-cross-origin";
-    script.onload = function () {
-      window.UnicornStudio.isLoading = false;
-      startUnicorn();
-    };
-    script.onerror = function () {
-      window.UnicornStudio.isLoading = false;
-    };
-    (document.head || document.body).appendChild(script);
-  }
-
-  window.initHomeAura = function () {
-    requestAnimationFrame(startUnicorn);
-  };
-})();
-</script>
 <script src="script.js?v=9"></script>
 </body>
 </html>

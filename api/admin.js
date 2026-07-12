@@ -119,6 +119,9 @@ function sanitizeAdminFields(action, body) {
   const days = Number(body.days);
   const expiry = String(body.expiry || "").trim();
   const mode = String(body.mode || "").trim();
+  const isValidExpiry = value => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+  if (!isValidExpiry(expiry)) return { error: "bad_expiry" };
 
   if (["create", "update", "renew", "delete", "reset_devices", "search"].includes(action)) {
     if (!isValidPhone(phone)) return { error: "bad_phone" };
