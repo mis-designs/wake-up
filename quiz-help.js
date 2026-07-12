@@ -20,6 +20,7 @@
   let quizIdIndex = null;
   let requestId = 0;
   let activeSlide = 0;
+  let cardLayer = 1;
 
   function currentQuestion() {
     return Array.isArray(quiz) ? quiz[current] : null;
@@ -248,12 +249,69 @@
     window.speechSynthesis?.cancel();
   }
 
+  function bringCardToFront(card) {
+    cardLayer = cardLayer >= 8 ? 2 : cardLayer + 1;
+    slides.forEach(item => {
+      if (item !== card && Number(item.style.zIndex || 0) >= cardLayer) item.style.zIndex = "1";
+    });
+    card.style.zIndex = String(cardLayer);
+  }
+
+  function clampCard(card) {
+    if (window.innerWidth <= 720 || !card || workspace.classList.contains("hidden")) return;
+    const margin = 10;
+    const rect = card.getBoundingClientRect();
+    const left = Math.min(Math.max(margin, rect.left), Math.max(margin, window.innerWidth - rect.width - margin));
+    const top = Math.min(Math.max(margin, rect.top), Math.max(margin, window.innerHeight - rect.height - margin));
+    card.style.left = `${left}px`;
+    card.style.top = `${top}px`;
+    card.style.transform = "none";
+  }
+
+  function makeCardDraggable(card) {
+    const handle = card.querySelector(".quiz-help-card-header");
+    if (!handle) return;
+    card.addEventListener("pointerdown", () => bringCardToFront(card));
+    handle.addEventListener("pointerdown", event => {
+      if (window.innerWidth <= 720 || event.target.closest("button")) return;
+      event.preventDefault();
+      bringCardToFront(card);
+      const rect = card.getBoundingClientRect();
+      const offsetX = event.clientX - rect.left;
+      const offsetY = event.clientY - rect.top;
+      card.style.left = `${rect.left}px`;
+      card.style.top = `${rect.top}px`;
+      card.style.transform = "none";
+      card.classList.add("is-dragging");
+      handle.setPointerCapture(event.pointerId);
+
+      const move = moveEvent => {
+        const margin = 10;
+        const left = Math.min(Math.max(margin, moveEvent.clientX - offsetX), Math.max(margin, window.innerWidth - card.offsetWidth - margin));
+        const top = Math.min(Math.max(margin, moveEvent.clientY - offsetY), Math.max(margin, window.innerHeight - card.offsetHeight - margin));
+        card.style.left = `${left}px`;
+        card.style.top = `${top}px`;
+      };
+      const stop = () => {
+        card.classList.remove("is-dragging");
+        handle.removeEventListener("pointermove", move);
+        handle.removeEventListener("pointerup", stop);
+        handle.removeEventListener("pointercancel", stop);
+      };
+      handle.addEventListener("pointermove", move);
+      handle.addEventListener("pointerup", stop);
+      handle.addEventListener("pointercancel", stop);
+    });
+  }
+
   questionArea?.addEventListener("click", event => {
     if (event.target.closest("button, a")) return;
     open();
   });
   document.querySelectorAll("[data-help-close]").forEach(button => button.addEventListener("click", close));
   tabs.forEach((tab, index) => tab.addEventListener("click", () => setSlide(index)));
+  slides.forEach(makeCardDraggable);
+  window.addEventListener("resize", () => slides.forEach(clampCard));
   workspace?.addEventListener("click", event => {
     if (event.target === workspace) close();
   });

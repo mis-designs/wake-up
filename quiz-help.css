@@ -1,14 +1,15 @@
 :root { --font-bengali: "UN Bangla", system-ui, sans-serif; --magic-help: #ff4fa3; --magic-help-soft: rgba(255,79,163,.28); }
 [lang="bn"] { font-family: var(--font-bengali); }
 .question-area { cursor: pointer; }
-.quiz-help-workspace { position: fixed; inset: 0; z-index: 2500; pointer-events: none; }
+.quiz-help-workspace { position: fixed; inset: 0; z-index: 900; pointer-events: none; }
 .quiz-help-workspace.hidden { display: none; }
 .quiz-help-shell, .quiz-help-slides { display: contents; }
 .quiz-help-topbar, .quiz-help-tabs { display: none; }
 .quiz-help-slide { position: fixed; left: 50%; width: min(370px, calc(100vw - 32px)); max-height: calc(50dvh - 18px); padding: 0 17px 17px; overflow: auto; pointer-events: auto; color: #fff; background: #171b26; border: 1px solid var(--magic-help-soft); border-radius: 18px; box-shadow: 0 24px 65px rgba(0,0,0,.52), 0 0 0 1px rgba(255,79,163,.08); transform: translateX(-50%); }
 .quiz-help-slide:first-child { top: 12px; }
 .quiz-help-slide:last-child { top: calc(50dvh + 4px); border-color: rgba(255,79,163,.52); }
-.quiz-help-card-header { position: sticky; top: 0; z-index: 2; min-height: 66px; margin: 0 -17px 16px; padding: 11px 12px 11px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #090b11; border-bottom: 1px solid var(--magic-help-soft); }
+.quiz-help-card-header { position: sticky; top: 0; z-index: 2; min-height: 66px; margin: 0 -17px 16px; padding: 11px 12px 11px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #090b11; border-bottom: 1px solid var(--magic-help-soft); cursor: grab; touch-action: none; user-select: none; }
+.quiz-help-slide.is-dragging .quiz-help-card-header { cursor: grabbing; }
 .quiz-help-card-header h3 { margin: 2px 0 0; color: #fff; font-size: 1rem; }
 .quiz-help-kicker { display: block; color: var(--magic-help); font-size: .67rem; line-height: 1; font-weight: 950; letter-spacing: .14em; }
 .quiz-help-close { flex: 0 0 auto; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--magic-help-soft); border-radius: 11px; color: #fff; background: #202634; font-size: 1.4rem; cursor: pointer; }
