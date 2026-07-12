@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { verifyGuestTrialToken } from "./trialAccess.js";
 
 const QUIZ_GAS_URL = process.env.QUIZ_GAS_URL;
 const QUIZ_PROXY_SECRET = process.env.QUIZ_PROXY_SECRET;
@@ -91,6 +92,8 @@ export default async function handler(req, res) {
   try {
     if (req.method === "GET" && action === "getQuiz") {
       const chapter = String(req.query?.chapter || "").trim();
+      const guest = verifyGuestTrialToken(req.query?.guestKey, trialId);
+      if (!guest || !guest.chapters.includes(Number(chapter))) return res.status(401).json({ error: "invalid_guest_key" });
       if (!isAllowedTrialChapter(chapter)) return res.status(403).json({ error: "trial_chapter_forbidden" });
       const data = await callQuizBackend("getQuiz", { chapter });
       const quiz = getRows(data)

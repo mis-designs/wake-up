@@ -345,6 +345,8 @@ function createQuizDrawId() {
 function buildQuizApiUrl(action, params = {}) {
   if (TRIAL_MODE) {
     const query = new URLSearchParams({ action, trialId: getQuizDeviceId() });
+    const guestKey = sessionStorage.getItem("magicbook_trial_guest_key") || "";
+    if (guestKey) query.set("guestKey", guestKey);
     const chapter = getQuizRouteInfo().chapters;
     if (chapter) query.set("chapter", chapter);
     const activeTrialToken = getQuizSessionToken();

@@ -1,3 +1,5 @@
+import { verifyGuestTrialToken } from "./trialAccess.js";
+
 const BASE_URL = process.env.R2_BASE_URL;
 export const TRIAL_BOOK_CHAPTERS = new Set(["2", "4"]);
 
@@ -15,6 +17,9 @@ export default async function handler(req, res) {
   if (!BASE_URL) return res.status(500).json({ error: "missing_server_config" });
   const chapter = String(req.query?.chapter || "").trim();
   const page = Number(req.query?.page);
+  const trialId = String(req.query?.trialId || "");
+  const guest = verifyGuestTrialToken(req.query?.guestKey, trialId);
+  if (!guest || !guest.chapters.includes(Number(chapter))) return res.status(401).json({ error: "invalid_guest_key" });
   if (!isAllowedTrialBookRequest(chapter, page)) return res.status(403).json({ error: "trial_book_forbidden" });
 
   try {
