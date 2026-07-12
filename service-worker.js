@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v26-gold-jackpot";
+const CACHE_NAME = "magicbook-pwa-v27-intro-c4a58d09";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -13,7 +13,7 @@ const STATIC_ASSETS = [
   "/data/patente/quiz-help-runtime-v2.json?v=20260713-magic-help-v2",
   "/manifest.webmanifest?v=16",
   "/icons/mg_logo.png",
-  "/icons/intro01.jpg?v=20260701"
+  "/icons/intro01.jpg?v=c4a58d09"
 ];
 
 self.addEventListener("install", event => {

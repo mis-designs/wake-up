@@ -56,6 +56,15 @@
       ]
     },
     {
+      "source": "/icons/intro01.jpg",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/manifest.webmanifest",
       "headers": [
         {
