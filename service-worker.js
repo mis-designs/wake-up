@@ -1,9 +1,9 @@
-const CACHE_NAME = "magicbook-pwa-v21-free-trial";
+const CACHE_NAME = "magicbook-pwa-v22-trial-ui";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
-  "/style.css?v=25",
+  "/style.css?v=26",
   "/homebg.css?v=3",
   "/mystyle.css?v=26",
   "/script.js?v=9",

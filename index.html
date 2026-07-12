@@ -90,7 +90,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MagicBook">
-<link rel="stylesheet" href="style.css?v=25">
+<link rel="stylesheet" href="style.css?v=26">
 <link rel="stylesheet" href="homebg.css?v=3">
 </head>
 <body>
@@ -175,10 +175,20 @@ gtag('config', 'G-C5JPY9HFHD', {
 <div id="trialOfferModal" class="trial-modal hidden" role="dialog" aria-modal="true" aria-labelledby="trialOfferTitle">
   <div class="trial-modal-card trial-offer-card">
     <button class="trial-modal-close" type="button" onclick="closeTrialOffer()" aria-label="Chiudi">×</button>
+    <div class="trial-gift" aria-hidden="true">
+      <span class="trial-confetti trial-confetti-a"></span><span class="trial-confetti trial-confetti-b"></span><span class="trial-confetti trial-confetti-c"></span>
+      <span class="trial-gift-box">🎁</span>
+    </div>
     <span class="trial-modal-kicker">HAI VISTO SOLO L'INIZIO</span>
     <h2 id="trialOfferTitle">Sblocca tutto MagicBook</h2>
     <p>Accedi a tutti i capitoli, quiz, spiegazioni e strumenti pensati per portarti pronto all'esame.</p>
+    <div class="trial-benefits" aria-label="Vantaggi MagicBook">
+      <span><b>✓</b> Tutti i capitoli</span>
+      <span><b>✓</b> Quiz completi</span>
+      <span><b>✓</b> Spiegazioni</span>
+    </div>
     <button class="trial-offer-cta" type="button" onclick="openTrialJoinOffer()">Scopri i pacchetti <span>→</span></button>
+    <button class="trial-offer-later" type="button" onclick="closeTrialOffer()">Non ora</button>
   </div>
 </div>
 
