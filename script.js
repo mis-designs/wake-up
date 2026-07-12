@@ -653,6 +653,7 @@ async function validateLoginAccess(phone, deviceId, options = {}) {
       action: "validate",
       phone,
       deviceId,
+      accessToken: getCurrentAccessToken(),
       registerDevice: options.registerDevice === true
     })
   });

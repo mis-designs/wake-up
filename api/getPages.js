@@ -4,6 +4,10 @@ const BASE_URL = process.env.R2_BASE_URL;
 const GOOGLE_SCRIPT_URL = process.env.GAS_ACCESS_URL;
 const TOKEN = process.env.GAS_SECRET;
 const SESSION_SECRET = process.env.SESSION_SECRET;
+const ADMIN_PHONE_NUMBERS = (process.env.ADMIN_PHONE_NUMBERS || "")
+  .split(",")
+  .map(normalizePhone)
+  .filter(Boolean);
 const SUPPORTED_BOOKS = new Set(["magic"]);
 const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
 
@@ -16,11 +20,13 @@ function normalizePhone(input) {
   return phone;
 }
 
-export function getSessionRole() {
-  // This endpoint only validates an ordinary subscription. Admin elevation must
-  // happen through /api/auth, where the additional admin password is checked.
-  // Deriving the role from a phone number here allowed that check to be bypassed.
-  return "user";
+export function getSessionRole(phone, tokenStatus, adminPhoneNumbers = ADMIN_PHONE_NUMBERS) {
+  // Preserve admin only when the previous role was issued in a server-signed
+  // token and the phone is still configured as admin on Vercel. A phone number
+  // or a role supplied by the client alone must never elevate the session.
+  const hasSignedAdminRole = tokenStatus?.ok === true && tokenStatus.payload?.role === "admin";
+  const isConfiguredAdmin = adminPhoneNumbers.includes(normalizePhone(phone));
+  return hasSignedAdminRole && isConfiguredAdmin ? "admin" : "user";
 }
 
 function buildMagicBookPath({ type, chapter, page }) {
@@ -189,7 +195,8 @@ export default async function handler(req, res) {
         return res.status(getAuthStatusCode(error)).json({ error });
       }
 
-      const role = getSessionRole(phone, authData);
+      const previousTokenStatus = verifyAccessToken(accessToken, phone, deviceId);
+      const role = getSessionRole(phone, previousTokenStatus);
       const tokenData = createAccessToken(phone, deviceId, role);
 
       return res.status(200).json({
