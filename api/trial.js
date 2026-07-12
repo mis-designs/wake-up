@@ -5,6 +5,7 @@ const QUIZ_PROXY_SECRET = process.env.QUIZ_PROXY_SECRET;
 const SESSION_SECRET = process.env.SESSION_SECRET;
 export const TRIAL_CHAPTERS = new Set(["2", "4"]);
 const TRIAL_TOKEN_TTL_MS = 36 * 60 * 60 * 1000;
+const TRIAL_SERVICE_ACTIONS = new Set(["getItalianAudio", "getBengaliAudio", "getTTS"]);
 
 export function isAllowedTrialChapter(value) {
   return TRIAL_CHAPTERS.has(String(value || "").trim());
@@ -14,6 +15,14 @@ export function hasOnlyIssuedTrialQuestions(answers, issuedIds) {
   if (!Array.isArray(answers) || answers.length < 1 || answers.length > 30) return false;
   const allowed = new Set((issuedIds || []).map(String));
   return answers.every(answer => allowed.has(String(answer?.id)) && [0, 1, null].includes(answer?.answer));
+}
+
+export function isAllowedTrialService(action) {
+  return TRIAL_SERVICE_ACTIONS.has(String(action || ""));
+}
+
+function textHash(value) {
+  return crypto.createHash("sha256").update(String(value || "").trim()).digest("base64url");
 }
 
 function sign(payload) {
@@ -53,6 +62,12 @@ async function callQuizBackend(action, options = {}) {
     return response.json();
   }
 
+  if (isAllowedTrialService(action)) {
+    const params = new URLSearchParams({ action, token: QUIZ_PROXY_SECRET, text: options.text });
+    const response = await fetch(`${QUIZ_GAS_URL}?${params}`);
+    return response.json();
+  }
+
   const response = await fetch(`${QUIZ_GAS_URL}?action=checkQuiz`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -84,9 +99,28 @@ export default async function handler(req, res) {
         .map(({ id, chapter: rowChapter, question, figure, question_bd, explanations }) => ({ id, chapter: rowChapter, question, figure, question_bd, explanations }));
       if (!quiz.length) return res.status(502).json({ error: "invalid_quiz_response" });
       const expiresAt = Date.now() + TRIAL_TOKEN_TTL_MS;
-      const trialToken = sign({ purpose: "trial", trialId, chapter, ids: quiz.map(q => String(q.id)), exp: expiresAt });
+      const trialToken = sign({
+        purpose: "trial",
+        trialId,
+        chapter,
+        ids: quiz.map(q => String(q.id)),
+        textHashes: quiz.map(q => textHash(q.question)),
+        exp: expiresAt
+      });
       res.setHeader("Cache-Control", "no-store");
       return res.status(200).json({ quiz, trialToken, trialTokenExpiresAt: expiresAt, timerMinutes: 20, title: `Prova gratuita · Capitolo ${chapter}` });
+    }
+
+    if (req.method === "GET" && isAllowedTrialService(action)) {
+      const payload = verify(req.query?.trialToken, trialId);
+      const text = String(req.query?.text || "").trim();
+      if (!payload) return res.status(401).json({ error: "trial_session_expired" });
+      if (!isAllowedTrialChapter(payload.chapter) || !text || text.length > 500 || !payload.textHashes?.includes(textHash(text))) {
+        return res.status(403).json({ error: "trial_content_forbidden" });
+      }
+      const data = await callQuizBackend(action, { text });
+      res.setHeader("Cache-Control", "private, max-age=300");
+      return res.status(200).json(data);
     }
 
     if (req.method === "POST" && action === "checkQuiz") {

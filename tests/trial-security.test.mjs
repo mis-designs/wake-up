@@ -1,11 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { hasOnlyIssuedTrialQuestions, isAllowedTrialChapter } from "../api/trial.js";
+import { hasOnlyIssuedTrialQuestions, isAllowedTrialChapter, isAllowedTrialService } from "../api/trial.js";
 
 test("free trial is restricted to chapters 2 and 4", () => {
   assert.equal(isAllowedTrialChapter(2), true);
   assert.equal(isAllowedTrialChapter("4"), true);
   for (const chapter of ["1", "3", "5", "0", "2,4", "../../2"]) assert.equal(isAllowedTrialChapter(chapter), false);
+});
+
+test("free trial exposes only the required audio and translation services", () => {
+  assert.equal(isAllowedTrialService("getItalianAudio"), true);
+  assert.equal(isAllowedTrialService("getBengaliAudio"), true);
+  assert.equal(isAllowedTrialService("getTTS"), true);
+  for (const action of ["getQuiz", "checkQuiz", "admin", "getPages", "getAllQuestions"]) {
+    assert.equal(isAllowedTrialService(action), false);
+  }
 });
 
 test("free trial grading accepts only IDs issued in its signed quiz", () => {

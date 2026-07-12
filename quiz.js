@@ -347,6 +347,11 @@ function buildQuizApiUrl(action, params = {}) {
     const query = new URLSearchParams({ action, trialId: getQuizDeviceId() });
     const chapter = getQuizRouteInfo().chapters;
     if (chapter) query.set("chapter", chapter);
+    const activeTrialToken = getQuizSessionToken();
+    if (activeTrialToken) query.set("trialToken", activeTrialToken);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "" && key !== "chapters" && key !== "mode") query.set(key, String(value));
+    });
     return `/api/trial?${query.toString()}`;
   }
   const query = new URLSearchParams({
