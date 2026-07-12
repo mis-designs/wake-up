@@ -90,7 +90,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MagicBook">
-<link rel="stylesheet" href="style.css?v=24">
+<link rel="stylesheet" href="style.css?v=25">
 <link rel="stylesheet" href="homebg.css?v=3">
 </head>
 <body>
@@ -136,6 +136,12 @@ gtag('config', 'G-C5JPY9HFHD', {
     <div class="public-logo public-logo-dark">
       <strong>MagicBook</strong>
     </div>
+    <button class="trial-card" type="button" onclick="openTrialChapterPicker()" aria-label="Prova MagicBook gratis">
+      <span class="trial-card-orbit" aria-hidden="true"></span>
+      <span class="trial-card-copy"><small>LIMITED ACCESS</small><strong>Try for Free</strong><em>Capitoli 2 e 4 · Nessun login</em></span>
+      <span class="trial-countdown"><small>TERMINA TRA</small><b id="trialCountdown">36:00:00</b></span>
+      <span class="trial-arrow" aria-hidden="true">→</span>
+    </button>
     <div class="landing-actions" aria-label="Scegli accesso">
       <button class="landing-choice glass-button is-highlight" type="button" onclick="showLoginScreen()" aria-label="Login">
         <span class="landing-choice-label">LOGIN</span>
@@ -152,6 +158,29 @@ gtag('config', 'G-C5JPY9HFHD', {
     </div>
   </section>
 </main>
+
+<div id="trialChapterModal" class="trial-modal hidden" role="dialog" aria-modal="true" aria-labelledby="trialModalTitle">
+  <div class="trial-modal-card">
+    <button class="trial-modal-close" type="button" onclick="closeTrialChapterPicker()" aria-label="Chiudi">×</button>
+    <span class="trial-modal-kicker">FREE EXPERIENCE</span>
+    <h2 id="trialModalTitle">Scegli il tuo capitolo</h2>
+    <p>Entra subito nel quiz. Nessun account e nessun accesso alle aree riservate.</p>
+    <div class="trial-chapter-grid">
+      <button type="button" onclick="startFreeTrial(2)"><small>PROVA GRATIS</small><strong>Capitolo 2</strong><span>Inizia il quiz →</span></button>
+      <button type="button" onclick="startFreeTrial(4)"><small>PROVA GRATIS</small><strong>Capitolo 4</strong><span>Inizia il quiz →</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="trialOfferModal" class="trial-modal hidden" role="dialog" aria-modal="true" aria-labelledby="trialOfferTitle">
+  <div class="trial-modal-card trial-offer-card">
+    <button class="trial-modal-close" type="button" onclick="closeTrialOffer()" aria-label="Chiudi">×</button>
+    <span class="trial-modal-kicker">HAI VISTO SOLO L'INIZIO</span>
+    <h2 id="trialOfferTitle">Sblocca tutto MagicBook</h2>
+    <p>Accedi a tutti i capitoli, quiz, spiegazioni e strumenti pensati per portarti pronto all'esame.</p>
+    <button class="trial-offer-cta" type="button" onclick="openTrialJoinOffer()">Scopri i pacchetti <span>→</span></button>
+  </div>
+</div>
 
 <!-- ABOUT -->
 <main class="about-screen hidden" id="about">

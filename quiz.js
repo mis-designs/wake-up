@@ -4,6 +4,8 @@
 const CLIENT_AUTH_RESET_VERSION = "2026-04-device-reset-1";
 const CLIENT_AUTH_RESET_KEY = "client_auth_reset_version";
 const HOME_ROUTE = "/magic-book";
+const TRIAL_MODE = window.location.pathname.replace(/\/+$/, "") === "/quiz/prova-gratis";
+const TRIAL_HOME_ROUTE = "/?trialOffer=1";
 const RESULT_VIDEO_SOURCES = {
   pass: "assets/videos/pial_vhai%20applauso.mp4",
   fail: "assets/videos/delusione.mp4"
@@ -98,7 +100,7 @@ function hasCurrentClientAuthResetVersion() {
   }
 }
 
-if (!hasCurrentClientAuthResetVersion()) {
+if (!TRIAL_MODE && !hasCurrentClientAuthResetVersion()) {
   window.location.href = HOME_ROUTE;
   throw new Error("client_auth_reset_required");
 }
@@ -187,6 +189,10 @@ function getQuizRouteInfo() {
   const params = new URLSearchParams(window.location.search);
   const chapterMatch = path.match(/^\/quiz\/capitolo-(\d{1,2})$/);
   const examMatch = path.match(/^\/quiz\/esame-(80|30)$/);
+  if (TRIAL_MODE) {
+    const chapter = params.get("chapter") || "";
+    return { chapters: ["2", "4"].includes(chapter) ? chapter : "", mode: "default" };
+  }
 
   if (chapterMatch) {
     return { chapters: String(Number(chapterMatch[1])), mode: "default" };
@@ -272,7 +278,22 @@ function requireQuizSession() {
   return session;
 }
 
-const QUIZ_SESSION = requireQuizSession();
+let memoryTrialId = "";
+function getTrialId() {
+  let id = memoryTrialId;
+  try { id = sessionStorage.getItem("magicbook_trial_id") || id; } catch { /* private browsing fallback */ }
+  if (!/^[a-zA-Z0-9_-]{16,80}$/.test(id)) {
+    const randomPart = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID().replace(/-/g, "")
+      : `${Date.now()}_${Math.random().toString(36).slice(2, 14)}`;
+    id = `trial_${randomPart}`;
+    memoryTrialId = id;
+    try { sessionStorage.setItem("magicbook_trial_id", id); } catch { /* memory fallback */ }
+  }
+  return id;
+}
+
+const QUIZ_SESSION = TRIAL_MODE ? { phone: "trial", deviceId: getTrialId(), accessToken: "" } : requireQuizSession();
 
 function getQuizPhone() {
   return QUIZ_SESSION.phone;
@@ -322,6 +343,12 @@ function createQuizDrawId() {
 }
 
 function buildQuizApiUrl(action, params = {}) {
+  if (TRIAL_MODE) {
+    const query = new URLSearchParams({ action, trialId: getQuizDeviceId() });
+    const chapter = getQuizRouteInfo().chapters;
+    if (chapter) query.set("chapter", chapter);
+    return `/api/trial?${query.toString()}`;
+  }
   const query = new URLSearchParams({
     action,
     phone: getQuizPhone(),
@@ -360,7 +387,7 @@ function getQuizLoadErrorMessage(error) {
 }
 
 function isQuizAccessError(error) {
-  return ["expired", "not_found", "device_replaced", "device_mismatch", "unauthorized", "quiz_session_expired"].includes(error);
+  return ["expired", "not_found", "device_replaced", "device_mismatch", "unauthorized", "quiz_session_expired", "trial_session_expired"].includes(error);
 }
 
 let quizAccessErrorHandled = false;
@@ -397,7 +424,7 @@ async function handleQuizAccessError(error) {
     if (isQuizRevokedSessionError(error)) clearQuizSessionDataForLogout();
     await showMessage("Accesso", getQuizAccessErrorMessage(error));
   } finally {
-    window.location.href = HOME_ROUTE;
+    window.location.href = TRIAL_MODE ? TRIAL_HOME_ROUTE : HOME_ROUTE;
   }
 }
 
@@ -832,7 +859,7 @@ function hideLoading() {
 }
 
 function returnToBook() {
-  window.location.href = HOME_ROUTE;
+  window.location.href = TRIAL_MODE ? TRIAL_HOME_ROUTE : HOME_ROUTE;
 }
 
 function rifaiScheda() {
@@ -867,6 +894,7 @@ async function loadQuiz() {
   try {
     const routeInfo = getQuizRouteInfo();
     const chapters = routeInfo.chapters || "";
+    if (TRIAL_MODE && !["2", "4"].includes(chapters)) throw new Error("trial_chapter_forbidden");
     quizMode = getRequestedQuizMode();
     const url = buildQuizApiUrl("getQuiz", { chapters, mode: quizMode === "default" ? "" : quizMode });
     const data = await fetchQuizJson(url, { cache: "no-store" });
@@ -879,6 +907,10 @@ async function loadQuiz() {
     console.log("[quiz] admin mode", isAdmin ? "enabled" : "disabled");
     quizSessionToken = data.quizSessionToken || "";
     quizSessionTokenExpiresAt = data.quizSessionTokenExpiresAt || 0;
+    if (TRIAL_MODE) {
+      quizSessionToken = data.trialToken || "";
+      quizSessionTokenExpiresAt = data.trialTokenExpiresAt || 0;
+    }
     quizDurationMinutes = Number(data.timerMinutes) || getQuizModeConfig(quizMode).timerMinutes;
     if (!Array.isArray(data.quiz)) {
       throw new Error("invalid_quiz_response");
@@ -1592,10 +1624,13 @@ async function finishQuiz(forceFinish = false) {
   try {
     console.log("[quiz] submitting answers", payload.length);
 
-    const data = await fetchQuizJson("/api/quiz?action=checkQuiz", {
+    const data = await fetchQuizJson(TRIAL_MODE ? "/api/trial" : "/api/quiz?action=checkQuiz", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        action: TRIAL_MODE ? "checkQuiz" : undefined,
+        trialId: TRIAL_MODE ? getQuizDeviceId() : undefined,
+        trialToken: TRIAL_MODE ? getQuizSessionToken() : undefined,
         phone: getQuizPhone(),
         deviceId: getQuizDeviceId(),
         quizSessionToken: getQuizSessionToken(),

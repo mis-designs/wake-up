@@ -491,6 +491,7 @@ window.addEventListener("load", async () => {
   setupLoginUI();
   setupProfileUI();
   setupAdminUI();
+  setupTrialMarketing();
 
   if (wasReset) {
     const publicRoute = getRouteStateFromLocation();
@@ -1260,6 +1261,42 @@ function showLandingScreen(options = {}) {
   currentScreen = "welcome";
   setAppRoute({ screen: "welcome" }, { replace: options.replace === true });
 }
+
+const TRIAL_COUNTDOWN_MS = 36 * 60 * 60 * 1000;
+let trialCountdownTimer = null;
+
+function setupTrialMarketing() {
+  let endsAt = Number(Storage.get("trial_offer_ends_at") || 0);
+  if (!endsAt || endsAt <= Date.now()) {
+    endsAt = Date.now() + TRIAL_COUNTDOWN_MS;
+    Storage.set("trial_offer_ends_at", String(endsAt));
+  }
+  const render = () => {
+    const remaining = Math.max(0, endsAt - Date.now());
+    const hours = Math.floor(remaining / 3600000);
+    const minutes = Math.floor(remaining % 3600000 / 60000);
+    const seconds = Math.floor(remaining % 60000 / 1000);
+    const el = document.getElementById("trialCountdown");
+    if (el) el.textContent = [hours, minutes, seconds].map(value => String(value).padStart(2, "0")).join(":");
+  };
+  render();
+  if (trialCountdownTimer) clearInterval(trialCountdownTimer);
+  trialCountdownTimer = setInterval(render, 1000);
+  const params = new URLSearchParams(location.search);
+  if (params.get("trialOffer") === "1") {
+    history.replaceState({}, "", "/");
+    setTimeout(() => document.getElementById("trialOfferModal")?.classList.remove("hidden"), 450);
+  }
+}
+
+function openTrialChapterPicker() { document.getElementById("trialChapterModal")?.classList.remove("hidden"); }
+function closeTrialChapterPicker() { document.getElementById("trialChapterModal")?.classList.add("hidden"); }
+function startFreeTrial(chapter) {
+  if (![2, 4].includes(Number(chapter))) return;
+  window.location.href = `/quiz/prova-gratis?chapter=${Number(chapter)}`;
+}
+function closeTrialOffer() { document.getElementById("trialOfferModal")?.classList.add("hidden"); }
+function openTrialJoinOffer() { closeTrialOffer(); showJoinScreen(); }
 
 function showJoinScreen(options = {}) {
   hideAll();

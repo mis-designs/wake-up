@@ -1,0 +1,107 @@
+import crypto from "crypto";
+
+const QUIZ_GAS_URL = process.env.QUIZ_GAS_URL;
+const QUIZ_PROXY_SECRET = process.env.QUIZ_PROXY_SECRET;
+const SESSION_SECRET = process.env.SESSION_SECRET;
+export const TRIAL_CHAPTERS = new Set(["2", "4"]);
+const TRIAL_TOKEN_TTL_MS = 36 * 60 * 60 * 1000;
+
+export function isAllowedTrialChapter(value) {
+  return TRIAL_CHAPTERS.has(String(value || "").trim());
+}
+
+export function hasOnlyIssuedTrialQuestions(answers, issuedIds) {
+  if (!Array.isArray(answers) || answers.length < 1 || answers.length > 30) return false;
+  const allowed = new Set((issuedIds || []).map(String));
+  return answers.every(answer => allowed.has(String(answer?.id)) && [0, 1, null].includes(answer?.answer));
+}
+
+function sign(payload) {
+  const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signature = crypto.createHmac("sha256", SESSION_SECRET).update(encoded).digest("base64url");
+  return `${encoded}.${signature}`;
+}
+
+function verify(token, trialId) {
+  const [encoded, signature, extra] = String(token || "").split(".");
+  if (!encoded || !signature || extra) return null;
+  const expected = crypto.createHmac("sha256", SESSION_SECRET).update(encoded).digest("base64url");
+  const left = Buffer.from(signature);
+  const right = Buffer.from(expected);
+  if (left.length !== right.length || !crypto.timingSafeEqual(left, right)) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
+    if (payload.purpose !== "trial" || payload.trialId !== trialId || payload.exp <= Date.now()) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+async function callQuizBackend(action, options = {}) {
+  if (action === "getQuiz") {
+    const params = new URLSearchParams({
+      action: "getQuiz",
+      token: QUIZ_PROXY_SECRET,
+      chapters: options.chapter,
+      limit: "30",
+      count: "30",
+      questionCount: "30",
+      draw: crypto.randomUUID()
+    });
+    const response = await fetch(`${QUIZ_GAS_URL}?${params}`);
+    return response.json();
+  }
+
+  const response = await fetch(`${QUIZ_GAS_URL}?action=checkQuiz`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: QUIZ_PROXY_SECRET, answers: options.answers })
+  });
+  return response.json();
+}
+
+function getRows(data) {
+  if (Array.isArray(data)) return data;
+  return data?.quiz || data?.questions || data?.rows || [];
+}
+
+export default async function handler(req, res) {
+  if (!QUIZ_GAS_URL || !QUIZ_PROXY_SECRET || !SESSION_SECRET) return res.status(500).json({ error: "missing_server_config" });
+  const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+  const action = body.action || req.query?.action;
+  const trialId = String(body.trialId || req.query?.trialId || "");
+  if (!/^[a-zA-Z0-9_-]{16,80}$/.test(trialId)) return res.status(400).json({ error: "invalid_trial" });
+
+  try {
+    if (req.method === "GET" && action === "getQuiz") {
+      const chapter = String(req.query?.chapter || "").trim();
+      if (!isAllowedTrialChapter(chapter)) return res.status(403).json({ error: "trial_chapter_forbidden" });
+      const data = await callQuizBackend("getQuiz", { chapter });
+      const quiz = getRows(data)
+        .filter(question => String(question?.chapter ?? "").trim() === chapter)
+        .slice(0, 30)
+        .map(({ id, chapter: rowChapter, question, figure, question_bd, explanations }) => ({ id, chapter: rowChapter, question, figure, question_bd, explanations }));
+      if (!quiz.length) return res.status(502).json({ error: "invalid_quiz_response" });
+      const expiresAt = Date.now() + TRIAL_TOKEN_TTL_MS;
+      const trialToken = sign({ purpose: "trial", trialId, chapter, ids: quiz.map(q => String(q.id)), exp: expiresAt });
+      res.setHeader("Cache-Control", "no-store");
+      return res.status(200).json({ quiz, trialToken, trialTokenExpiresAt: expiresAt, timerMinutes: 20, title: `Prova gratuita · Capitolo ${chapter}` });
+    }
+
+    if (req.method === "POST" && action === "checkQuiz") {
+      const payload = verify(body.trialToken, trialId);
+      if (!payload) return res.status(401).json({ error: "trial_session_expired" });
+      if (!isAllowedTrialChapter(payload.chapter) || !hasOnlyIssuedTrialQuestions(body.answers, payload.ids)) {
+        return res.status(403).json({ error: "trial_questions_forbidden" });
+      }
+      const result = await callQuizBackend("checkQuiz", { answers: body.answers });
+      return res.status(200).json(result);
+    }
+
+    return res.status(400).json({ error: "invalid_action" });
+  } catch (error) {
+    console.error("[api/trial]", error);
+    return res.status(500).json({ error: "server_error" });
+  }
+}

@@ -146,6 +146,10 @@
     {
       "source": "/quiz/esame-:mode",
       "destination": "/quiz"
+    },
+    {
+      "source": "/quiz/prova-gratis",
+      "destination": "/quiz"
     }
   ]
 }
