@@ -1,0 +1,33 @@
+const BASE_URL = process.env.R2_BASE_URL;
+export const TRIAL_BOOK_CHAPTERS = new Set(["2", "4"]);
+
+export function isAllowedTrialBookRequest(chapter, page) {
+  const normalizedChapter = String(chapter || "").trim();
+  const normalizedPage = Number(page);
+  return TRIAL_BOOK_CHAPTERS.has(normalizedChapter)
+    && Number.isInteger(normalizedPage)
+    && normalizedPage >= 1
+    && normalizedPage <= 10000;
+}
+
+export default async function handler(req, res) {
+  if (req.method !== "GET") return res.status(405).json({ error: "method_not_allowed" });
+  if (!BASE_URL) return res.status(500).json({ error: "missing_server_config" });
+  const chapter = String(req.query?.chapter || "").trim();
+  const page = Number(req.query?.page);
+  if (!isAllowedTrialBookRequest(chapter, page)) return res.status(403).json({ error: "trial_book_forbidden" });
+
+  try {
+    const pageNumber = String(page).padStart(4, "0");
+    const path = `books/magic-book/cap${chapter}/magic book-${chapter}_page-${pageNumber}.jpg`;
+    const response = await fetch(new URL(path, `${BASE_URL}/`).toString());
+    if (!response.ok) return res.status(404).json({ error: "not_found" });
+    const buffer = await response.arrayBuffer();
+    if (!buffer.byteLength) return res.status(500).json({ error: "empty_file" });
+    res.setHeader("Content-Type", "image/jpeg");
+    res.setHeader("Cache-Control", "private, max-age=300");
+    return res.send(Buffer.from(buffer));
+  } catch {
+    return res.status(500).json({ error: "server_error" });
+  }
+}

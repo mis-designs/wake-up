@@ -75,6 +75,8 @@ function setAppRoute(state = {}, options = {}) {
 
 function getRouteStateFromLocation() {
   const path = normalizeRoutePath();
+  const trialBookMatch = path.match(/^\/prova-gratis\/libro-(2|4)$/);
+  if (trialBookMatch) return { screen: "trialBook", chapter: Number(trialBookMatch[1]) };
   const chapterMatch = path.match(/^\/magic-book\/capitolo-(\d{1,2})$/);
   if (chapterMatch) {
     return { screen: "viewer", chapter: clampChapter(Number(chapterMatch[1])) };
@@ -495,7 +497,9 @@ window.addEventListener("load", async () => {
 
   if (wasReset) {
     const publicRoute = getRouteStateFromLocation();
-    if (publicRoute.screen === "login") {
+    if (publicRoute.screen === "trialBook") {
+      openTrialBook(publicRoute.chapter);
+    } else if (publicRoute.screen === "login") {
       showLoginScreen("Effettua nuovamente il login.", { replace: true });
     } else if (publicRoute.screen === "join") {
       showJoinScreen({ replace: true });
@@ -535,7 +539,9 @@ window.addEventListener("load", async () => {
     }
   } else {
     const publicRoute = getRouteStateFromLocation();
-    if (publicRoute.screen === "login") {
+    if (publicRoute.screen === "trialBook") {
+      openTrialBook(publicRoute.chapter);
+    } else if (publicRoute.screen === "login") {
       showLoginScreen("", { replace: true });
     } else if (publicRoute.screen === "join") {
       showJoinScreen({ replace: true });
@@ -1294,6 +1300,16 @@ function closeTrialChapterPicker() { document.getElementById("trialChapterModal"
 function startFreeTrial(chapter) {
   if (![2, 4].includes(Number(chapter))) return;
   window.location.href = `/quiz/prova-gratis?chapter=${Number(chapter)}`;
+}
+function startTrialBook(chapter) {
+  if (![2, 4].includes(Number(chapter))) return;
+  closeTrialChapterPicker();
+  openTrialBook(Number(chapter));
+}
+async function openLockedTrialFeature(feature) {
+  closeTrialChapterPicker();
+  await showMessage("Funzione Premium", `${feature} è disponibile con i pacchetti MagicBook completi. Scopri l'accesso a tutti i contenuti.`);
+  showJoinScreen();
 }
 function closeTrialOffer() { document.getElementById("trialOfferModal")?.classList.add("hidden"); }
 function openTrialJoinOffer() { closeTrialOffer(); showJoinScreen(); }
@@ -2789,6 +2805,12 @@ function openChapterFromMenu(chapterNum) {
 // Context-aware back navigation
 function goBack() {
   closeChapterMenu();
+  if (currentScreen === "trialBook") {
+    isTrialBookViewer = false;
+    document.querySelector(".menu-btn")?.classList.remove("hidden");
+    showLandingScreen();
+    return;
+  }
   if (currentScreen === "examMode") {
     closeExamModeScreen();
     return;
@@ -2820,7 +2842,8 @@ window.addEventListener("popstate", () => {
     openRouteState(getRouteStateFromLocation());
   } else {
     const state = getRouteStateFromLocation();
-    if (state.screen === "login") showLoginScreen("", { replace: true });
+    if (state.screen === "trialBook") openTrialBook(state.chapter);
+    else if (state.screen === "login") showLoginScreen("", { replace: true });
     else if (state.screen === "join") showJoinScreen({ replace: true });
     else if (state.screen === "about") showAboutScreen({ replace: true });
     else showLandingScreen({ replace: true });
@@ -2841,6 +2864,7 @@ function openQuizFromMenu() {
  * VIEWER
  ***********************/
 const MAGIC_BOOK_API = "/api/getPages";
+let isTrialBookViewer = false;
 const VIEWER_LOADING_FIGURES = [
   "fig1",
   "fig8",
@@ -2912,6 +2936,14 @@ function startViewerLoadingAnimation(loader) {
 }
 
 async function fetchMagicBookPage({ type, chapter, page }) {
+  if (isTrialBookViewer) {
+    if (![2, 4].includes(Number(chapter)) || type !== "chapter") return null;
+    const response = await fetch(`/api/trialBook?chapter=${Number(chapter)}&page=${Number(page)}`);
+    if (response.status === 404) return null;
+    if (!response.ok || !(response.headers.get("Content-Type") || "").toLowerCase().includes("image/jpeg")) return null;
+    const blob = await response.blob();
+    return blob?.size ? blob : null;
+  }
   const body = {
     book: "magic",
     type,
@@ -3321,7 +3353,7 @@ async function openMagicBookPages({ type, chapter = null }) {
   pages.innerHTML = "";
   setMagicBookLoading(pages, true);
 
-  const accessReady = await ensureAccessToken({ force: true });
+  const accessReady = isTrialBookViewer || await ensureAccessToken({ force: true });
   if (!accessReady) {
     currentBookViewer.hasNext = false;
     setMagicBookLoading(pages, false);
@@ -3330,6 +3362,20 @@ async function openMagicBookPages({ type, chapter = null }) {
   }
 
   loadNextMagicBookPage();
+}
+
+function openTrialBook(chapter) {
+  const normalizedChapter = Number(chapter);
+  if (![2, 4].includes(normalizedChapter)) {
+    showLandingScreen({ replace: true });
+    return;
+  }
+  isTrialBookViewer = true;
+  openMagicBookPages({ type: "chapter", chapter: normalizedChapter }).then(() => {
+    currentScreen = "trialBook";
+    document.querySelector(".menu-btn")?.classList.add("hidden");
+    history.replaceState({ screen: "trialBook", chapter: normalizedChapter }, "", `/prova-gratis/libro-${normalizedChapter}`);
+  });
 }
 
 function openQuiz() {

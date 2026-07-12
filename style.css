@@ -1217,6 +1217,16 @@ a:focus-visible {
 @keyframes goldJackpotArrow{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
 @media(prefers-reduced-motion:reduce){.trial-promo-cta,.trial-promo-cta::before,.trial-promo-cta b{animation:none}}
 
+.trial-chapter-grid article{padding:22px;border:1px solid rgba(255,255,255,.22);border-radius:22px;background:linear-gradient(145deg,rgba(255,255,255,.13),rgba(255,255,255,.04));color:#fff;text-align:left;display:flex;flex-direction:column;gap:8px;transition:.3s ease}
+.trial-chapter-grid article:hover{transform:translateY(-4px);border-color:#69e8ff;box-shadow:0 15px 35px rgba(62,204,255,.13)}
+.trial-chapter-grid article>small{color:#ffd369;font:800 10px Inter,sans-serif;letter-spacing:.14em}.trial-chapter-grid article>strong{font:700 29px Georgia,serif}
+.trial-chapter-grid article>div{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:7px}
+.trial-chapter-grid article button{width:100%;min-height:42px;padding:9px 10px;border:1px solid rgba(255,255,255,.17);border-radius:12px;background:rgba(255,255,255,.08);color:#fff;font:800 11px/1.2 Inter,sans-serif;text-align:center;display:block;cursor:pointer;box-shadow:none}
+.trial-chapter-grid article button:last-child{border-color:#ffe58b;background:linear-gradient(100deg,#d58a06,#ffd85b);color:#2a1800}
+.trial-locked-options{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.12)}
+.trial-locked-options button{min-height:48px;padding:9px 7px;border:1px dashed rgba(255,255,255,.2);border-radius:13px;background:rgba(255,255,255,.045);color:rgba(255,255,255,.63);font:700 10px/1.25 Inter,sans-serif;cursor:pointer}.trial-locked-options button span{display:block;margin-bottom:3px;font-size:13px}
+@media(max-width:560px){.trial-chapter-grid article{padding:16px}.trial-chapter-grid article>strong{font-size:26px}.trial-locked-options{grid-template-columns:1fr 1fr}.trial-locked-options button:last-child{grid-column:1 / -1}.trial-modal-card:has(.trial-locked-options){padding-bottom:18px}}
+
 /* ABOUT */
 .about-screen {
     min-height: 100dvh;

@@ -159,6 +159,10 @@
     {
       "source": "/quiz/prova-gratis",
       "destination": "/quiz"
+    },
+    {
+      "source": "/prova-gratis/libro-:chapter",
+      "destination": "/"
     }
   ]
 }

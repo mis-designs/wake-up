@@ -90,7 +90,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MagicBook">
-<link rel="stylesheet" href="style.css?v=29">
+<link rel="stylesheet" href="style.css?v=30">
 <link rel="stylesheet" href="homebg.css?v=3">
 </head>
 <body>
@@ -168,8 +168,13 @@ gtag('config', 'G-C5JPY9HFHD', {
     <h2 id="trialModalTitle">Scegli il tuo capitolo</h2>
     <p>Entra subito nel quiz. Nessun account e nessun accesso alle aree riservate.</p>
     <div class="trial-chapter-grid">
-      <button type="button" onclick="startFreeTrial(2)"><small>PROVA GRATIS</small><strong>Capitolo 2</strong><span>Inizia il quiz →</span></button>
-      <button type="button" onclick="startFreeTrial(4)"><small>PROVA GRATIS</small><strong>Capitolo 4</strong><span>Inizia il quiz →</span></button>
+      <article><small>PROVA GRATIS</small><strong>Capitolo 2</strong><div><button type="button" onclick="startTrialBook(2)">Leggi il libro</button><button type="button" onclick="startFreeTrial(2)">Fai il quiz →</button></div></article>
+      <article><small>PROVA GRATIS</small><strong>Capitolo 4</strong><div><button type="button" onclick="startTrialBook(4)">Leggi il libro</button><button type="button" onclick="startFreeTrial(4)">Fai il quiz →</button></div></article>
+    </div>
+    <div class="trial-locked-options" aria-label="Funzioni premium">
+      <button type="button" onclick="openLockedTrialFeature('Quiz Mix')"><span>🔒</span> Quiz Mix</button>
+      <button type="button" onclick="openLockedTrialFeature('Simulazione esame')"><span>🔒</span> Simulazione esame</button>
+      <button type="button" onclick="openLockedTrialFeature('Tutti i capitoli')"><span>🔒</span> Tutti i capitoli</button>
     </div>
   </div>
 </div>
@@ -953,6 +958,6 @@ gtag('config', 'G-C5JPY9HFHD', {
   </div>
 </div>
 
-<script src="script.js?v=9"></script>
+<script src="script.js?v=10"></script>
 </body>
 </html>
