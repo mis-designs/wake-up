@@ -16,7 +16,10 @@
     <link rel="icon" type="image/png" href="/api/asset?name=mg_logo">
     <link rel="apple-touch-icon" href="/api/asset?name=mg_logo">
     <link rel="manifest" href="manifest.webmanifest?v=16">
+    <link rel="preload" as="font" type="font/woff2" href="https://banglawebfonts.pages.dev/fonts/un-bangla/un-bangla-regular.woff2" crossorigin="anonymous">
+    <style>@import url('https://banglawebfonts.pages.dev/css/un-bangla.css');</style>
     <link rel="stylesheet" href="mystyle.css?v=26">
+    <link rel="stylesheet" href="quiz-help.css?v=20260712-magic-help-v1">
 </head>
 
 <body>
@@ -151,7 +154,39 @@
 
     <div id="audio-toast" class="audio-toast" aria-live="assertive" aria-atomic="true"></div>
 
-    <script src="quiz.js?v=29"></script>
+    <div id="quiz-help-workspace" class="quiz-help-workspace hidden" aria-hidden="true">
+        <div class="quiz-help-shell" role="dialog" aria-modal="true" aria-labelledby="quiz-help-title">
+            <header class="quiz-help-topbar">
+                <strong id="quiz-help-title">Aiuto del quiz</strong>
+                <button class="quiz-help-close" type="button" data-help-close aria-label="Chiudi">×</button>
+            </header>
+            <div class="quiz-help-tabs" role="tablist" aria-label="Traduzione e parole chiave">
+                <button class="quiz-help-tab is-active" type="button" role="tab" data-help-tab aria-selected="true">Traduzione</button>
+                <button class="quiz-help-tab" type="button" role="tab" data-help-tab aria-selected="false">Parole chiave</button>
+            </div>
+            <div class="quiz-help-slides">
+                <section class="quiz-help-slide is-active" data-help-slide>
+                    <span class="quiz-help-kicker" lang="bn">বাংলা</span>
+                    <h3>Traduzione del quiz</h3>
+                    <p id="quiz-help-translation-text" class="quiz-help-translation-text" lang="bn"></p>
+                    <p id="quiz-help-translation-status" class="quiz-help-status" role="status"></p>
+                </section>
+                <section class="quiz-help-slide" data-help-slide>
+                    <span class="quiz-help-kicker">KEY WORDS</span>
+                    <h3>Parole chiave</h3>
+                    <div id="quiz-help-context" class="quiz-help-context hidden">
+                        <div><small>CAPITOLO</small><strong id="quiz-help-chapter-it"></strong><span id="quiz-help-chapter-bn" lang="bn"></span></div>
+                        <div><small>ARGOMENTO</small><strong id="quiz-help-topic-it"></strong><span id="quiz-help-topic-bn" lang="bn"></span></div>
+                    </div>
+                    <div id="quiz-help-words" class="quiz-help-words"></div>
+                    <div id="quiz-help-word-detail" class="quiz-help-word-detail hidden"></div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script src="quiz.js?v=30"></script>
+    <script src="quiz-help.js?v=20260712-magic-help-v1"></script>
 </body>
 
 </html>

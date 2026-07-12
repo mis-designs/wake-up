@@ -30,6 +30,35 @@ function isSafeFilePart(value) {
   return value.length <= 120 && /^[a-zA-Z0-9._ ()-]+$/.test(value) && !value.includes("..");
 }
 
+export function normalizeExplanationFigure(value) {
+  const figure = String(value || "").trim().toLowerCase();
+  const match = figure.match(/^fig[\s_-]*(\d+)$/i);
+  return match ? `fig${Number(match[1])}` : "";
+}
+
+export function getExplanationAssetCandidates(figure, value, ext) {
+  const normalizedFigure = normalizeExplanationFigure(figure);
+  const normalizedValue = String(value ?? "").trim();
+  const normalizedExt = String(ext || "").trim().toLowerCase();
+
+  if (!normalizedFigure || normalizedValue !== "0" || !IMAGE_CONTENT_TYPES[normalizedExt]) return [];
+
+  return [
+    {
+      path: `explanations/${normalizedFigure}.${normalizedExt}`,
+      contentType: IMAGE_CONTENT_TYPES[normalizedExt]
+    },
+    {
+      path: `explanations/${normalizedFigure}_0.${normalizedExt}`,
+      contentType: IMAGE_CONTENT_TYPES[normalizedExt]
+    },
+    {
+      path: `explanations/${normalizedFigure}_1.${normalizedExt}`,
+      contentType: IMAGE_CONTENT_TYPES[normalizedExt]
+    }
+  ];
+}
+
 function getDynamicAsset(query = {}) {
   const kind = String(query.kind || "").trim();
 
@@ -48,13 +77,11 @@ function getDynamicAsset(query = {}) {
     const value = String(query.value || "").trim();
     const ext = String(query.ext || "").trim().toLowerCase();
 
-    if (!figure || !value || !IMAGE_CONTENT_TYPES[ext]) return null;
+    if (!figure || !IMAGE_CONTENT_TYPES[ext]) return null;
     if (!isSafeFilePart(figure) || !isSafeFilePart(value)) return null;
 
-    return {
-      path: `explanations/${figure}_${value}.${ext}`,
-      contentType: IMAGE_CONTENT_TYPES[ext]
-    };
+    const candidates = getExplanationAssetCandidates(figure, value, ext);
+    return candidates.length ? candidates : null;
   }
 
   return null;
@@ -77,12 +104,21 @@ export default async function handler(req, res) {
   }
 
   try {
-    const url = new URL(asset.path, `${BASE_URL}/`).toString();
-    const response = await fetch(url);
+    const candidates = Array.isArray(asset) ? asset : [asset];
+    let response = null;
+    let selectedAsset = null;
 
-    if (!response.ok) {
-      return res.status(404).json({ error: "not_found" });
+    for (const candidate of candidates) {
+      const url = new URL(candidate.path, `${BASE_URL}/`).toString();
+      const candidateResponse = await fetch(url);
+      if (candidateResponse.ok) {
+        response = candidateResponse;
+        selectedAsset = candidate;
+        break;
+      }
     }
+
+    if (!response || !selectedAsset) return res.status(404).json({ error: "not_found" });
 
     const buffer = await response.arrayBuffer();
 
@@ -90,7 +126,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "empty_file" });
     }
 
-    res.setHeader("Content-Type", asset.contentType);
+    res.setHeader("Content-Type", selectedAsset.contentType);
     res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=604800");
     return res.send(Buffer.from(buffer));
   } catch (err) {

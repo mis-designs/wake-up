@@ -177,7 +177,7 @@ function buildExplanationImageUrl(figure, value, ext) {
   return buildAssetUrl({
     kind: "explanation",
     figure: String(figure || "").trim(),
-    value: String(value || "").trim(),
+    value: String(value ?? "").trim(),
     ext
   });
 }
@@ -693,7 +693,30 @@ function playBanglaAudio() {
 
 function getExplanationValue(question) {
   const value = String(question?.explanations ?? question?.Explanations ?? "").trim();
-  return value === "0" || value === "1" ? value : null;
+  return value === "0" ? value : null;
+}
+
+function getNormalizedFigureKey(question) {
+  const figure = getFigureKey(question).toLowerCase();
+  const match = figure.match(/^fig[\s_-]*(\d+)$/i);
+  return match ? `fig${Number(match[1])}` : figure;
+}
+
+function applyExplanationAvailability(questions) {
+  if (!Array.isArray(questions)) return [];
+
+  const figuresWithExplanation = new Set(
+    questions
+      .filter(question => getExplanationValue(question) === "0")
+      .map(getNormalizedFigureKey)
+      .filter(Boolean)
+  );
+
+  return questions.map(question => {
+    const figureKey = getNormalizedFigureKey(question);
+    if (!figureKey || !figuresWithExplanation.has(figureKey)) return question;
+    return { ...question, explanations: 0 };
+  });
 }
 
 function getFigureKey(question) {
@@ -857,11 +880,10 @@ async function loadQuiz() {
     quizSessionToken = data.quizSessionToken || "";
     quizSessionTokenExpiresAt = data.quizSessionTokenExpiresAt || 0;
     quizDurationMinutes = Number(data.timerMinutes) || getQuizModeConfig(quizMode).timerMinutes;
-    quiz = data.quiz;
-
-    if (!Array.isArray(quiz)) {
+    if (!Array.isArray(data.quiz)) {
       throw new Error("invalid_quiz_response");
     }
+    quiz = applyExplanationAvailability(data.quiz);
 
     const modeConfig = getQuizModeConfig(quizMode);
     const titleEl = document.querySelector(".top-bar h2");

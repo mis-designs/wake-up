@@ -1,0 +1,251 @@
+(() => {
+  "use strict";
+
+  const HELP_SOURCE = "data/patente/quiz-help-runtime-v2.json?v=20260712-magic-help-v1";
+  const questionArea = document.querySelector(".question-area");
+  const questionText = document.getElementById("question");
+  const workspace = document.getElementById("quiz-help-workspace");
+  const translationText = document.getElementById("quiz-help-translation-text");
+  const translationStatus = document.getElementById("quiz-help-translation-status");
+  const context = document.getElementById("quiz-help-context");
+  const chapterIt = document.getElementById("quiz-help-chapter-it");
+  const chapterBn = document.getElementById("quiz-help-chapter-bn");
+  const topicIt = document.getElementById("quiz-help-topic-it");
+  const topicBn = document.getElementById("quiz-help-topic-bn");
+  const wordsList = document.getElementById("quiz-help-words");
+  const wordDetail = document.getElementById("quiz-help-word-detail");
+  const slides = Array.from(document.querySelectorAll("[data-help-slide]"));
+  const tabs = Array.from(document.querySelectorAll("[data-help-tab]"));
+  let libraryPromise = null;
+  let requestId = 0;
+  let activeSlide = 0;
+
+  function currentQuestion() {
+    return Array.isArray(quiz) ? quiz[current] : null;
+  }
+
+  function normalize(value = "") {
+    return String(value)
+      .toLocaleLowerCase("it-IT")
+      .normalize("NFD")
+      .replace(/\p{M}/gu, "")
+      .replace(/[’]/g, "'")
+      .trim()
+      .replace(/[.!?]+$/g, "")
+      .replace(/\s+/g, " ");
+  }
+
+  function hash(value = "") {
+    let result = 0x811c9dc5;
+    for (let index = 0; index < value.length; index += 1) {
+      result ^= value.charCodeAt(index);
+      result = Math.imul(result, 0x01000193);
+    }
+    return (result >>> 0).toString(36);
+  }
+
+  function figureNumber(question) {
+    const source = String(question?.figure || question?.img || "");
+    return source.match(/(\d+)(?=\.[a-z0-9]+$|$)/i)?.[1] || "";
+  }
+
+  function fingerprint(question) {
+    return hash(`${normalize(question?.question)}|${figureNumber(question)}`);
+  }
+
+  function loadLibrary() {
+    if (!libraryPromise) {
+      libraryPromise = fetch(HELP_SOURCE, { cache: "force-cache" })
+        .then(response => {
+          if (!response.ok) throw new Error(`quiz_help_${response.status}`);
+          return response.json();
+        })
+        .then(data => {
+          if (!data?.quizzes || !data?.words) throw new Error("quiz_help_invalid");
+          return data;
+        })
+        .catch(error => {
+          libraryPromise = null;
+          throw error;
+        });
+    }
+    return libraryPromise;
+  }
+
+  function displayForm(question, canonical, aliases = []) {
+    const normalizedQuestion = ` ${normalize(question)} `;
+    return [...new Set([...(aliases || []), canonical])]
+      .filter(Boolean)
+      .sort((a, b) => b.length - a.length)
+      .find(candidate => normalizedQuestion.includes(` ${normalize(candidate)} `)) || canonical;
+  }
+
+  function decodeHelp(question, data) {
+    const row = data.quizzes[fingerprint(question)];
+    if (!Array.isArray(row)) return null;
+    const [quizId, chapterId, topicId, wordIds = [], ttsBn = ""] = row;
+    const chapter = data.chapters?.[chapterId] || [];
+    const topic = data.topics?.[topicId] || [];
+    const words = wordIds.map(id => {
+      const word = data.words?.[id];
+      if (!Array.isArray(word)) return null;
+      return {
+        id,
+        italian: displayForm(question.question, word[0], word[4]),
+        bangla: word[1] || "",
+        simpleIt: word[2] || "",
+        simpleBn: word[3] || "",
+        ttsBn: word[5] || ""
+      };
+    }).filter(Boolean);
+    return {
+      quizId,
+      ttsBn,
+      chapter: { italian: chapter[0] || "", bangla: chapter[1] || "" },
+      topic: { italian: topic[0] || "", bangla: topic[1] || "" },
+      words
+    };
+  }
+
+  function speak(text, language) {
+    const cleanText = String(text || "").trim();
+    if (!cleanText || !window.speechSynthesis) return;
+    stopAllAudio?.();
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = language;
+    utterance.rate = language.startsWith("bn") ? 0.82 : 0.92;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function renderContext(help) {
+    const visible = Boolean(help?.chapter?.italian || help?.topic?.italian);
+    context.classList.toggle("hidden", !visible);
+    chapterIt.textContent = help?.chapter?.italian || "";
+    chapterBn.textContent = help?.chapter?.bangla || "";
+    topicIt.textContent = help?.topic?.italian || "";
+    topicBn.textContent = help?.topic?.bangla || "";
+  }
+
+  function showWordDetail(word) {
+    wordDetail.replaceChildren();
+    const heading = document.createElement("strong");
+    heading.textContent = `${word.italian} · ${word.bangla}`;
+    const italian = document.createElement("p");
+    italian.textContent = word.simpleIt;
+    const bangla = document.createElement("p");
+    bangla.lang = "bn";
+    bangla.textContent = word.simpleBn;
+    const audio = document.createElement("button");
+    audio.type = "button";
+    audio.className = "quiz-help-word-audio";
+    audio.textContent = "🔊 Ascolta";
+    audio.addEventListener("click", () => speak(word.ttsBn || `${word.bangla}। ${word.simpleBn}`, "bn-BD"));
+    wordDetail.append(heading, italian, bangla, audio);
+    wordDetail.classList.remove("hidden");
+  }
+
+  function renderWords(words = []) {
+    wordsList.replaceChildren();
+    wordDetail.classList.add("hidden");
+    if (!words.length) {
+      const empty = document.createElement("p");
+      empty.className = "quiz-help-empty";
+      empty.textContent = "Parole chiave non disponibili per questa domanda.";
+      wordsList.appendChild(empty);
+      return;
+    }
+    words.forEach(word => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "quiz-help-word";
+      const italian = document.createElement("strong");
+      italian.textContent = word.italian;
+      const bangla = document.createElement("span");
+      bangla.lang = "bn";
+      bangla.textContent = word.bangla;
+      button.append(italian, bangla);
+      button.addEventListener("click", () => showWordDetail(word));
+      wordsList.appendChild(button);
+    });
+  }
+
+  async function render() {
+    const question = currentQuestion();
+    if (!question?.question) return;
+    const ownRequest = ++requestId;
+    translationText.textContent = "";
+    translationStatus.textContent = "Traduzione in corso…";
+    renderContext(null);
+    wordsList.innerHTML = '<span class="quiz-help-skeleton"></span><span class="quiz-help-skeleton"></span><span class="quiz-help-skeleton"></span>';
+
+    const directTranslation = String(question.question_bd || question.questionBD || "").trim();
+    if (directTranslation) {
+      translationText.textContent = directTranslation;
+      translationStatus.textContent = "";
+    } else if (typeof fetchBengaliAudio === "function") {
+      fetchBengaliAudio(question.question, `${question.id || current}_bn`)
+        .then(data => {
+          if (ownRequest !== requestId) return;
+          translationText.textContent = data?.translation || "";
+          translationStatus.textContent = data?.translation ? "" : "Traduzione non disponibile.";
+        })
+        .catch(() => {
+          if (ownRequest === requestId) translationStatus.textContent = "Traduzione non disponibile. Riprova tra poco.";
+        });
+    }
+
+    try {
+      const data = await loadLibrary();
+      if (ownRequest !== requestId) return;
+      const help = decodeHelp(question, data);
+      renderContext(help);
+      renderWords(help?.words || []);
+    } catch (error) {
+      if (ownRequest !== requestId) return;
+      renderWords([]);
+      console.warn("[Magic Book quiz help]", error.message);
+    }
+  }
+
+  function setSlide(index) {
+    activeSlide = index === 1 ? 1 : 0;
+    slides.forEach((slide, slideIndex) => slide.classList.toggle("is-active", slideIndex === activeSlide));
+    tabs.forEach((tab, tabIndex) => {
+      const active = tabIndex === activeSlide;
+      tab.classList.toggle("is-active", active);
+      tab.setAttribute("aria-selected", String(active));
+    });
+  }
+
+  function open() {
+    workspace.classList.remove("hidden");
+    workspace.setAttribute("aria-hidden", "false");
+    document.body.classList.add("quiz-help-open");
+    setSlide(0);
+    render();
+  }
+
+  function close() {
+    requestId += 1;
+    workspace.classList.add("hidden");
+    workspace.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("quiz-help-open");
+    window.speechSynthesis?.cancel();
+  }
+
+  questionArea?.addEventListener("click", event => {
+    if (event.target.closest("button, a")) return;
+    open();
+  });
+  document.querySelectorAll("[data-help-close]").forEach(button => button.addEventListener("click", close));
+  tabs.forEach((tab, index) => tab.addEventListener("click", () => setSlide(index)));
+  workspace?.addEventListener("click", event => {
+    if (event.target === workspace) close();
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !workspace.classList.contains("hidden")) close();
+  });
+  new MutationObserver(() => {
+    if (!workspace.classList.contains("hidden")) render();
+  }).observe(questionText, { childList: true, characterData: true, subtree: true });
+})();
