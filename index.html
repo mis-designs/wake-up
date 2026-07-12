@@ -90,7 +90,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MagicBook">
-<link rel="stylesheet" href="style.css?v=30">
+<link rel="stylesheet" href="style.css?v=31">
 <link rel="stylesheet" href="homebg.css?v=3">
 </head>
 <body>
@@ -161,6 +161,37 @@ gtag('config', 'G-C5JPY9HFHD', {
   </section>
 </main>
 
+<main id="trialHub" class="trial-hub hidden" aria-labelledby="trialHubTitle">
+  <header class="trial-hub-header">
+    <button type="button" onclick="showLandingScreen()" aria-label="Torna alla home">←</button>
+    <div><small>FREE EXPERIENCE</small><h1 id="trialHubTitle">MagicBook Trial</h1></div>
+    <span>36H</span>
+  </header>
+  <section class="trial-hub-hero">
+    <div><span>ACCESSO GRATUITO</span><h2>Esplora il sistema completo</h2><p>I capitoli 2 e 4 sono sbloccati. Scopri cosa contiene MagicBook.</p></div>
+    <div class="trial-hub-progress"><b>2</b><span>capitoli aperti</span></div>
+  </section>
+  <section class="trial-hub-section">
+    <div class="trial-hub-section-title"><div><small>MAGIC BOOK</small><h2>Capitoli</h2></div><span>2 di 25 sbloccati</span></div>
+    <div id="trialHubChapters" class="trial-hub-chapters"></div>
+  </section>
+  <section class="trial-hub-section">
+    <div class="trial-hub-section-title"><div><small>ALLENAMENTO</small><h2>Quiz ed esame</h2></div></div>
+    <div class="trial-hub-tools">
+      <button class="is-open" type="button" onclick="startFreeTrial(2)"><span>✓</span><strong>Quiz Capitolo 2</strong><small>Disponibile</small></button>
+      <button class="is-open" type="button" onclick="startFreeTrial(4)"><span>✓</span><strong>Quiz Capitolo 4</strong><small>Disponibile</small></button>
+      <button type="button" onclick="startTrialPreview('Exam 30')"><span>🔒</span><strong>Exam 30</strong><small>Preview 5 secondi</small></button>
+      <button type="button" onclick="startTrialPreview('Exam 80')"><span>🔒</span><strong>Exam 80</strong><small>Preview 5 secondi</small></button>
+      <button type="button" onclick="openTrialPaywall('Quiz Mix')"><span>🔒</span><strong>Quiz Mix</strong><small>Premium</small></button>
+      <button type="button" onclick="openTrialPaywall('Spiegazioni complete')"><span>🔒</span><strong>Spiegazioni</strong><small>Premium</small></button>
+    </div>
+  </section>
+</main>
+
+<div id="trialPreview" class="trial-preview hidden" role="dialog" aria-modal="true" aria-labelledby="trialPreviewTitle">
+  <div class="trial-preview-card"><span>PREVIEW EXAM</span><h2 id="trialPreviewTitle">Exam</h2><div class="trial-preview-loader"><i></i><i></i><i></i></div><p>Questa è un'anteprima della modalità completa.</p><b id="trialPreviewCountdown">5</b></div>
+</div>
+
 <div id="trialChapterModal" class="trial-modal hidden" role="dialog" aria-modal="true" aria-labelledby="trialModalTitle">
   <div class="trial-modal-card">
     <button class="trial-modal-close" type="button" onclick="closeTrialChapterPicker()" aria-label="Chiudi">×</button>
@@ -193,6 +224,11 @@ gtag('config', 'G-C5JPY9HFHD', {
       <span><b>✓</b> Tutti i capitoli</span>
       <span><b>✓</b> Quiz completi</span>
       <span><b>✓</b> Spiegazioni</span>
+    </div>
+    <div class="trial-offer-plans">
+      <button type="button" onclick="openTrialJoinOffer()"><small>30 GIORNI</small><strong>10€</strong></button>
+      <button type="button" onclick="openTrialJoinOffer()"><small>90 GIORNI</small><strong>20€</strong></button>
+      <button type="button" onclick="openTrialJoinOffer()"><small>365 GIORNI</small><strong>40€</strong></button>
     </div>
     <button class="trial-offer-cta" type="button" onclick="openTrialJoinOffer()">Scopri i pacchetti <span>→</span></button>
     <button class="trial-offer-later" type="button" onclick="closeTrialOffer()">Non ora</button>
@@ -958,6 +994,6 @@ gtag('config', 'G-C5JPY9HFHD', {
   </div>
 </div>
 
-<script src="script.js?v=10"></script>
+<script src="script.js?v=11"></script>
 </body>
 </html>

@@ -1,12 +1,12 @@
-const CACHE_NAME = "magicbook-pwa-v28-trial-book";
+const CACHE_NAME = "magicbook-pwa-v29-trial-system";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
-  "/style.css?v=30",
+  "/style.css?v=31",
   "/homebg.css?v=3",
   "/mystyle.css?v=26",
-  "/script.js?v=10",
+  "/script.js?v=11",
   "/quiz.js?v=32",
   "/quiz-help.css?v=20260713-magic-help-v3",
   "/quiz-help.js?v=20260713-magic-help-v3",

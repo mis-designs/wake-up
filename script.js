@@ -40,6 +40,7 @@ function getAppRoute(state = {}) {
   if (state.screen === "login") return "/login";
   if (state.screen === "join") return "/join";
   if (state.screen === "about") return "/about";
+  if (state.screen === "trialHub") return "/prova-gratis";
   if (state.screen === "home") return "/home";
   if (state.screen === "chapters") return "/magic-book";
   if (state.screen === "admin") return "/admin";
@@ -75,6 +76,7 @@ function setAppRoute(state = {}, options = {}) {
 
 function getRouteStateFromLocation() {
   const path = normalizeRoutePath();
+  if (path === "/prova-gratis") return { screen: "trialHub" };
   const trialBookMatch = path.match(/^\/prova-gratis\/libro-(2|4)$/);
   if (trialBookMatch) return { screen: "trialBook", chapter: Number(trialBookMatch[1]) };
   const chapterMatch = path.match(/^\/magic-book\/capitolo-(\d{1,2})$/);
@@ -102,7 +104,11 @@ function openRouteState(state = getRouteStateFromLocation()) {
 
   applyingRouteFromHistory = true;
   try {
-    if (nextState.screen === "admin") {
+    if (nextState.screen === "trialHub") {
+      showTrialHub({ replace: true });
+    } else if (nextState.screen === "trialBook") {
+      openTrialBook(nextState.chapter);
+    } else if (nextState.screen === "admin") {
       showAdminPanel();
     } else if (nextState.screen === "chapters") {
       showChapters();
@@ -497,7 +503,9 @@ window.addEventListener("load", async () => {
 
   if (wasReset) {
     const publicRoute = getRouteStateFromLocation();
-    if (publicRoute.screen === "trialBook") {
+    if (publicRoute.screen === "trialHub") {
+      showTrialHub({ replace: true });
+    } else if (publicRoute.screen === "trialBook") {
       openTrialBook(publicRoute.chapter);
     } else if (publicRoute.screen === "login") {
       showLoginScreen("Effettua nuovamente il login.", { replace: true });
@@ -539,7 +547,9 @@ window.addEventListener("load", async () => {
     }
   } else {
     const publicRoute = getRouteStateFromLocation();
-    if (publicRoute.screen === "trialBook") {
+    if (publicRoute.screen === "trialHub") {
+      showTrialHub({ replace: true });
+    } else if (publicRoute.screen === "trialBook") {
       openTrialBook(publicRoute.chapter);
     } else if (publicRoute.screen === "login") {
       showLoginScreen("", { replace: true });
@@ -1295,7 +1305,7 @@ function setupTrialMarketing() {
   }
 }
 
-function openTrialChapterPicker() { document.getElementById("trialChapterModal")?.classList.remove("hidden"); }
+function openTrialChapterPicker() { showTrialHub(); }
 function closeTrialChapterPicker() { document.getElementById("trialChapterModal")?.classList.add("hidden"); }
 function startFreeTrial(chapter) {
   if (![2, 4].includes(Number(chapter))) return;
@@ -1308,10 +1318,68 @@ function startTrialBook(chapter) {
 }
 async function openLockedTrialFeature(feature) {
   closeTrialChapterPicker();
-  await showMessage("Funzione Premium", `${feature} è disponibile con i pacchetti MagicBook completi. Scopri l'accesso a tutti i contenuti.`);
-  showJoinScreen();
+  openTrialPaywall(feature);
 }
-function closeTrialOffer() { document.getElementById("trialOfferModal")?.classList.add("hidden"); }
+function buildTrialHubChapters() {
+  const container = document.getElementById("trialHubChapters");
+  if (!container || container.childElementCount) return;
+  for (let chapter = 1; chapter <= 25; chapter++) {
+    const unlocked = chapter === 2 || chapter === 4;
+    const card = document.createElement("article");
+    card.className = `trial-hub-chapter${unlocked ? " is-open" : " is-locked"}`;
+    card.innerHTML = `<span>${unlocked ? "APERTO" : "🔒"}</span><small>CAPITOLO</small><strong>${chapter}</strong><p>${unlocked ? "Libro e quiz disponibili" : "Contenuto Premium"}</p>`;
+    card.addEventListener("click", () => unlocked ? startTrialBook(chapter) : openTrialPaywall(`Capitolo ${chapter}`));
+    if (unlocked) {
+      const quizButton = document.createElement("button");
+      quizButton.type = "button";
+      quizButton.textContent = "Quiz →";
+      quizButton.addEventListener("click", event => { event.stopPropagation(); startFreeTrial(chapter); });
+      card.appendChild(quizButton);
+    }
+    container.appendChild(card);
+  }
+}
+function showTrialHub(options = {}) {
+  hideAll();
+  isTrialBookViewer = false;
+  document.getElementById("trialHub")?.classList.remove("hidden");
+  document.body.classList.add("public-mode", "trial-hub-mode");
+  buildTrialHubChapters();
+  currentScreen = "trialHub";
+  setProfileIconVisible(false);
+  setAppRoute({ screen: "trialHub" }, { replace: options.replace === true });
+}
+function openTrialPaywall(feature = "Questa funzione") {
+  const title = document.getElementById("trialOfferTitle");
+  if (title) title.textContent = `${feature} è Premium`;
+  document.getElementById("trialOfferModal")?.classList.remove("hidden");
+}
+let trialPreviewTimer = null;
+function startTrialPreview(feature) {
+  clearInterval(trialPreviewTimer);
+  const overlay = document.getElementById("trialPreview");
+  const title = document.getElementById("trialPreviewTitle");
+  const countdown = document.getElementById("trialPreviewCountdown");
+  if (!overlay || !title || !countdown) return;
+  title.textContent = feature;
+  overlay.classList.remove("hidden");
+  let seconds = 5;
+  countdown.textContent = String(seconds);
+  trialPreviewTimer = setInterval(() => {
+    seconds -= 1;
+    countdown.textContent = String(Math.max(0, seconds));
+    if (seconds <= 0) {
+      clearInterval(trialPreviewTimer);
+      overlay.classList.add("hidden");
+      openTrialPaywall(feature);
+    }
+  }, 1000);
+}
+function closeTrialOffer() {
+  document.getElementById("trialOfferModal")?.classList.add("hidden");
+  const title = document.getElementById("trialOfferTitle");
+  if (title) title.textContent = "Sblocca tutto MagicBook";
+}
 function openTrialJoinOffer() { closeTrialOffer(); showJoinScreen(); }
 
 function showJoinScreen(options = {}) {
@@ -2357,11 +2425,11 @@ function showWhatsAppGroupPopup() {
  ***********************/
 function hideAll() {
   cleanupMagicBookViewer();
-  ["landing", "about", "join", "login", "home", "chapters", "viewer", "adminPanel"].forEach(id => {
+  ["landing", "about", "join", "login", "home", "chapters", "viewer", "adminPanel", "trialHub"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.add("hidden");
   });
-  document.body.classList.remove("admin-mode", "app-mode", "public-mode");
+  document.body.classList.remove("admin-mode", "app-mode", "public-mode", "trial-hub-mode");
 }
 
 function showHome() {
@@ -2808,7 +2876,7 @@ function goBack() {
   if (currentScreen === "trialBook") {
     isTrialBookViewer = false;
     document.querySelector(".menu-btn")?.classList.remove("hidden");
-    showLandingScreen();
+    showTrialHub();
     return;
   }
   if (currentScreen === "examMode") {
@@ -2842,7 +2910,8 @@ window.addEventListener("popstate", () => {
     openRouteState(getRouteStateFromLocation());
   } else {
     const state = getRouteStateFromLocation();
-    if (state.screen === "trialBook") openTrialBook(state.chapter);
+    if (state.screen === "trialHub") showTrialHub({ replace: true });
+    else if (state.screen === "trialBook") openTrialBook(state.chapter);
     else if (state.screen === "login") showLoginScreen("", { replace: true });
     else if (state.screen === "join") showJoinScreen({ replace: true });
     else if (state.screen === "about") showAboutScreen({ replace: true });

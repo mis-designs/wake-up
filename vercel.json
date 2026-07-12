@@ -163,6 +163,10 @@
     {
       "source": "/prova-gratis/libro-:chapter",
       "destination": "/"
+    },
+    {
+      "source": "/prova-gratis",
+      "destination": "/"
     }
   ]
 }
