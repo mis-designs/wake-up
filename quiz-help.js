@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const HELP_SOURCE = "data/patente/quiz-help-runtime-v2.json?v=20260712-magic-help-v1";
+  const HELP_SOURCE = "data/patente/quiz-help-runtime-v2.json?v=20260713-magic-help-v2";
   const questionArea = document.querySelector(".question-area");
   const questionText = document.getElementById("question");
   const workspace = document.getElementById("quiz-help-workspace");
@@ -17,6 +17,7 @@
   const slides = Array.from(document.querySelectorAll("[data-help-slide]"));
   const tabs = Array.from(document.querySelectorAll("[data-help-tab]"));
   let libraryPromise = null;
+  let quizIdIndex = null;
   let requestId = 0;
   let activeSlide = 0;
 
@@ -81,7 +82,21 @@
   }
 
   function decodeHelp(question, data) {
-    const row = data.quizzes[fingerprint(question)];
+    if (!quizIdIndex) {
+      quizIdIndex = new Map();
+      Object.values(data.quizzes).forEach(value => {
+        if (!Array.isArray(value) || !value[0]) return;
+        const id = String(value[0]).toLocaleLowerCase("it-IT");
+        quizIdIndex.set(id, value);
+        const digits = id.match(/\d+/)?.[0];
+        if (digits) quizIdIndex.set(String(Number(digits)), value);
+      });
+    }
+    const sourceId = String(question?.id ?? "").trim().toLocaleLowerCase("it-IT");
+    const sourceDigits = sourceId.match(/\d+/)?.[0];
+    const row = data.quizzes[fingerprint(question)]
+      || quizIdIndex.get(sourceId)
+      || (sourceDigits ? quizIdIndex.get(String(Number(sourceDigits))) : null);
     if (!Array.isArray(row)) return null;
     const [quizId, chapterId, topicId, wordIds = [], ttsBn = ""] = row;
     const chapter = data.chapters?.[chapterId] || [];

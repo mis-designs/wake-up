@@ -19,7 +19,7 @@
     <link rel="preload" as="font" type="font/woff2" href="https://banglawebfonts.pages.dev/fonts/un-bangla/un-bangla-regular.woff2" crossorigin="anonymous">
     <style>@import url('https://banglawebfonts.pages.dev/css/un-bangla.css');</style>
     <link rel="stylesheet" href="mystyle.css?v=26">
-    <link rel="stylesheet" href="quiz-help.css?v=20260712-magic-help-v1">
+    <link rel="stylesheet" href="quiz-help.css?v=20260713-magic-help-v2">
 </head>
 
 <body>
@@ -166,14 +166,18 @@
             </div>
             <div class="quiz-help-slides">
                 <section class="quiz-help-slide is-active" data-help-slide>
-                    <span class="quiz-help-kicker" lang="bn">বাংলা</span>
-                    <h3>Traduzione del quiz</h3>
+                    <header class="quiz-help-card-header">
+                        <div><span class="quiz-help-kicker" lang="bn">বাংলা</span><h3>Traduzione del quiz</h3></div>
+                        <button class="quiz-help-close" type="button" data-help-close aria-label="Chiudi traduzione">×</button>
+                    </header>
                     <p id="quiz-help-translation-text" class="quiz-help-translation-text" lang="bn"></p>
                     <p id="quiz-help-translation-status" class="quiz-help-status" role="status"></p>
                 </section>
                 <section class="quiz-help-slide" data-help-slide>
-                    <span class="quiz-help-kicker">KEY WORDS</span>
-                    <h3>Parole chiave</h3>
+                    <header class="quiz-help-card-header">
+                        <div><span class="quiz-help-kicker">KEY WORDS</span><h3>Parole chiave</h3></div>
+                        <button class="quiz-help-close" type="button" data-help-close aria-label="Chiudi parole chiave">×</button>
+                    </header>
                     <div id="quiz-help-context" class="quiz-help-context hidden">
                         <div><small>CAPITOLO</small><strong id="quiz-help-chapter-it"></strong><span id="quiz-help-chapter-bn" lang="bn"></span></div>
                         <div><small>ARGOMENTO</small><strong id="quiz-help-topic-it"></strong><span id="quiz-help-topic-bn" lang="bn"></span></div>
@@ -185,8 +189,8 @@
         </div>
     </div>
 
-    <script src="quiz.js?v=30"></script>
-    <script src="quiz-help.js?v=20260712-magic-help-v1"></script>
+    <script src="quiz.js?v=29"></script>
+    <script src="quiz-help.js?v=20260713-magic-help-v2"></script>
 </body>
 
 </html>
