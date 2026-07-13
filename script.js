@@ -2651,7 +2651,11 @@ function initCardTrack() {
       const steps = Math.round(-cardDragDelta / CARD_SPACING);
       selectChapter(selectedChapter + steps);
     } else {
-      const tapped = e.target.closest(".chapter-card");
+      // Pointer capture makes `e.target` resolve to the track on several mobile
+      // browsers. Resolve the element under the actual release coordinates so
+      // a tap on a locked card always reaches the Premium paywall.
+      const releaseTarget = document.elementFromPoint(e.clientX, e.clientY);
+      const tapped = releaseTarget?.closest(".chapter-card") || e.target.closest(".chapter-card");
       if (tapped) {
         const ch = parseInt(tapped.dataset.chapter);
         if (trialGuestMode && ![2, 4].includes(ch)) {

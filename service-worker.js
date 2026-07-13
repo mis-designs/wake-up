@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v22-synced-campaign";
+const CACHE_NAME = "magicbook-pwa-v23-premium-tap";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -6,7 +6,7 @@ const STATIC_ASSETS = [
   "/style.css?v=37",
   "/homebg.css?v=3",
   "/mystyle.css?v=26",
-  "/script.js?v=15",
+  "/script.js?v=16",
   "/quiz.js?v=29",
   "/quiz-help.css?v=20260713-magic-help-v3",
   "/quiz-help.js?v=20260713-magic-help-v3",
