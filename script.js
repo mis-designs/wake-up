@@ -1345,8 +1345,41 @@ function scheduleTrialOnboarding() {
 function trialOnboardingTarget(selector) {
   document.querySelectorAll(".trial-onboarding-target").forEach(el => el.classList.remove("trial-onboarding-target"));
   const target = document.querySelector(selector);
-  if (target) target.classList.add("trial-onboarding-target");
+  const spotlight = document.getElementById("trialOnboardingSpotlight");
+  if (target) {
+    target.classList.add("trial-onboarding-target");
+    const rect = target.getBoundingClientRect();
+    if (spotlight) {
+      const pad = target.matches(".qms-pill") ? 5 : 9;
+      spotlight.style.left = `${Math.max(8, rect.left - pad)}px`;
+      spotlight.style.top = `${Math.max(8, rect.top - pad)}px`;
+      spotlight.style.width = `${Math.min(window.innerWidth - 16, rect.width + pad * 2)}px`;
+      spotlight.style.height = `${Math.min(window.innerHeight - 16, rect.height + pad * 2)}px`;
+      spotlight.classList.add("is-visible");
+    }
+    requestAnimationFrame(positionTrialOnboardingCard);
+  } else if (spotlight) {
+    spotlight.classList.remove("is-visible");
+  }
   return target;
+}
+function positionTrialOnboardingCard() {
+  const guide = document.getElementById("trialOnboarding");
+  const card = guide?.querySelector(".trial-onboarding-card");
+  const target = guide?.querySelector(".trial-onboarding-target");
+  if (!guide || !card || !target) return;
+  const targetRect = target.getBoundingClientRect();
+  const cardRect = card.getBoundingClientRect();
+  const gap = 18;
+  const canPlaceBelow = targetRect.bottom + gap + cardRect.height <= window.innerHeight - 14;
+  const top = canPlaceBelow
+    ? targetRect.bottom + gap
+    : Math.max(14, targetRect.top - cardRect.height - gap);
+  const left = Math.max(14, Math.min(window.innerWidth - cardRect.width - 14, targetRect.left + targetRect.width / 2 - cardRect.width / 2));
+  card.style.left = `${left}px`;
+  card.style.top = `${top}px`;
+  card.style.bottom = "auto";
+  card.classList.toggle("is-above-target", !canPlaceBelow);
 }
 function renderTrialOnboardingStep() {
   const step = document.getElementById("trialOnboardingStep");
@@ -1384,6 +1417,7 @@ function nextTrialOnboarding() {
 function closeTrialOnboarding() {
   neverShowTrialOnboarding();
   document.getElementById("trialOnboarding")?.classList.add("hidden");
+  document.getElementById("trialOnboardingSpotlight")?.classList.remove("is-visible");
   document.querySelectorAll(".trial-onboarding-target").forEach(el => el.classList.remove("trial-onboarding-target"));
 }
 function skipTrialOnboarding() {
