@@ -1,19 +1,19 @@
-const CACHE_NAME = "magicbook-pwa-v32-join-cta";
+const CACHE_NAME = "magicbook-pwa-v22-synced-campaign";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
-  "/style.css?v=34",
+  "/style.css?v=37",
   "/homebg.css?v=3",
   "/mystyle.css?v=26",
-  "/script.js?v=14",
-  "/quiz.js?v=33",
+  "/script.js?v=15",
+  "/quiz.js?v=29",
   "/quiz-help.css?v=20260713-magic-help-v3",
   "/quiz-help.js?v=20260713-magic-help-v3",
   "/data/patente/quiz-help-runtime-v2.json?v=20260713-magic-help-v2",
   "/manifest.webmanifest?v=16",
   "/icons/mg_logo.png",
-  "/icons/intro01.jpg?v=c4a58d09"
+  "/icons/intro01.jpg?v=20260701"
 ];
 
 self.addEventListener("install", event => {

@@ -1283,17 +1283,33 @@ let trialCountdownTimer = null;
 
 function setupTrialMarketing() {
   let endsAt = Number(Storage.get("trial_offer_ends_at") || 0);
-  if (!endsAt || endsAt <= Date.now()) {
+  if (!endsAt) {
     endsAt = Date.now() + TRIAL_COUNTDOWN_MS;
     Storage.set("trial_offer_ends_at", String(endsAt));
   }
   const render = () => {
     const remaining = Math.max(0, endsAt - Date.now());
+    const active = remaining > 0;
+    document.body.classList.toggle("trial-campaign-active", active);
+    document.body.classList.toggle("trial-campaign-ended", !active);
+    const animatedFrame = document.getElementById("aura-spline");
+    if (animatedFrame) {
+      if (active) {
+        if (!animatedFrame.dataset.standbySrc) animatedFrame.dataset.standbySrc = animatedFrame.getAttribute("src") || "";
+        animatedFrame.removeAttribute("src");
+      } else if (!animatedFrame.getAttribute("src") && animatedFrame.dataset.standbySrc) {
+        animatedFrame.setAttribute("src", animatedFrame.dataset.standbySrc);
+      }
+    }
     const hours = Math.floor(remaining / 3600000);
     const minutes = Math.floor(remaining % 3600000 / 60000);
     const seconds = Math.floor(remaining % 60000 / 1000);
     const el = document.getElementById("trialCountdown");
     if (el) el.textContent = [hours, minutes, seconds].map(value => String(value).padStart(2, "0")).join(":");
+    if (!active && trialCountdownTimer) {
+      clearInterval(trialCountdownTimer);
+      trialCountdownTimer = null;
+    }
   };
   render();
   if (trialCountdownTimer) clearInterval(trialCountdownTimer);
