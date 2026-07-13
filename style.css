@@ -1245,6 +1245,19 @@ body.trial-campaign-active .public-landing{background:#000!important}body.trial-
 @media(max-width:560px){.trial-onboarding-card{bottom:16px;padding:18px 17px 15px}.trial-onboarding-card h2{font-size:23px}}
 .qms-overlay:has(#qmsCardMix.trial-onboarding-target){z-index:12001}
 
+/* In guest mode the two free chapters keep their identity in every carousel position. */
+body.guest-trial-mode .chapter-card.guest-open{background:linear-gradient(160deg,#304cf5 0%,#2f9af0 100%);border-color:rgba(116,232,255,.9);box-shadow:0 15px 34px rgba(47,133,245,.3);opacity:1!important}
+body.guest-trial-mode .chapter-card.guest-open.is-active{background:linear-gradient(160deg,#304cf5 0%,#2f9af0 100%);box-shadow:0 22px 44px rgba(47,133,245,.38)}
+body.guest-trial-mode .chapter-card.guest-open .chapter-card-label{opacity:.82}
+body.guest-trial-mode .chapter-card.guest-open .chapter-card-number{color:#fff;text-shadow:0 2px 8px rgba(17,55,155,.22)}
+body.guest-trial-mode .qms-free-guide{display:flex}
+.qms-free-guide{display:none;align-items:center;flex-wrap:wrap;gap:7px;margin:-1px 0 10px;padding:9px 10px;border:1px solid rgba(91,225,206,.45);border-radius:11px;background:linear-gradient(90deg,rgba(91,225,206,.16),rgba(91,225,206,.06));color:#244653;font-size:11px;line-height:1.2}
+.qms-free-guide>span{display:grid;place-items:center;width:19px;height:19px;border-radius:50%;background:#a8ef13;color:#173d17;font-weight:900}.qms-free-guide strong{color:#167e68;font-size:12px}.qms-free-guide b{padding:4px 7px;border-radius:6px;background:#8cead8;color:#087562;font-size:11px}.qms-free-guide em{flex-basis:100%;color:rgba(37,41,67,.62);font-size:10px;font-style:normal;font-weight:700;margin-left:26px}
+body.guest-trial-mode #qmsCapPills .qms-pill.guest-qms-free{width:43px;min-width:43px;height:38px;border:2px solid #56d9c2;border-radius:10px;background:linear-gradient(145deg,#d8fff7,#9ae9dd);color:#087b70;font-size:13px;font-weight:950;letter-spacing:.02em;box-shadow:0 3px 9px rgba(47,181,164,.2)}
+body.guest-trial-mode #qmsCapPills .qms-pill.guest-qms-free::after{content:"FREE";display:block;position:absolute;transform:translateY(20px);font-size:7px;font-weight:950;letter-spacing:.08em;color:#168d7c;pointer-events:none}
+body.guest-trial-mode #qmsCapPills .qms-pill.guest-qms-free{position:relative;margin-bottom:5px}
+body.guest-trial-mode #qmsCapPills .qms-pill.guest-qms-locked{width:36px;min-width:36px;height:38px;background:#c6c8ce;color:#777b84;border-color:transparent;opacity:.72}
+
 /* Coachmark refinement: the guide points at one element at a time. */
 .trial-onboarding-scrim{background:rgba(4,7,18,.48);backdrop-filter:none;z-index:0}
 .trial-onboarding-spotlight{display:none;position:fixed;z-index:1;border:2px solid #63e6cf;border-radius:14px;background:transparent;box-shadow:0 0 0 9999px rgba(4,7,18,.48),0 0 0 6px rgba(99,230,207,.16),0 10px 30px rgba(0,0,0,.28);pointer-events:none;transition:left .28s ease,top .28s ease,width .28s ease,height .28s ease}.trial-onboarding-spotlight.is-visible{display:block}
