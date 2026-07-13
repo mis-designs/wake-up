@@ -235,6 +235,21 @@ gtag('config', 'G-C5JPY9HFHD', {
   </div>
 </div>
 
+<div id="trialOnboarding" class="trial-onboarding hidden" role="dialog" aria-modal="true" aria-labelledby="trialOnboardingTitle">
+  <div class="trial-onboarding-scrim" aria-hidden="true"></div>
+  <div class="trial-onboarding-card">
+    <div class="trial-onboarding-progress"><span id="trialOnboardingStep">1</span> / 4</div>
+    <div class="trial-onboarding-kicker">GUIDA RAPIDA</div>
+    <h2 id="trialOnboardingTitle">Inizia dai capitoli gratuiti</h2>
+    <p id="trialOnboardingText">I capitoli 2 e 4 sono aperti: li riconosci dal badge verde FREE.</p>
+    <div class="trial-onboarding-actions">
+      <button type="button" class="trial-onboarding-skip" onclick="skipTrialOnboarding()">Ignora</button>
+      <button type="button" class="trial-onboarding-next" onclick="nextTrialOnboarding()">Avanti <span aria-hidden="true">→</span></button>
+    </div>
+    <label class="trial-onboarding-never"><input id="trialOnboardingNever" type="checkbox"> Non mostrare più</label>
+  </div>
+</div>
+
 <!-- ABOUT -->
 <main class="about-screen hidden" id="about">
   <section class="about-onepage" aria-labelledby="aboutTitle">

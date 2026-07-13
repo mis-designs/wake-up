@@ -1322,6 +1322,79 @@ function setupTrialMarketing() {
 }
 
 let trialGuestMode = false;
+const TRIAL_ONBOARDING_KEY = "magicbook_trial_onboarding_seen";
+const TRIAL_ONBOARDING_SKIP_KEY = "magicbook_trial_onboarding_skipped";
+let trialOnboardingStep = 0;
+
+function trialOnboardingStorageHas(key) {
+  try { return localStorage.getItem(key) === "1" || sessionStorage.getItem(key) === "1"; } catch { return false; }
+}
+function trialOnboardingStorageSet(key, persistent = false) {
+  try { (persistent ? localStorage : sessionStorage).setItem(key, "1"); } catch { /* private browsing */ }
+}
+function getTrialMixAttempts() {
+  try { return Number(sessionStorage.getItem("magicbook_trial_mix_attempts") || 0); } catch { return 0; }
+}
+function setTrialMixAttempts(value) {
+  try { sessionStorage.setItem("magicbook_trial_mix_attempts", String(value)); } catch { /* private browsing */ }
+}
+function scheduleTrialOnboarding() {
+  if (!trialGuestMode || trialOnboardingStorageHas(TRIAL_ONBOARDING_KEY) || trialOnboardingStorageHas(TRIAL_ONBOARDING_SKIP_KEY)) return;
+  window.setTimeout(() => startTrialOnboarding(), 650);
+}
+function trialOnboardingTarget(selector) {
+  document.querySelectorAll(".trial-onboarding-target").forEach(el => el.classList.remove("trial-onboarding-target"));
+  const target = document.querySelector(selector);
+  if (target) target.classList.add("trial-onboarding-target");
+  return target;
+}
+function renderTrialOnboardingStep() {
+  const step = document.getElementById("trialOnboardingStep");
+  const title = document.getElementById("trialOnboardingTitle");
+  const text = document.getElementById("trialOnboardingText");
+  const guide = document.getElementById("trialOnboarding");
+  const content = [
+    ["Inizia dai capitoli gratuiti", "Il capitolo 2 è aperto: il badge verde FREE indica che libro e quiz sono disponibili.", ".chapter-card[data-chapter='2']"],
+    ["Anche il capitolo 4 è gratuito", "Puoi studiare e fare il quiz anche dal capitolo 4. Tutti gli altri capitoli restano protetti.", ".chapter-card[data-chapter='4']"],
+    ["Scegli la modalità Quiz", "Apri Quiz per vedere subito quali capitoli puoi usare: 02 e 04 sono verdi, gli altri sono grigi e bloccati.", "#quizButton"],
+    ["Hai 2 prove Mix Quiz 786", `Il Mix Quiz 786 è disponibile per ${Math.max(0, 2 - getTrialMixAttempts())} prove gratuite. Dalla terza apparirà l'offerta.`, "#qmsCardMix"]
+  ][trialOnboardingStep];
+  if (!content || !guide) return;
+  if (step) step.textContent = String(trialOnboardingStep + 1);
+  if (title) title.textContent = content[0];
+  if (text) text.textContent = content[1];
+  trialOnboardingTarget(content[2]);
+}
+function startTrialOnboarding() {
+  const guide = document.getElementById("trialOnboarding");
+  if (!guide || !trialGuestMode) return;
+  trialOnboardingStep = 0;
+  guide.classList.remove("hidden");
+  renderTrialOnboardingStep();
+}
+function nextTrialOnboarding() {
+  if (trialOnboardingStep === 2) openQuizModeScreen();
+  if (trialOnboardingStep < 3) {
+    trialOnboardingStep += 1;
+    window.setTimeout(renderTrialOnboardingStep, trialOnboardingStep === 3 ? 180 : 0);
+    return;
+  }
+  closeTrialOnboarding();
+}
+function closeTrialOnboarding() {
+  neverShowTrialOnboarding();
+  document.getElementById("trialOnboarding")?.classList.add("hidden");
+  document.querySelectorAll(".trial-onboarding-target").forEach(el => el.classList.remove("trial-onboarding-target"));
+}
+function skipTrialOnboarding() {
+  trialOnboardingStorageSet(TRIAL_ONBOARDING_SKIP_KEY);
+  closeTrialOnboarding();
+}
+function neverShowTrialOnboarding() {
+  const never = document.getElementById("trialOnboardingNever");
+  if (never?.checked) trialOnboardingStorageSet(TRIAL_ONBOARDING_KEY, true);
+}
+
 function getTrialGuestCredentials() {
   try {
     return {
@@ -1350,6 +1423,7 @@ async function startGuestTrial(options = {}) {
   selectedChapter = [2, 4].includes(selectedChapter) ? selectedChapter : 2;
   showChapters();
   decorateGuestTrialUI();
+  if (![2, 4].includes(Number(options.openChapter))) scheduleTrialOnboarding();
   setAppRoute({ screen: "trialHub" }, { replace: options.replace === true });
   if ([2, 4].includes(Number(options.openChapter))) openTrialBook(Number(options.openChapter));
   return true;
@@ -3577,6 +3651,22 @@ function openQuizModeScreen() {
   requestAnimationFrame(() => overlay.classList.add("qms-visible"));
   document.body.classList.add("qms-open");
   currentScreen = "quizMode";
+  decorateGuestQuizUI();
+}
+
+function decorateGuestQuizUI() {
+  if (!trialGuestMode) return;
+  document.querySelectorAll("#qmsCapPills .qms-pill").forEach(pill => {
+    const free = [2, 4].includes(Number(pill.dataset.ch));
+    pill.classList.toggle("guest-qms-free", free);
+    pill.classList.toggle("guest-qms-locked", !free);
+  });
+  document.getElementById("qmsCardMulti")?.classList.add("guest-qms-locked-card");
+  const mixButton = document.querySelector("#qmsCardMix .qms-start");
+  if (mixButton) {
+    const remaining = Math.max(0, 2 - getTrialMixAttempts());
+    mixButton.querySelector(".qms-start-label")?.replaceChildren(document.createTextNode(remaining ? `Inizia · ${remaining} gratis` : "Sblocca Mix Quiz"));
+  }
 }
 
 function closeQuizModeScreen() {
@@ -3745,7 +3835,14 @@ function _buildQMSMultiPills() {
 // ── Start actions ──────────────────────────────────────────────────────────
 
 function startMixQuiz() {
-  if (trialGuestMode) { openTrialPaywall("Quiz Mix"); return; }
+  if (trialGuestMode) {
+    const attempts = getTrialMixAttempts();
+    if (attempts >= 2) { openTrialPaywall("Quiz Mix 786"); return; }
+    setTrialMixAttempts(attempts + 1);
+    closeQuizModeScreen();
+    setTimeout(() => { window.location.href = "/quiz/prova-gratis?chapter=2&mix=1"; }, 460);
+    return;
+  }
   closeQuizModeScreen();
   setTimeout(() => { window.location.href = getQuizPath(); }, 460);
 }
