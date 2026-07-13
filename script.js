@@ -1413,7 +1413,14 @@ function closeTrialOffer() {
   const title = document.getElementById("trialOfferTitle");
   if (title) title.textContent = "Sblocca tutto MagicBook";
 }
-function openTrialJoinOffer() { closeTrialOffer(); showJoinScreen(); }
+function openTrialJoinOffer() {
+  closeTrialOffer();
+  trialGuestMode = false;
+  document.body.classList.remove("guest-trial-mode");
+  showJoinScreen();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  document.getElementById("join")?.scrollTo?.({ top: 0, behavior: "smooth" });
+}
 
 function showJoinScreen(options = {}) {
   hideAll();
@@ -2631,7 +2638,10 @@ function initCardTrack() {
       const tapped = e.target.closest(".chapter-card");
       if (tapped) {
         const ch = parseInt(tapped.dataset.chapter);
-        if (ch === selectedChapter) startEngineSequence();
+        if (trialGuestMode && ![2, 4].includes(ch)) {
+          selectChapter(ch);
+          openTrialPaywall(`Capitolo ${ch}`);
+        } else if (ch === selectedChapter) startEngineSequence();
         else selectChapter(ch);
       } else {
         updateCardTrack();
