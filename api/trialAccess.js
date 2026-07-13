@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 const SESSION_SECRET = process.env.SESSION_SECRET;
-const TTL_MS = 36 * 60 * 60 * 1000;
+const TTL_MS = 71 * 60 * 60 * 1000;
 export const GUEST_TRIAL_CHAPTERS = [2, 4];
 
 function signature(encoded, secret = SESSION_SECRET) {

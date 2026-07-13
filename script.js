@@ -1278,14 +1278,18 @@ function showLandingScreen(options = {}) {
   setAppRoute({ screen: "welcome" }, { replace: options.replace === true });
 }
 
-const TRIAL_COUNTDOWN_MS = 36 * 60 * 60 * 1000;
+const TRIAL_COUNTDOWN_MS = 71 * 60 * 60 * 1000;
+const LEGACY_TRIAL_COUNTDOWN_MS = 36 * 60 * 60 * 1000;
+const TRIAL_COUNTDOWN_KEY = "trial_offer_ends_at_v2";
 let trialCountdownTimer = null;
 
 function setupTrialMarketing() {
-  let endsAt = Number(Storage.get("trial_offer_ends_at") || 0);
+  let endsAt = Number(Storage.get(TRIAL_COUNTDOWN_KEY) || 0);
   if (!endsAt) {
-    endsAt = Date.now() + TRIAL_COUNTDOWN_MS;
-    Storage.set("trial_offer_ends_at", String(endsAt));
+    const legacyEndsAt = Number(Storage.get("trial_offer_ends_at") || 0);
+    // Extend countdowns created with the old 36-hour offer by the requested 35 hours.
+    endsAt = legacyEndsAt > 0 ? legacyEndsAt + (TRIAL_COUNTDOWN_MS - LEGACY_TRIAL_COUNTDOWN_MS) : Date.now() + TRIAL_COUNTDOWN_MS;
+    Storage.set(TRIAL_COUNTDOWN_KEY, String(endsAt));
   }
   const render = () => {
     const remaining = Math.max(0, endsAt - Date.now());

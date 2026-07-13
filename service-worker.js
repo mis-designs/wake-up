@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v23-premium-tap";
+const CACHE_NAME = "magicbook-pwa-v24-quiz-help-hint";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -8,8 +8,8 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=26",
   "/script.js?v=16",
   "/quiz.js?v=29",
-  "/quiz-help.css?v=20260713-magic-help-v3",
-  "/quiz-help.js?v=20260713-magic-help-v3",
+  "/quiz-help.css?v=20260714-magic-help-v4",
+  "/quiz-help.js?v=20260714-magic-help-v4",
   "/data/patente/quiz-help-runtime-v2.json?v=20260713-magic-help-v2",
   "/manifest.webmanifest?v=16",
   "/icons/mg_logo.png",

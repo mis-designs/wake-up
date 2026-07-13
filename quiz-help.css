@@ -1,6 +1,57 @@
 :root { --font-bengali: "UN Bangla", system-ui, sans-serif; --magic-help: #ff4fa3; --magic-help-soft: rgba(255,79,163,.28); }
 [lang="bn"] { font-family: var(--font-bengali); }
-.question-area { cursor: pointer; }
+.question-area { position: relative; cursor: pointer; }
+
+.quiz-click-hint {
+  position: absolute;
+  right: 16px;
+  bottom: 14px;
+  z-index: 2;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px 7px 8px;
+  border: 1px solid rgba(58, 78, 251, .22);
+  border-radius: 999px;
+  color: #2530a8;
+  background: rgba(255, 255, 255, .94);
+  box-shadow: 0 7px 18px rgba(58, 78, 251, .18);
+  pointer-events: none;
+  user-select: none;
+  animation: quizClickHintFloat 1.8s ease-in-out infinite;
+}
+
+.quiz-help-discoverable .quiz-click-hint:not(.is-dismissed) { display: flex; }
+
+.quiz-click-hint-hand {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  place-items: center;
+  border-radius: 50%;
+  background: #eef0ff;
+  font-size: 1.05rem;
+  animation: quizClickHintTap 1.8s ease-in-out infinite;
+}
+
+.quiz-click-hint-copy { display: grid; gap: 1px; line-height: 1.1; }
+.quiz-click-hint-copy strong { font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; }
+.quiz-click-hint-copy small { color: rgba(37, 48, 168, .72); font-size: .62rem; }
+
+@keyframes quizClickHintFloat {
+  0%, 100% { transform: translateY(0); box-shadow: 0 7px 18px rgba(58, 78, 251, .18); }
+  50% { transform: translateY(-5px); box-shadow: 0 12px 24px rgba(58, 78, 251, .28); }
+}
+
+@keyframes quizClickHintTap {
+  0%, 55%, 100% { transform: translateY(0) scale(1); }
+  20% { transform: translateY(3px) scale(.9); }
+  35% { transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quiz-click-hint, .quiz-click-hint-hand { animation: none; }
+}
 .quiz-help-workspace { position: fixed; inset: 0; z-index: 900; pointer-events: none; }
 .quiz-help-workspace.hidden { display: none; }
 .quiz-help-shell, .quiz-help-slides { display: contents; }

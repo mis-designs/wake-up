@@ -5,7 +5,7 @@ const QUIZ_GAS_URL = process.env.QUIZ_GAS_URL;
 const QUIZ_PROXY_SECRET = process.env.QUIZ_PROXY_SECRET;
 const SESSION_SECRET = process.env.SESSION_SECRET;
 export const TRIAL_CHAPTERS = new Set(["2", "4"]);
-const TRIAL_TOKEN_TTL_MS = 36 * 60 * 60 * 1000;
+const TRIAL_TOKEN_TTL_MS = 71 * 60 * 60 * 1000;
 const TRIAL_SERVICE_ACTIONS = new Set(["getItalianAudio", "getBengaliAudio", "getTTS"]);
 
 export function isAllowedTrialChapter(value) {

@@ -4,6 +4,7 @@
   const HELP_SOURCE = "data/patente/quiz-help-runtime-v2.json?v=20260713-magic-help-v2";
   const questionArea = document.querySelector(".question-area");
   const questionText = document.getElementById("question");
+  const clickHint = document.querySelector(".quiz-click-hint");
   const workspace = document.getElementById("quiz-help-workspace");
   const translationText = document.getElementById("quiz-help-translation-text");
   const translationStatus = document.getElementById("quiz-help-translation-status");
@@ -21,6 +22,10 @@
   let requestId = 0;
   let activeSlide = 0;
   let cardLayer = 1;
+
+  // Make the existing click-to-open help discoverable on the first question,
+  // including the free-trial route, without covering or replacing the question.
+  questionArea?.classList.toggle("quiz-help-discoverable", Number(current) === 0);
 
   function currentQuestion() {
     return Array.isArray(quiz) ? quiz[current] : null;
@@ -306,6 +311,8 @@
 
   questionArea?.addEventListener("click", event => {
     if (event.target.closest("button, a")) return;
+    questionArea.classList.remove("quiz-help-discoverable");
+    clickHint?.classList.add("is-dismissed");
     open();
   });
   document.querySelectorAll("[data-help-close]").forEach(button => button.addEventListener("click", close));
