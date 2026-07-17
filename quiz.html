@@ -43,7 +43,8 @@
                 </div>
                 <img id="figure" alt="">
             </div>
-            <p id="question"></p>
+            <!-- Il testo ufficiale del quiz deve restare in italiano anche con la traduzione del browser. -->
+            <p id="question" class="notranslate" translate="no" lang="it"></p>
             <div class="quiz-click-hint" aria-hidden="true">
                 <span class="quiz-click-hint-hand">👆</span>
                 <span class="quiz-click-hint-copy">
@@ -69,14 +70,14 @@
             <button id="prev-btn" onclick="prev()" aria-label="Indietro">
                 <img src="icons/back.png" alt="">
             </button>
-            <div class="answer-wrapper" data-answer-value="1">
+            <div class="answer-wrapper notranslate" data-answer-value="1" translate="no" lang="it">
                 <button id="vero" onclick="answer(1)" aria-label="Vero">
                     <img src="icons/true.png" alt="">
                     <span class="answer-label">Vero</span>
                 </button>
                 <div class="admin-correct-dot-slot"></div>
             </div>
-            <div class="answer-wrapper" data-answer-value="0">
+            <div class="answer-wrapper notranslate" data-answer-value="0" translate="no" lang="it">
                 <button id="falso" onclick="answer(0)" aria-label="Falso">
                     <img src="icons/false.png" alt="">
                     <span class="answer-label">Falso</span>
@@ -139,7 +140,8 @@
                 <div class="modal-review-head">
                     <span>Dettaglio risposte</span>
                 </div>
-                <div id="modal-review-list" class="modal-review-list"></div>
+                <!-- Il riepilogo contiene le domande e le risposte ufficiali del quiz. -->
+                <div id="modal-review-list" class="modal-review-list notranslate" translate="no" lang="it"></div>
             </div>
             <div id="modal-actions" class="modal-actions">
                 <button id="modal-cancel" class="modal-btn modal-btn-secondary" type="button">Annulla</button>
@@ -177,7 +179,7 @@
                         <div><span class="quiz-help-kicker" lang="bn">বাংলা</span><h3>Traduzione del quiz</h3></div>
                         <button class="quiz-help-close" type="button" data-help-close aria-label="Chiudi traduzione">×</button>
                     </header>
-                    <p id="quiz-help-translation-text" class="quiz-help-translation-text" lang="bn"></p>
+                    <p id="quiz-help-translation-text" class="quiz-help-translation-text notranslate" translate="no" lang="bn"></p>
                     <p id="quiz-help-translation-status" class="quiz-help-status" role="status"></p>
                 </section>
                 <section class="quiz-help-slide" data-help-slide>
@@ -185,12 +187,12 @@
                         <div><span class="quiz-help-kicker">KEY WORDS</span><h3>Parole chiave</h3></div>
                         <button class="quiz-help-close" type="button" data-help-close aria-label="Chiudi parole chiave">×</button>
                     </header>
-                    <div id="quiz-help-context" class="quiz-help-context hidden">
+                    <div id="quiz-help-context" class="quiz-help-context hidden notranslate" translate="no">
                         <div><small>CAPITOLO</small><strong id="quiz-help-chapter-it"></strong><span id="quiz-help-chapter-bn" lang="bn"></span></div>
                         <div><small>ARGOMENTO</small><strong id="quiz-help-topic-it"></strong><span id="quiz-help-topic-bn" lang="bn"></span></div>
                     </div>
-                    <div id="quiz-help-words" class="quiz-help-words"></div>
-                    <div id="quiz-help-word-detail" class="quiz-help-word-detail hidden"></div>
+                    <div id="quiz-help-words" class="quiz-help-words notranslate" translate="no"></div>
+                    <div id="quiz-help-word-detail" class="quiz-help-word-detail hidden notranslate" translate="no"></div>
                 </section>
             </div>
         </div>
