@@ -531,6 +531,9 @@ let sharedAudioSpeedValue = 1;
 let sharedAudioRequestId = 0;
 let sharedAudioObjectUrl = "";
 let sharedAudioSeeking = false;
+let sharedAudioDurationHint = 0;
+let sharedAudioSourceMode = "";
+let sharedAudioBlobFallbackTried = false;
 
 function revokeSharedAudioObjectUrl() {
   if (!sharedAudioObjectUrl) return;
@@ -552,6 +555,9 @@ function resetSharedAudioPlayer() {
   sharedAudioQuestion = "";
   sharedAudioLoading = null;
   sharedAudioSeeking = false;
+  sharedAudioDurationHint = 0;
+  sharedAudioSourceMode = "";
+  sharedAudioBlobFallbackTried = false;
   if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame);
   sharedAudioFrame = 0;
 }
@@ -559,21 +565,27 @@ function resetSharedAudioPlayer() {
 function paintSharedAudioProgress() {
   if (!sharedAudioProgress) return;
   if (sharedAudioSeeking) return;
-  const duration = Number(sharedAudio.duration);
+  const duration = Number.isFinite(Number(sharedAudio.duration)) && Number(sharedAudio.duration) > 0
+    ? Number(sharedAudio.duration)
+    : sharedAudioDurationHint;
   const currentTime = Number(sharedAudio.currentTime);
   const percent = Number.isFinite(duration) && duration > 0 && Number.isFinite(currentTime)
     ? Math.max(0, Math.min(100, currentTime / duration * 100))
     : 0;
   sharedAudioProgress.value = String(percent);
+  sharedAudioProgress.setAttribute("aria-valuenow", percent.toFixed(1));
   sharedAudioProgress.style.setProperty("--progress", `${percent}%`);
 }
 
 function seekSharedAudioFromProgress() {
   if (!sharedAudioProgress) return;
-  const duration = Number(sharedAudio.duration);
+  const duration = Number.isFinite(Number(sharedAudio.duration)) && Number(sharedAudio.duration) > 0
+    ? Number(sharedAudio.duration)
+    : sharedAudioDurationHint;
   if (!Number.isFinite(duration) || duration <= 0) return;
   const percent = Math.max(0, Math.min(100, Number(sharedAudioProgress.value) || 0));
   try { sharedAudio.currentTime = duration * percent / 100; } catch (_) { return; }
+  sharedAudioProgress.setAttribute("aria-valuenow", percent.toFixed(1));
   sharedAudioProgress.style.setProperty("--progress", `${percent}%`);
 }
 
@@ -622,7 +634,36 @@ async function requestSharedAudioBlob(question) {
   const mimeType = String(blob.type || "audio/webm").startsWith("audio/")
     ? blob.type
     : "audio/webm";
-  return new Blob([blob], { type: mimeType });
+  return {
+    blob: new Blob([blob], { type: mimeType }),
+    durationMs: Number(response.headers.get("X-Audio-Duration-Ms")) || 0
+  };
+}
+
+async function loadSharedAudioBlob(question, requestId) {
+  const result = await requestSharedAudioBlob(question);
+  if (requestId !== sharedAudioRequestId || !sharedAudioQuestion) return;
+  revokeSharedAudioObjectUrl();
+  sharedAudioDurationHint = Math.max(sharedAudioDurationHint, Math.max(0, Number(result.durationMs) || 0) / 1000);
+  sharedAudioObjectUrl = URL.createObjectURL(result.blob);
+  sharedAudio.src = sharedAudioObjectUrl;
+  sharedAudioSourceMode = "blob";
+  sharedAudio.load();
+}
+
+async function loadSharedAudioSource(question, requestId) {
+  try {
+    const playback = await requestSharedAudio("getQuizAudioPlayback", question);
+    if (!playback?.audioUrl) throw new Error("missing_audio_url");
+    if (requestId !== sharedAudioRequestId || !sharedAudioQuestion) return;
+    sharedAudioDurationHint = Math.max(sharedAudioDurationHint, Math.max(0, Number(playback.durationMs) || 0) / 1000);
+    sharedAudio.src = String(playback.audioUrl);
+    sharedAudioSourceMode = "signed";
+    sharedAudio.load();
+  } catch (error) {
+    await loadSharedAudioBlob(question, requestId);
+    if (sharedAudioSourceMode !== "blob") throw error;
+  }
 }
 
 async function updateSharedAudioAvailability(question) {
@@ -634,6 +675,7 @@ async function updateSharedAudioAvailability(question) {
     if (requestId !== sharedAudioRequestId) return;
     if (data.available) {
       sharedAudioQuestion = String(question.question);
+      sharedAudioDurationHint = Math.max(0, Number(data.durationMs) || 0) / 1000;
       sharedAudioPlayer.classList.remove("hidden");
       sharedAudioPlayer.setAttribute("aria-hidden", "false");
     }
@@ -650,18 +692,26 @@ async function playSharedAudio() {
   try {
     if (!sharedAudio.src) {
       sharedAudioPlay?.classList.add("is-loading");
-      sharedAudioLoading ||= requestSharedAudioBlob(sharedAudioQuestion).then(blob => {
-        if (requestId !== sharedAudioRequestId || !sharedAudioQuestion) return;
-        revokeSharedAudioObjectUrl();
-        sharedAudioObjectUrl = URL.createObjectURL(blob);
-        sharedAudio.src = sharedAudioObjectUrl;
-        sharedAudio.load();
-      });
+      sharedAudioLoading ||= loadSharedAudioSource(sharedAudioQuestion, requestId);
       await sharedAudioLoading;
       if (requestId !== sharedAudioRequestId) return;
       sharedAudioPlay?.classList.remove("is-loading");
     }
-    if (sharedAudio.paused) await sharedAudio.play(); else sharedAudio.pause();
+    if (sharedAudio.paused) {
+      try {
+        await waitForSharedAudioReady();
+        await sharedAudio.play();
+      } catch (error) {
+        if (sharedAudioSourceMode !== "signed" || sharedAudioBlobFallbackTried) throw error;
+        sharedAudioBlobFallbackTried = true;
+        sharedAudio.pause();
+        sharedAudio.removeAttribute("src");
+        sharedAudio.load();
+        await loadSharedAudioBlob(sharedAudioQuestion, requestId);
+        await waitForSharedAudioReady();
+        await sharedAudio.play();
+      }
+    } else sharedAudio.pause();
   } catch (_) {
     sharedAudioPlay?.classList.remove("is-loading");
     sharedAudioLoading = null;
@@ -671,6 +721,27 @@ async function playSharedAudio() {
     sharedAudio.load();
     showAudioUnavailableToast("Spiegazione audio non disponibile");
   }
+}
+
+function waitForSharedAudioReady() {
+  if (sharedAudio.readyState >= HTMLMediaElement.HAVE_METADATA) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error("audio_metadata_timeout"));
+    }, 10000);
+    const cleanup = () => {
+      clearTimeout(timeout);
+      sharedAudio.removeEventListener("loadedmetadata", ready);
+      sharedAudio.removeEventListener("canplay", ready);
+      sharedAudio.removeEventListener("error", failed);
+    };
+    const ready = () => { cleanup(); resolve(); };
+    const failed = () => { cleanup(); reject(new Error("audio_media_error")); };
+    sharedAudio.addEventListener("loadedmetadata", ready);
+    sharedAudio.addEventListener("canplay", ready);
+    sharedAudio.addEventListener("error", failed);
+  });
 }
 
 sharedAudioPlay?.addEventListener("click", playSharedAudio);

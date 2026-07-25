@@ -58,7 +58,10 @@ async function apiBlob(action, payload = {}) {
   const blob = await response.blob();
   if (!blob.size) throw new Error("empty_audio_blob");
   const mimeType = String(blob.type || "audio/webm").startsWith("audio/") ? blob.type : "audio/webm";
-  return new Blob([blob], { type: mimeType });
+  return {
+    blob: new Blob([blob], { type: mimeType }),
+    durationMs: Number(response.headers.get("X-Audio-Duration-Ms")) || 0
+  };
 }
 
 function normalize(text) {
@@ -284,17 +287,20 @@ function stopCurrentPlayer(except = null) {
 function createAudioPlayer(question) {
   const player = document.createElement("div"); player.className = "audio-admin-player"; player.setAttribute("aria-label", "Player spiegazione audio");
   const button = document.createElement("button"); button.type = "button"; button.className = "audio-admin-player-play"; button.setAttribute("aria-label", "Riproduci spiegazione");
-  const progress = document.createElement("input"); progress.type = "range"; progress.min = "0"; progress.max = "100"; progress.step = "0.1"; progress.value = "0"; progress.className = "audio-admin-player-progress"; progress.setAttribute("aria-label", "Avanzamento audio");
+  const progress = document.createElement("input"); progress.type = "range"; progress.min = "0"; progress.max = "100"; progress.step = "0.1"; progress.value = "0"; progress.className = "audio-admin-player-progress"; progress.setAttribute("aria-label", "Avanzamento audio"); progress.setAttribute("aria-valuemin", "0"); progress.setAttribute("aria-valuemax", "100"); progress.setAttribute("aria-valuenow", "0");
   const speed = document.createElement("button"); speed.type = "button"; speed.className = "audio-admin-player-speed"; speed.textContent = "1×"; speed.title = "Cambia velocità";
-  const audio = new Audio(); audio.preload = "metadata"; let loading = null; let objectUrl = ""; let speedValue = 1; let frame = 0; let seeking = false;
+  const audio = new Audio(); audio.preload = "metadata"; let loading = null; let objectUrl = ""; let speedValue = 1; let frame = 0; let seeking = false; let durationHint = 0; let sourceMode = ""; let blobFallbackTried = false;
   const clearSource = () => { audio.pause(); if (objectUrl) URL.revokeObjectURL(objectUrl); objectUrl = ""; audio.removeAttribute("src"); audio.load(); };
   const instance = { audio, button };
-  const paint = () => { if (seeking) return; const duration = Number(audio.duration); const currentTime = Number(audio.currentTime); const percent = Number.isFinite(duration) && duration > 0 && Number.isFinite(currentTime) ? Math.max(0, Math.min(100, currentTime / duration * 100)) : 0; progress.value = String(percent); progress.style.setProperty("--progress", `${percent}%`); };
-  const seek = () => { const duration = Number(audio.duration); if (!Number.isFinite(duration) || duration <= 0) return; const percent = Math.max(0, Math.min(100, Number(progress.value) || 0)); try { audio.currentTime = duration * percent / 100; } catch (_) { return; } progress.style.setProperty("--progress", `${percent}%`); };
+  const duration = () => { const nativeDuration = Number(audio.duration); return Number.isFinite(nativeDuration) && nativeDuration > 0 ? nativeDuration : durationHint; };
+  const paint = () => { if (seeking) return; const total = duration(); const currentTime = Number(audio.currentTime); const percent = Number.isFinite(total) && total > 0 && Number.isFinite(currentTime) ? Math.max(0, Math.min(100, currentTime / total * 100)) : 0; progress.value = String(percent); progress.setAttribute("aria-valuenow", percent.toFixed(1)); progress.style.setProperty("--progress", `${percent}%`); };
+  const seek = () => { const total = duration(); if (!Number.isFinite(total) || total <= 0) return; const percent = Math.max(0, Math.min(100, Number(progress.value) || 0)); try { audio.currentTime = total * percent / 100; } catch (_) { return; } progress.style.setProperty("--progress", `${percent}%`); };
   const stopFrame = () => { if (frame) cancelAnimationFrame(frame); frame = 0; };
   const tick = () => { paint(); if (!audio.paused && !audio.ended) frame = requestAnimationFrame(tick); };
-  const load = async () => { if (audio.src) return; if (!loading) { button.classList.add("is-loading"); loading = apiBlob("getQuizAudioBlob", { question: question.question }).then(blob => { if (objectUrl) URL.revokeObjectURL(objectUrl); objectUrl = URL.createObjectURL(blob); audio.src = objectUrl; audio.load(); }).finally(() => { loading = null; button.classList.remove("is-loading"); }); } return loading; };
-  button.addEventListener("click", async () => { try { if (!audio.src) await load(); if (audio.paused) { stopCurrentPlayer(instance); state.playing = instance; await audio.play(); } else audio.pause(); } catch (error) { loading = null; clearSource(); await showProblem("Audio non disponibile", "Il sito non riesce a recuperare questa spiegazione.", error); } });
+  const waitForReady = () => { if (audio.readyState >= HTMLMediaElement.HAVE_METADATA) return Promise.resolve(); return new Promise((resolve, reject) => { const timeout = setTimeout(() => { cleanup(); reject(new Error("audio_metadata_timeout")); }, 10000); const cleanup = () => { clearTimeout(timeout); audio.removeEventListener("loadedmetadata", ready); audio.removeEventListener("canplay", ready); audio.removeEventListener("error", failed); }; const ready = () => { cleanup(); resolve(); }; const failed = () => { cleanup(); reject(new Error("audio_media_error")); }; audio.addEventListener("loadedmetadata", ready); audio.addEventListener("canplay", ready); audio.addEventListener("error", failed); }); };
+  const loadBlob = async () => { const result = await apiBlob("getQuizAudioBlob", { question: question.question }); if (objectUrl) URL.revokeObjectURL(objectUrl); durationHint = Math.max(durationHint, Math.max(0, Number(result.durationMs) || 0) / 1000); objectUrl = URL.createObjectURL(result.blob); audio.src = objectUrl; sourceMode = "blob"; audio.load(); };
+  const load = async () => { if (audio.src) return; if (!loading) { button.classList.add("is-loading"); loading = api("getQuizAudioPlayback", { question: question.question }).then(playback => { if (!playback?.audioUrl) throw new Error("missing_audio_url"); durationHint = Math.max(durationHint, Math.max(0, Number(playback.durationMs) || 0) / 1000); audio.src = String(playback.audioUrl); sourceMode = "signed"; audio.load(); }).catch(async error => { await loadBlob(); if (sourceMode !== "blob") throw error; }).finally(() => { loading = null; button.classList.remove("is-loading"); }); } return loading; };
+  button.addEventListener("click", async () => { try { if (!audio.src) await load(); if (audio.paused) { try { await waitForReady(); stopCurrentPlayer(instance); state.playing = instance; await audio.play(); } catch (error) { if (sourceMode !== "signed" || blobFallbackTried) throw error; blobFallbackTried = true; clearSource(); await loadBlob(); await waitForReady(); stopCurrentPlayer(instance); state.playing = instance; await audio.play(); } } else audio.pause(); } catch (error) { loading = null; clearSource(); await showProblem("Audio non disponibile", "Il sito non riesce a recuperare questa spiegazione.", error); } });
   progress.addEventListener("pointerdown", event => { seeking = true; progress.setPointerCapture?.(event.pointerId); });
   progress.addEventListener("touchstart", () => { seeking = true; }, { passive: true });
   progress.addEventListener("input", seek);

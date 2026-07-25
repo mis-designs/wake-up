@@ -773,7 +773,13 @@ export default async function handler(req, res) {
       const { isAdmin } = await requireQuizAudioAccess({ phone, deviceId, accessToken });
       const { quizKey } = getQuizAudioIdentity(question);
       const row = await getQuizAudioRow(quizKey);
-      return res.status(200).json({ ok: true, available: Boolean(row), isAdmin, quizKey });
+      return res.status(200).json({
+        ok: true,
+        available: Boolean(row),
+        isAdmin,
+        quizKey,
+        durationMs: row?.audio_duration_ms || null
+      });
     }
 
     if (req.method === "POST" && action === "getQuizAudioAdminOverview") {
@@ -816,6 +822,8 @@ export default async function handler(req, res) {
       res.statusCode = 200;
       res.setHeader("Content-Type", row.audio_mime_type || "audio/webm");
       res.setHeader("Content-Length", String(bytes.byteLength));
+      res.setHeader("X-Audio-Duration-Ms", String(row.audio_duration_ms || 0));
+      res.setHeader("Access-Control-Expose-Headers", "X-Audio-Duration-Ms");
       return res.end(Buffer.from(bytes));
     }
 
