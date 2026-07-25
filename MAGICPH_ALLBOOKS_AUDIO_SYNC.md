@@ -33,6 +33,16 @@ il player, l'URL temporaneo viene revocato. In caso di errore il caricamento
 viene azzerato, così il pulsante può essere premuto di nuovo senza ricaricare
 la pagina.
 
+Il riferimento allo script nella pagina quiz è stato incrementato a `quiz.js?v=35`
+per evitare che il browser riutilizzi la versione precedente dalla cache.
+
+Quando una domanda non ha un audio disponibile, il player viene ora nascosto
+immediatamente; viene mostrato soltanto dopo una risposta positiva dello stato
+audio per la domanda attiva.
+
+Anche il player della pagina admin `aggiungi-spiegazioni` ora usa `getQuizAudioBlob`
+e la versione dello script è stata incrementata a `aggiungi-spiegazioni.js?v=2`.
+
 ## Obiettivo richiesto
 
 Condividere le spiegazioni audio soltanto per i quiz presenti nel Magic Book (788 domande):

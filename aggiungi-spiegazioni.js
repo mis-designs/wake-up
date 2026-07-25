@@ -40,6 +40,22 @@ async function api(action, payload = {}) {
   return data;
 }
 
+async function apiBlob(action, payload = {}) {
+  const response = await fetch(API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(credentials().accessToken ? { Authorization: `Bearer ${credentials().accessToken}` } : {}) },
+    body: JSON.stringify({ action, ...credentials(), ...payload })
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data?.error || `api_${response.status}`);
+  }
+  const blob = await response.blob();
+  if (!blob.size) throw new Error("empty_audio_blob");
+  const mimeType = String(blob.type || "audio/webm").startsWith("audio/") ? blob.type : "audio/webm";
+  return new Blob([blob], { type: mimeType });
+}
+
 function normalize(text) {
   return String(text || "").normalize("NFKC").toLocaleLowerCase("it-IT").replace(/[^\p{L}\p{N}]+/gu, " ").trim().replace(/\s+/g, " ");
 }
@@ -240,13 +256,14 @@ function createAudioPlayer(question) {
   const button = document.createElement("button"); button.type = "button"; button.className = "audio-admin-player-play"; button.setAttribute("aria-label", "Riproduci spiegazione");
   const progress = document.createElement("input"); progress.type = "range"; progress.min = "0"; progress.max = "100"; progress.step = "0.1"; progress.value = "0"; progress.className = "audio-admin-player-progress"; progress.setAttribute("aria-label", "Avanzamento audio");
   const speed = document.createElement("button"); speed.type = "button"; speed.className = "audio-admin-player-speed"; speed.textContent = "1×"; speed.title = "Cambia velocità";
-  const audio = new Audio(); let loading = null; let speedValue = 1; let frame = 0;
+  const audio = new Audio(); let loading = null; let objectUrl = ""; let speedValue = 1; let frame = 0;
+  const clearSource = () => { audio.pause(); if (objectUrl) URL.revokeObjectURL(objectUrl); objectUrl = ""; audio.removeAttribute("src"); audio.load(); };
   const instance = { audio, button };
   const paint = () => { const percent = audio.duration > 0 ? audio.currentTime / audio.duration * 100 : 0; progress.value = String(percent); progress.style.setProperty("--progress", `${percent}%`); };
   const stopFrame = () => { if (frame) cancelAnimationFrame(frame); frame = 0; };
   const tick = () => { paint(); if (!audio.paused && !audio.ended) frame = requestAnimationFrame(tick); };
-  const load = async () => { if (audio.src) return; if (!loading) { button.classList.add("is-loading"); loading = api("getQuizAudioPlayback", { question: question.question }).then(data => { audio.src = data.audioUrl; }).finally(() => { loading = null; button.classList.remove("is-loading"); }); } return loading; };
-  button.addEventListener("click", async () => { try { if (!audio.src) await load(); if (audio.paused) { stopCurrentPlayer(instance); state.playing = instance; await audio.play(); } else audio.pause(); } catch (error) { await showProblem("Audio non disponibile", "Il sito non riesce a recuperare questa spiegazione.", error); } });
+  const load = async () => { if (audio.src) return; if (!loading) { button.classList.add("is-loading"); loading = apiBlob("getQuizAudioBlob", { question: question.question }).then(blob => { if (objectUrl) URL.revokeObjectURL(objectUrl); objectUrl = URL.createObjectURL(blob); audio.src = objectUrl; audio.load(); }).finally(() => { loading = null; button.classList.remove("is-loading"); }); } return loading; };
+  button.addEventListener("click", async () => { try { if (!audio.src) await load(); if (audio.paused) { stopCurrentPlayer(instance); state.playing = instance; await audio.play(); } else audio.pause(); } catch (error) { loading = null; clearSource(); await showProblem("Audio non disponibile", "Il sito non riesce a recuperare questa spiegazione.", error); } });
   progress.addEventListener("input", () => { if (audio.duration) audio.currentTime = Number(progress.value) / 100 * audio.duration; paint(); });
   speed.addEventListener("click", () => { speedValue = [1, 1.25, 1.5, 2][([1, 1.25, 1.5, 2].indexOf(speedValue) + 1) % 4]; audio.playbackRate = speedValue; speed.textContent = `${String(speedValue).replace(".", ",")}×`; });
   audio.addEventListener("play", () => { button.classList.add("is-playing"); stopFrame(); tick(); });

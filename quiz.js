@@ -542,6 +542,8 @@ function resetSharedAudioPlayer() {
   revokeSharedAudioObjectUrl();
   sharedAudio.removeAttribute("src");
   sharedAudio.load();
+  sharedAudioPlayer?.classList.add("hidden");
+  sharedAudioPlayer?.setAttribute("aria-hidden", "true");
   sharedAudioPlay?.classList.remove("is-playing", "is-loading");
   sharedAudioProgress?.style.setProperty("--progress", "0%");
   if (sharedAudioProgress) sharedAudioProgress.value = "0";
@@ -613,8 +615,16 @@ async function updateSharedAudioAvailability(question) {
   try {
     const data = await requestSharedAudio("getQuizAudioStatus", question.question);
     if (requestId !== sharedAudioRequestId) return;
-    if (data.available) { sharedAudioQuestion = String(question.question); sharedAudioPlayer.classList.remove("hidden"); }
-  } catch (_) { sharedAudioPlayer.classList.add("hidden"); }
+    if (data.available) {
+      sharedAudioQuestion = String(question.question);
+      sharedAudioPlayer.classList.remove("hidden");
+      sharedAudioPlayer.setAttribute("aria-hidden", "false");
+    }
+  } catch (_) {
+    if (requestId !== sharedAudioRequestId) return;
+    sharedAudioPlayer.classList.add("hidden");
+    sharedAudioPlayer.setAttribute("aria-hidden", "true");
+  }
 }
 
 async function playSharedAudio() {
