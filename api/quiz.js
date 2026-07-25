@@ -749,10 +749,10 @@ export default async function handler(req, res) {
       await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
       const data = await forwardCatalogAction();
       const rows = getQuizRows(data).map(normalizeQuestionRow).filter(row => row.id && row.question);
-      if (rows.length !== 786) {
+      if (rows.length !== 788) {
         const error = new Error("magic_catalog_count_mismatch");
         error.statusCode = 409;
-        error.details = { expected: 786, received: rows.length };
+        error.details = { expected: 788, received: rows.length };
         throw error;
       }
       return res.status(200).json({

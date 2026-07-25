@@ -5,9 +5,28 @@
 **Repository:** `magicph` (Magic Book)  
 **Repository collegato, non modificato:** `all_books_acceess` (All Books)
 
+## Aggiornamento Apps Script — catalogo Magic Book
+
+`quiz_gas.js` ora legge il catalogo esclusivamente dal blocco canonico del
+foglio `quiz`:
+
+- riga 1: intestazioni;
+- righe 2–789: blocco dei quiz Magic Book;
+- colonne usate per la sincronizzazione: `id`, `chapter`, `question`,
+  `figure`, `correct`;
+- le colonne `question_bd`, `explanations` e `xyz3d` non vengono inviate nel
+  catalogo di sincronizzazione;
+- righe senza `id` o `question` e ID duplicati vengono esclusi e riportati nel
+  dettaglio diagnostico della risposta.
+
+Questo limite evita che valori aggiuntivi sotto la riga 789 alterino il conteggio
+dei quiz sincronizzabili. Dopo aver copiato il file in Google Apps Script è
+necessario pubblicare una **nuova versione** del deployment Web App e verificare
+che `QUIZ_GAS_URL` in Vercel punti all'URL `/exec` aggiornato.
+
 ## Obiettivo richiesto
 
-Condividere le spiegazioni audio soltanto per i quiz presenti nel Magic Book (circa 786 domande):
+Condividere le spiegazioni audio soltanto per i quiz presenti nel Magic Book (788 domande):
 
 - un audio salvato in All Books deve risultare disponibile anche in Magicph;
 - un audio salvato in Magicph deve risultare disponibile anche in All Books;
@@ -26,7 +45,7 @@ Condividere le spiegazioni audio soltanto per i quiz presenti nel Magic Book (ci
 - `quiz_gas.js` legge il foglio `quiz`, filtra le righe valide e restituisce normalmente 30 domande; il limite richiesto dal proxy è massimo 80.
 - Il backend Magicph (`api/quiz.js`) gestisce accesso, sessione quiz, TTS e audio italiano/Bangla, ma **non contiene ancora** il sistema di spiegazioni audio registrate, né le chiamate R2/Neon relative a `quiz_audio_explanations`.
 - L’autenticazione admin è server-side: il ruolo viene assegnato dall’API di login in base ai numeri admin configurati sul server e, quando richiesto, alla password admin server-side.
-- Non esiste nel repository un catalogo locale completo delle 786 domande: la sorgente autorevole è il Google Apps Script.
+- Non esiste nel repository un catalogo locale completo delle 788 domande: la sorgente autorevole è il Google Apps Script.
 
 ### Repository All Books (sola lettura)
 
@@ -61,7 +80,7 @@ Le credenziali non devono essere inserite nel frontend, nei file pubblici o nel 
 
 ### 2. Catalogo Magic Book protetto
 
-Il Google Apps Script di Magicph dovrebbe offrire un’azione server-to-server protetta da `QUIZ_PROXY_SECRET` che restituisca il catalogo completo delle 786 domande con almeno:
+Il Google Apps Script di Magicph dovrebbe offrire un’azione server-to-server protetta da `QUIZ_PROXY_SECRET` che restituisca il catalogo completo delle 788 domande con almeno:
 
 - `id` Magic Book;
 - `chapter`;
@@ -87,7 +106,7 @@ Così gli audio già presenti restano compatibili e i futuri cambiamenti dei tes
 
 ### 4. UI admin Magicph
 
-Solo dopo che catalogo e mapping sono verificati, si può aggiungere in Magicph una sezione admin dedicata ai 786 quiz, riutilizzando il comportamento già collaudato di All Books ma con codice locale a Magicph:
+Solo dopo che catalogo e mapping sono verificati, si può aggiungere in Magicph una sezione admin dedicata ai 788 quiz, riutilizzando il comportamento già collaudato di All Books ma con codice locale a Magicph:
 
 - capitoli e conteggio degli audio;
 - ricerca per testo;
@@ -103,7 +122,7 @@ Solo dopo che catalogo e mapping sono verificati, si può aggiungere in Magicph 
 
 1. Aggiungere e verificare lo schema/mapping nel database senza cambiare gli audio esistenti.
 2. Aggiungere in Magicph gli endpoint server-side di lettura audio, usando gli stessi valori Neon/R2 di All Books.
-3. Aggiungere il catalogo protetto al Google Apps Script Magicph e verificare che restituisca esattamente 786 righe uniche.
+3. Aggiungere il catalogo protetto al Google Apps Script Magicph e verificare che restituisca esattamente 788 righe uniche.
 4. Eseguire il match in modalità diagnostica, senza scrivere audio e senza cancellare dati.
 5. Mostrare all’admin un report dei match sicuri e dei casi da controllare.
 6. Solo dopo il controllo, attivare la UI di registrazione e le operazioni di scrittura.
@@ -137,7 +156,7 @@ Dopo la conferma dell’architettura sono state aggiunte queste parti, esclusiva
 - Un errore di upload conserva la registrazione in IndexedDB locale e mostra il dettaglio tecnico nel dialog interno, così l’admin può premere “Salva” di nuovo senza registrare da capo.
 - Le operazioni di scrittura e cancellazione richiedono un token admin verificato dal server.
 - Gli utenti non admin non possono usare catalogo admin, upload o cancellazione; possono solo verificare e ascoltare un audio già presente.
-- Il catalogo admin viene rifiutato se il Google Sheet non restituisce esattamente 786 quiz: questo evita di sincronizzare per errore una sorgente incompleta o diversa.
+- Il catalogo admin viene rifiutato se il Google Sheet non restituisce esattamente 788 quiz: questo evita di sincronizzare per errore una sorgente incompleta o diversa.
 
 ## Passaggi operativi ancora necessari
 
@@ -163,6 +182,6 @@ La pubblicazione su Vercel e l’esecuzione dello SQL remoto non sono state fatt
 
 Prima di implementare endpoint, schema, Apps Script e interfaccia, serve confermare questa scelta:
 
-> usare lo stesso database Neon e lo stesso bucket R2 già usati da All Books, mantenere compatibile l’identità audio attuale e aggiungere una tabella di mappatura persistente per i 786 quiz Magic Book.
+> usare lo stesso database Neon e lo stesso bucket R2 già usati da All Books, mantenere compatibile l’identità audio attuale e aggiungere una tabella di mappatura persistente per i 788 quiz Magic Book.
 
 Questa è la soluzione meno invasiva e permette di sincronizzare i due progetti senza unirne i repository o i deploy.

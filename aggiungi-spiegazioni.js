@@ -326,7 +326,7 @@ async function load() {
     showMessage("Caricamento catalogo Magic Book…");
     const [catalog, overview] = await Promise.all([api("getMagicBookCatalog"), api("getQuizAudioAdminOverview")]);
     const rows = Array.isArray(catalog.quiz) ? catalog.quiz : [];
-    if (rows.length !== 786) throw new Error(`magic_catalog_count_mismatch_${rows.length}`);
+    if (rows.length !== 788) throw new Error(`magic_catalog_count_mismatch_${rows.length}`);
     const keys = await Promise.all(rows.map(row => keyFor(row.question)));
     state.audioKeys = new Set(overview.quizKeys || []);
     const byChapter = new Map();
