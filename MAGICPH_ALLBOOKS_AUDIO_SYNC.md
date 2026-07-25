@@ -24,6 +24,15 @@ dei quiz sincronizzabili. Dopo aver copiato il file in Google Apps Script è
 necessario pubblicare una **nuova versione** del deployment Web App e verificare
 che `QUIZ_GAS_URL` in Vercel punti all'URL `/exec` aggiornato.
 
+## Aggiornamento player — lettura audio condiviso
+
+Il player del quiz non assegna più direttamente al tag audio l'URL firmato di
+R2. Usa l'azione server `getQuizAudioBlob`, riceve i byte con il MIME corretto
+e crea un URL temporaneo locale del browser. Quando si cambia quiz o si chiude
+il player, l'URL temporaneo viene revocato. In caso di errore il caricamento
+viene azzerato, così il pulsante può essere premuto di nuovo senza ricaricare
+la pagina.
+
 ## Obiettivo richiesto
 
 Condividere le spiegazioni audio soltanto per i quiz presenti nel Magic Book (788 domande):

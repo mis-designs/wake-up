@@ -528,10 +528,18 @@ let sharedAudioLoading = null;
 let sharedAudioFrame = 0;
 let sharedAudioSpeedValue = 1;
 let sharedAudioRequestId = 0;
+let sharedAudioObjectUrl = "";
+
+function revokeSharedAudioObjectUrl() {
+  if (!sharedAudioObjectUrl) return;
+  URL.revokeObjectURL(sharedAudioObjectUrl);
+  sharedAudioObjectUrl = "";
+}
 
 function resetSharedAudioPlayer() {
   sharedAudioRequestId += 1;
   sharedAudio.pause();
+  revokeSharedAudioObjectUrl();
   sharedAudio.removeAttribute("src");
   sharedAudio.load();
   sharedAudioPlay?.classList.remove("is-playing", "is-loading");
@@ -572,6 +580,32 @@ async function requestSharedAudio(action, question) {
   return data;
 }
 
+async function requestSharedAudioBlob(question) {
+  const response = await fetch(QUIZ_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "getQuizAudioBlob",
+      phone: getQuizPhone(),
+      deviceId: getQuizDeviceId(),
+      accessToken: getQuizAccessToken(),
+      question: String(question || "")
+    })
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data?.error || `quiz_audio_${response.status}`);
+  }
+
+  const blob = await response.blob();
+  if (!blob.size) throw new Error("empty_audio_blob");
+  const mimeType = String(blob.type || "audio/webm").startsWith("audio/")
+    ? blob.type
+    : "audio/webm";
+  return new Blob([blob], { type: mimeType });
+}
+
 async function updateSharedAudioAvailability(question) {
   resetSharedAudioPlayer();
   const requestId = sharedAudioRequestId;
@@ -585,16 +619,29 @@ async function updateSharedAudioAvailability(question) {
 
 async function playSharedAudio() {
   if (!sharedAudioQuestion) return;
+  const requestId = sharedAudioRequestId;
   try {
     if (!sharedAudio.src) {
       sharedAudioPlay?.classList.add("is-loading");
-      sharedAudioLoading ||= requestSharedAudio("getQuizAudioPlayback", sharedAudioQuestion).then(data => { sharedAudio.src = data.audioUrl; });
+      sharedAudioLoading ||= requestSharedAudioBlob(sharedAudioQuestion).then(blob => {
+        if (requestId !== sharedAudioRequestId || !sharedAudioQuestion) return;
+        revokeSharedAudioObjectUrl();
+        sharedAudioObjectUrl = URL.createObjectURL(blob);
+        sharedAudio.src = sharedAudioObjectUrl;
+        sharedAudio.load();
+      });
       await sharedAudioLoading;
+      if (requestId !== sharedAudioRequestId) return;
       sharedAudioPlay?.classList.remove("is-loading");
     }
     if (sharedAudio.paused) await sharedAudio.play(); else sharedAudio.pause();
   } catch (_) {
     sharedAudioPlay?.classList.remove("is-loading");
+    sharedAudioLoading = null;
+    sharedAudio.pause();
+    revokeSharedAudioObjectUrl();
+    sharedAudio.removeAttribute("src");
+    sharedAudio.load();
     showAudioUnavailableToast("Spiegazione audio non disponibile");
   }
 }
