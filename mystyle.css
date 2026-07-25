@@ -1144,9 +1144,14 @@ body.loading-open {
   appearance: none;
   background: linear-gradient(90deg, #fff 0 var(--progress), rgba(255,255,255,.38) var(--progress) 100%) center / 100% 4px no-repeat;
   cursor: pointer;
+  pointer-events: auto;
+  touch-action: pan-x;
 }
 .quiz-audio-progress::-webkit-slider-runnable-track { height: 4px; background: transparent; }
 .quiz-audio-progress::-webkit-slider-thumb { width: 13px; height: 13px; margin-top: -4.5px; appearance: none; border: 0; border-radius: 50%; background: #fff; }
+.quiz-audio-progress::-moz-range-track { height: 4px; background: transparent; }
+.quiz-audio-progress::-moz-range-progress { height: 4px; background: #fff; }
+.quiz-audio-progress::-moz-range-thumb { width: 13px; height: 13px; border: 0; border-radius: 50%; background: #fff; }
 .quiz-audio-speed { flex: 0 0 auto; border: 0; padding: 2px 0; background: transparent; color: #fff; font: inherit; font-size: .78rem; font-weight: 900; cursor: pointer; }
 @media (max-width: 420px) { .quiz-audio-explanation { width: min(250px, calc(100% - 12px)); } }
 

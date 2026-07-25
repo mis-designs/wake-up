@@ -256,20 +256,25 @@ function createAudioPlayer(question) {
   const button = document.createElement("button"); button.type = "button"; button.className = "audio-admin-player-play"; button.setAttribute("aria-label", "Riproduci spiegazione");
   const progress = document.createElement("input"); progress.type = "range"; progress.min = "0"; progress.max = "100"; progress.step = "0.1"; progress.value = "0"; progress.className = "audio-admin-player-progress"; progress.setAttribute("aria-label", "Avanzamento audio");
   const speed = document.createElement("button"); speed.type = "button"; speed.className = "audio-admin-player-speed"; speed.textContent = "1×"; speed.title = "Cambia velocità";
-  const audio = new Audio(); let loading = null; let objectUrl = ""; let speedValue = 1; let frame = 0;
+  const audio = new Audio(); audio.preload = "metadata"; let loading = null; let objectUrl = ""; let speedValue = 1; let frame = 0; let seeking = false;
   const clearSource = () => { audio.pause(); if (objectUrl) URL.revokeObjectURL(objectUrl); objectUrl = ""; audio.removeAttribute("src"); audio.load(); };
   const instance = { audio, button };
-  const paint = () => { const percent = audio.duration > 0 ? audio.currentTime / audio.duration * 100 : 0; progress.value = String(percent); progress.style.setProperty("--progress", `${percent}%`); };
+  const paint = () => { if (seeking) return; const duration = Number(audio.duration); const currentTime = Number(audio.currentTime); const percent = Number.isFinite(duration) && duration > 0 && Number.isFinite(currentTime) ? Math.max(0, Math.min(100, currentTime / duration * 100)) : 0; progress.value = String(percent); progress.style.setProperty("--progress", `${percent}%`); };
+  const seek = () => { const duration = Number(audio.duration); if (!Number.isFinite(duration) || duration <= 0) return; const percent = Math.max(0, Math.min(100, Number(progress.value) || 0)); try { audio.currentTime = duration * percent / 100; } catch (_) { return; } progress.style.setProperty("--progress", `${percent}%`); };
   const stopFrame = () => { if (frame) cancelAnimationFrame(frame); frame = 0; };
   const tick = () => { paint(); if (!audio.paused && !audio.ended) frame = requestAnimationFrame(tick); };
   const load = async () => { if (audio.src) return; if (!loading) { button.classList.add("is-loading"); loading = apiBlob("getQuizAudioBlob", { question: question.question }).then(blob => { if (objectUrl) URL.revokeObjectURL(objectUrl); objectUrl = URL.createObjectURL(blob); audio.src = objectUrl; audio.load(); }).finally(() => { loading = null; button.classList.remove("is-loading"); }); } return loading; };
   button.addEventListener("click", async () => { try { if (!audio.src) await load(); if (audio.paused) { stopCurrentPlayer(instance); state.playing = instance; await audio.play(); } else audio.pause(); } catch (error) { loading = null; clearSource(); await showProblem("Audio non disponibile", "Il sito non riesce a recuperare questa spiegazione.", error); } });
-  progress.addEventListener("input", () => { if (audio.duration) audio.currentTime = Number(progress.value) / 100 * audio.duration; paint(); });
+  progress.addEventListener("pointerdown", () => { seeking = true; });
+  progress.addEventListener("input", seek);
+  progress.addEventListener("change", () => { seek(); seeking = false; paint(); });
+  progress.addEventListener("pointerup", () => { seek(); seeking = false; paint(); });
+  progress.addEventListener("touchend", () => { seek(); seeking = false; paint(); }, { passive: true });
   speed.addEventListener("click", () => { speedValue = [1, 1.25, 1.5, 2][([1, 1.25, 1.5, 2].indexOf(speedValue) + 1) % 4]; audio.playbackRate = speedValue; speed.textContent = `${String(speedValue).replace(".", ",")}×`; });
   audio.addEventListener("play", () => { button.classList.add("is-playing"); stopFrame(); tick(); });
   audio.addEventListener("pause", () => { button.classList.remove("is-playing"); stopFrame(); });
-  audio.addEventListener("ended", () => { button.classList.remove("is-playing"); stopFrame(); progress.value = "0"; progress.style.setProperty("--progress", "0%"); if (state.playing === instance) state.playing = null; });
-  audio.addEventListener("timeupdate", paint); audio.addEventListener("loadedmetadata", paint);
+  audio.addEventListener("ended", () => { button.classList.remove("is-playing"); stopFrame(); seeking = false; progress.value = "0"; progress.style.setProperty("--progress", "0%"); if (state.playing === instance) state.playing = null; });
+  ["loadedmetadata", "durationchange", "canplay", "timeupdate", "seeking", "seeked"].forEach(eventName => audio.addEventListener(eventName, paint));
   player.append(button, progress, speed); return player;
 }
 

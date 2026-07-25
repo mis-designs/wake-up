@@ -46,9 +46,12 @@ body { margin: 0; min-width: 320px; background: linear-gradient(135deg, #f4f7fb,
 .audio-admin-player-play { flex: 0 0 29px; width: 29px; height: 29px; padding: 0; border: 0; border-radius: 50%; background: #fff; color: #050505; cursor: pointer; }
 .audio-admin-player-play::before { content: ""; display: inline-block; margin-left: 2px; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-left: 9px solid currentColor; }
 .audio-admin-player-play.is-playing::before { width: 3px; height: 13px; margin-left: -3px; border: 0; background: currentColor; box-shadow: 6px 0 currentColor; }
-.audio-admin-player-progress { --progress: 0%; flex: 1; min-width: 42px; height: 16px; margin: 0; appearance: none; background: linear-gradient(90deg, #fff 0 var(--progress), rgba(255,255,255,.38) var(--progress) 100%) center / 100% 4px no-repeat; cursor: pointer; }
+.audio-admin-player-progress { --progress: 0%; flex: 1; min-width: 42px; height: 16px; margin: 0; appearance: none; background: linear-gradient(90deg, #fff 0 var(--progress), rgba(255,255,255,.38) var(--progress) 100%) center / 100% 4px no-repeat; cursor: pointer; pointer-events: auto; touch-action: pan-x; }
 .audio-admin-player-progress::-webkit-slider-runnable-track { height: 4px; background: transparent; }
 .audio-admin-player-progress::-webkit-slider-thumb { width: 13px; height: 13px; margin-top: -4.5px; appearance: none; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+.audio-admin-player-progress::-moz-range-track { height: 4px; background: transparent; }
+.audio-admin-player-progress::-moz-range-progress { height: 4px; background: #fff; }
+.audio-admin-player-progress::-moz-range-thumb { width: 13px; height: 13px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
 .audio-admin-player-speed { flex: 0 0 auto; border: 0; padding: 2px 0; background: transparent; color: #fff; font: inherit; font-size: .78rem; font-weight: 900; cursor: pointer; }
 .audio-admin-inline-recorder { grid-column: 1 / -1; display: grid; gap: 12px; margin-top: 2px; padding: 14px; border: 1px solid #ffd8be; border-radius: 14px; background: linear-gradient(135deg, #fff7f1, #f7fbff); }
 .audio-admin-inline-status { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; color: #4d627d; font-weight: 800; font-size: .9rem; }

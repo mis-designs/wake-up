@@ -529,6 +529,7 @@ let sharedAudioFrame = 0;
 let sharedAudioSpeedValue = 1;
 let sharedAudioRequestId = 0;
 let sharedAudioObjectUrl = "";
+let sharedAudioSeeking = false;
 
 function revokeSharedAudioObjectUrl() {
   if (!sharedAudioObjectUrl) return;
@@ -549,14 +550,29 @@ function resetSharedAudioPlayer() {
   if (sharedAudioProgress) sharedAudioProgress.value = "0";
   sharedAudioQuestion = "";
   sharedAudioLoading = null;
+  sharedAudioSeeking = false;
   if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame);
   sharedAudioFrame = 0;
 }
 
 function paintSharedAudioProgress() {
   if (!sharedAudioProgress) return;
-  const percent = sharedAudio.duration > 0 ? sharedAudio.currentTime / sharedAudio.duration * 100 : 0;
+  if (sharedAudioSeeking) return;
+  const duration = Number(sharedAudio.duration);
+  const currentTime = Number(sharedAudio.currentTime);
+  const percent = Number.isFinite(duration) && duration > 0 && Number.isFinite(currentTime)
+    ? Math.max(0, Math.min(100, currentTime / duration * 100))
+    : 0;
   sharedAudioProgress.value = String(percent);
+  sharedAudioProgress.style.setProperty("--progress", `${percent}%`);
+}
+
+function seekSharedAudioFromProgress() {
+  if (!sharedAudioProgress) return;
+  const duration = Number(sharedAudio.duration);
+  if (!Number.isFinite(duration) || duration <= 0) return;
+  const percent = Math.max(0, Math.min(100, Number(sharedAudioProgress.value) || 0));
+  try { sharedAudio.currentTime = duration * percent / 100; } catch (_) { return; }
   sharedAudioProgress.style.setProperty("--progress", `${percent}%`);
 }
 
@@ -657,12 +673,23 @@ async function playSharedAudio() {
 }
 
 sharedAudioPlay?.addEventListener("click", playSharedAudio);
-sharedAudioProgress?.addEventListener("input", () => { if (sharedAudio.duration) sharedAudio.currentTime = Number(sharedAudioProgress.value) / 100 * sharedAudio.duration; paintSharedAudioProgress(); });
+sharedAudioProgress?.addEventListener("pointerdown", () => { sharedAudioSeeking = true; });
+sharedAudioProgress?.addEventListener("input", seekSharedAudioFromProgress);
+sharedAudioProgress?.addEventListener("change", () => { seekSharedAudioFromProgress(); sharedAudioSeeking = false; paintSharedAudioProgress(); });
+sharedAudioProgress?.addEventListener("pointerup", () => { seekSharedAudioFromProgress(); sharedAudioSeeking = false; paintSharedAudioProgress(); });
+sharedAudioProgress?.addEventListener("touchend", () => { seekSharedAudioFromProgress(); sharedAudioSeeking = false; paintSharedAudioProgress(); }, { passive: true });
 sharedAudioSpeed?.addEventListener("click", () => { const speeds = [1, 1.25, 1.5, 2]; sharedAudioSpeedValue = speeds[(speeds.indexOf(sharedAudioSpeedValue) + 1) % speeds.length]; sharedAudio.playbackRate = sharedAudioSpeedValue; sharedAudioSpeed.textContent = `${String(sharedAudioSpeedValue).replace(".", ",")}×`; sharedAudioSpeed.setAttribute("aria-label", `Velocità ${sharedAudioSpeedValue}x`); });
 sharedAudio.addEventListener("play", () => { sharedAudioPlay?.classList.add("is-playing"); if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame); animateSharedAudioProgress(); });
 sharedAudio.addEventListener("pause", () => { sharedAudioPlay?.classList.remove("is-playing"); if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame); sharedAudioFrame = 0; });
-sharedAudio.addEventListener("ended", () => { sharedAudioPlay?.classList.remove("is-playing"); if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame); sharedAudioFrame = 0; if (sharedAudioProgress) sharedAudioProgress.value = "0"; sharedAudioProgress?.style.setProperty("--progress", "0%"); });
-sharedAudio.addEventListener("timeupdate", paintSharedAudioProgress);
+sharedAudio.addEventListener("ended", () => { sharedAudioPlay?.classList.remove("is-playing"); if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame); sharedAudioFrame = 0; sharedAudioSeeking = false; if (sharedAudioProgress) sharedAudioProgress.value = "0"; sharedAudioProgress?.style.setProperty("--progress", "0%"); });
+[
+  "loadedmetadata",
+  "durationchange",
+  "canplay",
+  "timeupdate",
+  "seeking",
+  "seeked"
+].forEach(eventName => sharedAudio.addEventListener(eventName, paintSharedAudioProgress));
 
 let _audioToastTimer = null;
 
