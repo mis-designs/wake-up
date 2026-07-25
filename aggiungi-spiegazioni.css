@@ -20,9 +20,21 @@ body { margin: 0; min-width: 320px; background: linear-gradient(135deg, #f4f7fb,
 .audio-admin-questions { margin-top: 8px; }
 .audio-admin-question-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
 .audio-admin-question-head h2 { margin: 0; font-size: clamp(1.25rem, 4vw, 1.9rem); }
-.audio-admin-back-list { margin-left: auto; border: 1px solid #c7d6e7; border-radius: 11px; padding: 9px 13px; background: #fff; color: #174d8e; font: inherit; font-weight: 850; cursor: pointer; }
+.audio-admin-back-list { display: inline-flex; margin-left: auto; align-items: center; gap: 8px; border: 1px solid #c7d6e7; border-radius: 11px; padding: 9px 13px; background: #fff; color: #174d8e; font: inherit; font-weight: 850; cursor: pointer; }
+.audio-admin-back-list img { width: 17px; height: 17px; object-fit: contain; }
 .audio-admin-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin-bottom: 16px; }
-.audio-admin-toolbar input, .audio-admin-toolbar select { width: 100%; min-height: 46px; border: 1px solid #cbd9ea; border-radius: 13px; padding: 10px 13px; background: #fff; color: #14213a; font: inherit; }
+.audio-admin-toolbar input { width: 100%; min-height: 46px; border: 1px solid #cbd9ea; border-radius: 13px; padding: 10px 13px; background: #fff; color: #14213a; font: inherit; }
+.audio-admin-filter { position: relative; min-width: 188px; }
+.audio-admin-filter-trigger { display: flex; width: 100%; min-height: 46px; align-items: center; justify-content: space-between; gap: 11px; border: 1px solid #cbd9ea; border-radius: 13px; padding: 10px 13px; background: #fff; color: #14213a; font: inherit; font-weight: 800; text-align: left; cursor: pointer; transition: border-color .18s ease, box-shadow .18s ease, background .18s ease; }
+.audio-admin-filter-trigger:hover, .audio-admin-filter.is-open .audio-admin-filter-trigger { border-color: #7b61ff; background: #faf9ff; box-shadow: 0 0 0 3px rgba(123, 97, 255, .12); }
+.audio-admin-filter-trigger img { width: 18px; height: 18px; object-fit: contain; flex: 0 0 18px; opacity: .72; }
+.audio-admin-filter-menu { position: absolute; z-index: 20; top: calc(100% + 8px); right: 0; left: 0; overflow: hidden; border: 1px solid #dbe4ef; border-radius: 14px; padding: 5px; background: #fff; box-shadow: 0 18px 38px rgba(24, 45, 75, .18); animation: audioFilterIn .16s ease-out; }
+.audio-admin-filter-option { display: flex; width: 100%; align-items: center; gap: 10px; border: 0; border-radius: 10px; padding: 11px 10px; background: transparent; color: #29405e; font: inherit; font-size: .92rem; font-weight: 750; text-align: left; cursor: pointer; }
+.audio-admin-filter-option:hover, .audio-admin-filter-option:focus-visible { outline: none; background: #f2efff; color: #4934bf; }
+.audio-admin-filter-option.is-selected { background: #eeeaff; color: #4934bf; }
+.audio-admin-filter-marker { width: 9px; height: 9px; flex: 0 0 9px; border: 2px solid #b8c5d5; border-radius: 50%; }
+.audio-admin-filter-option.is-selected .audio-admin-filter-marker { border-color: #7658e8; background: #7658e8; box-shadow: inset 0 0 0 2px #eeeaff; }
+@keyframes audioFilterIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 .audio-admin-question-list { display: grid; gap: 12px; }
 .audio-admin-question { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: start; overflow: hidden; padding: 17px; border: 1px solid #dae4ef; border-radius: 18px; background: #fff; box-shadow: 0 7px 22px rgba(30, 52, 84, .06); }
 .audio-admin-question-copy { min-width: 0; display: grid; gap: 11px; }
@@ -75,4 +87,5 @@ body { margin: 0; min-width: 320px; background: linear-gradient(135deg, #f4f7fb,
   .audio-admin-actions { grid-column: 1; width: 100%; justify-content: flex-start; padding-top: 0; }
   .audio-admin-player { width: auto; max-width: none; flex-basis: 145px; }
   .audio-admin-toolbar { grid-template-columns: 1fr; }
+  .audio-admin-filter { min-width: 0; }
 }

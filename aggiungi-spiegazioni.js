@@ -7,6 +7,11 @@ const PAUSE_ICON = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><pat
 const SAVE_ICON = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 3h12l2 2v16H5V3Z" stroke="currentColor" stroke-width="2"/><path d="M8 3v6h8V3M8 21v-7h8v7" stroke="currentColor" stroke-width="2"/></svg>';
 const TRASH_ICON = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const RENEW_ICON = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.9-3M4 5v4h4M4 13a8 8 0 0 0 14.9 3M20 19v-4h-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const FILTER_OPTIONS = [
+  { value: "all", label: "Tutti i quiz" },
+  { value: "missing", label: "Da aggiungere" },
+  { value: "available", label: "Audio aggiunti" }
+];
 
 const state = { chapters: [], selected: null, audioKeys: new Set(), query: "", filter: "all", inline: null, activeQuestionId: null, playing: null };
 let dialogResolver = null;
@@ -218,14 +223,39 @@ function renderChapter() {
   const root = $("audioAdminQuestions"); root.replaceChildren();
   const head = document.createElement("div"); head.className = "audio-admin-question-head";
   const title = document.createElement("h2"); title.textContent = `${String(state.selected + 1).padStart(2, "0")} · ${chapterName(chapter, state.selected)}`;
-  const back = document.createElement("button"); back.type = "button"; back.className = "audio-admin-back-list"; back.textContent = "← Tutti i capitoli"; back.addEventListener("click", closeChapter); head.append(title, back);
+  const back = document.createElement("button"); back.type = "button"; back.className = "audio-admin-back-list"; back.setAttribute("aria-label", "Torna a tutti i capitoli");
+  const backIcon = document.createElement("img"); backIcon.src = "icons/back.png"; backIcon.alt = ""; backIcon.setAttribute("aria-hidden", "true");
+  const backLabel = document.createElement("span"); backLabel.textContent = "Tutti i capitoli"; back.append(backIcon, backLabel); back.addEventListener("click", closeChapter); head.append(title, back);
   const toolbar = document.createElement("div"); toolbar.className = "audio-admin-toolbar";
   const search = document.createElement("input"); search.type = "search"; search.placeholder = "Cerca nella domanda"; search.value = state.query; search.addEventListener("input", () => { state.query = search.value; renderChapter(); });
-  const filter = document.createElement("select"); filter.innerHTML = '<option value="all">Tutti i quiz</option><option value="missing">Da aggiungere</option><option value="available">Audio aggiunti</option>'; filter.value = state.filter; filter.addEventListener("change", () => { state.filter = filter.value; renderChapter(); }); toolbar.append(search, filter);
+  toolbar.append(search, createFilterMenu());
   const list = document.createElement("div"); list.className = "audio-admin-question-list";
   visibleQuestions().forEach((question, index) => list.append(questionRow(question, index)));
   if (!list.children.length) { const empty = document.createElement("div"); empty.className = "audio-admin-empty"; empty.textContent = "Nessun quiz corrisponde al filtro."; list.append(empty); }
   root.append(head, toolbar, list);
+}
+
+function createFilterMenu() {
+  const wrapper = document.createElement("div"); wrapper.className = "audio-admin-filter";
+  const selected = FILTER_OPTIONS.find(option => option.value === state.filter) || FILTER_OPTIONS[0];
+  const trigger = document.createElement("button"); trigger.type = "button"; trigger.className = "audio-admin-filter-trigger"; trigger.setAttribute("aria-haspopup", "listbox"); trigger.setAttribute("aria-expanded", "false");
+  const icon = document.createElement("img"); icon.src = "icons/menu.png"; icon.alt = ""; icon.setAttribute("aria-hidden", "true");
+  const label = document.createElement("span"); label.textContent = selected.label;
+  trigger.append(icon, label);
+  const menu = document.createElement("div"); menu.className = "audio-admin-filter-menu"; menu.setAttribute("role", "listbox"); menu.setAttribute("aria-label", "Filtra quiz"); menu.hidden = true;
+  const close = () => { wrapper.classList.remove("is-open"); trigger.setAttribute("aria-expanded", "false"); menu.hidden = true; document.removeEventListener("click", onDocumentClick); document.removeEventListener("keydown", onKeyDown); };
+  const onDocumentClick = event => { if (!wrapper.contains(event.target)) close(); };
+  const onKeyDown = event => { if (event.key === "Escape") { close(); trigger.focus(); } };
+  FILTER_OPTIONS.forEach(option => {
+    const item = document.createElement("button"); item.type = "button"; item.className = "audio-admin-filter-option"; item.setAttribute("role", "option"); item.setAttribute("aria-selected", String(option.value === state.filter));
+    if (option.value === state.filter) item.classList.add("is-selected");
+    const marker = document.createElement("span"); marker.className = "audio-admin-filter-marker"; marker.setAttribute("aria-hidden", "true");
+    const text = document.createElement("span"); text.textContent = option.label; item.append(marker, text);
+    item.addEventListener("click", () => { state.filter = option.value; close(); renderChapter(); });
+    menu.append(item);
+  });
+  trigger.addEventListener("click", event => { event.stopPropagation(); const open = !wrapper.classList.contains("is-open"); if (open) { wrapper.classList.add("is-open"); trigger.setAttribute("aria-expanded", "true"); menu.hidden = false; document.addEventListener("click", onDocumentClick); document.addEventListener("keydown", onKeyDown); } else close(); });
+  wrapper.append(trigger, menu); return wrapper;
 }
 
 function questionRow(question, position) {
