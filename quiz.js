@@ -523,6 +523,7 @@ const sharedAudioPlay = document.getElementById("quiz-audio-play");
 const sharedAudioProgress = document.getElementById("quiz-audio-progress");
 const sharedAudioSpeed = document.getElementById("quiz-audio-speed");
 const sharedAudio = new Audio();
+sharedAudio.preload = "metadata";
 let sharedAudioQuestion = "";
 let sharedAudioLoading = null;
 let sharedAudioFrame = 0;
@@ -673,10 +674,12 @@ async function playSharedAudio() {
 }
 
 sharedAudioPlay?.addEventListener("click", playSharedAudio);
-sharedAudioProgress?.addEventListener("pointerdown", () => { sharedAudioSeeking = true; });
+sharedAudioProgress?.addEventListener("pointerdown", event => { sharedAudioSeeking = true; sharedAudioProgress.setPointerCapture?.(event.pointerId); });
+sharedAudioProgress?.addEventListener("touchstart", () => { sharedAudioSeeking = true; }, { passive: true });
 sharedAudioProgress?.addEventListener("input", seekSharedAudioFromProgress);
 sharedAudioProgress?.addEventListener("change", () => { seekSharedAudioFromProgress(); sharedAudioSeeking = false; paintSharedAudioProgress(); });
 sharedAudioProgress?.addEventListener("pointerup", () => { seekSharedAudioFromProgress(); sharedAudioSeeking = false; paintSharedAudioProgress(); });
+sharedAudioProgress?.addEventListener("pointercancel", () => { seekSharedAudioFromProgress(); sharedAudioSeeking = false; paintSharedAudioProgress(); });
 sharedAudioProgress?.addEventListener("touchend", () => { seekSharedAudioFromProgress(); sharedAudioSeeking = false; paintSharedAudioProgress(); }, { passive: true });
 sharedAudioSpeed?.addEventListener("click", () => { const speeds = [1, 1.25, 1.5, 2]; sharedAudioSpeedValue = speeds[(speeds.indexOf(sharedAudioSpeedValue) + 1) % speeds.length]; sharedAudio.playbackRate = sharedAudioSpeedValue; sharedAudioSpeed.textContent = `${String(sharedAudioSpeedValue).replace(".", ",")}×`; sharedAudioSpeed.setAttribute("aria-label", `Velocità ${sharedAudioSpeedValue}x`); });
 sharedAudio.addEventListener("play", () => { sharedAudioPlay?.classList.add("is-playing"); if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame); animateSharedAudioProgress(); });

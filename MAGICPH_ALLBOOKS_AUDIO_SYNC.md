@@ -33,8 +33,7 @@ il player, l'URL temporaneo viene revocato. In caso di errore il caricamento
 viene azzerato, così il pulsante può essere premuto di nuovo senza ricaricare
 la pagina.
 
-<<<<<<< HEAD
-Il riferimento allo script nella pagina quiz è stato incrementato a `quiz.js?v=35`
+Il riferimento allo script nella pagina quiz è stato incrementato a `quiz.js?v=36`
 per evitare che il browser riutilizzi la versione precedente dalla cache.
 
 Quando una domanda non ha un audio disponibile, il player viene ora nascosto
@@ -44,12 +43,17 @@ audio per la domanda attiva.
 Anche il player della pagina admin `aggiungi-spiegazioni` ora usa `getQuizAudioBlob`
 e la versione dello script è stata incrementata a `aggiungi-spiegazioni.js?v=2`.
 
-=======
-Il riferimento allo script nella pagina quiz è stato incrementato a `quiz.js?v=34`
-per evitare che il browser riutilizzi la versione precedente dalla cache.
-
->>>>>>> 8ac40fdccd7e37b585c5ef301911ef5b50b56634
 ## Obiettivo richiesto
+
+### Player audio: play, pausa, velocità e seek
+
+Entrambi i player usano un cursore range collegato direttamente a `currentTime`.
+Durante la riproduzione il cursore viene aggiornato continuamente; durante il
+trascinamento il valore scelto dall'admin o dall'utente non viene sovrascritto
+dagli eventi audio. Sono gestiti anche i cambi di durata e gli eventi di seek,
+con supporto touch mobile e stili Firefox/WebKit.
+I riferimenti cache-bust sono `mystyle.css?v=27`, `aggiungi-spiegazioni.css?v=2`
+e `quiz.js?v=36`.
 
 Condividere le spiegazioni audio soltanto per i quiz presenti nel Magic Book (788 domande):
 

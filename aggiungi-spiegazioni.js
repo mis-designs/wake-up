@@ -265,10 +265,12 @@ function createAudioPlayer(question) {
   const tick = () => { paint(); if (!audio.paused && !audio.ended) frame = requestAnimationFrame(tick); };
   const load = async () => { if (audio.src) return; if (!loading) { button.classList.add("is-loading"); loading = apiBlob("getQuizAudioBlob", { question: question.question }).then(blob => { if (objectUrl) URL.revokeObjectURL(objectUrl); objectUrl = URL.createObjectURL(blob); audio.src = objectUrl; audio.load(); }).finally(() => { loading = null; button.classList.remove("is-loading"); }); } return loading; };
   button.addEventListener("click", async () => { try { if (!audio.src) await load(); if (audio.paused) { stopCurrentPlayer(instance); state.playing = instance; await audio.play(); } else audio.pause(); } catch (error) { loading = null; clearSource(); await showProblem("Audio non disponibile", "Il sito non riesce a recuperare questa spiegazione.", error); } });
-  progress.addEventListener("pointerdown", () => { seeking = true; });
+  progress.addEventListener("pointerdown", event => { seeking = true; progress.setPointerCapture?.(event.pointerId); });
+  progress.addEventListener("touchstart", () => { seeking = true; }, { passive: true });
   progress.addEventListener("input", seek);
   progress.addEventListener("change", () => { seek(); seeking = false; paint(); });
   progress.addEventListener("pointerup", () => { seek(); seeking = false; paint(); });
+  progress.addEventListener("pointercancel", () => { seek(); seeking = false; paint(); });
   progress.addEventListener("touchend", () => { seek(); seeking = false; paint(); }, { passive: true });
   speed.addEventListener("click", () => { speedValue = [1, 1.25, 1.5, 2][([1, 1.25, 1.5, 2].indexOf(speedValue) + 1) % 4]; audio.playbackRate = speedValue; speed.textContent = `${String(speedValue).replace(".", ",")}×`; });
   audio.addEventListener("play", () => { button.classList.add("is-playing"); stopFrame(); tick(); });
