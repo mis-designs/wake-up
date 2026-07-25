@@ -52,7 +52,7 @@ Durante la riproduzione il cursore viene aggiornato continuamente; durante il
 trascinamento il valore scelto dall'admin o dall'utente non viene sovrascritto
 dagli eventi audio. Sono gestiti anche i cambi di durata e gli eventi di seek,
 con supporto touch mobile e stili Firefox/WebKit.
-I riferimenti cache-bust sono `mystyle.css?v=27`, `aggiungi-spiegazioni.css?v=3`,
+I riferimenti cache-bust sono `mystyle.css?v=27`, `aggiungi-spiegazioni.css?v=4`,
 `aggiungi-spiegazioni.js?v=4` e `quiz.js?v=36`.
 
 Condividere le spiegazioni audio soltanto per i quiz presenti nel Magic Book (788 domande):

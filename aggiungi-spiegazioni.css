@@ -3,7 +3,9 @@
 body { margin: 0; min-width: 320px; background: linear-gradient(135deg, #f4f7fb, #eef4ff); }
 .audio-admin-shell { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 24px 0 80px; }
 .audio-admin-head { margin-bottom: 22px; }
-.audio-admin-back { display: inline-flex; min-height: 40px; align-items: center; padding: 8px 14px; border: 1px solid #cad8ea; border-radius: 12px; background: #fff; color: #164e91; font-weight: 850; text-decoration: none; box-shadow: 0 5px 15px rgba(30, 60, 100, .08); }
+.audio-admin-back { display: inline-flex; width: 48px; height: 48px; align-items: center; justify-content: center; padding: 10px; border: 1px solid #cad8ea; border-radius: 14px; background: #fff; color: #164e91; text-decoration: none; box-shadow: 0 5px 15px rgba(30, 60, 100, .08); transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+.audio-admin-back:hover, .audio-admin-back:focus-visible { border-color: #7b61ff; outline: none; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(30, 60, 100, .14); }
+.audio-admin-back img { width: 24px; height: 24px; object-fit: contain; }
 .audio-admin-head > p { margin: 22px 0 5px; color: #f05c0b; font-size: .78rem; font-weight: 950; letter-spacing: .14em; }
 .audio-admin-head h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.4rem); letter-spacing: -.04em; }
 .audio-admin-head > span { display: block; margin-top: 8px; color: #58718f; font-weight: 750; }
