@@ -141,6 +141,10 @@
       "destination": "/"
     },
     {
+      "source": "/aggiungi-spiegazioni",
+      "destination": "/aggiungi-spiegazioni.html"
+    },
+    {
       "source": "/quiz",
       "destination": "/quiz"
     },

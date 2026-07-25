@@ -518,6 +518,94 @@ let explanationLoadId = 0;
 
 const italianAudioBtn = document.querySelector(".audio-btn[aria-label='Ascolta in italiano']");
 const banglaAudioBtn  = document.querySelector(".audio-btn[aria-label='Ascolta in Bengali']");
+const sharedAudioPlayer = document.getElementById("quiz-audio-explanation");
+const sharedAudioPlay = document.getElementById("quiz-audio-play");
+const sharedAudioProgress = document.getElementById("quiz-audio-progress");
+const sharedAudioSpeed = document.getElementById("quiz-audio-speed");
+const sharedAudio = new Audio();
+let sharedAudioQuestion = "";
+let sharedAudioLoading = null;
+let sharedAudioFrame = 0;
+let sharedAudioSpeedValue = 1;
+let sharedAudioRequestId = 0;
+
+function resetSharedAudioPlayer() {
+  sharedAudioRequestId += 1;
+  sharedAudio.pause();
+  sharedAudio.removeAttribute("src");
+  sharedAudio.load();
+  sharedAudioPlay?.classList.remove("is-playing", "is-loading");
+  sharedAudioProgress?.style.setProperty("--progress", "0%");
+  if (sharedAudioProgress) sharedAudioProgress.value = "0";
+  sharedAudioQuestion = "";
+  sharedAudioLoading = null;
+  if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame);
+  sharedAudioFrame = 0;
+}
+
+function paintSharedAudioProgress() {
+  if (!sharedAudioProgress) return;
+  const percent = sharedAudio.duration > 0 ? sharedAudio.currentTime / sharedAudio.duration * 100 : 0;
+  sharedAudioProgress.value = String(percent);
+  sharedAudioProgress.style.setProperty("--progress", `${percent}%`);
+}
+
+function animateSharedAudioProgress() {
+  paintSharedAudioProgress();
+  if (!sharedAudio.paused && !sharedAudio.ended) sharedAudioFrame = requestAnimationFrame(animateSharedAudioProgress);
+}
+
+async function requestSharedAudio(action, question) {
+  const response = await fetch(QUIZ_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action,
+      phone: getQuizPhone(),
+      deviceId: getQuizDeviceId(),
+      accessToken: getQuizAccessToken(),
+      question: String(question || "")
+    })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.error || `quiz_audio_${response.status}`);
+  return data;
+}
+
+async function updateSharedAudioAvailability(question) {
+  resetSharedAudioPlayer();
+  const requestId = sharedAudioRequestId;
+  if (TRIAL_MODE || !question?.question || !sharedAudioPlayer) return;
+  try {
+    const data = await requestSharedAudio("getQuizAudioStatus", question.question);
+    if (requestId !== sharedAudioRequestId) return;
+    if (data.available) { sharedAudioQuestion = String(question.question); sharedAudioPlayer.classList.remove("hidden"); }
+  } catch (_) { sharedAudioPlayer.classList.add("hidden"); }
+}
+
+async function playSharedAudio() {
+  if (!sharedAudioQuestion) return;
+  try {
+    if (!sharedAudio.src) {
+      sharedAudioPlay?.classList.add("is-loading");
+      sharedAudioLoading ||= requestSharedAudio("getQuizAudioPlayback", sharedAudioQuestion).then(data => { sharedAudio.src = data.audioUrl; });
+      await sharedAudioLoading;
+      sharedAudioPlay?.classList.remove("is-loading");
+    }
+    if (sharedAudio.paused) await sharedAudio.play(); else sharedAudio.pause();
+  } catch (_) {
+    sharedAudioPlay?.classList.remove("is-loading");
+    showAudioUnavailableToast("Spiegazione audio non disponibile");
+  }
+}
+
+sharedAudioPlay?.addEventListener("click", playSharedAudio);
+sharedAudioProgress?.addEventListener("input", () => { if (sharedAudio.duration) sharedAudio.currentTime = Number(sharedAudioProgress.value) / 100 * sharedAudio.duration; paintSharedAudioProgress(); });
+sharedAudioSpeed?.addEventListener("click", () => { const speeds = [1, 1.25, 1.5, 2]; sharedAudioSpeedValue = speeds[(speeds.indexOf(sharedAudioSpeedValue) + 1) % speeds.length]; sharedAudio.playbackRate = sharedAudioSpeedValue; sharedAudioSpeed.textContent = `${String(sharedAudioSpeedValue).replace(".", ",")}×`; sharedAudioSpeed.setAttribute("aria-label", `Velocità ${sharedAudioSpeedValue}x`); });
+sharedAudio.addEventListener("play", () => { sharedAudioPlay?.classList.add("is-playing"); if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame); animateSharedAudioProgress(); });
+sharedAudio.addEventListener("pause", () => { sharedAudioPlay?.classList.remove("is-playing"); if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame); sharedAudioFrame = 0; });
+sharedAudio.addEventListener("ended", () => { sharedAudioPlay?.classList.remove("is-playing"); if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame); sharedAudioFrame = 0; if (sharedAudioProgress) sharedAudioProgress.value = "0"; sharedAudioProgress?.style.setProperty("--progress", "0%"); });
+sharedAudio.addEventListener("timeupdate", paintSharedAudioProgress);
 
 let _audioToastTimer = null;
 
@@ -545,6 +633,8 @@ function stopAllAudio() {
   }
   isTtsPlaying = false;
   isBengaliPlaying = false;
+  sharedAudio.pause();
+  sharedAudioPlay?.classList.remove("is-playing");
   italianAudioBtn?.classList.remove("is-playing", "is-loading");
   banglaAudioBtn?.classList.remove("is-playing", "is-loading");
 }
@@ -1500,6 +1590,7 @@ function showQuestion() {
 
   loadQuizImage(q);
   updateExplanationButton(q);
+  void updateSharedAudioAvailability(q);
 
   // reset bottoni
   veroBtn.classList.remove("selected", "tap-feedback");

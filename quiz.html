@@ -66,6 +66,12 @@
             </button>
         </div>
 
+        <div id="quiz-audio-explanation" class="quiz-audio-explanation hidden" aria-label="Spiegazione audio">
+            <button id="quiz-audio-play" class="quiz-audio-play" type="button" aria-label="Riproduci spiegazione"></button>
+            <input id="quiz-audio-progress" class="quiz-audio-progress" type="range" min="0" max="100" step="0.1" value="0" aria-label="Avanzamento spiegazione">
+            <button id="quiz-audio-speed" class="quiz-audio-speed" type="button" aria-label="Velocità 1x">1×</button>
+        </div>
+
         <div class="controls">
             <button id="prev-btn" onclick="prev()" aria-label="Indietro">
                 <img src="icons/back.png" alt="">

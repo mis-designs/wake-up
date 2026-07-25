@@ -1,0 +1,75 @@
+:root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #10213a; background: #f4f7fb; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; background: linear-gradient(135deg, #f4f7fb, #eef4ff); }
+.audio-admin-shell { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 24px 0 80px; }
+.audio-admin-head { margin-bottom: 22px; }
+.audio-admin-back { display: inline-flex; min-height: 40px; align-items: center; padding: 8px 14px; border: 1px solid #cad8ea; border-radius: 12px; background: #fff; color: #164e91; font-weight: 850; text-decoration: none; box-shadow: 0 5px 15px rgba(30, 60, 100, .08); }
+.audio-admin-head > p { margin: 22px 0 5px; color: #f05c0b; font-size: .78rem; font-weight: 950; letter-spacing: .14em; }
+.audio-admin-head h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.4rem); letter-spacing: -.04em; }
+.audio-admin-head > span { display: block; margin-top: 8px; color: #58718f; font-weight: 750; }
+.audio-admin-message { min-height: 0; margin-bottom: 14px; color: #0b7f62; font-weight: 800; }
+.audio-admin-message.error { color: #b12c39; }
+.hidden { display: none !important; }
+.audio-admin-chapters { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.audio-admin-chapter { display: grid; gap: 8px; min-height: 124px; padding: 17px; border: 1px solid #d5e1f0; border-radius: 18px; background: #fff; text-align: left; cursor: pointer; box-shadow: 0 8px 25px rgba(28, 56, 92, .07); transition: transform .16s ease, border-color .16s ease; }
+.audio-admin-chapter:hover, .audio-admin-chapter:focus-visible { transform: translateY(-2px); border-color: #6797e9; outline: none; }
+.audio-admin-chapter strong { font-size: 1.03rem; line-height: 1.3; }
+.audio-admin-chapter small { color: #5d7592; font-weight: 700; }
+.audio-admin-progress { height: 7px; margin-top: auto; overflow: hidden; border-radius: 999px; background: #e8eef5; }
+.audio-admin-progress i { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #77d39a, #20a56b); transition: width .25s ease; }
+.audio-admin-questions { margin-top: 8px; }
+.audio-admin-question-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+.audio-admin-question-head h2 { margin: 0; font-size: clamp(1.25rem, 4vw, 1.9rem); }
+.audio-admin-back-list { margin-left: auto; border: 1px solid #c7d6e7; border-radius: 11px; padding: 9px 13px; background: #fff; color: #174d8e; font: inherit; font-weight: 850; cursor: pointer; }
+.audio-admin-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin-bottom: 16px; }
+.audio-admin-toolbar input, .audio-admin-toolbar select { width: 100%; min-height: 46px; border: 1px solid #cbd9ea; border-radius: 13px; padding: 10px 13px; background: #fff; color: #14213a; font: inherit; }
+.audio-admin-question-list { display: grid; gap: 12px; }
+.audio-admin-question { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: start; overflow: hidden; padding: 17px; border: 1px solid #dae4ef; border-radius: 18px; background: #fff; box-shadow: 0 7px 22px rgba(30, 52, 84, .06); }
+.audio-admin-question-copy { min-width: 0; display: grid; gap: 11px; }
+.audio-admin-question-copy strong { font-size: 1rem; line-height: 1.48; }
+.audio-admin-question-copy img { width: min(230px, 100%); max-height: 180px; object-fit: contain; border-radius: 12px; background: #f1f4f7; }
+.audio-admin-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; padding-top: 42px; }
+.audio-admin-icon { display: grid; width: 43px; height: 43px; place-items: center; padding: 0; border: 1px solid #d8e1ec; border-radius: 50%; background: #fff; color: #42536d; cursor: pointer; box-shadow: 0 5px 12px rgba(26, 47, 78, .12); transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease; }
+.audio-admin-icon:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(26, 47, 78, .18); }
+.audio-admin-icon:disabled { cursor: not-allowed; opacity: .35; }
+.audio-admin-icon svg { width: 22px; height: 22px; }
+.audio-admin-icon.add, .audio-admin-icon.record { background: #fff2e9; border-color: #ffd1b7; color: #f05c0b; }
+.audio-admin-icon.listen { background: #e5f7f4; border-color: #abe5dc; color: #087e72; }
+.audio-admin-icon.pause { background: #e8eff8; border-color: #c7d8ef; }
+.audio-admin-icon.renew { background: #eeeaff; border-color: #cfc5ff; }
+.audio-admin-icon.save { background: #e4f5ed; border-color: #afe0c8; }
+.audio-admin-icon.trash { background: #ffeaeb; border-color: #ffc8ca; }
+.audio-admin-answer-badge { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; color: #fff; font-weight: 950; box-shadow: 0 5px 14px rgba(15, 23, 42, .14); }
+.audio-admin-answer-badge.is-true { background: linear-gradient(135deg, #29b86c, #087e52); }
+.audio-admin-answer-badge.is-false { background: linear-gradient(135deg, #f45d67, #c62939); }
+.audio-admin-player { flex: 1 1 180px; width: min(270px, 62vw); min-height: 42px; display: flex; align-items: center; gap: 9px; padding: 6px 11px 6px 7px; border-radius: 999px; background: #050505; box-shadow: 0 6px 17px rgba(13, 19, 32, .22); }
+.audio-admin-player-play { flex: 0 0 29px; width: 29px; height: 29px; padding: 0; border: 0; border-radius: 50%; background: #fff; color: #050505; cursor: pointer; }
+.audio-admin-player-play::before { content: ""; display: inline-block; margin-left: 2px; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-left: 9px solid currentColor; }
+.audio-admin-player-play.is-playing::before { width: 3px; height: 13px; margin-left: -3px; border: 0; background: currentColor; box-shadow: 6px 0 currentColor; }
+.audio-admin-player-progress { --progress: 0%; flex: 1; min-width: 42px; height: 16px; margin: 0; appearance: none; background: linear-gradient(90deg, #fff 0 var(--progress), rgba(255,255,255,.38) var(--progress) 100%) center / 100% 4px no-repeat; cursor: pointer; }
+.audio-admin-player-progress::-webkit-slider-runnable-track { height: 4px; background: transparent; }
+.audio-admin-player-progress::-webkit-slider-thumb { width: 13px; height: 13px; margin-top: -4.5px; appearance: none; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+.audio-admin-player-speed { flex: 0 0 auto; border: 0; padding: 2px 0; background: transparent; color: #fff; font: inherit; font-size: .78rem; font-weight: 900; cursor: pointer; }
+.audio-admin-inline-recorder { grid-column: 1 / -1; display: grid; gap: 12px; margin-top: 2px; padding: 14px; border: 1px solid #ffd8be; border-radius: 14px; background: linear-gradient(135deg, #fff7f1, #f7fbff); }
+.audio-admin-inline-status { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; color: #4d627d; font-weight: 800; font-size: .9rem; }
+.audio-admin-inline-status strong { color: #087e72; font-size: 1.3rem; }
+.audio-admin-inline-close { display: grid; width: 32px; height: 32px; place-items: center; border: 1px solid #dce5ee; border-radius: 50%; background: #fff; color: #52647e; cursor: pointer; }
+.audio-admin-inline-close svg { width: 18px; height: 18px; }
+.audio-admin-inline-preview { width: 100%; max-width: 440px; }
+.audio-admin-inline-controls { display: flex; flex-wrap: wrap; gap: 9px; }
+.audio-admin-empty { padding: 18px; border-radius: 14px; background: #fff; color: #637895; }
+.audio-admin-modal { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 20px; background: rgba(11,25,45,.56); }
+.audio-admin-modal-card { width: min(480px, 100%); max-height: 90vh; overflow: auto; padding: 24px; border-radius: 24px; background: #fff; box-shadow: 0 24px 75px rgba(0,0,0,.24); }
+.audio-admin-modal-card > p { margin: 0; color: #f05c0b; font-weight: 900; letter-spacing: .1em; }
+.audio-admin-modal-card h2 { margin: 7px 0 10px; }
+.audio-admin-dialog-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 9px; margin-top: 20px; }
+.audio-admin-dialog-actions button { border: 0; border-radius: 11px; padding: 11px 16px; background: #eaf0fa; color: #193252; font: inherit; font-weight: 900; cursor: pointer; }
+.audio-admin-dialog-actions button:last-child { background: #0a806f; color: #fff; }
+@media (max-width: 699px) {
+  .audio-admin-shell { width: min(100% - 20px, 600px); padding-top: 14px; }
+  .audio-admin-chapters { grid-template-columns: 1fr; gap: 11px; }
+  .audio-admin-question { grid-template-columns: 1fr; }
+  .audio-admin-actions { grid-column: 1; width: 100%; justify-content: flex-start; padding-top: 0; }
+  .audio-admin-player { width: auto; max-width: none; flex-basis: 145px; }
+  .audio-admin-toolbar { grid-template-columns: 1fr; }
+}

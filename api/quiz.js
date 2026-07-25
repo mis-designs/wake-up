@@ -1,10 +1,24 @@
 import crypto from "crypto";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { neon } from "@neondatabase/serverless";
 
 const ACCESS_GAS_URL = process.env.GAS_ACCESS_URL;
 const ACCESS_GAS_SECRET = process.env.GAS_SECRET;
 const QUIZ_GAS_URL = process.env.QUIZ_GAS_URL;
 const QUIZ_PROXY_SECRET = process.env.QUIZ_PROXY_SECRET;
 const SESSION_SECRET = process.env.SESSION_SECRET;
+const QUIZ_AUDIO_R2_BUCKET = process.env.QUIZ_AUDIO_R2_BUCKET;
+const QUIZ_AUDIO_R2_ACCOUNT_ID = process.env.QUIZ_AUDIO_R2_ACCOUNT_ID;
+const QUIZ_AUDIO_R2_ACCESS_KEY_ID = process.env.QUIZ_AUDIO_R2_ACCESS_KEY_ID;
+const QUIZ_AUDIO_R2_SECRET_ACCESS_KEY = process.env.QUIZ_AUDIO_R2_SECRET_ACCESS_KEY;
+const QUIZ_AUDIO_DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_URL || process.env.NEON_DATABASE_URL;
 const ADMIN_PHONE_NUMBERS = (process.env.ADMIN_PHONE_NUMBERS || "")
   .split(/[\s,;]+/)
   .map(normalizePhoneNumber)
@@ -35,6 +49,99 @@ const EXAM_QUIZ_MODES = {
     title: "Exam"
   }
 };
+
+let quizAudioDatabase = null;
+let quizAudioStorage = null;
+
+function isQuizAudioConfigured() {
+  return Boolean(
+    QUIZ_AUDIO_DATABASE_URL &&
+    QUIZ_AUDIO_R2_BUCKET &&
+    QUIZ_AUDIO_R2_ACCOUNT_ID &&
+    QUIZ_AUDIO_R2_ACCESS_KEY_ID &&
+    QUIZ_AUDIO_R2_SECRET_ACCESS_KEY
+  );
+}
+
+function getQuizAudioDatabase() {
+  if (!isQuizAudioConfigured()) {
+    const error = new Error("quiz_audio_not_configured");
+    error.statusCode = 503;
+    throw error;
+  }
+  if (!quizAudioDatabase) quizAudioDatabase = neon(QUIZ_AUDIO_DATABASE_URL);
+  return quizAudioDatabase;
+}
+
+function getQuizAudioStorage() {
+  if (!isQuizAudioConfigured()) {
+    const error = new Error("quiz_audio_not_configured");
+    error.statusCode = 503;
+    throw error;
+  }
+  if (!quizAudioStorage) {
+    quizAudioStorage = new S3Client({
+      region: "auto",
+      forcePathStyle: true,
+      endpoint: `https://${QUIZ_AUDIO_R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: QUIZ_AUDIO_R2_ACCESS_KEY_ID,
+        secretAccessKey: QUIZ_AUDIO_R2_SECRET_ACCESS_KEY
+      }
+    });
+  }
+  return quizAudioStorage;
+}
+
+function getQuizAudioIdentity(question) {
+  const normalizedQuestion = String(question || "")
+    .normalize("NFKC")
+    .toLocaleLowerCase("it-IT")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+
+  if (!normalizedQuestion || normalizedQuestion.length > 2500) {
+    const error = new Error("invalid_quiz_audio_question");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const fingerprint = crypto.createHash("sha256").update(normalizedQuestion).digest("hex");
+  const quizKey = `q_${fingerprint}`;
+  return {
+    quizKey,
+    audioKey: `quiz-explanations/v1/${quizKey}/explanation.webm`,
+    normalizedQuestion
+  };
+}
+
+async function requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly = false }) {
+  const access = await ensureAccess({ phone, deviceId, accessToken });
+  if (!access.ok) {
+    const error = new Error(access.error || "unauthorized");
+    error.statusCode = access.statusCode || 401;
+    throw error;
+  }
+  const isAdmin = access.role === "admin" || isAdminPhone(phone);
+  if (adminOnly && !isAdmin) {
+    const error = new Error("admin_forbidden");
+    error.statusCode = 403;
+    throw error;
+  }
+  return { access, isAdmin };
+}
+
+async function getQuizAudioRow(quizKey) {
+  const sql = getQuizAudioDatabase();
+  const rows = await sql`
+    SELECT quiz_key, audio_key, audio_mime_type, audio_duration_ms
+    FROM quiz_audio_explanations
+    WHERE quiz_key = ${quizKey}
+    LIMIT 1
+  `;
+  return rows[0] || null;
+}
 
 function calculateQuizResult(correctAnswers, totalQuestions) {
   const total = Number(totalQuestions) || 0;
@@ -270,6 +377,10 @@ function getRequestData(req) {
     chapters: body.chapters || query.chapters,
     mode: body.mode || query.mode,
     text: body.text || query.text,
+    question: body.question || query.question,
+    audioDurationMs: body.audioDurationMs || query.audioDurationMs,
+    audioBase64: body.audioBase64 || query.audioBase64,
+    audioMimeType: body.audioMimeType || query.audioMimeType,
     answers: body.answers
   };
 }
@@ -298,6 +409,15 @@ async function forwardGetAction({ action, chapters, text, mode, limit, count, qu
 
   const url = `${QUIZ_GAS_URL}?${params.toString()}`;
   const response = await fetch(url);
+  return readJsonResponse(response);
+}
+
+async function forwardCatalogAction() {
+  const params = new URLSearchParams({
+    action: "getCatalog",
+    token: QUIZ_PROXY_SECRET
+  });
+  const response = await fetch(`${QUIZ_GAS_URL}?${params.toString()}`);
   return readJsonResponse(response);
 }
 
@@ -561,7 +681,21 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { action, phone, deviceId, accessToken, quizSessionToken, chapters, mode, text, answers } = getRequestData(req);
+    const {
+      action,
+      phone,
+      deviceId,
+      accessToken,
+      quizSessionToken,
+      chapters,
+      mode,
+      text,
+      question,
+      audioDurationMs,
+      audioBase64,
+      audioMimeType,
+      answers
+    } = getRequestData(req);
     console.log("[api/quiz] action", action);
 
     if (!action) {
@@ -609,6 +743,184 @@ export default async function handler(req, res) {
           accessTokenExpiresAt: access.accessTokenExpiresAt
         } : {})
       });
+    }
+
+    if (req.method === "POST" && action === "getMagicBookCatalog") {
+      await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
+      const data = await forwardCatalogAction();
+      const rows = getQuizRows(data).map(normalizeQuestionRow).filter(row => row.id && row.question);
+      if (rows.length !== 786) {
+        const error = new Error("magic_catalog_count_mismatch");
+        error.statusCode = 409;
+        error.details = { expected: 786, received: rows.length };
+        throw error;
+      }
+      return res.status(200).json({
+        ok: true,
+        source: data?.source || "magicph-google-sheet-quiz",
+        count: rows.length,
+        quiz: rows.map(row => ({
+          id: row.id,
+          chapter: row.chapter,
+          question: row.question,
+          figure: row.figure,
+          correct: row.correct
+        }))
+      });
+    }
+
+    if (req.method === "POST" && action === "getQuizAudioStatus") {
+      const { isAdmin } = await requireQuizAudioAccess({ phone, deviceId, accessToken });
+      const { quizKey } = getQuizAudioIdentity(question);
+      const row = await getQuizAudioRow(quizKey);
+      return res.status(200).json({ ok: true, available: Boolean(row), isAdmin, quizKey });
+    }
+
+    if (req.method === "POST" && action === "getQuizAudioAdminOverview") {
+      await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
+      const sql = getQuizAudioDatabase();
+      const rows = await sql`SELECT quiz_key FROM quiz_audio_explanations`;
+      return res.status(200).json({ ok: true, quizKeys: rows.map(row => String(row.quiz_key)) });
+    }
+
+    if (req.method === "POST" && action === "getQuizAudioPlayback") {
+      await requireQuizAudioAccess({ phone, deviceId, accessToken });
+      const { quizKey } = getQuizAudioIdentity(question);
+      const row = await getQuizAudioRow(quizKey);
+      if (!row) return res.status(404).json({ error: "quiz_audio_not_found" });
+
+      const audioUrl = await getSignedUrl(
+        getQuizAudioStorage(),
+        new GetObjectCommand({ Bucket: QUIZ_AUDIO_R2_BUCKET, Key: row.audio_key }),
+        { expiresIn: 10 * 60 }
+      );
+      return res.status(200).json({
+        ok: true,
+        audioUrl,
+        mimeType: row.audio_mime_type || "audio/webm",
+        durationMs: row.audio_duration_ms || null
+      });
+    }
+
+    if (req.method === "POST" && action === "getQuizAudioBlob") {
+      await requireQuizAudioAccess({ phone, deviceId, accessToken });
+      const { quizKey } = getQuizAudioIdentity(question);
+      const row = await getQuizAudioRow(quizKey);
+      if (!row) return res.status(404).json({ error: "quiz_audio_not_found" });
+
+      const object = await getQuizAudioStorage().send(new GetObjectCommand({
+        Bucket: QUIZ_AUDIO_R2_BUCKET,
+        Key: row.audio_key
+      }));
+      const bytes = await object.Body.transformToByteArray();
+      res.statusCode = 200;
+      res.setHeader("Content-Type", row.audio_mime_type || "audio/webm");
+      res.setHeader("Content-Length", String(bytes.byteLength));
+      return res.end(Buffer.from(bytes));
+    }
+
+    if (req.method === "POST" && action === "saveQuizAudio") {
+      const { access } = await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
+      const encodedAudio = String(audioBase64 || "").replace(/^data:[^,]+,/, "");
+      if (!encodedAudio || encodedAudio.length > 4 * 1024 * 1024 || !/^[a-z0-9+/=]+$/i.test(encodedAudio)) {
+        const error = new Error("invalid_audio_payload");
+        error.statusCode = 400;
+        throw error;
+      }
+      const audioBuffer = Buffer.from(encodedAudio, "base64");
+      if (!audioBuffer.length || audioBuffer.length > 3 * 1024 * 1024) {
+        const error = new Error("audio_too_large_max_3mb");
+        error.statusCode = 413;
+        throw error;
+      }
+
+      const { quizKey, audioKey } = getQuizAudioIdentity(question);
+      const mimeType = String(audioMimeType || "audio/webm").startsWith("audio/") ? String(audioMimeType) : "audio/webm";
+      await getQuizAudioStorage().send(new PutObjectCommand({
+        Bucket: QUIZ_AUDIO_R2_BUCKET,
+        Key: audioKey,
+        Body: audioBuffer,
+        ContentType: mimeType
+      }));
+
+      const durationMs = Math.max(0, Math.min(60 * 60 * 1000, Math.round(Number(audioDurationMs) || 0))) || null;
+      const sql = getQuizAudioDatabase();
+      await sql`
+        INSERT INTO quiz_audio_explanations (
+          quiz_key, audio_key, audio_mime_type, audio_duration_ms, created_by, created_at, updated_at
+        ) VALUES (
+          ${quizKey}, ${audioKey}, ${mimeType}, ${durationMs}, ${String(phone || access.role || "")}, NOW(), NOW()
+        )
+        ON CONFLICT (quiz_key) DO UPDATE SET
+          audio_key = EXCLUDED.audio_key,
+          audio_mime_type = EXCLUDED.audio_mime_type,
+          audio_duration_ms = EXCLUDED.audio_duration_ms,
+          created_by = EXCLUDED.created_by,
+          updated_at = NOW()
+      `;
+      return res.status(200).json({ ok: true, quizKey });
+    }
+
+    if (req.method === "POST" && action === "createQuizAudioUpload") {
+      await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
+      const { quizKey, audioKey } = getQuizAudioIdentity(question);
+      const uploadUrl = await getSignedUrl(
+        getQuizAudioStorage(),
+        new PutObjectCommand({
+          Bucket: QUIZ_AUDIO_R2_BUCKET,
+          Key: audioKey,
+          ContentType: "audio/webm"
+        }),
+        { expiresIn: 5 * 60 }
+      );
+      return res.status(200).json({ ok: true, quizKey, audioKey, uploadUrl });
+    }
+
+    if (req.method === "POST" && action === "confirmQuizAudioUpload") {
+      await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
+      const { quizKey, audioKey } = getQuizAudioIdentity(question);
+      const uploadedObject = await getQuizAudioStorage().send(new HeadObjectCommand({
+        Bucket: QUIZ_AUDIO_R2_BUCKET,
+        Key: audioKey
+      }));
+      const uploadedBytes = Number(uploadedObject.ContentLength || 0);
+      if (!uploadedBytes || uploadedBytes > 20 * 1024 * 1024 || !String(uploadedObject.ContentType || "").startsWith("audio/")) {
+        const error = new Error("invalid_uploaded_audio");
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const durationMs = Math.max(0, Math.min(60 * 60 * 1000, Math.round(Number(audioDurationMs) || 0))) || null;
+      const sql = getQuizAudioDatabase();
+      await sql`
+        INSERT INTO quiz_audio_explanations (
+          quiz_key, audio_key, audio_mime_type, audio_duration_ms, created_by, created_at, updated_at
+        ) VALUES (
+          ${quizKey}, ${audioKey}, ${"audio/webm"}, ${durationMs}, ${String(phone || "")}, NOW(), NOW()
+        )
+        ON CONFLICT (quiz_key) DO UPDATE SET
+          audio_key = EXCLUDED.audio_key,
+          audio_mime_type = EXCLUDED.audio_mime_type,
+          audio_duration_ms = EXCLUDED.audio_duration_ms,
+          created_by = EXCLUDED.created_by,
+          updated_at = NOW()
+      `;
+      return res.status(200).json({ ok: true, quizKey });
+    }
+
+    if (req.method === "POST" && action === "deleteQuizAudio") {
+      await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
+      const { quizKey } = getQuizAudioIdentity(question);
+      const row = await getQuizAudioRow(quizKey);
+      if (row) {
+        await getQuizAudioStorage().send(new DeleteObjectCommand({
+          Bucket: QUIZ_AUDIO_R2_BUCKET,
+          Key: row.audio_key
+        }));
+        const sql = getQuizAudioDatabase();
+        await sql`DELETE FROM quiz_audio_explanations WHERE quiz_key = ${quizKey}`;
+      }
+      return res.status(200).json({ ok: true, deleted: Boolean(row), quizKey });
     }
 
     if (req.method === "GET" && GET_ACTIONS.has(action)) {

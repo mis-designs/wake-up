@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Aggiungi spiegazioni · Magic Book</title>
+  <link rel="stylesheet" href="aggiungi-spiegazioni.css?v=1">
+</head>
+<body class="audio-admin-page">
+  <main class="audio-admin-shell">
+    <header class="audio-admin-head">
+      <a class="audio-admin-back" href="/">← Home</a>
+      <p>MAGIC BOOK · ADMIN</p>
+      <h1>Aggiungi spiegazioni</h1>
+      <span id="audioAdminGlobalProgress">Caricamento dei 786 quiz…</span>
+    </header>
+    <div id="audioAdminMessage" class="audio-admin-message" role="status" aria-live="polite"></div>
+    <section id="audioAdminChapters" class="audio-admin-chapters" aria-label="Capitoli Magic Book"></section>
+    <section id="audioAdminQuestions" class="audio-admin-questions hidden" aria-live="polite"></section>
+  </main>
+  <div class="audio-admin-modal hidden" id="audioAdminDialog" role="dialog" aria-modal="true" aria-labelledby="audioAdminDialogTitle">
+    <div class="audio-admin-modal-card">
+      <p>MAGIC BOOK</p>
+      <h2 id="audioAdminDialogTitle">Conferma</h2>
+      <div id="audioAdminDialogText"></div>
+      <details id="audioAdminDialogDetails" class="hidden"><summary>Dettaglio per sviluppatore</summary><code id="audioAdminDialogCode"></code></details>
+      <div class="audio-admin-dialog-actions">
+        <button id="audioAdminDialogCancel" type="button">Annulla</button>
+        <button id="audioAdminDialogConfirm" type="button">Continua</button>
+      </div>
+    </div>
+  </div>
+  <script src="aggiungi-spiegazioni.js?v=1"></script>
+</body>
+</html>
