@@ -33,6 +33,9 @@ il player, l'URL temporaneo viene revocato. In caso di errore il caricamento
 viene azzerato, così il pulsante può essere premuto di nuovo senza ricaricare
 la pagina.
 
+Il riferimento allo script nella pagina quiz è stato incrementato a `quiz.js?v=34`
+per evitare che il browser riutilizzi la versione precedente dalla cache.
+
 ## Obiettivo richiesto
 
 Condividere le spiegazioni audio soltanto per i quiz presenti nel Magic Book (788 domande):
