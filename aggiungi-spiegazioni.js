@@ -339,7 +339,42 @@ async function restoreDraft(item) { const draft = await getDraft(item.key); if (
 function closeInline() { const item = state.inline; if (!item) { state.activeQuestionId = null; return; } clearInterval(item.timer); if (item.recorder && item.recorder.state !== "inactive") item.recorder.stop(); item.stream?.getTracks().forEach(track => track.stop()); if (item.blobUrl) URL.revokeObjectURL(item.blobUrl); state.inline = null; state.activeQuestionId = null; }
 async function requestCloseInline() { const item = state.inline; if (!item || item.saving) return; if (hasUnsaved(item)) { const accepted = await openDialog({ title: "Registrazione non salvata", text: "Vuoi chiudere il pannello e abbandonare l'audio non salvato?", confirmLabel: "Abbandona e chiudi", cancelLabel: "Continua a modificare", danger: true }); if (!accepted) return; } if (item.retryable) await deleteDraft(item.key); closeInline(); renderChapter(); }
 
-async function ensureStream() { const item = state.inline; if (!item) return false; if (item.stream?.active) return true; try { item.stream = await navigator.mediaDevices.getUserMedia({ audio: true }); item.status = "Microfono pronto."; return true; } catch (error) { item.status = "Microfono bloccato: consenti il microfono dal browser."; renderChapter(); await showProblem("Microfono non disponibile", item.status, error); return false; } }
+async function microphonePermissionState() {
+  if (!navigator.permissions?.query) return "unknown";
+  try { return (await navigator.permissions.query({ name: "microphone" })).state || "unknown"; } catch (_) { return "unknown"; }
+}
+
+async function ensureStream() {
+  const item = state.inline;
+  if (!item) return false;
+  if (item.stream?.active) return true;
+  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+    item.status = "Microfono non disponibile: apri il sito con HTTPS.";
+    renderChapter();
+    return false;
+  }
+
+  // This call is made directly from the microphone button handler. When the
+  // browser permission is still undecided, the browser shows its own prompt.
+  try {
+    item.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    item.status = "Microfono pronto.";
+    return true;
+  } catch (error) {
+    const permissionAfter = await microphonePermissionState();
+    if (permissionAfter === "denied" || error?.name === "NotAllowedError" || error?.name === "PermissionDeniedError") {
+      // Do not cover the browser permission flow with a second application
+      // dialog. The inline message remains visible if the user denied it.
+      item.status = "Microfono bloccato. Apri il lucchetto del sito e scegli Consenti, poi riprova.";
+      renderChapter();
+      return false;
+    }
+    item.status = "Impossibile accedere al microfono. Riprova.";
+    renderChapter();
+    await showProblem("Microfono non disponibile", item.status, error);
+    return false;
+  }
+}
 async function startRecording() { const item = state.inline; if (!item || !(await ensureStream())) return; if (item.recorder?.state === "paused") item.recorder.resume(); else { const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm"; item.mimeType = mimeType; item.recorder = new MediaRecorder(item.stream, { mimeType, audioBitsPerSecond: 64000 }); item.chunks = []; item.recorder.ondataavailable = event => { if (event.data?.size) item.chunks.push(event.data); }; item.recorder.start(); } item.phase = "recording"; item.startedAt = Date.now(); clearInterval(item.timer); item.timer = setInterval(updateTimer, 250); item.status = "Registrazione in corso…"; renderChapter(); }
 async function pauseRecording() { const item = state.inline; if (!item || item.recorder?.state !== "recording") return; item.elapsed += Date.now() - item.startedAt; item.recorder.requestData(); item.recorder.pause(); item.phase = "paused"; clearInterval(item.timer); item.status = "In pausa. Puoi riprendere, ascoltare o salvare."; await new Promise(resolve => setTimeout(resolve, 100)); buildBlob(item); renderChapter(); }
 async function discardDraft() { const item = state.inline; if (!item) return; const accepted = await openDialog({ title: "Eliminare la registrazione?", text: "La registrazione non salvata verrà eliminata.", confirmLabel: "Elimina", cancelLabel: "Mantieni", danger: true }); if (!accepted) return; await deleteDraft(item.key); const activeId = item.activeQuestionId; const question = item.question; closeInline(); state.inline = { activeQuestionId: activeId, key: question.quizKey, question, saved: item.saved, phase: "ready", chunks: [], elapsed: 0, startedAt: 0, status: "Registrazione eliminata.", stream: null, recorder: null, blob: null, blobUrl: "", timer: null, saving: false, retryable: false }; state.activeQuestionId = activeId; renderChapter(); }
@@ -350,7 +385,11 @@ async function saveInline() {
   item.saving = true; item.status = "Caricamento sicuro in corso…"; renderChapter();
   try {
     const created = await api("createQuizAudioUpload", { question: item.question.question });
-    const upload = await fetch(created.uploadUrl, { method: "PUT", headers: { "Content-Type": item.mimeType || "audio/webm" }, body: item.blob });
+    // The signed R2 URL is generated for this exact header. Do not send the
+    // MediaRecorder codec suffix (e.g. ";codecs=opus"), otherwise R2 rejects
+    // the request even though the locally recorded audio is valid.
+    const uploadContentType = String(created.uploadContentType || "audio/webm");
+    const upload = await fetch(created.uploadUrl, { method: "PUT", headers: { "Content-Type": uploadContentType }, body: item.blob });
     if (!upload.ok) throw new Error(`r2_upload_${upload.status}`);
     await api("confirmQuizAudioUpload", { question: item.question.question, audioDurationMs: elapsed(item) });
     await deleteDraft(item.key); state.audioKeys.add(item.key); closeInline(); renderChapters(); renderChapter();

@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v24-quiz-help-hint";
+const CACHE_NAME = "magicbook-pwa-v25-admin-entry";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -6,7 +6,7 @@ const STATIC_ASSETS = [
   "/style.css?v=37",
   "/homebg.css?v=3",
   "/mystyle.css?v=26",
-  "/script.js?v=16",
+  "/script.js?v=17",
   "/quiz.js?v=29",
   "/quiz-help.css?v=20260714-magic-help-v4",
   "/quiz-help.js?v=20260714-magic-help-v4",

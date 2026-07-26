@@ -93,6 +93,14 @@ function getQuizAudioStorage() {
   return quizAudioStorage;
 }
 
+// R2 signs the exact Content-Type header. MediaRecorder often reports
+// "audio/webm;codecs=opus", while the signed upload uses "audio/webm".
+// Keep one canonical value for both the signed PUT and the database row.
+function normalizeQuizAudioMimeType(value) {
+  const mimeType = String(value || "audio/webm").split(";", 1)[0].trim().toLowerCase();
+  return mimeType === "audio/webm" ? "audio/webm" : "audio/webm";
+}
+
 function getQuizAudioIdentity(question) {
   const normalizedQuestion = String(question || "")
     .normalize("NFKC")
@@ -843,7 +851,7 @@ export default async function handler(req, res) {
       }
 
       const { quizKey, audioKey } = getQuizAudioIdentity(question);
-      const mimeType = String(audioMimeType || "audio/webm").startsWith("audio/") ? String(audioMimeType) : "audio/webm";
+      const mimeType = normalizeQuizAudioMimeType(audioMimeType);
       await getQuizAudioStorage().send(new PutObjectCommand({
         Bucket: QUIZ_AUDIO_R2_BUCKET,
         Key: audioKey,
@@ -881,7 +889,7 @@ export default async function handler(req, res) {
         }),
         { expiresIn: 5 * 60 }
       );
-      return res.status(200).json({ ok: true, quizKey, audioKey, uploadUrl });
+      return res.status(200).json({ ok: true, quizKey, audioKey, uploadUrl, uploadContentType: "audio/webm" });
     }
 
     if (req.method === "POST" && action === "confirmQuizAudioUpload") {
@@ -904,7 +912,7 @@ export default async function handler(req, res) {
         INSERT INTO quiz_audio_explanations (
           quiz_key, audio_key, audio_mime_type, audio_duration_ms, created_by, created_at, updated_at
         ) VALUES (
-          ${quizKey}, ${audioKey}, ${"audio/webm"}, ${durationMs}, ${String(phone || "")}, NOW(), NOW()
+          ${quizKey}, ${audioKey}, ${normalizeQuizAudioMimeType(uploadedObject.ContentType)}, ${durationMs}, ${String(phone || "")}, NOW(), NOW()
         )
         ON CONFLICT (quiz_key) DO UPDATE SET
           audio_key = EXCLUDED.audio_key,

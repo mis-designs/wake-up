@@ -1654,7 +1654,9 @@ function setProfileIconVisible(visible) {
 
   const hasPhone = Boolean(getCurrentSessionPhone());
   profileBtn.classList.toggle("hidden", !visible || !hasPhone);
-  adminEntryBtn?.classList.toggle("hidden", !visible || !hasPhone || !isCurrentSessionAdmin());
+  // L'accesso admin è indipendente dal pannello profilo: alcune schermate
+  // nascondono il profilo, ma non devono far sparire l'ingresso admin.
+  adminEntryBtn?.classList.toggle("hidden", !hasPhone || !isCurrentSessionAdmin());
   if (!visible) {
     profilePanel?.classList.add("hidden");
     profileBtn.setAttribute("aria-expanded", "false");
@@ -3929,8 +3931,17 @@ function isCurrentSessionAdmin() {
 function updateAdminEntryVisibility() {
   const btn = document.getElementById("adminEntryBtn");
   if (!btn) return;
-  btn.classList.toggle("hidden", !isCurrentSessionAdmin());
+  btn.classList.toggle("hidden", !getCurrentSessionPhone() || !isCurrentSessionAdmin());
 }
+
+function refreshAdminEntryOnResume() {
+  if (document.visibilityState === "hidden") return;
+  updateAdminEntryVisibility();
+}
+
+window.addEventListener("pageshow", refreshAdminEntryOnResume);
+window.addEventListener("focus", refreshAdminEntryOnResume);
+document.addEventListener("visibilitychange", refreshAdminEntryOnResume);
 
 function getAdminStatus(user) {
   const expiry = user?.expiry ? new Date(user.expiry) : null;
@@ -4751,7 +4762,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("/service-worker.js?v=17", { updateViaCache: "none" })
+      .register("/service-worker.js?v=18", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });
