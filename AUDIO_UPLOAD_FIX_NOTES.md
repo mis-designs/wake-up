@@ -30,6 +30,10 @@ La richiesta viene eseguita esclusivamente dal clic sul pulsante microfono, cos�
 
 La cache del service worker è stata incrementata per eliminare le pagine eventualmente salvate con il vecchio header. Anche il riferimento allo script principale è stato aggiornato, così il nuovo service worker viene rilevato senza dipendere dalla copia precedente. La pagina admin viene inoltre esclusa dalla cache e configurata su Vercel con `no-cache`, così riceve sempre l’header corrente. Dopo la pubblicazione il nuovo service worker deve attivarsi prima di riprovare.
 
+Se il browser blocca la richiesta diretta firmata verso R2 con `Failed to fetch`, il client usa ora un fallback same-origin verso `saveQuizAudio`. Il server salva comunque lo stesso oggetto su R2 e il draft locale rimane disponibile fino alla conferma riuscita.
+
+La pagina admin carica lo script aggiornato con versione `v=8` per evitare che il browser mantenga il vecchio flusso di upload.
+
 ## Pubblicazione
 
 La modifica è locale nel progetto Magic Book. Dopo il controllo su un dispositivo mobile, pubblicare il progetto su Vercel e fare un aggiornamento completo della pagina.

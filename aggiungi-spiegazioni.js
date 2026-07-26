@@ -318,6 +318,14 @@ function createAudioPlayer(question) {
 
 function elapsed(item) { return item ? item.elapsed + (item.phase === "recording" ? Date.now() - item.startedAt : 0) : 0; }
 function buildBlob(item) { if (!item?.chunks?.length) return null; if (item.blobUrl) URL.revokeObjectURL(item.blobUrl); item.blob = new Blob(item.chunks, { type: item.mimeType || "audio/webm" }); item.blobUrl = URL.createObjectURL(item.blob); return item.blob; }
+function blobAsDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("audio_read_failed"));
+    reader.readAsDataURL(blob);
+  });
+}
 function hasUnsaved(item) { return Boolean(item && (item.phase === "recording" || item.phase === "paused" || item.chunks.length || item.blob)); }
 function updateTimer() { const timer = document.getElementById("audioInlineTimer"); if (timer) timer.textContent = formatTime(elapsed(state.inline)); }
 
@@ -389,9 +397,22 @@ async function saveInline() {
     // MediaRecorder codec suffix (e.g. ";codecs=opus"), otherwise R2 rejects
     // the request even though the locally recorded audio is valid.
     const uploadContentType = String(created.uploadContentType || "audio/webm");
-    const upload = await fetch(created.uploadUrl, { method: "PUT", headers: { "Content-Type": uploadContentType }, body: item.blob });
-    if (!upload.ok) throw new Error(`r2_upload_${upload.status}`);
-    await api("confirmQuizAudioUpload", { question: item.question.question, audioDurationMs: elapsed(item) });
+    try {
+      const upload = await fetch(created.uploadUrl, { method: "PUT", headers: { "Content-Type": uploadContentType }, body: item.blob });
+      if (!upload.ok) throw new Error(`r2_upload_${upload.status}`);
+      await api("confirmQuizAudioUpload", { question: item.question.question, audioDurationMs: elapsed(item) });
+    } catch {
+      // Same-origin fallback: this also works when the browser CSP blocks the
+      // direct signed R2 request. The local recording is never discarded.
+      item.status = "Caricamento protetto in corso…";
+      renderChapter();
+      await api("saveQuizAudio", {
+        question: item.question.question,
+        audioBase64: await blobAsDataUrl(item.blob),
+        audioMimeType: "audio/webm",
+        audioDurationMs: elapsed(item)
+      });
+    }
     await deleteDraft(item.key); state.audioKeys.add(item.key); closeInline(); renderChapters(); renderChapter();
   } catch (error) {
     await putDraft(item); item.saving = false; item.retryable = true; item.status = "Caricamento non riuscito. L'audio è ancora pronto: premi Salva per riprovare."; renderChapter(); await showProblem("Caricamento non riuscito", "La registrazione è stata conservata in questo quiz. Premi Salva per riprovare.", error);
