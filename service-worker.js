@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v26-microphone-permission";
+const CACHE_NAME = "magicbook-pwa-v27-microphone-permission";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -46,6 +46,13 @@ self.addEventListener("fetch", event => {
 
   if (request.mode === "navigate" && (url.pathname === "/index.html" || url.pathname === "/quiz.html")) {
     event.respondWith(Response.redirect("/", 302));
+    return;
+  }
+
+  // The admin recorder must always receive the current Permissions-Policy
+  // header. Never serve or store an older cached copy of this page.
+  if (url.pathname === "/aggiungi-spiegazioni" || url.pathname === "/aggiungi-spiegazioni.html") {
+    event.respondWith(fetch(request, { cache: "no-store" }));
     return;
   }
 

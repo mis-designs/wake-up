@@ -43,6 +43,24 @@
       ]
     },
     {
+      "source": "/aggiungi-spiegazioni",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/aggiungi-spiegazioni.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/service-worker.js",
       "headers": [
         {
