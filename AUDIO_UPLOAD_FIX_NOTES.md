@@ -28,6 +28,8 @@ La richiesta viene eseguita esclusivamente dal clic sul pulsante microfono, cos�
 
 È stato inoltre corretto l'header `Permissions-Policy`: il valore precedente `microphone=()` disabilitava completamente il microfono e impediva al browser di mostrare qualsiasi richiesta. Ora il sito usa `microphone=(self)`.
 
+La cache del service worker è stata incrementata per eliminare le pagine eventualmente salvate con il vecchio header. Anche il riferimento allo script principale è stato aggiornato, così il nuovo service worker viene rilevato senza dipendere dalla copia precedente. Dopo la pubblicazione il nuovo service worker deve attivarsi prima di riprovare.
+
 ## Pubblicazione
 
 La modifica è locale nel progetto Magic Book. Dopo il controllo su un dispositivo mobile, pubblicare il progetto su Vercel e fare un aggiornamento completo della pagina.
