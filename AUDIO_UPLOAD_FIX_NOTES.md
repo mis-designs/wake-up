@@ -26,6 +26,8 @@ La firma R2 veniva generata con l'header `Content-Type: audio/webm`, mentre il b
 
 La richiesta viene eseguita esclusivamente dal clic sul pulsante microfono, così il browser può mostrare il proprio popup nativo quando il permesso è ancora da decidere. Se l'utente ha già bloccato il microfono per il dominio, il sito non mostra un secondo popup interno: lascia un messaggio nel pannello e indica di usare il lucchetto del browser scegliendo **Consenti**.
 
+È stato inoltre corretto l'header `Permissions-Policy`: il valore precedente `microphone=()` disabilitava completamente il microfono e impediva al browser di mostrare qualsiasi richiesta. Ora il sito usa `microphone=(self)`.
+
 ## Pubblicazione
 
 La modifica è locale nel progetto Magic Book. Dopo il controllo su un dispositivo mobile, pubblicare il progetto su Vercel e fare un aggiornamento completo della pagina.
