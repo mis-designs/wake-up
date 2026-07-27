@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v30-live-catalog-reconcile";
+const CACHE_NAME = "magicbook-pwa-v31-legacy-review-card";
 const STATIC_ASSETS = [
   "/",
   "/index.html",

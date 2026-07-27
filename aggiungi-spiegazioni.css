@@ -91,6 +91,103 @@ body { margin: 0; min-width: 320px; background: linear-gradient(135deg, #f4f7fb,
   .audio-admin-toolbar { grid-template-columns: 1fr; }
   .audio-admin-filter { min-width: 0; }
 }
+
+/* Dedicated entry point for reviewing only genuinely ambiguous legacy audio. */
+.audio-admin-review-entry {
+  position: relative;
+  border-color: #fed7aa;
+  background: linear-gradient(145deg, #fff7ed, #ffffff 68%);
+}
+
+.audio-admin-review-entry:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.audio-admin-review-entry.has-items:hover,
+.audio-admin-review-entry.has-items:focus-visible {
+  border-color: #f97316;
+  box-shadow: 0 12px 28px rgba(249, 115, 22, .15);
+}
+
+.audio-admin-review-entry-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.audio-admin-review-entry-top i {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  background: #ffedd5;
+  color: #ea580c;
+}
+
+.audio-admin-review-entry-top svg { width: 22px; height: 22px; }
+.audio-admin-review-entry-top b {
+  display: grid;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 9px;
+  place-items: center;
+  border-radius: 999px;
+  background: #ea580c;
+  color: #fff;
+  font-size: .9rem;
+}
+
+.audio-admin-review-entry.is-clear {
+  border-color: #bbdfcc;
+  background: linear-gradient(145deg, #f0fdf4, #ffffff 68%);
+}
+
+.audio-admin-review-entry.is-clear .audio-admin-review-entry-top i {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.audio-admin-review-entry.is-clear .audio-admin-review-entry-top b { background: #16a34a; }
+.audio-admin-review-entry-status {
+  width: fit-content;
+  margin-top: auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #ffedd5;
+  color: #c2410c;
+  font-size: .76rem;
+  font-weight: 900;
+}
+
+.audio-admin-review-entry.is-clear .audio-admin-review-entry-status {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.audio-admin-review-back {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+  padding: 10px;
+  border: 1px solid #d8e1ec;
+  border-radius: 13px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.audio-admin-review-back img { width: 20px; height: 20px; object-fit: contain; }
+.audio-admin-review-back:hover,
+.audio-admin-review-back:focus-visible { border-color: #f97316; outline: 3px solid rgba(249, 115, 22, .14); }
+
+@media (max-width: 700px) {
+  .audio-admin-review-heading { display: grid; grid-template-columns: auto 1fr auto; }
+  .audio-admin-review-heading > div { min-width: 0; }
+}
 .audio-admin-legacy-review {
   margin: 0 0 24px;
   padding: clamp(16px, 2.2vw, 28px);

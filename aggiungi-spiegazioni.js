@@ -21,6 +21,7 @@ const state = {
   collisionRegistry: { collisions: {} },
   query: "",
   filter: "all",
+  reviewOpen: false,
   inline: null,
   activeQuestionId: null,
   playing: null
@@ -86,7 +87,11 @@ function quizAudioPayload(question) {
   };
 }
 function identityFor(question) { return QuizAudioIdentity.getIdentity(questionText(question), questionFigure(question)); }
-function isLegacyAmbiguous(legacyQuizKey) { return Boolean(state.collisionRegistry?.collisions?.[legacyQuizKey]); }
+function legacyCollisionCandidates(legacyQuizKey) {
+  const candidates = state.collisionRegistry?.collisions?.[legacyQuizKey]?.candidates;
+  return Array.isArray(candidates) ? candidates : [];
+}
+function isLegacyAmbiguous(legacyQuizKey) { return legacyCollisionCandidates(legacyQuizKey).length > 1; }
 function isIdentityAvailable(identity) {
   return state.audioKeys.has(identity.quizKey)
     || (state.audioKeys.has(identity.legacyQuizKey) && !isLegacyAmbiguous(identity.legacyQuizKey));
@@ -204,6 +209,7 @@ function chapterProgress(chapter) {
 function renderChapters() {
   const root = $("audioAdminChapters");
   root.replaceChildren();
+  root.append(createLegacyReviewEntry());
   state.chapters.forEach((chapter, index) => {
     const progress = chapterProgress(chapter);
     const button = document.createElement("button");
@@ -219,13 +225,15 @@ function renderChapters() {
 }
 
 function openChapter(index) {
-  state.selected = index; state.query = ""; state.filter = "all"; state.activeQuestionId = null; closeInline();
-  $("audioAdminChapters").classList.add("hidden"); $("audioAdminQuestions").classList.remove("hidden"); renderChapter();
+  state.selected = index; state.reviewOpen = false; state.query = ""; state.filter = "all"; state.activeQuestionId = null; closeInline();
+  $("audioAdminLegacyReview").classList.add("hidden"); $("audioAdminChapters").classList.add("hidden"); $("audioAdminQuestions").classList.remove("hidden"); renderChapter();
   history.replaceState({}, "", `/aggiungi-spiegazioni?capitolo=${index + 1}`);
 }
 
 function closeChapter() {
-  state.selected = null; state.activeQuestionId = null; closeInline(); $("audioAdminQuestions").classList.add("hidden"); $("audioAdminChapters").classList.remove("hidden"); renderChapters(); history.replaceState({}, "", "/aggiungi-spiegazioni");
+  state.selected = null; state.reviewOpen = false; state.activeQuestionId = null; closeInline();
+  $("audioAdminLegacyReview").classList.add("hidden"); $("audioAdminQuestions").classList.add("hidden"); $("audioAdminChapters").classList.remove("hidden");
+  renderChapters(); history.replaceState({}, "", "/aggiungi-spiegazioni");
 }
 
 function visibleQuestions() {
@@ -490,17 +498,25 @@ $("audioAdminDialog").addEventListener("click", event => { if (event.target === 
 async function migrateSafeLegacyAudios() {
   const identities = new Map();
   state.chapters.forEach(chapter => chapter.questions.forEach(question => {
-    if (!identities.has(question.identity.legacyQuizKey)) identities.set(question.identity.legacyQuizKey, question);
+    if (!identities.has(question.identity.legacyQuizKey)) identities.set(question.identity.legacyQuizKey, []);
+    identities.get(question.identity.legacyQuizKey).push(question);
   }));
   const pending = [...state.audioKeys]
     .filter(key => key.startsWith("q_") && !isLegacyAmbiguous(key))
-    .map(key => identities.get(key))
+    .map(key => {
+      const choices = identities.get(key) || [];
+      const candidates = legacyCollisionCandidates(key);
+      if (candidates.length !== 1) return choices[0];
+      const targetFigure = QuizAudioIdentity.normalizeFigure(candidates[0].figureKey);
+      return choices.find(question => question.identity.figureKey === targetFigure);
+    })
     .filter(question => question && !state.audioKeys.has(question.identity.quizKey))
     .filter(Boolean);
   for (const question of pending) {
     try {
       const result = await api("migrateLegacyQuizAudio", quizAudioPayload(question));
       state.audioKeys.delete(question.identity.legacyQuizKey);
+      state.legacyReviewKeys.delete(question.identity.legacyQuizKey);
       state.audioKeys.add(result.quizKey);
     } catch (_) {
       // The API still serves safe legacy audio while this optional cleanup is pending.
@@ -512,7 +528,37 @@ function legacyReviewGroups() {
   return [...state.legacyReviewKeys]
     .filter(key => state.audioKeys.has(key))
     .map(key => ({ legacyQuizKey: key, ...state.collisionRegistry.collisions[key] }))
-    .filter(group => group.question && Array.isArray(group.candidates));
+    .filter(group => group.question && Array.isArray(group.candidates) && group.candidates.length > 1);
+}
+
+function createLegacyReviewEntry() {
+  const groups = legacyReviewGroups();
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `audio-admin-chapter audio-admin-review-entry${groups.length ? " has-items" : " is-clear"}`;
+  button.disabled = groups.length === 0;
+  button.innerHTML = `
+    <span class="audio-admin-review-entry-top">
+      <i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6l8-3Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v5m0 3h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></i>
+      <b>${groups.length}</b>
+    </span>
+    <strong>Controlla audio vecchi</strong>
+    <small>${groups.length ? `${groups.length} audio da sistemare` : "Tutto in ordine"}</small>
+    <span class="audio-admin-review-entry-status">${groups.length ? "Apri controllo" : "Nessun intervento richiesto"}</span>`;
+  if (groups.length) button.addEventListener("click", () => showLegacyReviews());
+  return button;
+}
+
+function showLegacyReviews(updateHistory = true) {
+  if (!legacyReviewGroups().length) return closeChapter();
+  closeInline();
+  state.selected = null;
+  state.reviewOpen = true;
+  $("audioAdminChapters").classList.add("hidden");
+  $("audioAdminQuestions").classList.add("hidden");
+  renderLegacyReviews();
+  if (updateHistory) history.replaceState({}, "", "/aggiungi-spiegazioni?controllo-audio=1");
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 async function assignLegacyAudio(group, candidate) {
@@ -532,8 +578,9 @@ async function assignLegacyAudio(group, candidate) {
     state.audioKeys.delete(group.legacyQuizKey);
     state.legacyReviewKeys.delete(group.legacyQuizKey);
     state.audioKeys.add(result.quizKey);
-    renderLegacyReviews();
     renderChapters();
+    if (legacyReviewGroups().length) renderLegacyReviews();
+    else closeChapter();
     if (state.selected !== null) renderChapter();
   } catch (error) {
     await showProblem("Associazione non riuscita", "L'audio è rimasto intatto. Puoi riprovare.", error);
@@ -545,18 +592,24 @@ function renderLegacyReviews() {
   if (!root) return;
   const groups = legacyReviewGroups();
   root.replaceChildren();
-  root.classList.toggle("hidden", groups.length === 0);
-  if (!groups.length) return;
+  root.classList.toggle("hidden", !state.reviewOpen || groups.length === 0);
+  if (!state.reviewOpen || !groups.length) return;
 
   const heading = document.createElement("div");
   heading.className = "audio-admin-review-heading";
+  const back = document.createElement("button");
+  back.type = "button";
+  back.className = "audio-admin-review-back";
+  back.setAttribute("aria-label", "Torna ai capitoli");
+  back.innerHTML = '<img src="icons/back.png" alt="" aria-hidden="true">';
+  back.addEventListener("click", closeChapter);
   const headingCopy = document.createElement("div");
   const eyebrow = document.createElement("span"); eyebrow.textContent = "CONTROLLO SICUREZZA";
   const title = document.createElement("h2"); title.textContent = "Audio da associare alla figura corretta";
   const description = document.createElement("p");
   description.textContent = `${groups.length} ${groups.length === 1 ? "audio richiede" : "audio richiedono"} una verifica. Nessuna registrazione verrà cancellata.`;
   const count = document.createElement("strong"); count.textContent = String(groups.length);
-  headingCopy.append(eyebrow, title, description); heading.append(headingCopy, count); root.append(heading);
+  headingCopy.append(eyebrow, title, description); heading.append(back, headingCopy, count); root.append(heading);
 
   groups.forEach(group => {
     const card = document.createElement("article"); card.className = "audio-admin-review-card";
@@ -622,11 +675,19 @@ async function load() {
     });
     state.chapters = [...byChapter.entries()].sort((a, b) => Number(a[0]) - Number(b[0])).map(([key, questions]) => ({ key, name: `Capitolo ${key}`, questions }));
     await migrateSafeLegacyAudios();
-    renderLegacyReviews();
     renderChapters(); showMessage("");
-    const chapterParam = Number(new URLSearchParams(location.search).get("capitolo")); if (chapterParam > 0 && chapterParam <= state.chapters.length) openChapter(chapterParam - 1);
+    const params = new URLSearchParams(location.search);
+    const chapterParam = Number(params.get("capitolo"));
+    if (params.get("controllo-audio") === "1" && legacyReviewGroups().length) showLegacyReviews(false);
+    else if (chapterParam > 0 && chapterParam <= state.chapters.length) openChapter(chapterParam - 1);
   } catch (error) { showMessage("Impossibile caricare il catalogo audio.", "error"); await showProblem("Caricamento non riuscito", "Controlla la configurazione server e la pubblicazione del catalogo Apps Script.", error); }
 }
 
-window.addEventListener("popstate", () => { const index = Number(new URLSearchParams(location.search).get("capitolo")) - 1; if (index >= 0 && index < state.chapters.length) openChapter(index); else closeChapter(); });
+window.addEventListener("popstate", () => {
+  const params = new URLSearchParams(location.search);
+  const index = Number(params.get("capitolo")) - 1;
+  if (params.get("controllo-audio") === "1" && legacyReviewGroups().length) showLegacyReviews(false);
+  else if (index >= 0 && index < state.chapters.length) openChapter(index);
+  else closeChapter();
+});
 load();
