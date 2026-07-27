@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v27-microphone-permission";
+const CACHE_NAME = "magicbook-pwa-v28-quiz-audio-identity-v2";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -7,7 +7,8 @@ const STATIC_ASSETS = [
   "/homebg.css?v=3",
   "/mystyle.css?v=26",
   "/script.js?v=18",
-  "/quiz.js?v=29",
+  "/quiz-audio-identity.js?v=2",
+  "/quiz.js?v=38-audio-identity-v2",
   "/quiz-help.css?v=20260714-magic-help-v4",
   "/quiz-help.js?v=20260714-magic-help-v4",
   "/data/patente/quiz-help-runtime-v2.json?v=20260713-magic-help-v2",

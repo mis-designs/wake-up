@@ -13,7 +13,18 @@ const FILTER_OPTIONS = [
   { value: "available", label: "Audio aggiunti" }
 ];
 
-const state = { chapters: [], selected: null, audioKeys: new Set(), query: "", filter: "all", inline: null, activeQuestionId: null, playing: null };
+const state = {
+  chapters: [],
+  selected: null,
+  audioKeys: new Set(),
+  legacyReviewKeys: new Set(),
+  collisionRegistry: { collisions: {} },
+  query: "",
+  filter: "all",
+  inline: null,
+  activeQuestionId: null,
+  playing: null
+};
 let dialogResolver = null;
 const DRAFT_DB = "magicph-quiz-audio-drafts";
 
@@ -64,14 +75,21 @@ async function apiBlob(action, payload = {}) {
   };
 }
 
-function normalize(text) {
-  return String(text || "").normalize("NFKC").toLocaleLowerCase("it-IT").replace(/[^\p{L}\p{N}]+/gu, " ").trim().replace(/\s+/g, " ");
+function normalize(text) { return QuizAudioIdentity.normalizeQuestion(text); }
+function questionText(question) { return String(question?.question ?? question?.q ?? ""); }
+function questionFigure(question) { return question?.figure ?? question?.img ?? ""; }
+function quizAudioPayload(question) {
+  return {
+    question: questionText(question),
+    figure: QuizAudioIdentity.normalizeFigure(questionFigure(question)),
+    quizAudioIdentityVersion: QuizAudioIdentity.VERSION
+  };
 }
-
-async function keyFor(text) {
-  const bytes = new TextEncoder().encode(normalize(text));
-  const hash = await crypto.subtle.digest("SHA-256", bytes);
-  return `q_${[...new Uint8Array(hash)].map(value => value.toString(16).padStart(2, "0")).join("")}`;
+function identityFor(question) { return QuizAudioIdentity.getIdentity(questionText(question), questionFigure(question)); }
+function isLegacyAmbiguous(legacyQuizKey) { return Boolean(state.collisionRegistry?.collisions?.[legacyQuizKey]); }
+function isIdentityAvailable(identity) {
+  return state.audioKeys.has(identity.quizKey)
+    || (state.audioKeys.has(identity.legacyQuizKey) && !isLegacyAmbiguous(identity.legacyQuizKey));
 }
 
 function formatTime(ms) {
@@ -179,7 +197,7 @@ function chapterName(chapter, index) {
 }
 
 function chapterProgress(chapter) {
-  const done = chapter.questions.filter(question => state.audioKeys.has(question.quizKey)).length;
+  const done = chapter.questions.filter(question => isIdentityAvailable(question.identity)).length;
   return { done, total: chapter.questions.length, percent: chapter.questions.length ? Math.round(done / chapter.questions.length * 100) : 0 };
 }
 
@@ -215,7 +233,7 @@ function visibleQuestions() {
   if (!chapter) return [];
   return chapter.questions.filter(question => {
     const textMatch = !state.query || normalize(question.question).includes(normalize(state.query));
-    const hasAudio = state.audioKeys.has(question.quizKey);
+    const hasAudio = isIdentityAvailable(question.identity);
     return textMatch && (state.filter === "all" || (state.filter === "available" && hasAudio) || (state.filter === "missing" && !hasAudio));
   });
 }
@@ -269,7 +287,7 @@ function questionRow(question, position) {
   if (imageSource) { const image = document.createElement("img"); image.src = imageSource; image.alt = "Figura della domanda"; image.loading = "lazy"; image.onerror = () => image.remove(); copy.append(image); }
   const actions = document.createElement("div"); actions.className = "audio-admin-actions";
   const activeId = `chapter-${state.selected}-quiz-${question.id}`;
-  if (state.audioKeys.has(question.quizKey)) {
+  if (isIdentityAvailable(question.identity)) {
     const player = createAudioPlayer(question); const edit = iconButton("renew", "Registra di nuovo", RENEW_ICON); edit.addEventListener("click", () => beginInline(question, activeId)); actions.append(player, answerBadge(question.correct), edit);
   } else {
     const add = iconButton("add", "Aggiungi spiegazione", ADD_ICON); add.addEventListener("click", () => beginInline(question, activeId)); actions.append(answerBadge(question.correct), add);
@@ -284,7 +302,7 @@ function stopCurrentPlayer(except = null) {
   state.playing.audio.pause(); state.playing.button.classList.remove("is-playing"); state.playing = null;
 }
 
-function createAudioPlayer(question) {
+function createAudioPlayer(question, { legacy = false } = {}) {
   const player = document.createElement("div"); player.className = "audio-admin-player"; player.setAttribute("aria-label", "Player spiegazione audio");
   const button = document.createElement("button"); button.type = "button"; button.className = "audio-admin-player-play"; button.setAttribute("aria-label", "Riproduci spiegazione");
   const progress = document.createElement("input"); progress.type = "range"; progress.min = "0"; progress.max = "100"; progress.step = "0.1"; progress.value = "0"; progress.className = "audio-admin-player-progress"; progress.setAttribute("aria-label", "Avanzamento audio"); progress.setAttribute("aria-valuemin", "0"); progress.setAttribute("aria-valuemax", "100"); progress.setAttribute("aria-valuenow", "0");
@@ -298,8 +316,30 @@ function createAudioPlayer(question) {
   const stopFrame = () => { if (frame) cancelAnimationFrame(frame); frame = 0; };
   const tick = () => { paint(); if (!audio.paused && !audio.ended) frame = requestAnimationFrame(tick); };
   const waitForReady = () => { if (audio.readyState >= HTMLMediaElement.HAVE_METADATA) return Promise.resolve(); return new Promise((resolve, reject) => { const timeout = setTimeout(() => { cleanup(); reject(new Error("audio_metadata_timeout")); }, 10000); const cleanup = () => { clearTimeout(timeout); audio.removeEventListener("loadedmetadata", ready); audio.removeEventListener("canplay", ready); audio.removeEventListener("error", failed); }; const ready = () => { cleanup(); resolve(); }; const failed = () => { cleanup(); reject(new Error("audio_media_error")); }; audio.addEventListener("loadedmetadata", ready); audio.addEventListener("canplay", ready); audio.addEventListener("error", failed); }); };
-  const loadBlob = async () => { const result = await apiBlob("getQuizAudioBlob", { question: question.question }); if (objectUrl) URL.revokeObjectURL(objectUrl); durationHint = Math.max(durationHint, Math.max(0, Number(result.durationMs) || 0) / 1000); objectUrl = URL.createObjectURL(result.blob); audio.src = objectUrl; sourceMode = "blob"; audio.load(); };
-  const load = async () => { if (audio.src) return; if (!loading) { button.classList.add("is-loading"); loading = api("getQuizAudioPlayback", { question: question.question }).then(playback => { if (!playback?.audioUrl) throw new Error("missing_audio_url"); durationHint = Math.max(durationHint, Math.max(0, Number(playback.durationMs) || 0) / 1000); audio.src = String(playback.audioUrl); sourceMode = "signed"; audio.load(); }).catch(async error => { await loadBlob(); if (sourceMode !== "blob") throw error; }).finally(() => { loading = null; button.classList.remove("is-loading"); }); } return loading; };
+  const loadBlob = async () => {
+    const result = await apiBlob(legacy ? "getLegacyQuizAudioBlob" : "getQuizAudioBlob", quizAudioPayload(question));
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    durationHint = Math.max(durationHint, Math.max(0, Number(result.durationMs) || 0) / 1000);
+    objectUrl = URL.createObjectURL(result.blob); audio.src = objectUrl; sourceMode = "blob"; audio.load();
+  };
+  const load = async () => {
+    if (audio.src) return;
+    if (!loading) {
+      button.classList.add("is-loading");
+      const playbackRequest = legacy
+        ? Promise.reject(new Error("legacy_blob_only"))
+        : api("getQuizAudioPlayback", quizAudioPayload(question));
+      loading = playbackRequest.then(playback => {
+        if (!playback?.audioUrl) throw new Error("missing_audio_url");
+        durationHint = Math.max(durationHint, Math.max(0, Number(playback.durationMs) || 0) / 1000);
+        audio.src = String(playback.audioUrl); sourceMode = "signed"; audio.load();
+      }).catch(async error => {
+        await loadBlob();
+        if (sourceMode !== "blob") throw error;
+      }).finally(() => { loading = null; button.classList.remove("is-loading"); });
+    }
+    return loading;
+  };
   button.addEventListener("click", async () => { try { if (!audio.src) await load(); if (audio.paused) { try { await waitForReady(); stopCurrentPlayer(instance); state.playing = instance; await audio.play(); } catch (error) { if (sourceMode !== "signed" || blobFallbackTried) throw error; blobFallbackTried = true; clearSource(); await loadBlob(); await waitForReady(); stopCurrentPlayer(instance); state.playing = instance; await audio.play(); } } else audio.pause(); } catch (error) { loading = null; clearSource(); await showProblem("Audio non disponibile", "Il sito non riesce a recuperare questa spiegazione.", error); } });
   progress.addEventListener("pointerdown", event => { seeking = true; progress.setPointerCapture?.(event.pointerId); });
   progress.addEventListener("touchstart", () => { seeking = true; }, { passive: true });
@@ -339,7 +379,7 @@ async function beginInline(question, activeId) {
   }
   if (previous?.retryable) await deleteDraft(previous.key);
   closeInline();
-  state.inline = { activeQuestionId: activeId, key: question.quizKey, question, saved: state.audioKeys.has(question.quizKey), phase: "ready", chunks: [], elapsed: 0, startedAt: 0, status: "Microfono non avviato. Premi il microfono per iniziare.", stream: null, recorder: null, blob: null, blobUrl: "", timer: null, saving: false, retryable: false };
+  state.inline = { activeQuestionId: activeId, key: question.quizKey, question, saved: isIdentityAvailable(question.identity), phase: "ready", chunks: [], elapsed: 0, startedAt: 0, status: "Microfono non avviato. Premi il microfono per iniziare.", stream: null, recorder: null, blob: null, blobUrl: "", timer: null, saving: false, retryable: false };
   state.activeQuestionId = activeId; renderChapter(); void restoreDraft(state.inline);
 }
 
@@ -392,7 +432,8 @@ async function saveInline() {
   const item = state.inline; if (!item) return; if (item.phase === "recording") await pauseRecording(); if (!item.blob) { await showProblem("Nessun audio da salvare", "Premi il microfono, registra la spiegazione e poi salva.", "audio_empty"); return; }
   item.saving = true; item.status = "Caricamento sicuro in corso…"; renderChapter();
   try {
-    const created = await api("createQuizAudioUpload", { question: item.question.question });
+    const payload = quizAudioPayload(item.question);
+    const created = await api("createQuizAudioUpload", payload);
     // The signed R2 URL is generated for this exact header. Do not send the
     // MediaRecorder codec suffix (e.g. ";codecs=opus"), otherwise R2 rejects
     // the request even though the locally recorded audio is valid.
@@ -400,14 +441,14 @@ async function saveInline() {
     try {
       const upload = await fetch(created.uploadUrl, { method: "PUT", headers: { "Content-Type": uploadContentType }, body: item.blob });
       if (!upload.ok) throw new Error(`r2_upload_${upload.status}`);
-      await api("confirmQuizAudioUpload", { question: item.question.question, audioDurationMs: elapsed(item) });
+      await api("confirmQuizAudioUpload", { ...payload, audioDurationMs: elapsed(item) });
     } catch {
       // Same-origin fallback: this also works when the browser CSP blocks the
       // direct signed R2 request. The local recording is never discarded.
       item.status = "Caricamento protetto in corso…";
       renderChapter();
       await api("saveQuizAudio", {
-        question: item.question.question,
+        ...payload,
         audioBase64: await blobAsDataUrl(item.blob),
         audioMimeType: "audio/webm",
         audioDurationMs: elapsed(item)
@@ -433,29 +474,153 @@ function inlineRecorder() {
 
 async function removeSaved(question) {
   const accepted = await openDialog({ title: "Eliminare la spiegazione?", text: "L'audio sparirà per gli utenti in entrambi i progetti.", confirmLabel: "Elimina", cancelLabel: "Annulla", danger: true }); if (!accepted) return;
-  try { await api("deleteQuizAudio", { question: question.question }); state.audioKeys.delete(question.quizKey); if (state.inline?.key === question.quizKey) closeInline(); renderChapters(); renderChapter(); } catch (error) { await showProblem("Eliminazione non riuscita", "Il sito non è riuscito a eliminare l'audio.", error); }
+  try {
+    await api("deleteQuizAudio", quizAudioPayload(question));
+    state.audioKeys.delete(question.quizKey);
+    state.audioKeys.delete(question.identity.legacyQuizKey);
+    if (state.inline?.key === question.quizKey) closeInline();
+    renderChapters(); renderChapter();
+  } catch (error) { await showProblem("Eliminazione non riuscita", "Il sito non è riuscito a eliminare l'audio.", error); }
 }
 
 $("audioAdminDialogCancel").addEventListener("click", () => closeDialog(false));
 $("audioAdminDialogConfirm").addEventListener("click", () => closeDialog(true));
 $("audioAdminDialog").addEventListener("click", event => { if (event.target === $("audioAdminDialog")) closeDialog(false); });
 
+async function migrateSafeLegacyAudios() {
+  const identities = new Map();
+  state.chapters.forEach(chapter => chapter.questions.forEach(question => {
+    if (!identities.has(question.identity.legacyQuizKey)) identities.set(question.identity.legacyQuizKey, question);
+  }));
+  const pending = [...state.audioKeys]
+    .filter(key => key.startsWith("q_") && !isLegacyAmbiguous(key))
+    .map(key => identities.get(key))
+    .filter(question => question && !state.audioKeys.has(question.identity.quizKey))
+    .filter(Boolean);
+  for (const question of pending) {
+    try {
+      const result = await api("migrateLegacyQuizAudio", quizAudioPayload(question));
+      state.audioKeys.delete(question.identity.legacyQuizKey);
+      state.audioKeys.add(result.quizKey);
+    } catch (_) {
+      // The API still serves safe legacy audio while this optional cleanup is pending.
+    }
+  }
+}
+
+function legacyReviewGroups() {
+  return [...state.legacyReviewKeys]
+    .filter(key => state.audioKeys.has(key))
+    .map(key => ({ legacyQuizKey: key, ...state.collisionRegistry.collisions[key] }))
+    .filter(group => group.question && Array.isArray(group.candidates));
+}
+
+async function assignLegacyAudio(group, candidate) {
+  const accepted = await openDialog({
+    title: "Confermare questa figura?",
+    text: "L'audio esistente verrà associato soltanto a questa domanda e a questa figura, in entrambi i sistemi.",
+    confirmLabel: "Associa audio",
+    cancelLabel: "Annulla"
+  });
+  if (!accepted) return;
+  try {
+    const result = await api("assignLegacyQuizAudio", {
+      question: group.question,
+      figure: candidate.figureKey,
+      quizAudioIdentityVersion: QuizAudioIdentity.VERSION
+    });
+    state.audioKeys.delete(group.legacyQuizKey);
+    state.legacyReviewKeys.delete(group.legacyQuizKey);
+    state.audioKeys.add(result.quizKey);
+    renderLegacyReviews();
+    renderChapters();
+    if (state.selected !== null) renderChapter();
+  } catch (error) {
+    await showProblem("Associazione non riuscita", "L'audio è rimasto intatto. Puoi riprovare.", error);
+  }
+}
+
+function renderLegacyReviews() {
+  const root = $("audioAdminLegacyReview");
+  if (!root) return;
+  const groups = legacyReviewGroups();
+  root.replaceChildren();
+  root.classList.toggle("hidden", groups.length === 0);
+  if (!groups.length) return;
+
+  const heading = document.createElement("div");
+  heading.className = "audio-admin-review-heading";
+  const headingCopy = document.createElement("div");
+  const eyebrow = document.createElement("span"); eyebrow.textContent = "CONTROLLO SICUREZZA";
+  const title = document.createElement("h2"); title.textContent = "Audio da associare alla figura corretta";
+  const description = document.createElement("p");
+  description.textContent = `${groups.length} ${groups.length === 1 ? "audio richiede" : "audio richiedono"} una verifica. Nessuna registrazione verrà cancellata.`;
+  const count = document.createElement("strong"); count.textContent = String(groups.length);
+  headingCopy.append(eyebrow, title, description); heading.append(headingCopy, count); root.append(heading);
+
+  groups.forEach(group => {
+    const card = document.createElement("article"); card.className = "audio-admin-review-card";
+    const intro = document.createElement("div"); intro.className = "audio-admin-review-intro";
+    const copy = document.createElement("div");
+    const label = document.createElement("small"); label.textContent = "REGISTRAZIONE ESISTENTE";
+    const questionTitle = document.createElement("h3"); questionTitle.textContent = group.question;
+    const instruction = document.createElement("p"); instruction.textContent = "Ascolta l'audio e scegli la figura che l'admin stava spiegando.";
+    copy.append(label, questionTitle, instruction);
+    const firstCandidate = group.candidates[0];
+    intro.append(copy, createAudioPlayer({ question: group.question, figure: firstCandidate?.figureKey || "" }, { legacy: true }));
+    card.append(intro);
+
+    const candidates = document.createElement("div"); candidates.className = "audio-admin-review-candidates";
+    group.candidates.forEach(candidate => {
+      const option = document.createElement("button"); option.type = "button"; option.className = "audio-admin-review-candidate";
+      const originalFigure = candidate.figures?.[0] || candidate.figureKey;
+      const source = figureUrl(originalFigure);
+      if (source) {
+        const image = document.createElement("img"); image.src = source; image.alt = `Figura ${candidate.figureKey}`; image.loading = "lazy";
+        image.onerror = () => image.remove();
+        option.append(image);
+      } else {
+        const noFigure = document.createElement("span"); noFigure.className = "audio-admin-review-no-image"; noFigure.textContent = "Senza figura"; option.append(noFigure);
+      }
+      const meta = document.createElement("span"); meta.className = "audio-admin-review-candidate-meta";
+      const figureName = document.createElement("strong"); figureName.textContent = candidate.figureKey === "none" ? "Nessuna figura" : candidate.figureKey;
+      meta.append(figureName);
+      if (candidate.correctValues?.length === 1) meta.append(answerBadge(candidate.correctValues[0]));
+      option.append(meta);
+      option.addEventListener("click", () => assignLegacyAudio(group, candidate));
+      candidates.append(option);
+    });
+    card.append(candidates); root.append(card);
+  });
+}
+
 async function load() {
   if (!isAdmin()) { showMessage("Accesso admin richiesto.", "error"); return; }
   try {
     showMessage("Caricamento catalogo Magic Book…");
-    const [catalog, overview] = await Promise.all([api("getMagicBookCatalog"), api("getQuizAudioAdminOverview")]);
+    const [catalog, overview, collisionRegistry] = await Promise.all([
+      api("getMagicBookCatalog"),
+      api("getQuizAudioAdminOverview"),
+      fetch("data/quiz-audio-legacy-collisions-v1.json", { cache: "no-store" }).then(response => {
+        if (!response.ok) throw new Error(`collision_registry_${response.status}`);
+        return response.json();
+      })
+    ]);
     const rows = Array.isArray(catalog.quiz) ? catalog.quiz : [];
     if (rows.length !== 788) throw new Error(`magic_catalog_count_mismatch_${rows.length}`);
-    const keys = await Promise.all(rows.map(row => keyFor(row.question)));
+    const identities = await Promise.all(rows.map(identityFor));
+    state.collisionRegistry = collisionRegistry;
     state.audioKeys = new Set(overview.quizKeys || []);
+    state.legacyReviewKeys = new Set(overview.legacyReviewKeys || []);
     const byChapter = new Map();
     rows.forEach((row, index) => {
       const chapter = String(row.chapter ?? "").trim() || "0";
       if (!byChapter.has(chapter)) byChapter.set(chapter, []);
-      byChapter.get(chapter).push({ ...row, quizKey: keys[index] });
+      byChapter.get(chapter).push({ ...row, identity: identities[index], quizKey: identities[index].quizKey });
     });
     state.chapters = [...byChapter.entries()].sort((a, b) => Number(a[0]) - Number(b[0])).map(([key, questions]) => ({ key, name: `Capitolo ${key}`, questions }));
+    await migrateSafeLegacyAudios();
+    renderLegacyReviews();
     renderChapters(); showMessage("");
     const chapterParam = Number(new URLSearchParams(location.search).get("capitolo")); if (chapterParam > 0 && chapterParam <= state.chapters.length) openChapter(chapterParam - 1);
   } catch (error) { showMessage("Impossibile caricare il catalogo audio.", "error"); await showProblem("Caricamento non riuscito", "Controlla la configurazione server e la pubblicazione del catalogo Apps Script.", error); }

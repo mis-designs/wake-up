@@ -595,6 +595,11 @@ function animateSharedAudioProgress() {
 }
 
 async function requestSharedAudio(action, question) {
+  const identityPayload = {
+    question: String(question?.question || question || ""),
+    figure: QuizAudioIdentity.normalizeFigure(question?.figure ?? ""),
+    quizAudioIdentityVersion: QuizAudioIdentity.VERSION
+  };
   const response = await fetch(QUIZ_API, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -603,7 +608,7 @@ async function requestSharedAudio(action, question) {
       phone: getQuizPhone(),
       deviceId: getQuizDeviceId(),
       accessToken: getQuizAccessToken(),
-      question: String(question || "")
+      ...identityPayload
     })
   });
   const data = await response.json().catch(() => ({}));
@@ -612,6 +617,11 @@ async function requestSharedAudio(action, question) {
 }
 
 async function requestSharedAudioBlob(question) {
+  const identityPayload = {
+    question: String(question?.question || question || ""),
+    figure: QuizAudioIdentity.normalizeFigure(question?.figure ?? ""),
+    quizAudioIdentityVersion: QuizAudioIdentity.VERSION
+  };
   const response = await fetch(QUIZ_API, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -620,7 +630,7 @@ async function requestSharedAudioBlob(question) {
       phone: getQuizPhone(),
       deviceId: getQuizDeviceId(),
       accessToken: getQuizAccessToken(),
-      question: String(question || "")
+      ...identityPayload
     })
   });
 
@@ -671,10 +681,13 @@ async function updateSharedAudioAvailability(question) {
   const requestId = sharedAudioRequestId;
   if (TRIAL_MODE || !question?.question || !sharedAudioPlayer) return;
   try {
-    const data = await requestSharedAudio("getQuizAudioStatus", question.question);
+    const data = await requestSharedAudio("getQuizAudioStatus", question);
     if (requestId !== sharedAudioRequestId) return;
     if (data.available) {
-      sharedAudioQuestion = String(question.question);
+      sharedAudioQuestion = {
+        question: String(question.question),
+        figure: question.figure ?? ""
+      };
       sharedAudioDurationHint = Math.max(0, Number(data.durationMs) || 0) / 1000;
       sharedAudioPlayer.classList.remove("hidden");
       sharedAudioPlayer.setAttribute("aria-hidden", "false");

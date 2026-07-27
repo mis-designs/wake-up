@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { createRequire } from "module";
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -8,6 +9,13 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { neon } from "@neondatabase/serverless";
+
+const require = createRequire(import.meta.url);
+const {
+  QUIZ_AUDIO_IDENTITY_VERSION,
+  getQuizAudioIdentity
+} = require("../quiz-audio-identity.cjs");
+const quizAudioLegacyRegistry = require("../data/quiz-audio-legacy-collisions-v1.json");
 
 const ACCESS_GAS_URL = process.env.GAS_ACCESS_URL;
 const ACCESS_GAS_SECRET = process.env.GAS_SECRET;
@@ -101,27 +109,16 @@ function normalizeQuizAudioMimeType(value) {
   return mimeType === "audio/webm" ? "audio/webm" : "audio/webm";
 }
 
-function getQuizAudioIdentity(question) {
-  const normalizedQuestion = String(question || "")
-    .normalize("NFKC")
-    .toLocaleLowerCase("it-IT")
-    .replace(/[^\p{L}\p{N}]+/gu, " ")
-    .trim()
-    .replace(/\s+/g, " ");
-
-  if (!normalizedQuestion || normalizedQuestion.length > 2500) {
-    const error = new Error("invalid_quiz_audio_question");
-    error.statusCode = 400;
+function assertQuizAudioIdentityVersion(value) {
+  if (Number(value) !== QUIZ_AUDIO_IDENTITY_VERSION) {
+    const error = new Error("quiz_audio_identity_upgrade_required");
+    error.statusCode = 409;
     throw error;
   }
+}
 
-  const fingerprint = crypto.createHash("sha256").update(normalizedQuestion).digest("hex");
-  const quizKey = `q_${fingerprint}`;
-  return {
-    quizKey,
-    audioKey: `quiz-explanations/v1/${quizKey}/explanation.webm`,
-    normalizedQuestion
-  };
+function isLegacyQuizAudioAmbiguous(legacyQuizKey) {
+  return Boolean(quizAudioLegacyRegistry?.collisions?.[legacyQuizKey]);
 }
 
 async function requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly = false }) {
@@ -149,6 +146,108 @@ async function getQuizAudioRow(quizKey) {
     LIMIT 1
   `;
   return rows[0] || null;
+}
+
+async function findQuizAudioRow(identity, { allowAmbiguousLegacy = false } = {}) {
+  const current = await getQuizAudioRow(identity.quizKey);
+  if (current) return { row: current, matchedQuizKey: identity.quizKey, legacy: false, requiresReview: false };
+  const legacy = await getQuizAudioRow(identity.legacyQuizKey);
+  if (!legacy) return { row: null, matchedQuizKey: "", legacy: false, requiresReview: false };
+  const requiresReview = isLegacyQuizAudioAmbiguous(identity.legacyQuizKey);
+  if (requiresReview && !allowAmbiguousLegacy) {
+    return { row: null, matchedQuizKey: identity.legacyQuizKey, legacy: true, requiresReview: true };
+  }
+  return { row: legacy, matchedQuizKey: identity.legacyQuizKey, legacy: true, requiresReview };
+}
+
+async function moveLegacyQuizAudio(identity, { requireAmbiguous }) {
+  const ambiguous = isLegacyQuizAudioAmbiguous(identity.legacyQuizKey);
+  if (Boolean(requireAmbiguous) !== ambiguous) {
+    const error = new Error(requireAmbiguous ? "quiz_audio_legacy_not_ambiguous" : "quiz_audio_requires_review");
+    error.statusCode = 409;
+    throw error;
+  }
+  if (ambiguous) {
+    const candidates = quizAudioLegacyRegistry.collisions[identity.legacyQuizKey]?.candidates || [];
+    if (!candidates.some(candidate => candidate.figureKey === identity.figureKey)) {
+      const error = new Error("quiz_audio_figure_not_in_legacy_candidates");
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+  const existingTarget = await getQuizAudioRow(identity.quizKey);
+  if (existingTarget) {
+    if (ambiguous) {
+      const error = new Error("quiz_audio_target_already_has_audio");
+      error.statusCode = 409;
+      throw error;
+    }
+    const sql = getQuizAudioDatabase();
+    await sql`DELETE FROM quiz_audio_explanations WHERE quiz_key = ${identity.legacyQuizKey}`;
+    return existingTarget;
+  }
+  const sql = getQuizAudioDatabase();
+  const moved = await sql`
+    WITH legacy AS (
+      SELECT audio_key, audio_mime_type, audio_duration_ms, created_by, created_at, updated_at
+      FROM quiz_audio_explanations
+      WHERE quiz_key = ${identity.legacyQuizKey}
+    ),
+    upserted AS (
+      INSERT INTO quiz_audio_explanations (
+        quiz_key, audio_key, audio_mime_type, audio_duration_ms, created_by, created_at, updated_at
+      )
+      SELECT
+        ${identity.quizKey}, audio_key, audio_mime_type, audio_duration_ms, created_by, created_at, NOW()
+      FROM legacy
+      ON CONFLICT (quiz_key) DO NOTHING
+      RETURNING quiz_key
+    )
+    DELETE FROM quiz_audio_explanations
+    WHERE quiz_key = ${identity.legacyQuizKey}
+      AND EXISTS (SELECT 1 FROM upserted)
+    RETURNING quiz_key
+  `;
+  if (!moved.length) {
+    const existing = await getQuizAudioRow(identity.quizKey);
+    if (!existing) {
+      const error = new Error("quiz_audio_legacy_not_found");
+      error.statusCode = 404;
+      throw error;
+    }
+  }
+  return getQuizAudioRow(identity.quizKey);
+}
+
+async function deleteQuizAudioAssociation(matchedQuizKey, row) {
+  const sql = getQuizAudioDatabase();
+  const deleted = await sql`
+    DELETE FROM quiz_audio_explanations
+    WHERE quiz_key = ${matchedQuizKey}
+    RETURNING audio_key
+  `;
+  if (!deleted.length || !row?.audio_key) return false;
+  const references = await sql`
+    SELECT 1 FROM quiz_audio_explanations
+    WHERE audio_key = ${row.audio_key}
+    LIMIT 1
+  `;
+  if (!references.length) {
+    await getQuizAudioStorage().send(new DeleteObjectCommand({
+      Bucket: QUIZ_AUDIO_R2_BUCKET,
+      Key: row.audio_key
+    }));
+  }
+  return true;
+}
+
+async function retireSafeLegacyAssociation(identity) {
+  if (isLegacyQuizAudioAmbiguous(identity.legacyQuizKey)) return;
+  const sql = getQuizAudioDatabase();
+  await sql`
+    DELETE FROM quiz_audio_explanations
+    WHERE quiz_key = ${identity.legacyQuizKey}
+  `;
 }
 
 function calculateQuizResult(correctAnswers, totalQuestions) {
@@ -386,6 +485,8 @@ function getRequestData(req) {
     mode: body.mode || query.mode,
     text: body.text || query.text,
     question: body.question || query.question,
+    figure: Object.prototype.hasOwnProperty.call(body, "figure") ? body.figure : query.figure,
+    quizAudioIdentityVersion: body.quizAudioIdentityVersion ?? query.quizAudioIdentityVersion,
     audioDurationMs: body.audioDurationMs || query.audioDurationMs,
     audioBase64: body.audioBase64 || query.audioBase64,
     audioMimeType: body.audioMimeType || query.audioMimeType,
@@ -699,6 +800,8 @@ export default async function handler(req, res) {
       mode,
       text,
       question,
+      figure,
+      quizAudioIdentityVersion,
       audioDurationMs,
       audioBase64,
       audioMimeType,
@@ -779,14 +882,16 @@ export default async function handler(req, res) {
 
     if (req.method === "POST" && action === "getQuizAudioStatus") {
       const { isAdmin } = await requireQuizAudioAccess({ phone, deviceId, accessToken });
-      const { quizKey } = getQuizAudioIdentity(question);
-      const row = await getQuizAudioRow(quizKey);
+      assertQuizAudioIdentityVersion(quizAudioIdentityVersion);
+      const identity = getQuizAudioIdentity(question, figure);
+      const result = await findQuizAudioRow(identity);
       return res.status(200).json({
         ok: true,
-        available: Boolean(row),
+        available: Boolean(result.row),
+        requiresReview: result.requiresReview,
         isAdmin,
-        quizKey,
-        durationMs: row?.audio_duration_ms || null
+        quizKey: identity.quizKey,
+        durationMs: result.row?.audio_duration_ms || null
       });
     }
 
@@ -794,34 +899,65 @@ export default async function handler(req, res) {
       await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
       const sql = getQuizAudioDatabase();
       const rows = await sql`SELECT quiz_key FROM quiz_audio_explanations`;
-      return res.status(200).json({ ok: true, quizKeys: rows.map(row => String(row.quiz_key)) });
+      const quizKeys = rows.map(row => String(row.quiz_key));
+      return res.status(200).json({
+        ok: true,
+        quizKeys,
+        legacyReviewKeys: quizKeys.filter(key => isLegacyQuizAudioAmbiguous(key))
+      });
     }
 
     if (req.method === "POST" && action === "getQuizAudioPlayback") {
       await requireQuizAudioAccess({ phone, deviceId, accessToken });
-      const { quizKey } = getQuizAudioIdentity(question);
-      const row = await getQuizAudioRow(quizKey);
-      if (!row) return res.status(404).json({ error: "quiz_audio_not_found" });
+      assertQuizAudioIdentityVersion(quizAudioIdentityVersion);
+      const identity = getQuizAudioIdentity(question, figure);
+      const result = await findQuizAudioRow(identity);
+      if (result.requiresReview) return res.status(409).json({ error: "quiz_audio_requires_review" });
+      if (!result.row) return res.status(404).json({ error: "quiz_audio_not_found" });
 
       const audioUrl = await getSignedUrl(
         getQuizAudioStorage(),
-        new GetObjectCommand({ Bucket: QUIZ_AUDIO_R2_BUCKET, Key: row.audio_key }),
+        new GetObjectCommand({ Bucket: QUIZ_AUDIO_R2_BUCKET, Key: result.row.audio_key }),
         { expiresIn: 10 * 60 }
       );
       return res.status(200).json({
         ok: true,
         audioUrl,
-        mimeType: row.audio_mime_type || "audio/webm",
-        durationMs: row.audio_duration_ms || null
+        mimeType: result.row.audio_mime_type || "audio/webm",
+        durationMs: result.row.audio_duration_ms || null
       });
     }
 
     if (req.method === "POST" && action === "getQuizAudioBlob") {
       await requireQuizAudioAccess({ phone, deviceId, accessToken });
-      const { quizKey } = getQuizAudioIdentity(question);
-      const row = await getQuizAudioRow(quizKey);
-      if (!row) return res.status(404).json({ error: "quiz_audio_not_found" });
+      assertQuizAudioIdentityVersion(quizAudioIdentityVersion);
+      const identity = getQuizAudioIdentity(question, figure);
+      const result = await findQuizAudioRow(identity);
+      if (result.requiresReview) return res.status(409).json({ error: "quiz_audio_requires_review" });
+      if (!result.row) return res.status(404).json({ error: "quiz_audio_not_found" });
 
+      const object = await getQuizAudioStorage().send(new GetObjectCommand({
+        Bucket: QUIZ_AUDIO_R2_BUCKET,
+        Key: result.row.audio_key
+      }));
+      const bytes = await object.Body.transformToByteArray();
+      res.statusCode = 200;
+      res.setHeader("Content-Type", result.row.audio_mime_type || "audio/webm");
+      res.setHeader("Content-Length", String(bytes.byteLength));
+      res.setHeader("X-Audio-Duration-Ms", String(result.row.audio_duration_ms || 0));
+      res.setHeader("Access-Control-Expose-Headers", "X-Audio-Duration-Ms");
+      return res.end(Buffer.from(bytes));
+    }
+
+    if (req.method === "POST" && action === "getLegacyQuizAudioBlob") {
+      await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
+      assertQuizAudioIdentityVersion(quizAudioIdentityVersion);
+      const identity = getQuizAudioIdentity(question, figure);
+      if (!isLegacyQuizAudioAmbiguous(identity.legacyQuizKey)) {
+        return res.status(409).json({ error: "quiz_audio_legacy_not_ambiguous" });
+      }
+      const row = await getQuizAudioRow(identity.legacyQuizKey);
+      if (!row) return res.status(404).json({ error: "quiz_audio_legacy_not_found" });
       const object = await getQuizAudioStorage().send(new GetObjectCommand({
         Bucket: QUIZ_AUDIO_R2_BUCKET,
         Key: row.audio_key
@@ -835,8 +971,17 @@ export default async function handler(req, res) {
       return res.end(Buffer.from(bytes));
     }
 
+    if (req.method === "POST" && (action === "assignLegacyQuizAudio" || action === "migrateLegacyQuizAudio")) {
+      await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
+      assertQuizAudioIdentityVersion(quizAudioIdentityVersion);
+      const identity = getQuizAudioIdentity(question, figure);
+      const row = await moveLegacyQuizAudio(identity, { requireAmbiguous: action === "assignLegacyQuizAudio" });
+      return res.status(200).json({ ok: true, quizKey: identity.quizKey, migrated: Boolean(row) });
+    }
+
     if (req.method === "POST" && action === "saveQuizAudio") {
       const { access } = await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
+      assertQuizAudioIdentityVersion(quizAudioIdentityVersion);
       const encodedAudio = String(audioBase64 || "").replace(/^data:[^,]+,/, "");
       if (!encodedAudio || encodedAudio.length > 4 * 1024 * 1024 || !/^[a-z0-9+/=]+$/i.test(encodedAudio)) {
         const error = new Error("invalid_audio_payload");
@@ -850,7 +995,8 @@ export default async function handler(req, res) {
         throw error;
       }
 
-      const { quizKey, audioKey } = getQuizAudioIdentity(question);
+      const identity = getQuizAudioIdentity(question, figure);
+      const { quizKey, audioKey } = identity;
       const mimeType = normalizeQuizAudioMimeType(audioMimeType);
       await getQuizAudioStorage().send(new PutObjectCommand({
         Bucket: QUIZ_AUDIO_R2_BUCKET,
@@ -874,12 +1020,14 @@ export default async function handler(req, res) {
           created_by = EXCLUDED.created_by,
           updated_at = NOW()
       `;
+      await retireSafeLegacyAssociation(identity);
       return res.status(200).json({ ok: true, quizKey });
     }
 
     if (req.method === "POST" && action === "createQuizAudioUpload") {
       await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
-      const { quizKey, audioKey } = getQuizAudioIdentity(question);
+      assertQuizAudioIdentityVersion(quizAudioIdentityVersion);
+      const { quizKey, audioKey } = getQuizAudioIdentity(question, figure);
       const uploadUrl = await getSignedUrl(
         getQuizAudioStorage(),
         new PutObjectCommand({
@@ -894,7 +1042,9 @@ export default async function handler(req, res) {
 
     if (req.method === "POST" && action === "confirmQuizAudioUpload") {
       await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
-      const { quizKey, audioKey } = getQuizAudioIdentity(question);
+      assertQuizAudioIdentityVersion(quizAudioIdentityVersion);
+      const identity = getQuizAudioIdentity(question, figure);
+      const { quizKey, audioKey } = identity;
       const uploadedObject = await getQuizAudioStorage().send(new HeadObjectCommand({
         Bucket: QUIZ_AUDIO_R2_BUCKET,
         Key: audioKey
@@ -921,22 +1071,20 @@ export default async function handler(req, res) {
           created_by = EXCLUDED.created_by,
           updated_at = NOW()
       `;
+      await retireSafeLegacyAssociation(identity);
       return res.status(200).json({ ok: true, quizKey });
     }
 
     if (req.method === "POST" && action === "deleteQuizAudio") {
       await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
-      const { quizKey } = getQuizAudioIdentity(question);
-      const row = await getQuizAudioRow(quizKey);
-      if (row) {
-        await getQuizAudioStorage().send(new DeleteObjectCommand({
-          Bucket: QUIZ_AUDIO_R2_BUCKET,
-          Key: row.audio_key
-        }));
-        const sql = getQuizAudioDatabase();
-        await sql`DELETE FROM quiz_audio_explanations WHERE quiz_key = ${quizKey}`;
-      }
-      return res.status(200).json({ ok: true, deleted: Boolean(row), quizKey });
+      assertQuizAudioIdentityVersion(quizAudioIdentityVersion);
+      const identity = getQuizAudioIdentity(question, figure);
+      const result = await findQuizAudioRow(identity);
+      if (result.requiresReview) return res.status(409).json({ error: "quiz_audio_requires_review" });
+      const deleted = result.row
+        ? await deleteQuizAudioAssociation(result.matchedQuizKey, result.row)
+        : false;
+      return res.status(200).json({ ok: true, deleted, quizKey: identity.quizKey });
     }
 
     if (req.method === "GET" && GET_ACTIONS.has(action)) {
