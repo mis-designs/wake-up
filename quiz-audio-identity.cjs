@@ -64,9 +64,45 @@ function getQuizAudioIdentity(question, figure) {
   };
 }
 
+function filterQuizAudioCollisionRegistry(registry, identities, options = {}) {
+  const currentFigures = new Map();
+  const preserveSources = new Set(
+    (Array.isArray(options.preserveSources) ? options.preserveSources : [])
+      .map(source => String(source || "").trim())
+      .filter(Boolean)
+  );
+  (Array.isArray(identities) ? identities : []).forEach(identity => {
+    const legacyQuizKey = String(identity?.legacyQuizKey || "");
+    if (!legacyQuizKey) return;
+    if (!currentFigures.has(legacyQuizKey)) currentFigures.set(legacyQuizKey, new Set());
+    currentFigures.get(legacyQuizKey).add(normalizeQuizAudioFigure(identity?.figureKey));
+  });
+
+  const collisions = {};
+  Object.entries(registry?.collisions || {}).forEach(([legacyQuizKey, group]) => {
+    const allowedFigures = currentFigures.get(legacyQuizKey);
+    const candidates = (Array.isArray(group?.candidates) ? group.candidates : [])
+      .filter(candidate => {
+        const belongsToPreservedSource = (Array.isArray(candidate?.sources) ? candidate.sources : [])
+          .some(source => preserveSources.has(String(source || "").trim()));
+        return belongsToPreservedSource
+          || Boolean(allowedFigures?.has(normalizeQuizAudioFigure(candidate?.figureKey)));
+      });
+    if (!candidates.length) return;
+    collisions[legacyQuizKey] = { ...group, candidates };
+  });
+
+  return {
+    ...(registry || {}),
+    collisionCount: Object.keys(collisions).length,
+    collisions
+  };
+}
+
 module.exports = {
   QUIZ_AUDIO_IDENTITY_VERSION,
   buildQuizAudioV2Source,
+  filterQuizAudioCollisionRegistry,
   getQuizAudioIdentity,
   normalizeQuizAudioFigure,
   normalizeQuizAudioQuestion

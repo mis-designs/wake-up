@@ -57,9 +57,45 @@
     };
   }
 
+  function filterCollisionRegistry(registry, identities, options = {}) {
+    const currentFigures = new Map();
+    const preserveSources = new Set(
+      (Array.isArray(options.preserveSources) ? options.preserveSources : [])
+        .map(source => String(source || "").trim())
+        .filter(Boolean)
+    );
+    (Array.isArray(identities) ? identities : []).forEach(identity => {
+      const legacyQuizKey = String(identity?.legacyQuizKey || "");
+      if (!legacyQuizKey) return;
+      if (!currentFigures.has(legacyQuizKey)) currentFigures.set(legacyQuizKey, new Set());
+      currentFigures.get(legacyQuizKey).add(normalizeFigure(identity?.figureKey));
+    });
+
+    const collisions = {};
+    Object.entries(registry?.collisions || {}).forEach(([legacyQuizKey, group]) => {
+      const allowedFigures = currentFigures.get(legacyQuizKey);
+      const candidates = (Array.isArray(group?.candidates) ? group.candidates : [])
+        .filter(candidate => {
+          const belongsToPreservedSource = (Array.isArray(candidate?.sources) ? candidate.sources : [])
+            .some(source => preserveSources.has(String(source || "").trim()));
+          return belongsToPreservedSource
+            || Boolean(allowedFigures?.has(normalizeFigure(candidate?.figureKey)));
+        });
+      if (!candidates.length) return;
+      collisions[legacyQuizKey] = { ...group, candidates };
+    });
+
+    return {
+      ...(registry || {}),
+      collisionCount: Object.keys(collisions).length,
+      collisions
+    };
+  }
+
   global.QuizAudioIdentity = Object.freeze({
     VERSION,
     buildSource,
+    filterCollisionRegistry,
     getIdentity,
     normalizeFigure,
     normalizeQuestion

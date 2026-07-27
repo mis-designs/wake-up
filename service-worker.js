@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v28-quiz-audio-identity-v2";
+const CACHE_NAME = "magicbook-pwa-v30-live-catalog-reconcile";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -6,8 +6,8 @@ const STATIC_ASSETS = [
   "/style.css?v=37",
   "/homebg.css?v=3",
   "/mystyle.css?v=26",
-  "/script.js?v=18",
-  "/quiz-audio-identity.js?v=2",
+  "/script.js?v=19-admin-role-recovery",
+  "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=38-audio-identity-v2",
   "/quiz-help.css?v=20260714-magic-help-v4",
   "/quiz-help.js?v=20260714-magic-help-v4",

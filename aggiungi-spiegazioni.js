@@ -609,7 +609,9 @@ async function load() {
     const rows = Array.isArray(catalog.quiz) ? catalog.quiz : [];
     if (rows.length !== 788) throw new Error(`magic_catalog_count_mismatch_${rows.length}`);
     const identities = await Promise.all(rows.map(identityFor));
-    state.collisionRegistry = collisionRegistry;
+    state.collisionRegistry = QuizAudioIdentity.filterCollisionRegistry(collisionRegistry, identities, {
+      preserveSources: ["all-books"]
+    });
     state.audioKeys = new Set(overview.quizKeys || []);
     state.legacyReviewKeys = new Set(overview.legacyReviewKeys || []);
     const byChapter = new Map();

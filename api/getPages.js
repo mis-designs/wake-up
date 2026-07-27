@@ -20,15 +20,13 @@ function normalizePhone(input) {
   return phone;
 }
 
-export function getSessionRole(phone, tokenStatus, adminPhoneNumbers = ADMIN_PHONE_NUMBERS) {
-  // A validation request may arrive just after expiration (especially when a
-  // mobile browser resumes suspended timers). Preserve the role when the old
-  // token was cryptographically verified, even if it has just expired. The
-  // backend subscription check above and the current Vercel admin allow-list
-  // are still required, so client-supplied data can never elevate a session.
-  const hasSignedAdminRole = tokenStatus?.signatureValid === true && tokenStatus.payload?.role === "admin";
+export function getSessionRole(phone, _tokenStatus, adminPhoneNumbers = ADMIN_PHONE_NUMBERS) {
+  // This function is called only after validateAccess() has confirmed the
+  // phone/device pair against the access backend. Recompute the role from the
+  // server-side allow-list so a missing, expired or partially lost browser
+  // token cannot silently downgrade a real administrator.
   const isConfiguredAdmin = adminPhoneNumbers.includes(normalizePhone(phone));
-  return hasSignedAdminRole && isConfiguredAdmin ? "admin" : "user";
+  return isConfiguredAdmin ? "admin" : "user";
 }
 
 function buildMagicBookPath({ type, chapter, page }) {

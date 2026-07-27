@@ -3,20 +3,21 @@ import test from "node:test";
 
 import { getSessionRole } from "../api/getPages.js";
 
-test("subscription validation never elevates an unsigned session to admin", () => {
+test("validated admin device recovers its role even when the previous browser token is missing", () => {
   const adminPhones = ["391234567890"];
-  assert.equal(getSessionRole("391234567890", { role: "admin" }, adminPhones), "user");
-  assert.equal(getSessionRole("391234567890", {}, adminPhones), "user");
+  assert.equal(getSessionRole("391234567890", { role: "admin" }, adminPhones), "admin");
+  assert.equal(getSessionRole("391234567890", {}, adminPhones), "admin");
+  assert.equal(getSessionRole("+39 123 456 7890", null, adminPhones), "admin");
 });
 
-test("subscription validation preserves a signed admin only while configured on Vercel", () => {
+test("server allow-list remains the authority for the refreshed admin role", () => {
   const signedAdmin = { ok: true, signatureValid: true, payload: { role: "admin" } };
   assert.equal(getSessionRole("391234567890", signedAdmin, ["391234567890"]), "admin");
   assert.equal(getSessionRole("391234567890", signedAdmin, ["399999999999"]), "user");
-  assert.equal(getSessionRole("391234567890", { ok: true, signatureValid: true, payload: { role: "user" } }, ["391234567890"]), "user");
+  assert.equal(getSessionRole("399999999999", signedAdmin, ["391234567890"]), "user");
 });
 
-test("subscription validation preserves admin across a safely verified token refresh", () => {
+test("expired token cannot remove an administrator that is still configured", () => {
   const expiredButVerifiedAdmin = {
     ok: false,
     error: "token_expired",
@@ -27,6 +28,7 @@ test("subscription validation preserves admin across a safely verified token ref
   assert.equal(getSessionRole("391234567890", expiredButVerifiedAdmin, ["391234567890"]), "admin");
   assert.equal(
     getSessionRole("391234567890", { ...expiredButVerifiedAdmin, signatureValid: false }, ["391234567890"]),
-    "user"
+    "admin"
   );
+  assert.equal(getSessionRole("391234567890", expiredButVerifiedAdmin, []), "user");
 });

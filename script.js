@@ -187,6 +187,7 @@ const ACCESS_TOKEN_REFRESH_SKEW_MS = 60 * 1000;
 const ACCESS_VALIDATION_INTERVAL_MS = 5 * 60 * 1000;
 const OTP_COOLDOWN_SECONDS = 120;
 let accessValidationTimer = null;
+let accessValidationPromise = null;
 let pendingOtpLogin = null;
 let otpResendTimer = null;
 let otpRetryAtMs = 0;
@@ -542,9 +543,10 @@ window.addEventListener("load", async () => {
     openRouteState(getRouteStateFromLocation());
     checkRenewReminder();
     startAccessValidationTimer();
-    if (shouldRefreshAccessToken()) {
-      validateRestoredSession(phone, deviceId);
-    }
+    // Always reconcile a restored session once with the server. This repairs
+    // the admin role immediately when a mobile/private browser kept the phone
+    // and device but lost or partially rewrote the previous token.
+    validateRestoredSession(phone, deviceId);
   } else {
     const publicRoute = getRouteStateFromLocation();
     if (publicRoute.screen === "trialHub") {
@@ -635,32 +637,44 @@ async function ensureAccessToken(options = {}) {
 }
 
 async function validateRestoredSession(phone, deviceId) {
+  if (accessValidationPromise) return accessValidationPromise;
+
+  accessValidationPromise = (async () => {
+    try {
+      const data = await validateLoginAccess(phone, deviceId);
+      const error = data?.error || data?.status;
+
+      if (isRevokedSessionError(error)) {
+        logout(true, error);
+        return false;
+      }
+
+      if (data?.success) {
+        persistSession(phone, {
+          deviceId,
+          expiry: data.expiry,
+          role: data.role,
+          accessToken: data.accessToken,
+          accessTokenExpiresAt: data.accessTokenExpiresAt,
+          lastValid: Date.now()
+        });
+        updateAdminEntryVisibility();
+        checkRenewReminder();
+        return true;
+      }
+
+      console.warn("Auto-login validation inconclusive, keeping stored session", data);
+      return false;
+    } catch (error) {
+      console.warn("Auto-login validation unavailable, keeping stored session", error);
+      return false;
+    }
+  })();
+
   try {
-    const data = await validateLoginAccess(phone, deviceId);
-    const error = data?.error || data?.status;
-
-    if (isRevokedSessionError(error)) {
-      logout(true, error);
-      return;
-    }
-
-    if (data?.success) {
-      persistSession(phone, {
-        deviceId,
-        expiry: data.expiry,
-        role: data.role,
-        accessToken: data.accessToken,
-        accessTokenExpiresAt: data.accessTokenExpiresAt,
-        lastValid: Date.now()
-      });
-      updateAdminEntryVisibility();
-      checkRenewReminder();
-      return;
-    }
-
-    console.warn("Auto-login validation inconclusive, keeping stored session", data);
-  } catch (error) {
-    console.warn("Auto-login validation unavailable, keeping stored session", error);
+    return await accessValidationPromise;
+  } finally {
+    accessValidationPromise = null;
   }
 }
 
@@ -722,6 +736,7 @@ function completeLogin(phone, deviceId, data) {
     lastLogin: Date.now(),
     lastValid: Date.now()
   });
+  updateAdminEntryVisibility();
 
   const err = document.getElementById("err");
   if (err) err.textContent = "";
@@ -3921,7 +3936,7 @@ const adminState = {
 
 function getCurrentSessionRole() {
   const session = readStoredSession();
-  return session?.role || "user";
+  return String(session?.role || "user").trim().toLowerCase();
 }
 
 function isCurrentSessionAdmin() {
@@ -4762,7 +4777,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-      .register("/service-worker.js?v=20", { updateViaCache: "none" })
+      .register("/service-worker.js?v=21-admin-role-recovery", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });
