@@ -18,7 +18,7 @@
     <link rel="manifest" href="manifest.webmanifest?v=16">
     <link rel="preload" as="font" type="font/woff2" href="https://banglawebfonts.pages.dev/fonts/un-bangla/un-bangla-regular.woff2" crossorigin="anonymous">
     <style>@import url('https://banglawebfonts.pages.dev/css/un-bangla.css');</style>
-    <link rel="stylesheet" href="mystyle.css?v=28-responsive-desktop">
+    <link rel="stylesheet" href="mystyle.css?v=29-command-bar">
     <link rel="stylesheet" href="quiz-help.css?v=20260714-magic-help-v4">
 </head>
 
@@ -54,48 +54,52 @@
             </div>
         </div>
 
-        <div class="audio-controls">
-            <button class="audio-btn" onclick="speakItalian()" aria-label="Ascolta in italiano">
-                <img src="icons/italian.png" alt="">
-            </button>
-            <button class="audio-btn" onclick="playBanglaAudio()" aria-label="Ascolta in Bengali">
-                <img src="icons/bangla.png" alt="">
-            </button>
-            <button id="explanation-btn" class="explanation-btn hidden" type="button" onclick="openExplanation()" aria-label="Apri spiegazione">
-                Spiega
-            </button>
-        </div>
+        <div class="quiz-command-bar">
+            <div class="quiz-media-controls">
+                <div class="audio-controls">
+                    <button class="audio-btn" onclick="speakItalian()" aria-label="Ascolta in italiano">
+                        <img src="icons/italian.png" alt="">
+                    </button>
+                    <button class="audio-btn" onclick="playBanglaAudio()" aria-label="Ascolta in Bengali">
+                        <img src="icons/bangla.png" alt="">
+                    </button>
+                    <button id="explanation-btn" class="explanation-btn hidden" type="button" onclick="openExplanation()" aria-label="Apri spiegazione">
+                        Spiega
+                    </button>
+                </div>
 
-        <div id="quiz-audio-explanation" class="quiz-audio-explanation hidden" aria-label="Spiegazione audio">
-            <button id="quiz-audio-play" class="quiz-audio-play" type="button" aria-label="Riproduci spiegazione"></button>
-            <input id="quiz-audio-progress" class="quiz-audio-progress" type="range" min="0" max="100" step="0.1" value="0" aria-label="Avanzamento spiegazione">
-            <button id="quiz-audio-speed" class="quiz-audio-speed" type="button" aria-label="Velocità 1x">1×</button>
-        </div>
+                <div id="quiz-audio-explanation" class="quiz-audio-explanation hidden" aria-label="Spiegazione audio">
+                    <button id="quiz-audio-play" class="quiz-audio-play" type="button" aria-label="Riproduci spiegazione"></button>
+                    <input id="quiz-audio-progress" class="quiz-audio-progress" type="range" min="0" max="100" step="0.1" value="0" aria-label="Avanzamento spiegazione">
+                    <button id="quiz-audio-speed" class="quiz-audio-speed" type="button" aria-label="Velocità 1x">1×</button>
+                </div>
+            </div>
 
-        <div class="controls">
-            <button id="prev-btn" onclick="prev()" aria-label="Indietro">
-                <img src="icons/back.png" alt="">
-            </button>
-            <div class="answer-wrapper notranslate" data-answer-value="1" translate="no" lang="it">
-                <button id="vero" onclick="answer(1)" aria-label="Vero">
-                    <img src="icons/true.png" alt="">
-                    <span class="answer-label">Vero</span>
+            <div class="controls">
+                <button id="prev-btn" onclick="prev()" aria-label="Indietro">
+                    <img src="icons/back.png" alt="">
                 </button>
-                <div class="admin-correct-dot-slot"></div>
-            </div>
-            <div class="answer-wrapper notranslate" data-answer-value="0" translate="no" lang="it">
-                <button id="falso" onclick="answer(0)" aria-label="Falso">
-                    <img src="icons/false.png" alt="">
-                    <span class="answer-label">Falso</span>
+                <div class="answer-wrapper notranslate" data-answer-value="1" translate="no" lang="it">
+                    <button id="vero" onclick="answer(1)" aria-label="Vero">
+                        <img src="icons/true.png" alt="">
+                        <span class="answer-label">Vero</span>
+                    </button>
+                    <div class="admin-correct-dot-slot"></div>
+                </div>
+                <div class="answer-wrapper notranslate" data-answer-value="0" translate="no" lang="it">
+                    <button id="falso" onclick="answer(0)" aria-label="Falso">
+                        <img src="icons/false.png" alt="">
+                        <span class="answer-label">Falso</span>
+                    </button>
+                    <div class="admin-correct-dot-slot"></div>
+                </div>
+                <button id="next-btn" class="nav-primary" onclick="next()" aria-label="Avanti">
+                    <span id="next-icon-wrap" class="nav-icon-wrap">
+                        <img id="next-icon" src="icons/next.png" alt="">
+                    </span>
+                    <span id="next-label" class="nav-label hidden">FINE</span>
                 </button>
-                <div class="admin-correct-dot-slot"></div>
             </div>
-            <button id="next-btn" class="nav-primary" onclick="next()" aria-label="Avanti">
-                <span id="next-icon-wrap" class="nav-icon-wrap">
-                    <img id="next-icon" src="icons/next.png" alt="">
-                </span>
-                <span id="next-label" class="nav-label hidden">FINE</span>
-            </button>
         </div>
 
     </div>
