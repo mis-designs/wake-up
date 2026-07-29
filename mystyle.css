@@ -179,8 +179,8 @@ body.loading-open {
 
 .quiz-audio-admin-tools {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  bottom: 12px;
+  left: 12px;
   z-index: 5;
 }
 
@@ -214,8 +214,8 @@ body.loading-open {
 
 .quiz-audio-edit-menu {
   position: absolute;
-  top: 46px;
-  right: 0;
+  bottom: 46px;
+  left: 0;
   width: 190px;
   overflow: hidden;
   padding: 6px;
@@ -259,8 +259,8 @@ body.loading-open {
 
 .quiz-audio-recorder {
   position: absolute;
-  top: 58px;
-  right: 12px;
+  bottom: 58px;
+  left: 12px;
   z-index: 6;
   width: min(390px, calc(100% - 24px));
   padding: 14px;
@@ -293,19 +293,31 @@ body.loading-open {
   cursor: pointer;
 }
 
-.material-symbols-outlined {
-  font-family: "Material Symbols Outlined";
-  font-weight: normal;
-  font-style: normal;
-  font-size: 21px;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  font-feature-settings: "liga";
-  -webkit-font-feature-settings: "liga";
+.quiz-audio-recorder-head button svg,
+.quiz-recorder-icon svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.quiz-recorder-icon {
+  display: inline-grid;
+  place-items: center;
+}
+
+.quiz-audio-record-actions button.is-recording .quiz-recorder-icon {
+  animation: recorderMicPulse .9s ease-in-out infinite alternate;
+}
+
+.quiz-audio-record-actions button.is-saving .quiz-recorder-icon {
+  animation: audioLoading .8s ease-in-out infinite;
+}
+
+@keyframes recorderMicPulse {
+  to {
+    transform: scale(1.15);
+    color: #ee2f4b;
+  }
 }
 
 .quiz-audio-recorder > p {

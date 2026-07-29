@@ -18,8 +18,7 @@
     <link rel="manifest" href="manifest.webmanifest?v=16">
     <link rel="preload" as="font" type="font/woff2" href="https://banglawebfonts.pages.dev/fonts/un-bangla/un-bangla-regular.woff2" crossorigin="anonymous">
     <style>@import url('https://banglawebfonts.pages.dev/css/un-bangla.css');</style>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&amp;icon_names=close,graphic_eq,hourglass_top,mic,pause,play_arrow,save&amp;display=block">
-    <link rel="stylesheet" href="mystyle.css?v=34-material-recorder-icons">
+    <link rel="stylesheet" href="mystyle.css?v=35-project-icons-bottom-left">
     <link rel="stylesheet" href="quiz-help.css?v=20260714-magic-help-v4">
 </head>
 
@@ -59,22 +58,28 @@
                     <strong>Spiegazione audio</strong>
                     <span id="quiz-audio-record-time">0:00</span>
                     <button id="quiz-audio-record-close" type="button" aria-label="Chiudi registratore">
-                        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
                     </button>
                 </div>
                 <p id="quiz-audio-record-status">Premi il microfono per iniziare.</p>
                 <audio id="quiz-audio-record-preview" class="hidden" controls></audio>
                 <div class="quiz-audio-record-actions">
                     <button id="quiz-audio-record-start" type="button">
-                        <span id="quiz-audio-record-start-icon" class="material-symbols-outlined" aria-hidden="true">mic</span>
+                        <span id="quiz-audio-record-start-icon" class="quiz-recorder-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none"><rect x="8" y="2" width="8" height="13" rx="4" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        </span>
                         <span id="quiz-audio-record-start-label">Registra</span>
                     </button>
                     <button id="quiz-audio-record-pause" type="button" disabled>
-                        <span class="material-symbols-outlined" aria-hidden="true">pause</span>
+                        <span class="quiz-recorder-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none"><path d="M8 5V19M16 5V19" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+                        </span>
                         <span>Pausa</span>
                     </button>
                     <button id="quiz-audio-record-save" type="button" disabled>
-                        <span id="quiz-audio-record-save-icon" class="material-symbols-outlined" aria-hidden="true">save</span>
+                        <span id="quiz-audio-record-save-icon" class="quiz-recorder-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none"><path d="M5 3H17L19 5V21H5V3Z" stroke="currentColor" stroke-width="2"/><path d="M8 3V9H16V3M8 21V14H16V21" stroke="currentColor" stroke-width="2"/></svg>
+                        </span>
                         <span>Salva</span>
                     </button>
                 </div>
@@ -251,7 +256,7 @@
     </div>
 
     <script src="quiz-audio-identity.js?v=2"></script>
-    <script src="quiz.js?v=41-material-recorder-icons"></script>
+    <script src="quiz.js?v=42-project-recorder-icons"></script>
     <script src="quiz-help.js?v=20260714-magic-help-v4"></script>
 </body>
 
