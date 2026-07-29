@@ -532,8 +532,11 @@ const quizAudioDelete = document.getElementById("quiz-audio-delete");
 const quizAudioRecorder = document.getElementById("quiz-audio-recorder");
 const quizAudioRecordClose = document.getElementById("quiz-audio-record-close");
 const quizAudioRecordStart = document.getElementById("quiz-audio-record-start");
+const quizAudioRecordStartIcon = document.getElementById("quiz-audio-record-start-icon");
+const quizAudioRecordStartLabel = document.getElementById("quiz-audio-record-start-label");
 const quizAudioRecordPause = document.getElementById("quiz-audio-record-pause");
 const quizAudioRecordSave = document.getElementById("quiz-audio-record-save");
+const quizAudioRecordSaveIcon = document.getElementById("quiz-audio-record-save-icon");
 const quizAudioRecordStatus = document.getElementById("quiz-audio-record-status");
 const quizAudioRecordTime = document.getElementById("quiz-audio-record-time");
 const quizAudioRecordPreview = document.getElementById("quiz-audio-record-preview");
@@ -824,6 +827,12 @@ function setInlineAudioStatus(message) {
   if (quizAudioRecordStatus) quizAudioRecordStatus.textContent = message;
 }
 
+function setInlineAudioStartState(icon, label, disabled) {
+  if (quizAudioRecordStartIcon) quizAudioRecordStartIcon.textContent = icon;
+  if (quizAudioRecordStartLabel) quizAudioRecordStartLabel.textContent = label;
+  if (quizAudioRecordStart) quizAudioRecordStart.disabled = disabled;
+}
+
 function buildInlineAudioBlob() {
   if (!inlineAudioRecording?.chunks.length) return null;
   if (inlineAudioRecording.url) URL.revokeObjectURL(inlineAudioRecording.url);
@@ -871,10 +880,10 @@ function openInlineAudioRecorder(event) {
     saving: false
   };
   quizAudioRecorder?.classList.remove("hidden");
-  quizAudioRecordStart.disabled = false;
+  setInlineAudioStartState("mic", "Registra", false);
   quizAudioRecordPause.disabled = true;
   quizAudioRecordSave.disabled = true;
-  quizAudioRecordStart.textContent = "🎙️ Registra";
+  if (quizAudioRecordSaveIcon) quizAudioRecordSaveIcon.textContent = "save";
   setInlineAudioStatus("Premi il microfono per iniziare.");
   paintInlineAudioTimer();
 }
@@ -903,7 +912,7 @@ async function startInlineAudioRecording(event) {
     item.phase = "recording";
     item.startedAt = Date.now();
     item.timer = setInterval(paintInlineAudioTimer, 250);
-    quizAudioRecordStart.textContent = "🎙️ Riprendi";
+    setInlineAudioStartState("graphic_eq", "Registrazione", true);
     quizAudioRecordPause.disabled = false;
     setInlineAudioStatus("Registrazione in corso…");
   } catch (error) {
@@ -925,6 +934,7 @@ async function pauseInlineAudioRecording(event) {
   paintInlineAudioTimer();
   await new Promise(resolve => setTimeout(resolve, 100));
   buildInlineAudioBlob();
+  setInlineAudioStartState("play_arrow", "Riprendi", false);
   quizAudioRecordPause.disabled = true;
   setInlineAudioStatus("In pausa. Puoi ascoltare o salvare.");
 }
@@ -970,6 +980,7 @@ async function saveInlineAudioRecording(event) {
   const question = quiz[item.questionIndex];
   item.saving = true;
   quizAudioRecordSave.disabled = true;
+  if (quizAudioRecordSaveIcon) quizAudioRecordSaveIcon.textContent = "hourglass_top";
   setInlineAudioStatus("Salvataggio in corso…");
   try {
     const created = await quizAudioAdminApi("createQuizAudioUpload", question);
@@ -994,6 +1005,7 @@ async function saveInlineAudioRecording(event) {
   } catch (error) {
     item.saving = false;
     quizAudioRecordSave.disabled = false;
+    if (quizAudioRecordSaveIcon) quizAudioRecordSaveIcon.textContent = "save";
     setInlineAudioStatus(`Salvataggio non riuscito: ${error.message || "riprova"}`);
   }
 }
