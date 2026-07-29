@@ -522,6 +522,15 @@ const sharedAudioPlayer = document.getElementById("quiz-audio-explanation");
 const sharedAudioPlay = document.getElementById("quiz-audio-play");
 const sharedAudioProgress = document.getElementById("quiz-audio-progress");
 const sharedAudioSpeed = document.getElementById("quiz-audio-speed");
+const quizAudioAdd = document.getElementById("quiz-audio-add");
+const quizAudioRecorder = document.getElementById("quiz-audio-recorder");
+const quizAudioRecordClose = document.getElementById("quiz-audio-record-close");
+const quizAudioRecordStart = document.getElementById("quiz-audio-record-start");
+const quizAudioRecordPause = document.getElementById("quiz-audio-record-pause");
+const quizAudioRecordSave = document.getElementById("quiz-audio-record-save");
+const quizAudioRecordStatus = document.getElementById("quiz-audio-record-status");
+const quizAudioRecordTime = document.getElementById("quiz-audio-record-time");
+const quizAudioRecordPreview = document.getElementById("quiz-audio-record-preview");
 const sharedAudio = new Audio();
 sharedAudio.preload = "metadata";
 let sharedAudioQuestion = "";
@@ -777,6 +786,205 @@ sharedAudio.addEventListener("ended", () => { sharedAudioPlay?.classList.remove(
   "seeking",
   "seeked"
 ].forEach(eventName => sharedAudio.addEventListener(eventName, paintSharedAudioProgress));
+
+let inlineAudioRecording = null;
+
+function inlineAudioElapsed() {
+  if (!inlineAudioRecording) return 0;
+  return inlineAudioRecording.elapsed
+    + (inlineAudioRecording.phase === "recording" ? Date.now() - inlineAudioRecording.startedAt : 0);
+}
+
+function paintInlineAudioTimer() {
+  if (!quizAudioRecordTime) return;
+  const seconds = Math.floor(inlineAudioElapsed() / 1000);
+  quizAudioRecordTime.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function setInlineAudioStatus(message) {
+  if (quizAudioRecordStatus) quizAudioRecordStatus.textContent = message;
+}
+
+function buildInlineAudioBlob() {
+  if (!inlineAudioRecording?.chunks.length) return null;
+  if (inlineAudioRecording.url) URL.revokeObjectURL(inlineAudioRecording.url);
+  inlineAudioRecording.blob = new Blob(inlineAudioRecording.chunks, {
+    type: inlineAudioRecording.mimeType || "audio/webm"
+  });
+  inlineAudioRecording.url = URL.createObjectURL(inlineAudioRecording.blob);
+  if (quizAudioRecordPreview) {
+    quizAudioRecordPreview.src = inlineAudioRecording.url;
+    quizAudioRecordPreview.classList.remove("hidden");
+  }
+  quizAudioRecordSave.disabled = false;
+  return inlineAudioRecording.blob;
+}
+
+function closeInlineAudioRecorder() {
+  const item = inlineAudioRecording;
+  if (item?.timer) clearInterval(item.timer);
+  if (item?.recorder && item.recorder.state !== "inactive") item.recorder.stop();
+  item?.stream?.getTracks().forEach(track => track.stop());
+  if (item?.url) URL.revokeObjectURL(item.url);
+  inlineAudioRecording = null;
+  quizAudioRecordPreview?.pause();
+  quizAudioRecordPreview?.removeAttribute("src");
+  quizAudioRecordPreview?.classList.add("hidden");
+  quizAudioRecorder?.classList.add("hidden");
+}
+
+function openInlineAudioRecorder(event) {
+  event?.stopPropagation();
+  if (!isAdmin || TRIAL_MODE) return;
+  closeInlineAudioRecorder();
+  inlineAudioRecording = {
+    questionIndex: current,
+    stream: null,
+    recorder: null,
+    chunks: [],
+    mimeType: "audio/webm",
+    phase: "ready",
+    startedAt: 0,
+    elapsed: 0,
+    timer: 0,
+    blob: null,
+    url: "",
+    saving: false
+  };
+  quizAudioRecorder?.classList.remove("hidden");
+  quizAudioRecordStart.disabled = false;
+  quizAudioRecordPause.disabled = true;
+  quizAudioRecordSave.disabled = true;
+  quizAudioRecordStart.textContent = "🎙️ Registra";
+  setInlineAudioStatus("Premi il microfono per iniziare.");
+  paintInlineAudioTimer();
+}
+
+async function startInlineAudioRecording(event) {
+  event?.stopPropagation();
+  const item = inlineAudioRecording;
+  if (!item || item.saving) return;
+  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+    setInlineAudioStatus("Microfono non disponibile: apri il sito con HTTPS.");
+    return;
+  }
+  try {
+    if (!item.stream?.active) item.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    if (item.recorder?.state === "paused") {
+      item.recorder.resume();
+    } else {
+      item.mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : "audio/webm";
+      item.chunks = [];
+      item.recorder = new MediaRecorder(item.stream, { mimeType: item.mimeType, audioBitsPerSecond: 64000 });
+      item.recorder.ondataavailable = chunk => { if (chunk.data?.size) item.chunks.push(chunk.data); };
+      item.recorder.start();
+    }
+    item.phase = "recording";
+    item.startedAt = Date.now();
+    item.timer = setInterval(paintInlineAudioTimer, 250);
+    quizAudioRecordStart.textContent = "🎙️ Riprendi";
+    quizAudioRecordPause.disabled = false;
+    setInlineAudioStatus("Registrazione in corso…");
+  } catch (error) {
+    setInlineAudioStatus(error?.name === "NotAllowedError"
+      ? "Microfono bloccato. Consenti l'accesso dal lucchetto del browser."
+      : "Impossibile accedere al microfono.");
+  }
+}
+
+async function pauseInlineAudioRecording(event) {
+  event?.stopPropagation();
+  const item = inlineAudioRecording;
+  if (!item || item.recorder?.state !== "recording") return;
+  item.elapsed += Date.now() - item.startedAt;
+  item.recorder.requestData();
+  item.recorder.pause();
+  item.phase = "paused";
+  clearInterval(item.timer);
+  paintInlineAudioTimer();
+  await new Promise(resolve => setTimeout(resolve, 100));
+  buildInlineAudioBlob();
+  quizAudioRecordPause.disabled = true;
+  setInlineAudioStatus("In pausa. Puoi ascoltare o salvare.");
+}
+
+function blobAsAudioDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("audio_read_failed"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function quizAudioAdminApi(action, question, extra = {}) {
+  const response = await fetch(QUIZ_API, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(getQuizAccessToken() ? { Authorization: `Bearer ${getQuizAccessToken()}` } : {})
+    },
+    body: JSON.stringify({
+      action,
+      phone: getQuizPhone(),
+      deviceId: getQuizDeviceId(),
+      accessToken: getQuizAccessToken(),
+      question: String(question?.question || ""),
+      figure: QuizAudioIdentity.normalizeFigure(question?.figure ?? ""),
+      quizAudioIdentityVersion: QuizAudioIdentity.VERSION,
+      ...extra
+    })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.error || `quiz_audio_${response.status}`);
+  return data;
+}
+
+async function saveInlineAudioRecording(event) {
+  event?.stopPropagation();
+  const item = inlineAudioRecording;
+  if (!item || item.saving) return;
+  if (item.phase === "recording") await pauseInlineAudioRecording();
+  if (!item.blob) return;
+  const question = quiz[item.questionIndex];
+  item.saving = true;
+  quizAudioRecordSave.disabled = true;
+  setInlineAudioStatus("Salvataggio in corso…");
+  try {
+    const created = await quizAudioAdminApi("createQuizAudioUpload", question);
+    try {
+      const upload = await fetch(created.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": String(created.uploadContentType || "audio/webm") },
+        body: item.blob
+      });
+      if (!upload.ok) throw new Error(`r2_upload_${upload.status}`);
+      await quizAudioAdminApi("confirmQuizAudioUpload", question, { audioDurationMs: inlineAudioElapsed() });
+    } catch (_) {
+      await quizAudioAdminApi("saveQuizAudio", question, {
+        audioBase64: await blobAsAudioDataUrl(item.blob),
+        audioMimeType: "audio/webm",
+        audioDurationMs: inlineAudioElapsed()
+      });
+    }
+    closeInlineAudioRecorder();
+    await updateSharedAudioAvailability(question);
+    showAudioUnavailableToast("Spiegazione audio salvata");
+  } catch (error) {
+    item.saving = false;
+    quizAudioRecordSave.disabled = false;
+    setInlineAudioStatus(`Salvataggio non riuscito: ${error.message || "riprova"}`);
+  }
+}
+
+quizAudioAdd?.addEventListener("click", openInlineAudioRecorder);
+quizAudioRecordClose?.addEventListener("click", event => { event.stopPropagation(); closeInlineAudioRecorder(); });
+quizAudioRecordStart?.addEventListener("click", startInlineAudioRecording);
+quizAudioRecordPause?.addEventListener("click", pauseInlineAudioRecording);
+quizAudioRecordSave?.addEventListener("click", saveInlineAudioRecording);
+quizAudioRecorder?.addEventListener("click", event => event.stopPropagation());
 
 let _audioToastTimer = null;
 
@@ -1754,6 +1962,8 @@ function updateAdminCorrectDots(question) {
 
 function showQuestion() {
   const q = quiz[current];
+  if (inlineAudioRecording && inlineAudioRecording.questionIndex !== current) closeInlineAudioRecorder();
+  quizAudioAdd?.classList.toggle("hidden", !isAdmin || TRIAL_MODE);
   const veroBtn = document.getElementById("vero");
   const falsoBtn = document.getElementById("falso");
   document.getElementById("question").innerText = q.question;

@@ -18,7 +18,7 @@
     <link rel="manifest" href="manifest.webmanifest?v=16">
     <link rel="preload" as="font" type="font/woff2" href="https://banglawebfonts.pages.dev/fonts/un-bangla/un-bangla-regular.woff2" crossorigin="anonymous">
     <style>@import url('https://banglawebfonts.pages.dev/css/un-bangla.css');</style>
-    <link rel="stylesheet" href="mystyle.css?v=30-player-row">
+    <link rel="stylesheet" href="mystyle.css?v=31-inline-audio-recorder">
     <link rel="stylesheet" href="quiz-help.css?v=20260714-magic-help-v4">
 </head>
 
@@ -37,6 +37,21 @@
         <div id="progress">Domanda 1 / 30</div>
 
         <div class="question-area">
+            <button id="quiz-audio-add" class="quiz-audio-add hidden" type="button" aria-label="Aggiungi spiegazione audio">+</button>
+            <section id="quiz-audio-recorder" class="quiz-audio-recorder hidden" aria-label="Registratore spiegazione audio">
+                <div class="quiz-audio-recorder-head">
+                    <strong>Spiegazione audio</strong>
+                    <span id="quiz-audio-record-time">0:00</span>
+                    <button id="quiz-audio-record-close" type="button" aria-label="Chiudi registratore">×</button>
+                </div>
+                <p id="quiz-audio-record-status">Premi il microfono per iniziare.</p>
+                <audio id="quiz-audio-record-preview" class="hidden" controls></audio>
+                <div class="quiz-audio-record-actions">
+                    <button id="quiz-audio-record-start" type="button">🎙️ Registra</button>
+                    <button id="quiz-audio-record-pause" type="button" disabled>⏸ Pausa</button>
+                    <button id="quiz-audio-record-save" type="button" disabled>💾 Salva</button>
+                </div>
+            </section>
             <div id="figure-wrap" class="figure-wrap hidden">
                 <div id="img-skeleton" class="img-skeleton hidden">
                     <span class="img-skeleton-label">Caricamento immagine…</span>
@@ -209,7 +224,7 @@
     </div>
 
     <script src="quiz-audio-identity.js?v=2"></script>
-    <script src="quiz.js?v=38-audio-identity-v2"></script>
+    <script src="quiz.js?v=39-inline-audio-recorder"></script>
     <script src="quiz-help.js?v=20260714-magic-help-v4"></script>
 </body>
 

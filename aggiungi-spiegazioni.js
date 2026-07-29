@@ -334,17 +334,10 @@ function createAudioPlayer(question, { legacy = false } = {}) {
     if (audio.src) return;
     if (!loading) {
       button.classList.add("is-loading");
-      const playbackRequest = legacy
-        ? Promise.reject(new Error("legacy_blob_only"))
-        : api("getQuizAudioPlayback", quizAudioPayload(question));
-      loading = playbackRequest.then(playback => {
-        if (!playback?.audioUrl) throw new Error("missing_audio_url");
-        durationHint = Math.max(durationHint, Math.max(0, Number(playback.durationMs) || 0) / 1000);
-        audio.src = String(playback.audioUrl); sourceMode = "signed"; audio.load();
-      }).catch(async error => {
-        await loadBlob();
-        if (sourceMode !== "blob") throw error;
-      }).finally(() => { loading = null; button.classList.remove("is-loading"); });
+      // Use the same-origin blob path directly. It is the reliable path already
+      // used by the quiz and avoids signed-URL/CSP playback differences here.
+      loading = loadBlob()
+        .finally(() => { loading = null; button.classList.remove("is-loading"); });
     }
     return loading;
   };
