@@ -829,7 +829,9 @@ export default async function handler(req, res) {
 
       const modeConfig = getExamModeConfig(mode);
       const data = modeConfig ? null : await forwardGetAction({ action, chapters, text });
-      const admin = access.role === "admin" && isAdminPhone(phone);
+      // Keep Quiz UI authorization consistent with requireQuizAudioAccess:
+      // a validated admin role or a server allow-listed phone is sufficient.
+      const admin = access.role === "admin" || isAdminPhone(phone);
       const rows = modeConfig ? await fetchExamRows(action, text, modeConfig) : getQuizRows(data);
       const quiz = modeConfig ? buildExamQuiz(rows, modeConfig) : rows;
       const quizForClient = admin ? await addAdminCorrectAnswers(quiz) : quiz;
