@@ -177,13 +177,17 @@ body.loading-open {
   gap: 12px;
 }
 
-.quiz-audio-add {
+.quiz-audio-admin-tools {
   position: absolute;
   top: 12px;
   right: 12px;
   z-index: 5;
+}
+
+.quiz-audio-add {
   width: 38px;
   height: 38px;
+  padding: 0;
   border: 1px solid #ffd1b7;
   border-radius: 50%;
   background: #fff2e9;
@@ -193,6 +197,64 @@ body.loading-open {
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 6px 16px rgba(37, 41, 67, .14);
+}
+
+.quiz-audio-add img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.quiz-audio-add.has-audio {
+  display: grid;
+  place-items: center;
+  border-color: #cfc5ff;
+  background: #eeeaff;
+}
+
+.quiz-audio-edit-menu {
+  position: absolute;
+  top: 46px;
+  right: 0;
+  width: 190px;
+  overflow: hidden;
+  padding: 6px;
+  border: 1px solid #dbe4ef;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 16px 38px rgba(24, 45, 75, .2);
+}
+
+.quiz-audio-edit-menu button {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #29405e;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.quiz-audio-edit-menu button:hover {
+  background: #f2efff;
+}
+
+.quiz-audio-edit-menu button:last-child {
+  color: #b42335;
+}
+
+.quiz-audio-edit-menu img {
+  width: 21px;
+  height: 21px;
+  object-fit: contain;
 }
 
 .quiz-audio-recorder {

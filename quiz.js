@@ -522,7 +522,13 @@ const sharedAudioPlayer = document.getElementById("quiz-audio-explanation");
 const sharedAudioPlay = document.getElementById("quiz-audio-play");
 const sharedAudioProgress = document.getElementById("quiz-audio-progress");
 const sharedAudioSpeed = document.getElementById("quiz-audio-speed");
+const quizAudioAdminTools = document.getElementById("quiz-audio-admin-tools");
 const quizAudioAdd = document.getElementById("quiz-audio-add");
+const quizAudioAddPlus = quizAudioAdd?.querySelector("span");
+const quizAudioAddEditIcon = quizAudioAdd?.querySelector("img");
+const quizAudioEditMenu = document.getElementById("quiz-audio-edit-menu");
+const quizAudioRerecord = document.getElementById("quiz-audio-rerecord");
+const quizAudioDelete = document.getElementById("quiz-audio-delete");
 const quizAudioRecorder = document.getElementById("quiz-audio-recorder");
 const quizAudioRecordClose = document.getElementById("quiz-audio-record-close");
 const quizAudioRecordStart = document.getElementById("quiz-audio-record-start");
@@ -685,6 +691,17 @@ async function loadSharedAudioSource(question, requestId) {
   }
 }
 
+function updateQuizAudioAdminTool(hasAudio) {
+  if (!quizAudioAdd) return;
+  quizAudioAdd.dataset.hasAudio = hasAudio ? "true" : "false";
+  quizAudioAdd.classList.toggle("has-audio", hasAudio);
+  quizAudioAdd.setAttribute("aria-label", hasAudio ? "Modifica spiegazione audio" : "Aggiungi spiegazione audio");
+  quizAudioAdd.setAttribute("aria-expanded", "false");
+  quizAudioAddPlus?.classList.toggle("hidden", hasAudio);
+  quizAudioAddEditIcon?.classList.toggle("hidden", !hasAudio);
+  quizAudioEditMenu?.classList.add("hidden");
+}
+
 async function updateSharedAudioAvailability(question) {
   resetSharedAudioPlayer();
   const requestId = sharedAudioRequestId;
@@ -692,6 +709,7 @@ async function updateSharedAudioAvailability(question) {
   try {
     const data = await requestSharedAudio("getQuizAudioStatus", question);
     if (requestId !== sharedAudioRequestId) return;
+    updateQuizAudioAdminTool(data.available === true);
     if (data.available) {
       sharedAudioQuestion = {
         question: String(question.question),
@@ -703,6 +721,7 @@ async function updateSharedAudioAvailability(question) {
     }
   } catch (_) {
     if (requestId !== sharedAudioRequestId) return;
+    updateQuizAudioAdminTool(false);
     sharedAudioPlayer.classList.add("hidden");
     sharedAudioPlayer.setAttribute("aria-hidden", "true");
   }
@@ -979,12 +998,54 @@ async function saveInlineAudioRecording(event) {
   }
 }
 
-quizAudioAdd?.addEventListener("click", openInlineAudioRecorder);
+quizAudioAdd?.addEventListener("click", event => {
+  event.stopPropagation();
+  if (quizAudioAdd.dataset.hasAudio !== "true") {
+    openInlineAudioRecorder(event);
+    return;
+  }
+  const willOpen = quizAudioEditMenu?.classList.contains("hidden");
+  quizAudioEditMenu?.classList.toggle("hidden", !willOpen);
+  quizAudioAdd.setAttribute("aria-expanded", String(willOpen));
+});
+quizAudioRerecord?.addEventListener("click", event => {
+  event.stopPropagation();
+  quizAudioEditMenu?.classList.add("hidden");
+  quizAudioAdd?.setAttribute("aria-expanded", "false");
+  openInlineAudioRecorder(event);
+});
+quizAudioDelete?.addEventListener("click", async event => {
+  event.stopPropagation();
+  const question = quiz[current];
+  quizAudioEditMenu?.classList.add("hidden");
+  quizAudioAdd?.setAttribute("aria-expanded", "false");
+  const accepted = await showConfirm(
+    "Eliminare la spiegazione?",
+    "L'audio di questa domanda verrà eliminato.",
+    "Elimina",
+    "Annulla"
+  );
+  if (!accepted) return;
+  try {
+    await quizAudioAdminApi("deleteQuizAudio", question);
+    resetSharedAudioPlayer();
+    updateQuizAudioAdminTool(false);
+    showAudioUnavailableToast("Spiegazione audio eliminata");
+  } catch (error) {
+    await showMessage("Eliminazione non riuscita", error.message || "Riprova.");
+  }
+});
 quizAudioRecordClose?.addEventListener("click", event => { event.stopPropagation(); closeInlineAudioRecorder(); });
 quizAudioRecordStart?.addEventListener("click", startInlineAudioRecording);
 quizAudioRecordPause?.addEventListener("click", pauseInlineAudioRecording);
 quizAudioRecordSave?.addEventListener("click", saveInlineAudioRecording);
 quizAudioRecorder?.addEventListener("click", event => event.stopPropagation());
+document.addEventListener("click", event => {
+  if (!quizAudioAdminTools?.contains(event.target)) {
+    quizAudioEditMenu?.classList.add("hidden");
+    quizAudioAdd?.setAttribute("aria-expanded", "false");
+  }
+});
 
 let _audioToastTimer = null;
 
@@ -1963,7 +2024,8 @@ function updateAdminCorrectDots(question) {
 function showQuestion() {
   const q = quiz[current];
   if (inlineAudioRecording && inlineAudioRecording.questionIndex !== current) closeInlineAudioRecorder();
-  quizAudioAdd?.classList.toggle("hidden", !isAdmin || TRIAL_MODE);
+  quizAudioAdminTools?.classList.toggle("hidden", !isAdmin || TRIAL_MODE);
+  updateQuizAudioAdminTool(false);
   const veroBtn = document.getElementById("vero");
   const falsoBtn = document.getElementById("falso");
   document.getElementById("question").innerText = q.question;

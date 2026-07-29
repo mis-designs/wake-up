@@ -325,7 +325,19 @@ function createAudioPlayer(question, { legacy = false } = {}) {
   const tick = () => { paint(); if (!audio.paused && !audio.ended) frame = requestAnimationFrame(tick); };
   const waitForReady = () => { if (audio.readyState >= HTMLMediaElement.HAVE_METADATA) return Promise.resolve(); return new Promise((resolve, reject) => { const timeout = setTimeout(() => { cleanup(); reject(new Error("audio_metadata_timeout")); }, 10000); const cleanup = () => { clearTimeout(timeout); audio.removeEventListener("loadedmetadata", ready); audio.removeEventListener("canplay", ready); audio.removeEventListener("error", failed); }; const ready = () => { cleanup(); resolve(); }; const failed = () => { cleanup(); reject(new Error("audio_media_error")); }; audio.addEventListener("loadedmetadata", ready); audio.addEventListener("canplay", ready); audio.addEventListener("error", failed); }); };
   const loadBlob = async () => {
-    const result = await apiBlob(legacy ? "getLegacyQuizAudioBlob" : "getQuizAudioBlob", quizAudioPayload(question));
+    let result;
+    if (legacy) {
+      result = await apiBlob("getLegacyQuizAudioBlob", quizAudioPayload(question));
+    } else {
+      try {
+        result = await apiBlob("getQuizAudioBlob", quizAudioPayload(question));
+      } catch (error) {
+        // An admin must still be able to listen before assigning an ambiguous
+        // legacy recording to its final figure/question identity.
+        if (error?.message !== "quiz_audio_requires_review") throw error;
+        result = await apiBlob("getLegacyQuizAudioBlob", quizAudioPayload(question));
+      }
+    }
     if (objectUrl) URL.revokeObjectURL(objectUrl);
     durationHint = Math.max(durationHint, Math.max(0, Number(result.durationMs) || 0) / 1000);
     objectUrl = URL.createObjectURL(result.blob); audio.src = objectUrl; sourceMode = "blob"; audio.load();
