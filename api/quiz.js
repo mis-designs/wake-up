@@ -14,6 +14,7 @@ const require = createRequire(import.meta.url);
 const {
   QUIZ_AUDIO_IDENTITY_VERSION,
   getQuizAudioIdentity,
+  normalizeQuizAudioFigure,
   normalizeQuizAudioQuestion
 } = require("../quiz-audio-identity.cjs");
 const quizAudioLegacyRegistry = require("../data/quiz-audio-legacy-collisions-v1.json");
@@ -162,7 +163,7 @@ async function findQuizAudioRow(identity, { allowAmbiguousLegacy = false } = {})
   return { row: legacy, matchedQuizKey: identity.legacyQuizKey, legacy: true, requiresReview };
 }
 
-async function getCanonicalQuizAudioIdentity(questionId, question) {
+async function getCanonicalQuizAudioCandidates(questionId, question, figure) {
   const now = Date.now();
   if (quizAudioCatalogCache.expiresAt <= now || !quizAudioCatalogCache.rows.length) {
     const catalog = await forwardCatalogAction();
@@ -173,21 +174,34 @@ async function getCanonicalQuizAudioIdentity(questionId, question) {
   }
 
   const id = String(questionId ?? "").trim();
-  let row = id
-    ? quizAudioCatalogCache.rows.find(item => String(item?.id ?? "").trim() === id)
-    : null;
+  const normalizedQuestion = normalizeQuizAudioQuestion(question);
+  const requestedFigure = normalizeQuizAudioFigure(figure);
+  const matches = quizAudioCatalogCache.rows.filter(item => {
+    const sameId = id && String(item?.id ?? "").trim() === id;
+    const sameQuestion = normalizedQuestion
+      && normalizeQuizAudioQuestion(item?.question) === normalizedQuestion;
+    return sameId || sameQuestion;
+  });
 
-  if (!row) {
-    const normalizedQuestion = normalizeQuizAudioQuestion(question);
-    const matches = quizAudioCatalogCache.rows.filter(
-      item => normalizeQuizAudioQuestion(item?.question) === normalizedQuestion
-    );
-    if (matches.length === 1) row = matches[0];
+  matches.sort((a, b) => {
+    const aId = id && String(a?.id ?? "").trim() === id ? 1 : 0;
+    const bId = id && String(b?.id ?? "").trim() === id ? 1 : 0;
+    if (aId !== bId) return bId - aId;
+    const aFigure = normalizeQuizAudioFigure(a?.figure) === requestedFigure ? 1 : 0;
+    const bFigure = normalizeQuizAudioFigure(b?.figure) === requestedFigure ? 1 : 0;
+    return bFigure - aFigure;
+  });
+
+  const identities = [];
+  const keys = new Set();
+  for (const row of matches) {
+    if (!row?.question) continue;
+    const identity = getQuizAudioIdentity(row.question, row.figure);
+    if (keys.has(identity.quizKey)) continue;
+    keys.add(identity.quizKey);
+    identities.push(identity);
   }
-
-  return row?.question
-    ? getQuizAudioIdentity(row.question, row.figure)
-    : null;
+  return identities;
 }
 
 async function resolveQuizAudioRow({ question, figure, questionId }) {
@@ -195,14 +209,20 @@ async function resolveQuizAudioRow({ question, figure, questionId }) {
   const requestedResult = await findQuizAudioRow(requestedIdentity);
   if (requestedResult.row) return { identity: requestedIdentity, result: requestedResult };
 
-  const canonicalIdentity = await getCanonicalQuizAudioIdentity(questionId, question);
-  if (canonicalIdentity && canonicalIdentity.quizKey !== requestedIdentity.quizKey) {
+  const canonicalIdentities = await getCanonicalQuizAudioCandidates(questionId, question, figure);
+  let reviewCandidate = null;
+  for (const canonicalIdentity of canonicalIdentities) {
+    if (canonicalIdentity.quizKey === requestedIdentity.quizKey) continue;
     const canonicalResult = await findQuizAudioRow(canonicalIdentity);
-    if (canonicalResult.row || canonicalResult.requiresReview) {
+    if (canonicalResult.row) {
       return { identity: canonicalIdentity, result: canonicalResult };
+    }
+    if (!reviewCandidate && canonicalResult.requiresReview) {
+      reviewCandidate = { identity: canonicalIdentity, result: canonicalResult };
     }
   }
 
+  if (reviewCandidate) return reviewCandidate;
   return { identity: requestedIdentity, result: requestedResult };
 }
 
