@@ -539,7 +539,7 @@ const quizAudioRecordStatus = document.getElementById("quiz-audio-record-status"
 const quizAudioRecordTime = document.getElementById("quiz-audio-record-time");
 const quizAudioRecordPreview = document.getElementById("quiz-audio-record-preview");
 const sharedAudio = new Audio();
-sharedAudio.preload = "metadata";
+sharedAudio.preload = "auto";
 let sharedAudioQuestion = "";
 let sharedAudioLoading = null;
 let sharedAudioFrame = 0;
@@ -548,8 +548,6 @@ let sharedAudioRequestId = 0;
 let sharedAudioObjectUrl = "";
 let sharedAudioSeeking = false;
 let sharedAudioDurationHint = 0;
-let sharedAudioSourceMode = "";
-let sharedAudioBlobFallbackTried = false;
 
 function revokeSharedAudioObjectUrl() {
   if (!sharedAudioObjectUrl) return;
@@ -572,8 +570,6 @@ function resetSharedAudioPlayer() {
   sharedAudioLoading = null;
   sharedAudioSeeking = false;
   sharedAudioDurationHint = 0;
-  sharedAudioSourceMode = "";
-  sharedAudioBlobFallbackTried = false;
   if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame);
   sharedAudioFrame = 0;
 }
@@ -673,23 +669,14 @@ async function loadSharedAudioBlob(question, requestId) {
   sharedAudioDurationHint = Math.max(sharedAudioDurationHint, Math.max(0, Number(result.durationMs) || 0) / 1000);
   sharedAudioObjectUrl = URL.createObjectURL(result.blob);
   sharedAudio.src = sharedAudioObjectUrl;
-  sharedAudioSourceMode = "blob";
   sharedAudio.load();
 }
 
 async function loadSharedAudioSource(question, requestId) {
-  try {
-    const playback = await requestSharedAudio("getQuizAudioPlayback", question);
-    if (!playback?.audioUrl) throw new Error("missing_audio_url");
-    if (requestId !== sharedAudioRequestId || !sharedAudioQuestion) return;
-    sharedAudioDurationHint = Math.max(sharedAudioDurationHint, Math.max(0, Number(playback.durationMs) || 0) / 1000);
-    sharedAudio.src = String(playback.audioUrl);
-    sharedAudioSourceMode = "signed";
-    sharedAudio.load();
-  } catch (error) {
-    await loadSharedAudioBlob(question, requestId);
-    if (sharedAudioSourceMode !== "blob") throw error;
-  }
+  // The production CSP allows media only from self/blob. Loading the
+  // authenticated same-origin blob directly is reliable across browsers and
+  // avoids losing the user's play gesture during a signed-URL fallback.
+  await loadSharedAudioBlob(question, requestId);
 }
 
 function updateQuizAudioAdminTool(hasAudio) {
@@ -719,6 +706,17 @@ async function updateSharedAudioAvailability(question) {
       sharedAudioDurationHint = Math.max(0, Number(data.durationMs) || 0) / 1000;
       sharedAudioPlayer.classList.remove("hidden");
       sharedAudioPlayer.setAttribute("aria-hidden", "false");
+      sharedAudioPlay?.classList.add("is-loading");
+      sharedAudioLoading = loadSharedAudioSource(sharedAudioQuestion, requestId)
+        .catch(() => {
+          if (requestId !== sharedAudioRequestId) return;
+          sharedAudioLoading = null;
+          sharedAudio.removeAttribute("src");
+          sharedAudio.load();
+        })
+        .finally(() => {
+          if (requestId === sharedAudioRequestId) sharedAudioPlay?.classList.remove("is-loading");
+        });
     }
   } catch (_) {
     if (requestId !== sharedAudioRequestId) return;
@@ -740,19 +738,8 @@ async function playSharedAudio() {
       sharedAudioPlay?.classList.remove("is-loading");
     }
     if (sharedAudio.paused) {
-      try {
-        await waitForSharedAudioReady();
-        await sharedAudio.play();
-      } catch (error) {
-        if (sharedAudioSourceMode !== "signed" || sharedAudioBlobFallbackTried) throw error;
-        sharedAudioBlobFallbackTried = true;
-        sharedAudio.pause();
-        sharedAudio.removeAttribute("src");
-        sharedAudio.load();
-        await loadSharedAudioBlob(sharedAudioQuestion, requestId);
-        await waitForSharedAudioReady();
-        await sharedAudio.play();
-      }
+      await waitForSharedAudioReady();
+      await sharedAudio.play();
     } else sharedAudio.pause();
   } catch (_) {
     sharedAudioPlay?.classList.remove("is-loading");

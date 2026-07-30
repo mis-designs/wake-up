@@ -562,11 +562,11 @@ function normalizeQuestionRow(row) {
   // image_0.png defines these database headers; image_1.png identifies the exam rows from index 790+.
   return {
     ...row,
-    id: getMappedValue(row, ["id", "ID"]),
-    chapter: getMappedValue(row, ["chapter", "Chapter"]),
-    question: getMappedValue(row, ["question", "Question"]),
-    figure: getMappedValue(row, ["figure", "Figure"]),
-    correct: getMappedValue(row, ["correct", "Correct"]),
+    id: getMappedValue(row, ["id", "ID", "quiz_id", "quizId"]),
+    chapter: getMappedValue(row, ["chapter", "Chapter", "capitolo", "Capitolo"]),
+    question: getMappedValue(row, ["question", "Question", "q", "domanda", "Domanda"]),
+    figure: getMappedValue(row, ["figure", "Figure", "img", "image", "Image", "figura", "Figura"]),
+    correct: getMappedValue(row, ["correct", "Correct", "answer", "risposta", "Risposta"]),
     question_bd: getMappedValue(row, ["question_bd", "Question_BD", "questionBD", "questionBd"]),
     explanations: getMappedValue(row, ["explanations", "Explanations"])
   };
@@ -832,7 +832,11 @@ export default async function handler(req, res) {
       // Keep Quiz UI authorization consistent with requireQuizAudioAccess:
       // a validated admin role or a server allow-listed phone is sufficient.
       const admin = access.role === "admin" || isAdminPhone(phone);
-      const rows = modeConfig ? await fetchExamRows(action, text, modeConfig) : getQuizRows(data);
+      // Use the same canonical row shape as the Magic Book audio catalog.
+      // Audio identity depends on question + figure, so the two entry points
+      // must never interpret sheet column aliases differently.
+      const rows = (modeConfig ? await fetchExamRows(action, text, modeConfig) : getQuizRows(data))
+        .map(normalizeQuestionRow);
       const quiz = modeConfig ? buildExamQuiz(rows, modeConfig) : rows;
       const quizForClient = admin ? await addAdminCorrectAnswers(quiz) : quiz;
       const quizSession = createSignedToken({
