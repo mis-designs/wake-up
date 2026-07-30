@@ -177,11 +177,20 @@ body.loading-open {
   gap: 12px;
 }
 
-.quiz-audio-admin-tools {
+.quiz-question-actions {
   position: absolute;
   bottom: 12px;
   left: 12px;
   z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quiz-audio-admin-tools {
+  position: relative;
+  inset: auto;
+  z-index: 1;
 }
 
 .quiz-audio-add {
@@ -269,6 +278,14 @@ body.loading-open {
   background: rgba(255, 255, 255, .98);
   box-shadow: 0 18px 42px rgba(37, 41, 67, .22);
   cursor: default;
+}
+
+.quiz-question-actions .explanation-btn {
+  height: 38px;
+  padding: 0 13px;
+  border-radius: 12px;
+  font-size: .74rem;
+  box-shadow: 0 6px 15px rgba(58, 78, 251, .18);
 }
 
 .quiz-audio-recorder-head {

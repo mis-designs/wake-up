@@ -18,7 +18,7 @@
     <link rel="manifest" href="manifest.webmanifest?v=16">
     <link rel="preload" as="font" type="font/woff2" href="https://banglawebfonts.pages.dev/fonts/un-bangla/un-bangla-regular.woff2" crossorigin="anonymous">
     <style>@import url('https://banglawebfonts.pages.dev/css/un-bangla.css');</style>
-    <link rel="stylesheet" href="mystyle.css?v=37-persistent-audio-player">
+    <link rel="stylesheet" href="mystyle.css?v=38-explanation-next-to-add">
     <link rel="stylesheet" href="quiz-help.css?v=20260714-magic-help-v4">
 </head>
 
@@ -37,6 +37,7 @@
         <div id="progress">Domanda 1 / 30</div>
 
         <div class="question-area">
+            <div class="quiz-question-actions">
             <div id="quiz-audio-admin-tools" class="quiz-audio-admin-tools hidden">
                 <button id="quiz-audio-add" class="quiz-audio-add" type="button" aria-label="Aggiungi spiegazione audio" aria-expanded="false">
                     <span aria-hidden="true">+</span>
@@ -52,6 +53,10 @@
                         <span>Elimina audio</span>
                     </button>
                 </div>
+            </div>
+            <button id="explanation-btn" class="explanation-btn hidden" type="button" onclick="openExplanation()" aria-label="Apri spiegazione">
+                Spiega
+            </button>
             </div>
             <section id="quiz-audio-recorder" class="quiz-audio-recorder hidden" aria-label="Registratore spiegazione audio">
                 <div class="quiz-audio-recorder-head">
@@ -109,9 +114,6 @@
                     </button>
                     <button class="audio-btn" onclick="playBanglaAudio()" aria-label="Ascolta in Bengali">
                         <img src="icons/bangla.png" alt="">
-                    </button>
-                    <button id="explanation-btn" class="explanation-btn hidden" type="button" onclick="openExplanation()" aria-label="Apri spiegazione">
-                        Spiega
                     </button>
                 </div>
 
@@ -256,7 +258,7 @@
     </div>
 
     <script src="quiz-audio-identity.js?v=2"></script>
-    <script src="quiz.js?v=46-canonical-audio-source"></script>
+    <script src="quiz.js?v=47-explanation-next-to-add"></script>
     <script src="quiz-help.js?v=20260714-magic-help-v4"></script>
 </body>
 
