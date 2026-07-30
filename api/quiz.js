@@ -929,7 +929,11 @@ export default async function handler(req, res) {
           const catalog = await forwardCatalogAction();
           const catalogRows = getQuizRows(catalog).map(normalizeQuestionRow);
           const chapterKey = String(Number(chapters));
-          const matchingRows = catalogRows.filter(row => String(Number(String(row.chapter ?? "").trim())) === chapterKey);
+          const chapterIdPattern = new RegExp(`^cap(?:itolo)?[_-]?0*${chapterKey}(?:[_-]|$)`, "i");
+          const matchingRows = catalogRows.filter(row =>
+            String(Number(String(row.chapter ?? "").trim())) === chapterKey
+            || chapterIdPattern.test(String(row.id ?? "").trim())
+          );
           if (matchingRows.length) {
             // Preserve the exact Magic Book question/figure pair. The same
             // pair is used by the audio admin page to create its audio key.
