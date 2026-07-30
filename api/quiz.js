@@ -125,6 +125,21 @@ function isLegacyQuizAudioAmbiguous(legacyQuizKey) {
   return Boolean(quizAudioLegacyRegistry?.collisions?.[legacyQuizKey]);
 }
 
+function getMagicBookCollisionIdentity(question, figure) {
+  const requestedIdentity = getQuizAudioIdentity(question, figure);
+  const collision = quizAudioLegacyRegistry?.collisions?.[requestedIdentity.legacyQuizKey];
+  const magicBookCandidates = (collision?.candidates || []).filter(candidate =>
+    Array.isArray(candidate?.sources) && candidate.sources.includes("magic-book")
+  );
+
+  // A collision can be repaired safely only when this catalog has exactly one
+  // Magic Book variant. It lets Magicph recover the correct figure/audio when
+  // an older generic sheet response accidentally supplied the All Books row.
+  if (magicBookCandidates.length !== 1) return null;
+  const magicBookIdentity = getQuizAudioIdentity(question, magicBookCandidates[0].figureKey);
+  return magicBookIdentity.quizKey === requestedIdentity.quizKey ? null : magicBookIdentity;
+}
+
 async function requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly = false }) {
   const access = await ensureAccess({ phone, deviceId, accessToken });
   if (!access.ok) {
@@ -213,6 +228,17 @@ async function resolveQuizAudioRow({ question, figure, questionId }) {
   const requestedIdentity = getQuizAudioIdentity(question, figure);
   const requestedResult = await findQuizAudioRow(requestedIdentity);
   if (requestedResult.row) return { identity: requestedIdentity, result: requestedResult };
+
+  // Magicph is the Magic Book application. When an old generic response has
+  // supplied a colliding All Books row (same text, wrong/no figure), prefer
+  // the unique Magic Book identity before consulting the remote catalog.
+  const magicBookIdentity = getMagicBookCollisionIdentity(question, figure);
+  if (magicBookIdentity) {
+    const magicBookResult = await findQuizAudioRow(magicBookIdentity);
+    if (magicBookResult.row || magicBookResult.requiresReview) {
+      return { identity: magicBookIdentity, result: magicBookResult };
+    }
+  }
 
   const canonicalCandidates = await getCanonicalQuizAudioCandidates(questionId, question, figure);
   let reviewCandidate = null;
