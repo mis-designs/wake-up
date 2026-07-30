@@ -916,14 +916,34 @@ export default async function handler(req, res) {
       }
 
       const modeConfig = getExamModeConfig(mode);
-      const data = modeConfig ? null : await forwardGetAction({ action, chapters, text });
+      let data = null;
+      let catalogChapterRows = null;
+      if (!modeConfig && /^\d+$/.test(String(chapters || "").trim())) {
+        try {
+          // A single Magic Book chapter must come from the same 788-row
+          // catalog used by the audio admin page, not the generic quiz draw.
+          const catalog = await forwardCatalogAction();
+          const catalogRows = getQuizRows(catalog).map(normalizeQuestionRow);
+          const chapterKey = String(Number(chapters));
+          const matchingRows = catalogRows.filter(row => String(row.chapter ?? "").trim() === chapterKey);
+          if (matchingRows.length) {
+            catalogChapterRows = shuffleQuestions(matchingRows).slice(0, 30);
+            quizAudioCatalogCache = { expiresAt: Date.now() + 5 * 60 * 1000, rows: catalogRows };
+          }
+        } catch (_) {
+          catalogChapterRows = null;
+        }
+      }
+      if (!catalogChapterRows) data = modeConfig ? null : await forwardGetAction({ action, chapters, text });
       // Keep Quiz UI authorization consistent with requireQuizAudioAccess:
       // a validated admin role or a server allow-listed phone is sufficient.
       const admin = access.role === "admin" || isAdminPhone(phone);
       // Use the same canonical row shape as the Magic Book audio catalog.
       // Audio identity depends on question + figure, so the two entry points
       // must never interpret sheet column aliases differently.
-      let rows = (modeConfig ? await fetchExamRows(action, text, modeConfig) : getQuizRows(data))
+      let rows = (modeConfig
+        ? await fetchExamRows(action, text, modeConfig)
+        : (catalogChapterRows || getQuizRows(data)))
         .map(normalizeQuestionRow);
       if (!modeConfig) rows = await attachCanonicalAudioSources(rows);
       const quiz = modeConfig ? buildExamQuiz(rows, modeConfig) : rows;
