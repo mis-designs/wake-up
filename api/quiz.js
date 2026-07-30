@@ -125,21 +125,6 @@ function isLegacyQuizAudioAmbiguous(legacyQuizKey) {
   return Boolean(quizAudioLegacyRegistry?.collisions?.[legacyQuizKey]);
 }
 
-function getMagicBookCollisionIdentity(question, figure) {
-  const requestedIdentity = getQuizAudioIdentity(question, figure);
-  const collision = quizAudioLegacyRegistry?.collisions?.[requestedIdentity.legacyQuizKey];
-  const magicBookCandidates = (collision?.candidates || []).filter(candidate =>
-    Array.isArray(candidate?.sources) && candidate.sources.includes("magic-book")
-  );
-
-  // A collision can be repaired safely only when this catalog has exactly one
-  // Magic Book variant. It lets Magicph recover the correct figure/audio when
-  // an older generic sheet response accidentally supplied the All Books row.
-  if (magicBookCandidates.length !== 1) return null;
-  const magicBookIdentity = getQuizAudioIdentity(question, magicBookCandidates[0].figureKey);
-  return magicBookIdentity.quizKey === requestedIdentity.quizKey ? null : magicBookIdentity;
-}
-
 async function requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly = false }) {
   const access = await ensureAccess({ phone, deviceId, accessToken });
   if (!access.ok) {
@@ -224,19 +209,39 @@ async function getCanonicalQuizAudioCandidates(questionId, question, figure) {
   return candidates;
 }
 
+async function isVerifiedMagicBookCatalogRow({ questionId, question, figure }) {
+  const id = String(questionId ?? "").trim();
+  if (!id) return false;
+
+  const normalizedQuestion = normalizeQuizAudioQuestion(question);
+  const normalizedFigure = normalizeQuizAudioFigure(figure);
+  const candidates = await getCanonicalQuizAudioCandidates(id, question, figure);
+  return candidates.some(({ identity, row }) =>
+    String(row?.id ?? "").trim() === id
+    && normalizeQuizAudioQuestion(row?.question) === normalizedQuestion
+    && identity.figureKey === normalizedFigure
+  );
+}
+
 async function resolveQuizAudioRow({ question, figure, questionId }) {
   const requestedIdentity = getQuizAudioIdentity(question, figure);
   const requestedResult = await findQuizAudioRow(requestedIdentity);
   if (requestedResult.row) return { identity: requestedIdentity, result: requestedResult };
 
-  // Magicph is the Magic Book application. When an old generic response has
-  // supplied a colliding All Books row (same text, wrong/no figure), prefer
-  // the unique Magic Book identity before consulting the remote catalog.
-  const magicBookIdentity = getMagicBookCollisionIdentity(question, figure);
-  if (magicBookIdentity) {
-    const magicBookResult = await findQuizAudioRow(magicBookIdentity);
-    if (magicBookResult.row || magicBookResult.requiresReview) {
-      return { identity: magicBookIdentity, result: magicBookResult };
+  if (requestedResult.requiresReview) {
+    // A legacy key contains only the normalized question text. It is safe to
+    // use for Magic Book only after the current catalog confirms this exact
+    // ID, text and figure (including the legitimate "none" figure). This
+    // avoids relying on an outdated collision registry or inventing a figure.
+    try {
+      if (await isVerifiedMagicBookCatalogRow({ questionId, question, figure })) {
+        const legacyResult = await findQuizAudioRow(requestedIdentity, { allowAmbiguousLegacy: true });
+        if (legacyResult.row) {
+          return { identity: requestedIdentity, result: { ...legacyResult, requiresReview: false } };
+        }
+      }
+    } catch (_) {
+      // Keep the protected review state if the catalog cannot be verified.
     }
   }
 
