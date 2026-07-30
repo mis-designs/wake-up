@@ -63,6 +63,7 @@ const EXAM_QUIZ_MODES = {
 let quizAudioDatabase = null;
 let quizAudioStorage = null;
 let quizAudioCatalogCache = { expiresAt: 0, rows: [] };
+let quizAudioCatalogLoading = null;
 
 function isQuizAudioConfigured() {
   return Boolean(
@@ -166,11 +167,15 @@ async function findQuizAudioRow(identity, { allowAmbiguousLegacy = false } = {})
 async function getCanonicalQuizAudioCandidates(questionId, question, figure) {
   const now = Date.now();
   if (quizAudioCatalogCache.expiresAt <= now || !quizAudioCatalogCache.rows.length) {
-    const catalog = await forwardCatalogAction();
-    quizAudioCatalogCache = {
-      expiresAt: now + 5 * 60 * 1000,
-      rows: getQuizRows(catalog).map(normalizeQuestionRow)
-    };
+    quizAudioCatalogLoading ||= forwardCatalogAction()
+      .then(catalog => {
+        quizAudioCatalogCache = {
+          expiresAt: Date.now() + 5 * 60 * 1000,
+          rows: getQuizRows(catalog).map(normalizeQuestionRow)
+        };
+      })
+      .finally(() => { quizAudioCatalogLoading = null; });
+    await quizAudioCatalogLoading;
   }
 
   const id = String(questionId ?? "").trim();
@@ -192,16 +197,16 @@ async function getCanonicalQuizAudioCandidates(questionId, question, figure) {
     return bFigure - aFigure;
   });
 
-  const identities = [];
+  const candidates = [];
   const keys = new Set();
   for (const row of matches) {
     if (!row?.question) continue;
     const identity = getQuizAudioIdentity(row.question, row.figure);
     if (keys.has(identity.quizKey)) continue;
     keys.add(identity.quizKey);
-    identities.push(identity);
+    candidates.push({ identity, row });
   }
-  return identities;
+  return candidates;
 }
 
 async function resolveQuizAudioRow({ question, figure, questionId }) {
@@ -209,9 +214,9 @@ async function resolveQuizAudioRow({ question, figure, questionId }) {
   const requestedResult = await findQuizAudioRow(requestedIdentity);
   if (requestedResult.row) return { identity: requestedIdentity, result: requestedResult };
 
-  const canonicalIdentities = await getCanonicalQuizAudioCandidates(questionId, question, figure);
+  const canonicalCandidates = await getCanonicalQuizAudioCandidates(questionId, question, figure);
   let reviewCandidate = null;
-  for (const canonicalIdentity of canonicalIdentities) {
+  for (const { identity: canonicalIdentity } of canonicalCandidates) {
     if (canonicalIdentity.quizKey === requestedIdentity.quizKey) continue;
     const canonicalResult = await findQuizAudioRow(canonicalIdentity);
     if (canonicalResult.row) {
@@ -224,6 +229,21 @@ async function resolveQuizAudioRow({ question, figure, questionId }) {
 
   if (reviewCandidate) return reviewCandidate;
   return { identity: requestedIdentity, result: requestedResult };
+}
+
+async function attachCanonicalAudioSources(rows) {
+  try {
+    return await Promise.all(rows.map(async row => {
+      const candidates = await getCanonicalQuizAudioCandidates(row.id, row.question, row.figure);
+      const source = candidates[0]?.row;
+      return source
+        ? { ...row, audioQuestion: source.question, audioFigure: source.figure }
+        : row;
+    }));
+  } catch (_) {
+    // Audio metadata must never prevent the quiz itself from loading.
+    return rows;
+  }
 }
 
 async function moveLegacyQuizAudio(identity, { requireAmbiguous }) {
@@ -903,8 +923,9 @@ export default async function handler(req, res) {
       // Use the same canonical row shape as the Magic Book audio catalog.
       // Audio identity depends on question + figure, so the two entry points
       // must never interpret sheet column aliases differently.
-      const rows = (modeConfig ? await fetchExamRows(action, text, modeConfig) : getQuizRows(data))
+      let rows = (modeConfig ? await fetchExamRows(action, text, modeConfig) : getQuizRows(data))
         .map(normalizeQuestionRow);
+      if (!modeConfig) rows = await attachCanonicalAudioSources(rows);
       const quiz = modeConfig ? buildExamQuiz(rows, modeConfig) : rows;
       const quizForClient = admin ? await addAdminCorrectAnswers(quiz) : quiz;
       const quizSession = createSignedToken({

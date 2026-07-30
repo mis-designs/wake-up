@@ -548,6 +548,48 @@ let sharedAudioRequestId = 0;
 let sharedAudioObjectUrl = "";
 let sharedAudioSeeking = false;
 let sharedAudioDurationHint = 0;
+let sharedAudioContext = null;
+let sharedAudioFailure = null;
+
+function setSharedAudioVisualState(state) {
+  if (!sharedAudioPlayer) return;
+  const normalized = ["active", "loading", "inactive", "error"].includes(state) ? state : "inactive";
+  sharedAudioPlayer.classList.remove("is-active", "is-loading", "is-inactive", "is-error");
+  sharedAudioPlayer.classList.add(`is-${normalized}`);
+  sharedAudioPlayer.dataset.audioState = normalized;
+  sharedAudioPlayer.setAttribute("aria-label", normalized === "active"
+    ? "Spiegazione audio"
+    : normalized === "loading"
+      ? "Caricamento spiegazione audio"
+      : "Spiegazione audio non disponibile");
+}
+
+function setSharedAudioFailure(error, stage) {
+  sharedAudioFailure = {
+    code: String(error?.message || error || "quiz_audio_unknown_error"),
+    stage: String(stage || "unknown"),
+    questionId: String(sharedAudioContext?.id ?? ""),
+    figure: QuizAudioIdentity.normalizeFigure(sharedAudioContext?.figure ?? "")
+  };
+  setSharedAudioVisualState("error");
+}
+
+async function reportSharedAudioFailure() {
+  if (!isAdmin) {
+    showAudioUnavailableToast("L'audio non è disponibile al momento. Riprova tra poco.");
+    return;
+  }
+  const failure = sharedAudioFailure || {
+    code: "quiz_audio_not_available",
+    stage: "availability",
+    questionId: String(sharedAudioContext?.id ?? ""),
+    figure: QuizAudioIdentity.normalizeFigure(sharedAudioContext?.figure ?? "")
+  };
+  await showMessage(
+    "Errore spiegazione audio",
+    `Fase: ${failure.stage}\nCodice: ${failure.code}\nDomanda ID: ${failure.questionId || "non disponibile"}\nFigura: ${failure.figure || "none"}`
+  );
+}
 
 function revokeSharedAudioObjectUrl() {
   if (!sharedAudioObjectUrl) return;
@@ -568,10 +610,12 @@ function resetSharedAudioPlayer() {
   if (sharedAudioProgress) sharedAudioProgress.value = "0";
   sharedAudioQuestion = "";
   sharedAudioLoading = null;
+  sharedAudioFailure = null;
   sharedAudioSeeking = false;
   sharedAudioDurationHint = 0;
   if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame);
   sharedAudioFrame = 0;
+  setSharedAudioVisualState("loading");
 }
 
 function paintSharedAudioProgress() {
@@ -607,10 +651,12 @@ function animateSharedAudioProgress() {
 }
 
 async function requestSharedAudio(action, question) {
+  const audioQuestion = question?.audioQuestion || question?.question || question || "";
+  const audioFigure = question?.audioFigure ?? question?.figure ?? "";
   const identityPayload = {
     questionId: question?.id ?? "",
-    question: String(question?.question || question || ""),
-    figure: QuizAudioIdentity.normalizeFigure(question?.figure ?? ""),
+    question: String(audioQuestion),
+    figure: QuizAudioIdentity.normalizeFigure(audioFigure),
     quizAudioIdentityVersion: QuizAudioIdentity.VERSION
   };
   const response = await fetch(QUIZ_API, {
@@ -630,10 +676,12 @@ async function requestSharedAudio(action, question) {
 }
 
 async function requestSharedAudioBlob(question) {
+  const audioQuestion = question?.audioQuestion || question?.question || question || "";
+  const audioFigure = question?.audioFigure ?? question?.figure ?? "";
   const identityPayload = {
     questionId: question?.id ?? "",
-    question: String(question?.question || question || ""),
-    figure: QuizAudioIdentity.normalizeFigure(question?.figure ?? ""),
+    question: String(audioQuestion),
+    figure: QuizAudioIdentity.normalizeFigure(audioFigure),
     quizAudioIdentityVersion: QuizAudioIdentity.VERSION
   };
   const response = await fetch(QUIZ_API, {
@@ -695,7 +743,17 @@ function updateQuizAudioAdminTool(hasAudio) {
 async function updateSharedAudioAvailability(question) {
   resetSharedAudioPlayer();
   const requestId = sharedAudioRequestId;
-  if (TRIAL_MODE || !question?.question || !sharedAudioPlayer) return;
+  sharedAudioContext = question ? {
+    id: question.id ?? "",
+    question: String(question.question || ""),
+    figure: question.figure ?? ""
+  } : null;
+  if (TRIAL_MODE || !question?.question || !sharedAudioPlayer) {
+    sharedAudioPlayer?.classList.add("hidden");
+    return;
+  }
+  sharedAudioPlayer.classList.remove("hidden");
+  setSharedAudioVisualState("loading");
   try {
     const data = await requestSharedAudio("getQuizAudioStatus", question);
     if (requestId !== sharedAudioRequestId) return;
@@ -703,34 +761,48 @@ async function updateSharedAudioAvailability(question) {
     if (data.available) {
       sharedAudioQuestion = {
         id: question.id ?? "",
-        question: String(question.question),
-        figure: question.figure ?? ""
+        question: String(question.audioQuestion || question.question),
+        figure: question.audioFigure ?? question.figure ?? ""
       };
       sharedAudioDurationHint = Math.max(0, Number(data.durationMs) || 0) / 1000;
-      sharedAudioPlayer.classList.remove("hidden");
-      sharedAudioPlayer.setAttribute("aria-hidden", "false");
+      sharedAudioFailure = null;
+      setSharedAudioVisualState("loading");
       sharedAudioPlay?.classList.add("is-loading");
       sharedAudioLoading = loadSharedAudioSource(sharedAudioQuestion, requestId)
-        .catch(() => {
+        .then(() => {
+          if (requestId === sharedAudioRequestId) setSharedAudioVisualState("active");
+        })
+        .catch(error => {
           if (requestId !== sharedAudioRequestId) return;
           sharedAudioLoading = null;
           sharedAudio.removeAttribute("src");
           sharedAudio.load();
+          setSharedAudioFailure(error, "preload");
         })
         .finally(() => {
           if (requestId === sharedAudioRequestId) sharedAudioPlay?.classList.remove("is-loading");
         });
+    } else {
+      sharedAudioFailure = {
+        code: data.requiresReview ? "quiz_audio_requires_review" : "quiz_audio_not_found",
+        stage: "availability",
+        questionId: String(question.id ?? ""),
+        figure: QuizAudioIdentity.normalizeFigure(question.figure ?? "")
+      };
+      setSharedAudioVisualState("inactive");
     }
-  } catch (_) {
+  } catch (error) {
     if (requestId !== sharedAudioRequestId) return;
     updateQuizAudioAdminTool(false);
-    sharedAudioPlayer.classList.add("hidden");
-    sharedAudioPlayer.setAttribute("aria-hidden", "true");
+    setSharedAudioFailure(error, "status");
   }
 }
 
 async function playSharedAudio() {
-  if (!sharedAudioQuestion) return;
+  if (!sharedAudioQuestion || sharedAudioPlayer?.dataset.audioState === "inactive" || sharedAudioPlayer?.dataset.audioState === "error") {
+    await reportSharedAudioFailure();
+    return;
+  }
   const requestId = sharedAudioRequestId;
   try {
     if (!sharedAudio.src) {
@@ -743,15 +815,17 @@ async function playSharedAudio() {
     if (sharedAudio.paused) {
       await waitForSharedAudioReady();
       await sharedAudio.play();
+      setSharedAudioVisualState("active");
     } else sharedAudio.pause();
-  } catch (_) {
+  } catch (error) {
     sharedAudioPlay?.classList.remove("is-loading");
     sharedAudioLoading = null;
     sharedAudio.pause();
     revokeSharedAudioObjectUrl();
     sharedAudio.removeAttribute("src");
     sharedAudio.load();
-    showAudioUnavailableToast("Spiegazione audio non disponibile");
+    setSharedAudioFailure(error, "playback");
+    await reportSharedAudioFailure();
   }
 }
 

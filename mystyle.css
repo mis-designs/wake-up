@@ -1542,6 +1542,25 @@ body.loading-open {
   border-radius: 999px;
   background: #050505;
   box-shadow: 0 6px 17px rgba(13, 19, 32, .22);
+  transition: background .2s ease, opacity .2s ease, filter .2s ease;
+}
+
+.quiz-audio-explanation.is-inactive,
+.quiz-audio-explanation.is-error {
+  background: #8b909c;
+  opacity: .72;
+  filter: grayscale(.35);
+}
+
+.quiz-audio-explanation.is-loading {
+  background: #555b68;
+  opacity: .78;
+}
+
+.quiz-audio-explanation.is-active {
+  background: #050505;
+  opacity: 1;
+  filter: none;
 }
 .quiz-audio-play {
   flex: 0 0 29px;
