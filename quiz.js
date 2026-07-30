@@ -608,6 +608,7 @@ function animateSharedAudioProgress() {
 
 async function requestSharedAudio(action, question) {
   const identityPayload = {
+    questionId: question?.id ?? "",
     question: String(question?.question || question || ""),
     figure: QuizAudioIdentity.normalizeFigure(question?.figure ?? ""),
     quizAudioIdentityVersion: QuizAudioIdentity.VERSION
@@ -630,6 +631,7 @@ async function requestSharedAudio(action, question) {
 
 async function requestSharedAudioBlob(question) {
   const identityPayload = {
+    questionId: question?.id ?? "",
     question: String(question?.question || question || ""),
     figure: QuizAudioIdentity.normalizeFigure(question?.figure ?? ""),
     quizAudioIdentityVersion: QuizAudioIdentity.VERSION
@@ -700,6 +702,7 @@ async function updateSharedAudioAvailability(question) {
     updateQuizAudioAdminTool(data.available === true);
     if (data.available) {
       sharedAudioQuestion = {
+        id: question.id ?? "",
         question: String(question.question),
         figure: question.figure ?? ""
       };
@@ -947,6 +950,7 @@ async function quizAudioAdminApi(action, question, extra = {}) {
       phone: getQuizPhone(),
       deviceId: getQuizDeviceId(),
       accessToken: getQuizAccessToken(),
+      questionId: question?.id ?? "",
       question: String(question?.question || ""),
       figure: QuizAudioIdentity.normalizeFigure(question?.figure ?? ""),
       quizAudioIdentityVersion: QuizAudioIdentity.VERSION,

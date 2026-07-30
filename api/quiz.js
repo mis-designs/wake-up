@@ -13,7 +13,8 @@ import { neon } from "@neondatabase/serverless";
 const require = createRequire(import.meta.url);
 const {
   QUIZ_AUDIO_IDENTITY_VERSION,
-  getQuizAudioIdentity
+  getQuizAudioIdentity,
+  normalizeQuizAudioQuestion
 } = require("../quiz-audio-identity.cjs");
 const quizAudioLegacyRegistry = require("../data/quiz-audio-legacy-collisions-v1.json");
 
@@ -60,6 +61,7 @@ const EXAM_QUIZ_MODES = {
 
 let quizAudioDatabase = null;
 let quizAudioStorage = null;
+let quizAudioCatalogCache = { expiresAt: 0, rows: [] };
 
 function isQuizAudioConfigured() {
   return Boolean(
@@ -158,6 +160,50 @@ async function findQuizAudioRow(identity, { allowAmbiguousLegacy = false } = {})
     return { row: null, matchedQuizKey: identity.legacyQuizKey, legacy: true, requiresReview: true };
   }
   return { row: legacy, matchedQuizKey: identity.legacyQuizKey, legacy: true, requiresReview };
+}
+
+async function getCanonicalQuizAudioIdentity(questionId, question) {
+  const now = Date.now();
+  if (quizAudioCatalogCache.expiresAt <= now || !quizAudioCatalogCache.rows.length) {
+    const catalog = await forwardCatalogAction();
+    quizAudioCatalogCache = {
+      expiresAt: now + 5 * 60 * 1000,
+      rows: getQuizRows(catalog).map(normalizeQuestionRow)
+    };
+  }
+
+  const id = String(questionId ?? "").trim();
+  let row = id
+    ? quizAudioCatalogCache.rows.find(item => String(item?.id ?? "").trim() === id)
+    : null;
+
+  if (!row) {
+    const normalizedQuestion = normalizeQuizAudioQuestion(question);
+    const matches = quizAudioCatalogCache.rows.filter(
+      item => normalizeQuizAudioQuestion(item?.question) === normalizedQuestion
+    );
+    if (matches.length === 1) row = matches[0];
+  }
+
+  return row?.question
+    ? getQuizAudioIdentity(row.question, row.figure)
+    : null;
+}
+
+async function resolveQuizAudioRow({ question, figure, questionId }) {
+  const requestedIdentity = getQuizAudioIdentity(question, figure);
+  const requestedResult = await findQuizAudioRow(requestedIdentity);
+  if (requestedResult.row) return { identity: requestedIdentity, result: requestedResult };
+
+  const canonicalIdentity = await getCanonicalQuizAudioIdentity(questionId, question);
+  if (canonicalIdentity && canonicalIdentity.quizKey !== requestedIdentity.quizKey) {
+    const canonicalResult = await findQuizAudioRow(canonicalIdentity);
+    if (canonicalResult.row || canonicalResult.requiresReview) {
+      return { identity: canonicalIdentity, result: canonicalResult };
+    }
+  }
+
+  return { identity: requestedIdentity, result: requestedResult };
 }
 
 async function moveLegacyQuizAudio(identity, { requireAmbiguous }) {
@@ -485,6 +531,7 @@ function getRequestData(req) {
     mode: body.mode || query.mode,
     text: body.text || query.text,
     question: body.question || query.question,
+    questionId: body.questionId ?? query.questionId,
     figure: Object.prototype.hasOwnProperty.call(body, "figure") ? body.figure : query.figure,
     quizAudioIdentityVersion: body.quizAudioIdentityVersion ?? query.quizAudioIdentityVersion,
     audioDurationMs: body.audioDurationMs || query.audioDurationMs,
@@ -800,6 +847,7 @@ export default async function handler(req, res) {
       mode,
       text,
       question,
+      questionId,
       figure,
       quizAudioIdentityVersion,
       audioDurationMs,
@@ -889,8 +937,7 @@ export default async function handler(req, res) {
     if (req.method === "POST" && action === "getQuizAudioStatus") {
       const { isAdmin } = await requireQuizAudioAccess({ phone, deviceId, accessToken });
       assertQuizAudioIdentityVersion(quizAudioIdentityVersion);
-      const identity = getQuizAudioIdentity(question, figure);
-      const result = await findQuizAudioRow(identity);
+      const { identity, result } = await resolveQuizAudioRow({ question, figure, questionId });
       return res.status(200).json({
         ok: true,
         available: Boolean(result.row),
@@ -916,8 +963,7 @@ export default async function handler(req, res) {
     if (req.method === "POST" && action === "getQuizAudioPlayback") {
       await requireQuizAudioAccess({ phone, deviceId, accessToken });
       assertQuizAudioIdentityVersion(quizAudioIdentityVersion);
-      const identity = getQuizAudioIdentity(question, figure);
-      const result = await findQuizAudioRow(identity);
+      const { result } = await resolveQuizAudioRow({ question, figure, questionId });
       if (result.requiresReview) return res.status(409).json({ error: "quiz_audio_requires_review" });
       if (!result.row) return res.status(404).json({ error: "quiz_audio_not_found" });
 
@@ -937,8 +983,7 @@ export default async function handler(req, res) {
     if (req.method === "POST" && action === "getQuizAudioBlob") {
       await requireQuizAudioAccess({ phone, deviceId, accessToken });
       assertQuizAudioIdentityVersion(quizAudioIdentityVersion);
-      const identity = getQuizAudioIdentity(question, figure);
-      const result = await findQuizAudioRow(identity);
+      const { result } = await resolveQuizAudioRow({ question, figure, questionId });
       if (result.requiresReview) return res.status(409).json({ error: "quiz_audio_requires_review" });
       if (!result.row) return res.status(404).json({ error: "quiz_audio_not_found" });
 
