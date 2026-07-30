@@ -152,34 +152,6 @@ async function getQuizAudioRow(quizKey) {
   return rows[0] || null;
 }
 
-async function getMagicBookRowsWithAudio(rows) {
-  const normalizedRows = Array.isArray(rows) ? rows : [];
-  if (!normalizedRows.length) return [];
-
-  const entries = normalizedRows.map(row => ({
-    row,
-    identity: getQuizAudioIdentity(row.question, row.figure)
-  }));
-  const keys = [...new Set(entries.flatMap(({ identity }) => [identity.quizKey, identity.legacyQuizKey]))];
-  const sql = getQuizAudioDatabase();
-  const audioRows = await sql`
-    SELECT quiz_key
-    FROM quiz_audio_explanations
-    WHERE quiz_key = ANY(${keys})
-  `;
-  const savedKeys = new Set(audioRows.map(item => String(item.quiz_key)));
-
-  return entries
-    .filter(({ identity }) => savedKeys.has(identity.quizKey)
-      || (!isLegacyQuizAudioAmbiguous(identity.legacyQuizKey) && savedKeys.has(identity.legacyQuizKey)))
-    .map(({ row }) => ({
-      ...row,
-      // These are the exact Magic Book values used to build the audio key.
-      audioQuestion: row.question,
-      audioFigure: row.figure
-    }));
-}
-
 async function findQuizAudioRow(identity, { allowAmbiguousLegacy = false } = {}) {
   const current = await getQuizAudioRow(identity.quizKey);
   if (current) return { row: current, matchedQuizKey: identity.quizKey, legacy: false, requiresReview: false };
@@ -958,35 +930,22 @@ export default async function handler(req, res) {
           const catalogRows = getQuizRows(catalog).map(normalizeQuestionRow);
           const chapterKey = String(Number(chapters));
           const matchingRows = catalogRows.filter(row => String(Number(String(row.chapter ?? "").trim())) === chapterKey);
-          if (!matchingRows.length) {
-            const error = new Error("magic_book_chapter_not_found");
-            error.statusCode = 404;
-            error.details = { chapter: chapterKey };
-            throw error;
+          if (matchingRows.length) {
+            // Preserve the exact Magic Book question/figure pair. The same
+            // pair is used by the audio admin page to create its audio key.
+            // This is deliberately non-blocking: an audio metadata issue must
+            // never prevent every user from opening their quiz.
+            catalogChapterRows = shuffleQuestions(matchingRows.map(row => ({
+              ...row,
+              audioQuestion: row.question,
+              audioFigure: row.figure
+            }))).slice(0, 30);
+            quizAudioCatalogCache = { expiresAt: Date.now() + 5 * 60 * 1000, rows: catalogRows };
           }
-          // A chapter quiz is a Magic Book quiz: keep only the catalog rows
-          // that have an actual audio association in quiz_audio_explanations.
-          // Never fall back to the generic chapter feed here, otherwise a
-          // different row with the same chapter number can be shown without
-          // its Magic Book explanation audio.
-          const audioReadyRows = await getMagicBookRowsWithAudio(matchingRows);
-          if (audioReadyRows.length < 30) {
-            const error = new Error("magic_book_chapter_audio_catalog_incomplete");
-            error.statusCode = 503;
-            error.details = {
-              chapter: chapterKey,
-              magicBookRows: matchingRows.length,
-              audioReadyRows: audioReadyRows.length,
-              minimumRequired: 30
-            };
-            throw error;
-          }
-          catalogChapterRows = shuffleQuestions(audioReadyRows).slice(0, 30);
-          quizAudioCatalogCache = { expiresAt: Date.now() + 5 * 60 * 1000, rows: catalogRows };
-        } catch (error) {
-          // Do not silently route a Magic Book chapter to getQuiz: doing so
-          // reintroduces questions that are outside the Magic Book/audio DB.
-          throw error;
+        } catch (_) {
+          // Keep the quiz usable if the catalog service has a temporary fault.
+          // The normal path above is always the Magic Book catalog.
+          catalogChapterRows = null;
         }
       }
       if (!catalogChapterRows) data = modeConfig ? null : await forwardGetAction({ action, chapters, text });
