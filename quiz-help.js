@@ -1,6 +1,37 @@
 (() => {
   "use strict";
 
+  const readerSizes = ["default", "large", "xlarge"];
+  const readerLabels = ["100%", "115%", "130%"];
+  let readerSizeIndex = 0;
+  try {
+    readerSizeIndex = Math.max(0, readerSizes.indexOf(localStorage.getItem("magicph-reader-size")));
+  } catch (_) {}
+
+  const decreaseText = document.getElementById("text-size-decrease");
+  const increaseText = document.getElementById("text-size-increase");
+  const textSizeValue = document.getElementById("text-size-value");
+
+  function applyReaderSize() {
+    const size = readerSizes[readerSizeIndex];
+    if (size === "default") document.documentElement.removeAttribute("data-reader-size");
+    else document.documentElement.dataset.readerSize = size;
+    if (textSizeValue) textSizeValue.textContent = readerLabels[readerSizeIndex];
+    if (decreaseText) decreaseText.disabled = readerSizeIndex === 0;
+    if (increaseText) increaseText.disabled = readerSizeIndex === readerSizes.length - 1;
+    try { localStorage.setItem("magicph-reader-size", size); } catch (_) {}
+  }
+
+  decreaseText?.addEventListener("click", () => {
+    readerSizeIndex = Math.max(0, readerSizeIndex - 1);
+    applyReaderSize();
+  });
+  increaseText?.addEventListener("click", () => {
+    readerSizeIndex = Math.min(readerSizes.length - 1, readerSizeIndex + 1);
+    applyReaderSize();
+  });
+  applyReaderSize();
+
   const HELP_SOURCE = "data/patente/quiz-help-runtime-v2.json?v=20260713-magic-help-v2";
   const questionArea = document.querySelector(".question-area");
   const questionText = document.getElementById("question");

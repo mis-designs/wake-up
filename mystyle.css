@@ -68,9 +68,11 @@ body.loading-open {
 
 /* TOP */
 .top-bar {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 
 .icon-btn {
@@ -94,7 +96,53 @@ body.loading-open {
 }
 
 .top-bar h2 {
-  flex: 1;
+  position: absolute;
+  left: 50%;
+  margin: 0;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.top-bar-tools { margin-left: auto; }
+
+.top-bar-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.text-size-control {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid #e5e8f2;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(37, 41, 67, .09);
+}
+
+.text-size-control button {
+  width: 34px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-size: .76rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.text-size-control button:disabled { color: #b7bdcc; cursor: default; }
+.text-size-control button:not(:disabled):active { background: #f0f2ff; }
+.text-size-control button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+
+#text-size-value {
+  min-width: 36px;
+  color: #626a80;
+  font-size: .62rem;
+  font-weight: 800;
   text-align: center;
 }
 
@@ -443,8 +491,8 @@ body.loading-open {
 }
 
 #question {
-  font-size: clamp(1.02rem, 2.9vw, 1.16rem);
-  line-height: 1.4;
+  font-size: clamp(1.1rem, 3.1vw, 1.22rem);
+  line-height: 1.48;
   color: var(--color-text);
 }
 
@@ -1456,13 +1504,31 @@ body.loading-open {
   }
 
   .quiz-command-bar .answer-label {
-    font-size: .55rem;
+    font-size: .68rem;
   }
 
   .quiz-command-bar .admin-correct-dot-slot {
     height: 5px;
     margin-top: 6px;
   }
+}
+
+html[data-reader-size="large"] #question { font-size: clamp(1.24rem, 3.5vw, 1.38rem); }
+html[data-reader-size="xlarge"] #question { font-size: clamp(1.38rem, 3.9vw, 1.54rem); }
+
+@media (max-width: 540px) {
+  .top-bar-tools { gap: 5px; }
+  .text-size-control { height: 34px; }
+  .text-size-control button { width: 30px; }
+  #text-size-value { min-width: 33px; }
+  #timer { padding: 6px 9px; }
+}
+
+@media (max-width: 380px) {
+  #text-size-value { display: none; }
+  .text-size-control button { width: 29px; }
+  .top-bar h2 { font-size: 1.15rem; }
+  .exit-btn { margin-right: 4px; }
 }
 
 @media (max-width: 390px) {

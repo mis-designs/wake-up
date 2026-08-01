@@ -18,8 +18,8 @@
     <link rel="manifest" href="manifest.webmanifest?v=16">
     <link rel="preload" as="font" type="font/woff2" href="https://banglawebfonts.pages.dev/fonts/un-bangla/un-bangla-regular.woff2" crossorigin="anonymous">
     <style>@import url('https://banglawebfonts.pages.dev/css/un-bangla.css');</style>
-    <link rel="stylesheet" href="mystyle.css?v=38-explanation-next-to-add">
-    <link rel="stylesheet" href="quiz-help.css?v=20260714-magic-help-v4">
+    <link rel="stylesheet" href="mystyle.css?v=39-readable-text">
+    <link rel="stylesheet" href="quiz-help.css?v=20260801-readable-text">
 </head>
 
 <body>
@@ -31,7 +31,14 @@
                 <img src="icons/exit.png" alt="">
             </button>
             <h2>Quiz</h2>
-            <div id="timer" class="notranslate" translate="no" aria-label="Tempo rimanente">20:00</div>
+            <div class="top-bar-tools">
+                <div class="text-size-control notranslate" translate="no" role="group" aria-label="Dimensione del testo">
+                    <button id="text-size-decrease" type="button" aria-label="Riduci il testo">A−</button>
+                    <span id="text-size-value" aria-live="polite" aria-label="Dimensione testo">100%</span>
+                    <button id="text-size-increase" type="button" aria-label="Ingrandisci il testo">A+</button>
+                </div>
+                <div id="timer" class="notranslate" translate="no" aria-label="Tempo rimanente">20:00</div>
+            </div>
         </div>
 
         <div id="progress">Domanda 1 / 30</div>
@@ -259,7 +266,7 @@
 
     <script src="quiz-audio-identity.js?v=2"></script>
     <script src="quiz.js?v=47-explanation-next-to-add"></script>
-    <script src="quiz-help.js?v=20260714-magic-help-v4"></script>
+    <script src="quiz-help.js?v=20260801-readable-text"></script>
 </body>
 
 </html>
