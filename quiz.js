@@ -359,12 +359,9 @@ function buildQuizApiUrl(action, params = {}) {
   const query = new URLSearchParams({
     action,
     phone: getQuizPhone(),
-    deviceId: getQuizDeviceId(),
-    accessToken: getQuizAccessToken()
+    deviceId: getQuizDeviceId()
   });
 
-  const activeQuizToken = getQuizSessionToken();
-  if (activeQuizToken) query.set("quizSessionToken", activeQuizToken);
   if (action === "getQuiz") query.set("draw", createQuizDrawId());
 
   Object.entries(params).forEach(([key, value]) => {
@@ -436,7 +433,15 @@ async function handleQuizAccessError(error) {
 }
 
 async function fetchQuizJson(url, options = {}) {
-  const response = await fetch(url, options);
+  const headers = new Headers(options.headers || {});
+  if (!TRIAL_MODE) {
+    const accessToken = getQuizAccessToken();
+    const activeQuizToken = getQuizSessionToken();
+    if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+    if (activeQuizToken) headers.set("X-Quiz-Session", activeQuizToken);
+  }
+
+  const response = await fetch(url, { ...options, headers });
 
   let data = null;
   try {
@@ -661,12 +666,14 @@ async function requestSharedAudio(action, question) {
   };
   const response = await fetch(QUIZ_API, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(getQuizAccessToken() ? { Authorization: `Bearer ${getQuizAccessToken()}` } : {})
+    },
     body: JSON.stringify({
       action,
       phone: getQuizPhone(),
       deviceId: getQuizDeviceId(),
-      accessToken: getQuizAccessToken(),
       ...identityPayload
     })
   });
@@ -686,12 +693,14 @@ async function requestSharedAudioBlob(question) {
   };
   const response = await fetch(QUIZ_API, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(getQuizAccessToken() ? { Authorization: `Bearer ${getQuizAccessToken()}` } : {})
+    },
     body: JSON.stringify({
       action: "getQuizAudioBlob",
       phone: getQuizPhone(),
       deviceId: getQuizDeviceId(),
-      accessToken: getQuizAccessToken(),
       ...identityPayload
     })
   });
@@ -752,13 +761,14 @@ async function updateSharedAudioAvailability(question) {
     sharedAudioPlayer?.classList.add("hidden");
     return;
   }
-  sharedAudioPlayer.classList.remove("hidden");
   setSharedAudioVisualState("loading");
   try {
     const data = await requestSharedAudio("getQuizAudioStatus", question);
     if (requestId !== sharedAudioRequestId) return;
     updateQuizAudioAdminTool(data.available === true);
     if (data.available) {
+      sharedAudioPlayer.classList.remove("hidden");
+      sharedAudioPlayer.setAttribute("aria-hidden", "false");
       sharedAudioQuestion = {
         id: question.id ?? "",
         question: String(question.audioQuestion || question.question),
@@ -783,6 +793,8 @@ async function updateSharedAudioAvailability(question) {
           if (requestId === sharedAudioRequestId) sharedAudioPlay?.classList.remove("is-loading");
         });
     } else {
+      sharedAudioPlayer.classList.add("hidden");
+      sharedAudioPlayer.setAttribute("aria-hidden", "true");
       sharedAudioFailure = {
         code: data.requiresReview ? "quiz_audio_requires_review" : "quiz_audio_not_found",
         stage: "availability",
@@ -1023,7 +1035,6 @@ async function quizAudioAdminApi(action, question, extra = {}) {
       action,
       phone: getQuizPhone(),
       deviceId: getQuizDeviceId(),
-      accessToken: getQuizAccessToken(),
       questionId: question?.id ?? "",
       question: String(question?.question || ""),
       figure: QuizAudioIdentity.normalizeFigure(question?.figure ?? ""),
@@ -2251,7 +2262,6 @@ async function finishQuiz(forceFinish = false) {
         trialToken: TRIAL_MODE ? getQuizSessionToken() : undefined,
         phone: getQuizPhone(),
         deviceId: getQuizDeviceId(),
-        quizSessionToken: getQuizSessionToken(),
         answers: payload
       })
     });

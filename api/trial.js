@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { verifyGuestTrialToken } from "./trialAccess.js";
+import { fetchUpstream } from "./upstream-fetch.mjs";
 
 const QUIZ_GAS_URL = process.env.QUIZ_GAS_URL;
 const QUIZ_PROXY_SECRET = process.env.QUIZ_PROXY_SECRET;
@@ -59,21 +60,21 @@ async function callQuizBackend(action, options = {}) {
       questionCount: "30",
       draw: crypto.randomUUID()
     });
-    const response = await fetch(`${QUIZ_GAS_URL}?${params}`);
+    const response = await fetchUpstream(`${QUIZ_GAS_URL}?${params}`, {}, { service: "trial_quiz", timeoutMs: 15_000 });
     return response.json();
   }
 
   if (isAllowedTrialService(action)) {
     const params = new URLSearchParams({ action, token: QUIZ_PROXY_SECRET, text: options.text });
-    const response = await fetch(`${QUIZ_GAS_URL}?${params}`);
+    const response = await fetchUpstream(`${QUIZ_GAS_URL}?${params}`, {}, { service: "trial_audio", timeoutMs: 15_000 });
     return response.json();
   }
 
-  const response = await fetch(`${QUIZ_GAS_URL}?action=checkQuiz`, {
+  const response = await fetchUpstream(`${QUIZ_GAS_URL}?action=checkQuiz`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token: QUIZ_PROXY_SECRET, answers: options.answers })
-  });
+  }, { service: "trial_grading", timeoutMs: 15_000 });
   return response.json();
 }
 
@@ -139,6 +140,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "invalid_action" });
   } catch (error) {
     console.error("[api/trial]", error);
-    return res.status(500).json({ error: "server_error" });
+    const statusCode = error?.statusCode || 500;
+    if (statusCode === 503) res.setHeader("Retry-After", "5");
+    return res.status(statusCode).json({ error: error?.message || "server_error" });
   }
 }

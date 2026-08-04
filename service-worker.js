@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v31-legacy-review-card";
+const CACHE_NAME = "magicbook-pwa-v32-security-hardening";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -6,9 +6,9 @@ const STATIC_ASSETS = [
   "/style.css?v=37",
   "/homebg.css?v=3",
   "/mystyle.css?v=26",
-  "/script.js?v=19-admin-role-recovery",
+  "/script.js?v=20-security-hardening",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=38-audio-identity-v2",
+  "/quiz.js?v=48-security-headers",
   "/quiz-help.css?v=20260714-magic-help-v4",
   "/quiz-help.js?v=20260714-magic-help-v4",
   "/data/patente/quiz-help-runtime-v2.json?v=20260713-magic-help-v2",

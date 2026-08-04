@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { fetchUpstream } from "./upstream-fetch.mjs";
 
 const GAS_ACCESS_URL = process.env.GAS_ACCESS_URL;
 const GAS_SECRET = process.env.GAS_SECRET;
@@ -79,7 +80,7 @@ function readAdminError(data) {
 }
 
 async function callGasAdmin(action, fields = {}) {
-  const response = await fetch(GAS_ACCESS_URL, {
+  const response = await fetchUpstream(GAS_ACCESS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -88,7 +89,7 @@ async function callGasAdmin(action, fields = {}) {
       action,
       ...fields
     })
-  });
+  }, { service: "admin_service", timeoutMs: 12_000 });
 
   let data = null;
   try {
@@ -181,7 +182,9 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json(data);
-  } catch {
-    return res.status(500).json({ success: false, error: "server_error" });
+  } catch (error) {
+    const statusCode = error?.statusCode || 500;
+    if (statusCode === 503) res.setHeader("Retry-After", "5");
+    return res.status(statusCode).json({ success: false, error: error?.message || "server_error" });
   }
 }

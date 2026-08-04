@@ -1,4 +1,5 @@
 import { verifyGuestTrialToken } from "./trialAccess.js";
+import { fetchUpstream } from "./upstream-fetch.mjs";
 
 const BASE_URL = process.env.R2_BASE_URL;
 export const TRIAL_BOOK_CHAPTERS = new Set(["2", "4"]);
@@ -25,14 +26,20 @@ export default async function handler(req, res) {
   try {
     const pageNumber = String(page).padStart(4, "0");
     const path = `books/magic-book/cap${chapter}/magic book-${chapter}_page-${pageNumber}.jpg`;
-    const response = await fetch(new URL(path, `${BASE_URL}/`).toString());
+    const response = await fetchUpstream(
+      new URL(path, `${BASE_URL}/`).toString(),
+      {},
+      { service: "trial_book_storage", timeoutMs: 12_000 }
+    );
     if (!response.ok) return res.status(404).json({ error: "not_found" });
     const buffer = await response.arrayBuffer();
     if (!buffer.byteLength) return res.status(500).json({ error: "empty_file" });
     res.setHeader("Content-Type", "image/jpeg");
     res.setHeader("Cache-Control", "private, max-age=300");
     return res.send(Buffer.from(buffer));
-  } catch {
-    return res.status(500).json({ error: "server_error" });
+  } catch (error) {
+    const statusCode = error?.statusCode || 500;
+    if (statusCode === 503) res.setHeader("Retry-After", "5");
+    return res.status(statusCode).json({ error: error?.message || "server_error" });
   }
 }

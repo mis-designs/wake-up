@@ -3,32 +3,22 @@ import test from "node:test";
 
 import { getSessionRole } from "../api/getPages.js";
 
-test("validated admin device recovers its role even when the previous browser token is missing", () => {
+test("a phone allow-list entry cannot create admin authority without a valid signed token", () => {
   const adminPhones = ["391234567890"];
-  assert.equal(getSessionRole("391234567890", { role: "admin" }, adminPhones), "admin");
-  assert.equal(getSessionRole("391234567890", {}, adminPhones), "admin");
-  assert.equal(getSessionRole("+39 123 456 7890", null, adminPhones), "admin");
+  assert.equal(getSessionRole("391234567890", null, adminPhones), "user");
+  assert.equal(getSessionRole("391234567890", {}, adminPhones), "user");
+  assert.equal(getSessionRole("391234567890", { ok: false, payload: { role: "admin" } }, adminPhones), "user");
 });
 
-test("server allow-list remains the authority for the refreshed admin role", () => {
-  const signedAdmin = { ok: true, signatureValid: true, payload: { role: "admin" } };
-  assert.equal(getSessionRole("391234567890", signedAdmin, ["391234567890"]), "admin");
-  assert.equal(getSessionRole("391234567890", signedAdmin, ["399999999999"]), "user");
-  assert.equal(getSessionRole("399999999999", signedAdmin, ["391234567890"]), "user");
+test("only a valid signed token carrying the admin role grants admin authority", () => {
+  const signedAdmin = { ok: true, payload: { role: "admin" } };
+  const signedUser = { ok: true, payload: { role: "user" } };
+  assert.equal(getSessionRole("391234567890", signedAdmin, []), "admin");
+  assert.equal(getSessionRole("391234567890", signedUser, ["391234567890"]), "user");
 });
 
-test("expired token cannot remove an administrator that is still configured", () => {
-  const expiredButVerifiedAdmin = {
-    ok: false,
-    error: "token_expired",
-    signatureValid: true,
-    payload: { role: "admin" }
-  };
-
-  assert.equal(getSessionRole("391234567890", expiredButVerifiedAdmin, ["391234567890"]), "admin");
-  assert.equal(
-    getSessionRole("391234567890", { ...expiredButVerifiedAdmin, signatureValid: false }, ["391234567890"]),
-    "admin"
-  );
-  assert.equal(getSessionRole("391234567890", expiredButVerifiedAdmin, []), "user");
+test("expired or invalid admin tokens fail closed", () => {
+  const expiredAdmin = { ok: false, error: "token_expired", payload: { role: "admin" } };
+  assert.equal(getSessionRole("391234567890", expiredAdmin, ["391234567890"]), "user");
+  assert.equal(getSessionRole("391234567890", { ok: true, payload: {} }, ["391234567890"]), "user");
 });

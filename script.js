@@ -1083,7 +1083,8 @@ async function resendOtp() {
     const data = await requestAuthAction({
       action: "resendOtp",
       phone: pendingOtpLogin.phone,
-      deviceId: pendingOtpLogin.deviceId
+      deviceId: pendingOtpLogin.deviceId,
+      otpToken: pendingOtpLogin.otpToken
     });
 
     if (data?.success) {
@@ -1093,6 +1094,7 @@ async function resendOtp() {
 
     const error = data?.error || data?.status;
     if (error === "otp_required") {
+      if (data?.otpToken) pendingOtpLogin.otpToken = data.otpToken;
       startOtpResendCooldown(getOtpRetryAfterSeconds(data));
       if (err) err.textContent = getOtpRequiredMessage(data);
       return;
@@ -1137,6 +1139,7 @@ async function verifyOtp() {
       action: "verifyOtp",
       phone: pendingOtpLogin.phone,
       deviceId: pendingOtpLogin.deviceId,
+      otpToken: pendingOtpLogin.otpToken,
       code
     });
 
@@ -1160,7 +1163,8 @@ function isValidPhoneNumber(input) {
 }
 
 function getLoginErrorMessage(error) {
-  if (error === "otp_required") return "Accesso non disponibile. Riprova tra poco.";
+  if (error === "otp_required") return "Inserisci il codice OTP inviato al tuo telefono.";
+  if (error === "device_reset_required") return "Questo numero è già associato a un altro dispositivo. Contatta l’amministratore per autorizzare questo dispositivo.";
   if (error === "admin_password_required") return "Inserisci la password amministratore.";
   if (error === "admin_password_invalid") return "Password amministratore non corretta.";
   if (error === "missing_admin_password_config") return "Password amministratore non configurata.";

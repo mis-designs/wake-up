@@ -9,6 +9,8 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { neon } from "@neondatabase/serverless";
+import { applyQuizFigureCorrections } from "./quiz-figure-corrections.mjs";
+import { fetchUpstream, withOperationalTimeout } from "./upstream-fetch.mjs";
 
 const require = createRequire(import.meta.url);
 const {
@@ -29,10 +31,6 @@ const QUIZ_AUDIO_R2_ACCOUNT_ID = process.env.QUIZ_AUDIO_R2_ACCOUNT_ID;
 const QUIZ_AUDIO_R2_ACCESS_KEY_ID = process.env.QUIZ_AUDIO_R2_ACCESS_KEY_ID;
 const QUIZ_AUDIO_R2_SECRET_ACCESS_KEY = process.env.QUIZ_AUDIO_R2_SECRET_ACCESS_KEY;
 const QUIZ_AUDIO_DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_URL || process.env.NEON_DATABASE_URL;
-const ADMIN_PHONE_NUMBERS = (process.env.ADMIN_PHONE_NUMBERS || "")
-  .split(/[\s,;]+/)
-  .map(normalizePhoneNumber)
-  .filter(Boolean);
 
 const GET_ACTIONS = new Set(["getQuiz", "getItalianAudio", "getBengaliAudio", "getTTS"]);
 const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
@@ -132,7 +130,7 @@ async function requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly 
     error.statusCode = access.statusCode || 401;
     throw error;
   }
-  const isAdmin = access.role === "admin" || isAdminPhone(phone);
+  const isAdmin = access.role === "admin";
   if (adminOnly && !isAdmin) {
     const error = new Error("admin_forbidden");
     error.statusCode = 403;
@@ -433,11 +431,6 @@ function normalizePhoneNumber(phone) {
   return normalized;
 }
 
-function isAdminPhone(phone) {
-  const normalizedPhone = normalizePhoneNumber(phone);
-  return normalizedPhone !== "" && ADMIN_PHONE_NUMBERS.includes(normalizedPhone);
-}
-
 function isConfigured() {
   return ACCESS_GAS_URL && ACCESS_GAS_SECRET && QUIZ_GAS_URL && QUIZ_PROXY_SECRET && SESSION_SECRET;
 }
@@ -558,7 +551,7 @@ async function ensureAccess({ phone, deviceId, accessToken, forceValidate = fals
 async function validateAccess(phone, deviceId) {
   if (!phone || !deviceId) return { success: false, error: "unauthorized" };
 
-  const response = await fetch(ACCESS_GAS_URL, {
+  const response = await fetchUpstream(ACCESS_GAS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -568,7 +561,7 @@ async function validateAccess(phone, deviceId) {
       deviceId,
       registerDevice: false
     })
-  });
+  }, { service: "access_service", timeoutMs: 10_000 });
 
   let data = null;
   try {
@@ -595,13 +588,19 @@ async function readJsonResponse(response) {
 function getRequestData(req) {
   const query = req.query || {};
   const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+  const authorization = String(req.headers?.authorization || "");
+  const bearerMatch = authorization.match(/^Bearer\s+(.+)$/i);
+  const headerAccessToken = bearerMatch?.[1] || "";
+  const headerQuizSessionToken = String(req.headers?.["x-quiz-session"] || "");
 
   return {
     action: body.action || query.action,
     phone: body.phone || query.phone,
     deviceId: body.deviceId || query.deviceId,
-    accessToken: body.accessToken || query.accessToken,
-    quizSessionToken: body.quizSessionToken || query.quizSessionToken,
+    // Headers keep credentials out of URLs, browser history and request logs.
+    // Query support remains as a temporary compatibility fallback for old clients.
+    accessToken: body.accessToken || headerAccessToken || query.accessToken,
+    quizSessionToken: body.quizSessionToken || headerQuizSessionToken || query.quizSessionToken,
     chapters: body.chapters || query.chapters,
     mode: body.mode || query.mode,
     text: body.text || query.text,
@@ -616,11 +615,13 @@ function getRequestData(req) {
   };
 }
 
-function hasValidRequestShape({ phone, deviceId, text, chapters }) {
+function hasValidRequestShape({ phone, deviceId, text, chapters, question, figure }) {
   if (!/^\d{6,15}$/.test(String(phone || "").replace(/\D/g, ""))) return false;
   if (!/^[A-Za-z0-9_-]{8,128}$/.test(String(deviceId || ""))) return false;
   if (String(text || "").length > 500) return false;
   if (String(chapters || "").length > 200) return false;
+  if (String(question || "").length > 1_500) return false;
+  if (String(figure || "").length > 120) return false;
   return true;
 }
 
@@ -639,7 +640,7 @@ async function forwardGetAction({ action, chapters, text, mode, limit, count, qu
   if (questionCount !== undefined && questionCount !== null) params.set("questionCount", String(questionCount));
 
   const url = `${QUIZ_GAS_URL}?${params.toString()}`;
-  const response = await fetch(url);
+  const response = await fetchUpstream(url, {}, { service: "quiz_service" });
   return readJsonResponse(response);
 }
 
@@ -648,7 +649,11 @@ async function forwardCatalogAction() {
     action: "getCatalog",
     token: QUIZ_PROXY_SECRET
   });
-  const response = await fetch(`${QUIZ_GAS_URL}?${params.toString()}`);
+  const response = await fetchUpstream(
+    `${QUIZ_GAS_URL}?${params.toString()}`,
+    {},
+    { service: "quiz_catalog", timeoutMs: 15_000 }
+  );
   return readJsonResponse(response);
 }
 
@@ -682,7 +687,7 @@ function getMappedValue(row, names) {
 
 function normalizeQuestionRow(row) {
   // image_0.png defines these database headers; image_1.png identifies the exam rows from index 790+.
-  return {
+  return applyQuizFigureCorrections({
     ...row,
     id: getMappedValue(row, ["id", "ID", "quiz_id", "quizId"]),
     chapter: getMappedValue(row, ["chapter", "Chapter", "capitolo", "Capitolo"]),
@@ -691,7 +696,7 @@ function normalizeQuestionRow(row) {
     correct: getMappedValue(row, ["correct", "Correct", "answer", "risposta", "Risposta"]),
     question_bd: getMappedValue(row, ["question_bd", "Question_BD", "questionBD", "questionBd"]),
     explanations: getMappedValue(row, ["explanations", "Explanations"])
-  };
+  });
 }
 
 function isExamQuestion(question) {
@@ -808,14 +813,14 @@ function buildExamQuiz(rows, modeConfig) {
 
 async function forwardCheckQuiz(answers) {
   const url = `${QUIZ_GAS_URL}?action=checkQuiz`;
-  const response = await fetch(url, {
+  const response = await fetchUpstream(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       token: QUIZ_PROXY_SECRET,
       answers
     })
-  });
+  }, { service: "quiz_grading", timeoutMs: 15_000 });
 
   return readJsonResponse(response);
 }
@@ -936,7 +941,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "missing_action" });
     }
 
-    if (!hasValidRequestShape({ phone, deviceId, text, chapters })) {
+    if (!hasValidRequestShape({ phone, deviceId, text, chapters, question, figure })) {
       return res.status(400).json({ error: "invalid_request" });
     }
 
@@ -984,9 +989,8 @@ export default async function handler(req, res) {
         }
       }
       if (!catalogChapterRows) data = modeConfig ? null : await forwardGetAction({ action, chapters, text });
-      // Keep Quiz UI authorization consistent with requireQuizAudioAccess:
-      // a validated admin role or a server allow-listed phone is sufficient.
-      const admin = access.role === "admin" || isAdminPhone(phone);
+      // Admin authority comes only from a valid signed admin token.
+      const admin = access.role === "admin";
       // Use the same canonical row shape as the Magic Book audio catalog.
       // Audio identity depends on question + figure, so the two entry points
       // must never interpret sheet column aliases differently.
@@ -1047,15 +1051,34 @@ export default async function handler(req, res) {
     if (req.method === "POST" && action === "getQuizAudioStatus") {
       const { isAdmin } = await requireQuizAudioAccess({ phone, deviceId, accessToken });
       assertQuizAudioIdentityVersion(quizAudioIdentityVersion);
-      const { identity, result } = await resolveQuizAudioRow({ question, figure, questionId });
-      return res.status(200).json({
-        ok: true,
-        available: Boolean(result.row),
-        requiresReview: result.requiresReview,
-        isAdmin,
-        quizKey: identity.quizKey,
-        durationMs: result.row?.audio_duration_ms || null
-      });
+      try {
+        const { identity, result } = await withOperationalTimeout(
+          resolveQuizAudioRow({ question, figure, questionId }),
+          { service: "audio_status", timeoutMs: 8_000 }
+        );
+        return res.status(200).json({
+          ok: true,
+          available: Boolean(result.row),
+          requiresReview: result.requiresReview,
+          isAdmin,
+          quizKey: identity.quizKey,
+          durationMs: result.row?.audio_duration_ms || null
+        });
+      } catch (error) {
+        // Audio is optional: a temporary Neon/R2/catalog issue must not turn
+        // every question navigation into a 500 or interrupt the quiz.
+        console.warn("[api/quiz] audio_status_unavailable", {
+          code: error?.message || "unknown",
+          questionId: String(questionId ?? "").slice(0, 80)
+        });
+        return res.status(200).json({
+          ok: true,
+          available: false,
+          requiresReview: false,
+          temporaryUnavailable: true,
+          isAdmin
+        });
+      }
     }
 
     if (req.method === "POST" && action === "getQuizAudioAdminOverview") {
@@ -1277,8 +1300,15 @@ export default async function handler(req, res) {
 
     return res.status(400).json({ error: "invalid_action" });
   } catch (err) {
-    console.error("[api/quiz] server_error", err);
-    return res.status(err.statusCode || 500).json({
+    const statusCode = err.statusCode || 500;
+    const log = statusCode >= 500 ? console.error : console.warn;
+    log("[api/quiz] server_error", {
+      code: err.message || "server_error",
+      statusCode,
+      details: err.details || null
+    });
+    if (statusCode === 503) res.setHeader("Retry-After", "5");
+    return res.status(statusCode).json({
       error: err.message || "server_error",
       ...(err.details ? { details: err.details } : {})
     });

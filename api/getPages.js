@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { fetchUpstream } from "./upstream-fetch.mjs";
 
 const BASE_URL = process.env.R2_BASE_URL;
 const GOOGLE_SCRIPT_URL = process.env.GAS_ACCESS_URL;
@@ -20,13 +21,10 @@ function normalizePhone(input) {
   return phone;
 }
 
-export function getSessionRole(phone, _tokenStatus, adminPhoneNumbers = ADMIN_PHONE_NUMBERS) {
-  // This function is called only after validateAccess() has confirmed the
-  // phone/device pair against the access backend. Recompute the role from the
-  // server-side allow-list so a missing, expired or partially lost browser
-  // token cannot silently downgrade a real administrator.
-  const isConfiguredAdmin = adminPhoneNumbers.includes(normalizePhone(phone));
-  return isConfiguredAdmin ? "admin" : "user";
+export function getSessionRole(_phone, tokenStatus, _adminPhoneNumbers = ADMIN_PHONE_NUMBERS) {
+  // Admin authority must come from a valid signed token issued only after
+  // the dedicated admin-password flow, never from a phone number alone.
+  return tokenStatus?.ok && tokenStatus?.payload?.role === "admin" ? "admin" : "user";
 }
 
 function buildMagicBookPath({ type, chapter, page }) {
@@ -46,7 +44,7 @@ function buildMagicBookPath({ type, chapter, page }) {
 async function validateAccess(phone, deviceId, options = {}) {
   if (!phone || !deviceId) return null;
 
-  const authResponse = await fetch(GOOGLE_SCRIPT_URL, {
+  const authResponse = await fetchUpstream(GOOGLE_SCRIPT_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -58,7 +56,7 @@ async function validateAccess(phone, deviceId, options = {}) {
       action: "validate",
       registerDevice: options.registerDevice === true
     })
-  });
+  }, { service: "access_service", timeoutMs: 10_000 });
 
   let authData = null;
   try {
@@ -245,7 +243,7 @@ export default async function handler(req, res) {
 
     const url = new URL(path, `${BASE_URL}/`).toString();
 
-    const response = await fetch(url);
+    const response = await fetchUpstream(url, {}, { service: "book_storage", timeoutMs: 12_000 });
 
     if (!response.ok) {
       return res.status(404).json({ error: "not_found" });
@@ -261,6 +259,8 @@ export default async function handler(req, res) {
     res.setHeader("Cache-Control", "no-store");
     return res.send(Buffer.from(buffer));
   } catch (err) {
-    return res.status(500).json({ error: "server_error" });
+    const statusCode = err?.statusCode || 500;
+    if (statusCode === 503) res.setHeader("Retry-After", "5");
+    return res.status(statusCode).json({ error: err?.message || "server_error" });
   }
 }

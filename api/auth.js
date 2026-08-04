@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { fetchUpstream } from "./upstream-fetch.mjs";
 
 const GAS_ACCESS_URL = process.env.GAS_ACCESS_URL;
 const GAS_SECRET = process.env.GAS_SECRET;
@@ -250,7 +251,7 @@ function logAuthEvent({ action, phone, event, twilioStatus, twilioErrorCode }) {
 }
 
 async function callAccessBackend(action, phone, deviceId, extra = {}) {
-  const response = await fetch(GAS_ACCESS_URL, {
+  const response = await fetchUpstream(GAS_ACCESS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -260,7 +261,7 @@ async function callAccessBackend(action, phone, deviceId, extra = {}) {
       deviceId,
       ...extra
     })
-  });
+  }, { service: "access_service", timeoutMs: 10_000 });
 
   const data = await readJsonResponse(response);
   if (!response.ok && !data) return { success: false, error: "auth_backend_error" };
@@ -280,7 +281,7 @@ async function startTwilioVerification(phone) {
 
   logFormattedTwilioPhone(to);
 
-  const response = await fetch(
+  const response = await fetchUpstream(
     `https://verify.twilio.com/v2/Services/${encodeURIComponent(TWILIO_VERIFY_SERVICE_SID)}/Verifications`,
     {
       method: "POST",
@@ -289,7 +290,8 @@ async function startTwilioVerification(phone) {
         "Content-Type": "application/x-www-form-urlencoded"
       },
       body: params.toString()
-    }
+    },
+    { service: "twilio_verify", timeoutMs: 12_000 }
   );
 
   const data = await readJsonResponse(response) || {};
@@ -318,7 +320,7 @@ async function checkTwilioVerification(phone, code) {
 
   logFormattedTwilioPhone(to);
 
-  const response = await fetch(
+  const response = await fetchUpstream(
     `https://verify.twilio.com/v2/Services/${encodeURIComponent(TWILIO_VERIFY_SERVICE_SID)}/VerificationCheck`,
     {
       method: "POST",
@@ -327,7 +329,8 @@ async function checkTwilioVerification(phone, code) {
         "Content-Type": "application/x-www-form-urlencoded"
       },
       body: params.toString()
-    }
+    },
+    { service: "twilio_verify", timeoutMs: 12_000 }
   );
 
   const data = await readJsonResponse(response) || {};
@@ -509,27 +512,9 @@ export default async function handler(req, res) {
       }
 
       if (getAuthError(authData) === "otp_required") {
-        const rotationData = await callAccessBackend("confirm_device_rotation", phone, deviceId);
-
-        if (isAuthSuccess(rotationData)) {
-          userLoginPhoneFailures.delete(phone);
-          return sendSuccessfulLogin(res, {
-            phone,
-            deviceId,
-            authData: rotationData,
-            role: adminPasswordCheck.admin ? "admin" : "user",
-            extra: {
-              ...(rotationData.rotated ? { rotated: true } : {}),
-              ...(rotationData.replacedDevice ? { replacedDevice: rotationData.replacedDevice } : {})
-            }
-          });
-        }
-
-        const rotationError = getAuthError(rotationData);
-        if (shouldCountUserLoginFailure(rotationError)) {
-          recordUserLoginFailure(userLimit.ipKey, phone);
-        }
-        return res.status(200).json({ success: false, error: rotationError });
+        // This installation has no OTP provider. Never rotate a registered
+        // device automatically: an administrator must reset it explicitly.
+        return res.status(403).json({ success: false, error: "device_reset_required" });
       }
 
       const authError = getAuthError(authData);
@@ -548,7 +533,9 @@ export default async function handler(req, res) {
     }
 
     return res.status(400).json({ success: false, error: "invalid_action" });
-  } catch {
-    return res.status(500).json({ error: "server_error" });
+  } catch (error) {
+    const statusCode = error?.statusCode || 500;
+    if (statusCode === 503) res.setHeader("Retry-After", "5");
+    return res.status(statusCode).json({ error: error?.message || "server_error" });
   }
 }
