@@ -53,3 +53,13 @@ test("the quiz menu and clean routes expose the study experience", () => {
   assert.ok(routes.rewrites.some(route => route.source === "/studia-quiz" && route.destination === "/study-quiz"));
   assert.ok(routes.rewrites.some(route => route.source === "/studia-quiz/capitolo-:chapter"));
 });
+
+test("study questions use the supplied audio icon and the complete explanation player", () => {
+  const source = readFileSync(new URL("../study-quiz.js", import.meta.url), "utf8");
+  assert.match(source, /M5\.80688 18\.5304C5\.82459/);
+  assert.match(source, /study-explanation-play/);
+  assert.match(source, /study-explanation-progress/);
+  assert.match(source, /study-explanation-speed/);
+  assert.match(source, /seekExplanation\(controls\)/);
+  assert.match(source, /changeExplanationSpeed\(controls\)/);
+});

@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v39-study-pro-ui-audio";
+const CACHE_NAME = "magicbook-pwa-v41-study-system-player";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -8,8 +8,8 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=26",
   "/script.js?v=21-study-quiz",
   "/study-quiz.html",
-  "/study-quiz.css?v=2-pro-ui-audio",
-  "/study-quiz.js?v=4-pro-ui-audio-fallback",
+  "/study-quiz.css?v=4-system-audio-player",
+  "/study-quiz.js?v=6-system-audio-player",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=51-request-efficiency",
   "/quiz-help.css?v=20260714-magic-help-v4",

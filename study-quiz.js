@@ -4,6 +4,7 @@
   const API = "/api/quiz";
   const HOME = "/magic-book";
   const HELP_LIBRARY = "/data/patente/quiz-help-runtime-v2.json";
+  const AUDIO_ACTION_ICON = '<svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.80688 18.5304C5.82459 18.5005 5.84273 18.4709 5.8613 18.4413C7.2158 16.2881 7.99991 13.7418 7.99991 11C7.99991 8.79086 9.79077 7 11.9999 7C14.209 7 15.9999 8.79086 15.9999 11C15.9999 12.017 15.9307 13.0186 15.7966 14M13.6792 20.8436C14.2909 19.6226 14.7924 18.3369 15.1707 17M19.0097 18.132C19.6547 15.8657 20 13.4732 20 11C20 6.58172 16.4183 3 12 3C10.5429 3 9.17669 3.38958 8 4.07026M3 15.3641C3.64066 14.0454 4 12.5646 4 11C4 9.54285 4.38958 8.17669 5.07026 7M11.9999 11C11.9999 14.5172 10.9911 17.7988 9.24707 20.5712" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const CHAPTERS = [
     "Doveri nell'uso della strada",
     "Segnali di pericolo",
@@ -282,7 +283,9 @@
     const symbol = document.createElement("span");
     symbol.className = "study-action-icon";
     symbol.setAttribute("aria-hidden", "true");
-    if (String(icon).startsWith("icons/")) {
+    if (icon === "audio-action") {
+      symbol.innerHTML = AUDIO_ACTION_ICON;
+    } else if (String(icon).startsWith("icons/")) {
       const image = document.createElement("img");
       image.src = icon;
       image.alt = "";
@@ -294,6 +297,47 @@
     copy.textContent = label;
     button.append(symbol, copy);
     return button;
+  }
+
+  function createExplanationPlayer(question, index) {
+    const root = document.createElement("div");
+    root.className = "study-explanation-player hidden";
+    root.setAttribute("role", "group");
+    root.setAttribute("aria-label", `Spiegazione audio della domanda ${index + 1}`);
+
+    const play = document.createElement("button");
+    play.type = "button";
+    play.className = "study-explanation-play";
+    play.setAttribute("aria-label", "Riproduci spiegazione");
+
+    const progress = document.createElement("input");
+    progress.className = "study-explanation-progress";
+    progress.type = "range";
+    progress.min = "0";
+    progress.max = "100";
+    progress.step = "0.1";
+    progress.value = "0";
+    progress.setAttribute("aria-label", "Avanzamento spiegazione");
+
+    const speed = document.createElement("button");
+    speed.type = "button";
+    speed.className = "study-explanation-speed";
+    speed.textContent = "1×";
+    speed.setAttribute("aria-label", "Velocità 1x");
+
+    const controls = {
+      root,
+      play,
+      progress,
+      speed,
+      speedValue: 1,
+      key: `explanation:${question.id || fingerprint(question)}`
+    };
+    play.addEventListener("click", () => playExplanation(question, controls));
+    progress.addEventListener("input", () => seekExplanation(controls));
+    speed.addEventListener("click", () => changeExplanationSpeed(controls));
+    root.append(play, progress, speed);
+    return controls;
   }
 
   function renderQuestion(question, index) {
@@ -338,23 +382,21 @@
 
     const actions = document.createElement("div");
     actions.className = "study-actions";
-    const italian = actionButton("study-action-italian", "Italiano", "🔊");
+    const italian = actionButton("study-action-italian", "Italiano", "audio-action");
     italian.setAttribute("aria-label", `Ascolta in italiano la domanda ${index + 1}`);
     italian.addEventListener("click", () => playTts(question, "it", italian, card));
-    const bangla = actionButton("study-action-bangla", "বাংলা", "🔊");
+    const bangla = actionButton("study-action-bangla", "বাংলা", "audio-action");
     bangla.lang = "bn";
     bangla.setAttribute("aria-label", `Ascolta in bengali la domanda ${index + 1}`);
     bangla.addEventListener("click", () => playTts(question, "bn", bangla, card));
-    const explanation = actionButton("study-action-explanation hidden", "Spiegazione audio", "icons/wave.svg");
-    explanation.setAttribute("aria-label", `Ascolta la spiegazione audio della domanda ${index + 1}`);
-    explanation.addEventListener("click", () => playExplanation(question, explanation));
+    const explanation = createExplanationPlayer(question, index);
     const help = actionButton("study-action-help", "Traduzione e parole chiave", "文");
     help.setAttribute("aria-expanded", "false");
     help.addEventListener("click", () => toggleHelp(question, card, help));
-    actions.append(italian, bangla, explanation, help);
+    actions.append(italian, bangla, explanation.root, help);
     main.appendChild(actions);
     card.appendChild(main);
-    observeAudioAvailability(card, question, explanation);
+    observeAudioAvailability(card, question, explanation.root);
     return card;
   }
 
@@ -605,11 +647,57 @@
     return String(data?.translation || "").trim();
   }
 
+  function explanationDuration(playback) {
+    const nativeDuration = Number(playback?.audio?.duration);
+    if (Number.isFinite(nativeDuration) && nativeDuration > 0) return nativeDuration;
+    return Math.max(0, Number(playback?.durationHint) || 0);
+  }
+
+  function paintExplanationProgress(playback = activePlayback) {
+    const controls = playback?.controls;
+    if (!controls) return;
+    const duration = explanationDuration(playback);
+    const currentTime = Math.max(0, Number(playback.audio.currentTime) || 0);
+    const percent = duration > 0 ? Math.min(100, currentTime / duration * 100) : 0;
+    controls.progress.value = String(percent);
+    controls.progress.style.setProperty("--progress", `${percent}%`);
+    controls.progress.setAttribute("aria-valuenow", percent.toFixed(1));
+  }
+
+  function animateExplanationProgress() {
+    if (!activePlayback?.controls || activePlayback.audio.paused || activePlayback.audio.ended) return;
+    paintExplanationProgress(activePlayback);
+    activePlayback.frame = requestAnimationFrame(animateExplanationProgress);
+  }
+
+  function seekExplanation(controls) {
+    if (activePlayback?.key !== controls.key) return;
+    const duration = explanationDuration(activePlayback);
+    if (!duration) return;
+    const percent = Math.max(0, Math.min(100, Number(controls.progress.value) || 0));
+    try { activePlayback.audio.currentTime = duration * percent / 100; } catch (_) { return; }
+    paintExplanationProgress(activePlayback);
+  }
+
+  function changeExplanationSpeed(controls) {
+    const speeds = [1, 1.25, 1.5, 2];
+    controls.speedValue = speeds[(speeds.indexOf(controls.speedValue) + 1) % speeds.length];
+    controls.speed.textContent = `${String(controls.speedValue).replace(".", ",")}×`;
+    controls.speed.setAttribute("aria-label", `Velocità ${controls.speedValue}x`);
+    if (activePlayback?.key === controls.key) activePlayback.audio.playbackRate = controls.speedValue;
+  }
+
   function stopPlayback() {
     window.speechSynthesis?.cancel();
     if (!activePlayback) return;
+    if (activePlayback.frame) cancelAnimationFrame(activePlayback.frame);
     activePlayback.audio.pause();
     activePlayback.button?.classList.remove("is-playing");
+    activePlayback.controls?.root.classList.remove("is-playing", "is-loading");
+    if (activePlayback.controls) {
+      activePlayback.controls.progress.value = "0";
+      activePlayback.controls.progress.style.setProperty("--progress", "0%");
+    }
     if (activePlayback.url) URL.revokeObjectURL(activePlayback.url);
     activePlayback = null;
   }
@@ -621,24 +709,50 @@
     return URL.createObjectURL(new Blob([bytes], { type: mimeType }));
   }
 
-  async function startAudio(url, button, key) {
+  async function startAudio(url, button, key, controls = null, durationHint = 0) {
     if (activePlayback?.key === key) {
       if (activePlayback.audio.paused) {
         await activePlayback.audio.play();
-        button.classList.add("is-playing");
       } else {
         activePlayback.audio.pause();
-        button.classList.remove("is-playing");
       }
       return;
     }
     stopPlayback();
     const audio = new Audio(url);
-    activePlayback = { audio, button, url, key };
-    button.classList.add("is-playing");
-    audio.addEventListener("ended", () => {
+    audio.preload = "metadata";
+    if (controls) audio.playbackRate = controls.speedValue;
+    activePlayback = { audio, button, url, key, controls, durationHint, frame: 0 };
+    audio.addEventListener("play", () => {
+      if (activePlayback?.audio !== audio) return;
+      button.classList.add("is-playing");
+      controls?.root.classList.add("is-playing");
+      if (controls) {
+        if (activePlayback.frame) cancelAnimationFrame(activePlayback.frame);
+        activePlayback.frame = requestAnimationFrame(animateExplanationProgress);
+      }
+    });
+    audio.addEventListener("pause", () => {
       if (activePlayback?.audio !== audio) return;
       button.classList.remove("is-playing");
+      controls?.root.classList.remove("is-playing");
+      if (activePlayback.frame) cancelAnimationFrame(activePlayback.frame);
+      activePlayback.frame = 0;
+      paintExplanationProgress(activePlayback);
+    });
+    ["loadedmetadata", "durationchange", "timeupdate", "seeking", "seeked"]
+      .forEach(eventName => audio.addEventListener(eventName, () => {
+        if (activePlayback?.audio === audio) paintExplanationProgress(activePlayback);
+      }));
+    audio.addEventListener("ended", () => {
+      if (activePlayback?.audio !== audio) return;
+      if (activePlayback.frame) cancelAnimationFrame(activePlayback.frame);
+      button.classList.remove("is-playing");
+      controls?.root.classList.remove("is-playing");
+      if (controls) {
+        controls.progress.value = "0";
+        controls.progress.style.setProperty("--progress", "0%");
+      }
       URL.revokeObjectURL(url);
       activePlayback = null;
     }, { once: true });
@@ -729,8 +843,14 @@
       });
       if (blob) {
         if (response.status === 401 || response.status === 403) clearSessionAndExit();
-        if (!response.ok) throw new Error(`audio_blob_${response.status}`);
-        return response.blob();
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data?.error || `audio_blob_${response.status}`);
+        }
+        return {
+          blob: await response.blob(),
+          durationMs: Number(response.headers.get("X-Audio-Duration-Ms")) || 0
+        };
       }
       return readApiResponse(response);
     } finally {
@@ -745,6 +865,7 @@
   function paintAudioAvailability(button, available) {
     button.classList.toggle("hidden", available !== true);
     button.dataset.audioState = available === true ? "ready" : "unavailable";
+    if (available === true) button.classList.remove("is-error");
   }
 
   function cancelPendingAudioStatus(card) {
@@ -806,26 +927,36 @@
     }
   }
 
-  async function playExplanation(question, button) {
-    const key = `explanation:${question.id || fingerprint(question)}`;
+  async function playExplanation(question, controls) {
+    const { root, play: button, key } = controls;
     if (activePlayback?.key === key) {
-      await startAudio(activePlayback.url, button, key).catch(() => showToast("Spiegazione audio non disponibile."));
+      await startAudio(activePlayback.url, button, key, controls, activePlayback.durationHint)
+        .catch(() => showToast("Spiegazione audio non disponibile."));
       return;
     }
     button.disabled = true;
-    button.classList.add("is-loading");
+    root.classList.remove("is-error");
+    root.classList.add("is-loading");
     button.setAttribute("aria-busy", "true");
     try {
-      const blob = await fetchExplanationBlob(question);
-      if (!blob.size) throw new Error("empty_audio_blob");
-      await startAudio(URL.createObjectURL(blob), button, key);
-    } catch (_) {
-      button.classList.add("hidden");
-      button.dataset.audioState = "unavailable";
-      showToast("Spiegazione audio non disponibile.");
+      const source = await fetchExplanationBlob(question);
+      if (!source.blob.size) throw new Error("empty_audio_blob");
+      await startAudio(URL.createObjectURL(source.blob), button, key, controls, source.durationMs / 1000);
+    } catch (error) {
+      const code = String(error?.message || "");
+      const definitelyMissing = code === "quiz_audio_not_found" || code === "audio_blob_404";
+      if (definitelyMissing) {
+        audioStatusCache.set(audioStatusKey(question), false);
+        paintAudioAvailability(root, false);
+        showToast("Questa spiegazione audio non è disponibile.");
+      } else {
+        root.classList.add("is-error");
+        root.dataset.audioState = "retry";
+        showToast("L'audio non si è caricato. Tocca di nuovo per riprovare.");
+      }
     } finally {
       button.disabled = false;
-      button.classList.remove("is-loading");
+      root.classList.remove("is-loading");
       button.removeAttribute("aria-busy");
     }
   }
@@ -833,8 +964,8 @@
   async function fetchExplanationBlob(question) {
     let firstError = null;
     try {
-      const blob = await audioApi("getQuizAudioBlob", question, { blob: true });
-      if (blob?.size) return blob;
+      const source = await audioApi("getQuizAudioBlob", question, { blob: true });
+      if (source?.blob?.size) return source;
       firstError = new Error("empty_audio_blob");
     } catch (error) {
       firstError = error;
@@ -856,7 +987,7 @@
       if (!response.ok) throw firstError || new Error(`audio_url_${response.status}`);
       const blob = await response.blob();
       if (!blob.size) throw firstError || new Error("empty_audio_blob");
-      return blob;
+      return { blob, durationMs: Number(playback.durationMs) || 0 };
     } catch (_) {
       throw firstError || new Error("audio_not_available");
     }

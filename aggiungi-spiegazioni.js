@@ -436,7 +436,33 @@ async function ensureStream() {
     return false;
   }
 }
-async function startRecording() { const item = state.inline; if (!item || !(await ensureStream())) return; if (item.recorder?.state === "paused") item.recorder.resume(); else { const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm"; item.mimeType = mimeType; item.recorder = new MediaRecorder(item.stream, { mimeType, audioBitsPerSecond: 64000 }); item.chunks = []; item.recorder.ondataavailable = event => { if (event.data?.size) item.chunks.push(event.data); }; item.recorder.start(); } item.phase = "recording"; item.startedAt = Date.now(); clearInterval(item.timer); item.timer = setInterval(updateTimer, 250); item.status = "Registrazione in corso…"; renderChapter(); }
+async function startRecording() {
+  const item = state.inline;
+  if (!item || !(await ensureStream())) return;
+  if (item.recorder?.state === "paused") {
+    item.recorder.resume();
+  } else {
+    const candidates = [
+      "audio/webm;codecs=opus",
+      "audio/mp4;codecs=mp4a.40.2",
+      "audio/mp4",
+      "audio/webm"
+    ];
+    const mimeType = candidates.find(value => MediaRecorder.isTypeSupported(value)) || "";
+    const options = { audioBitsPerSecond: 64000, ...(mimeType ? { mimeType } : {}) };
+    item.recorder = new MediaRecorder(item.stream, options);
+    item.mimeType = item.recorder.mimeType || mimeType || "audio/webm";
+    item.chunks = [];
+    item.recorder.ondataavailable = event => { if (event.data?.size) item.chunks.push(event.data); };
+    item.recorder.start();
+  }
+  item.phase = "recording";
+  item.startedAt = Date.now();
+  clearInterval(item.timer);
+  item.timer = setInterval(updateTimer, 250);
+  item.status = "Registrazione in corso…";
+  renderChapter();
+}
 async function pauseRecording() { const item = state.inline; if (!item || item.recorder?.state !== "recording") return; item.elapsed += Date.now() - item.startedAt; item.recorder.requestData(); item.recorder.pause(); item.phase = "paused"; clearInterval(item.timer); item.status = "In pausa. Puoi riprendere, ascoltare o salvare."; await new Promise(resolve => setTimeout(resolve, 100)); buildBlob(item); renderChapter(); }
 async function discardDraft() { const item = state.inline; if (!item) return; const accepted = await openDialog({ title: "Eliminare la registrazione?", text: "La registrazione non salvata verrà eliminata.", confirmLabel: "Elimina", cancelLabel: "Mantieni", danger: true }); if (!accepted) return; await deleteDraft(item.key); const activeId = item.activeQuestionId; const question = item.question; closeInline(); state.inline = { activeQuestionId: activeId, key: question.quizKey, question, saved: item.saved, phase: "ready", chunks: [], elapsed: 0, startedAt: 0, status: "Registrazione eliminata.", stream: null, recorder: null, blob: null, blobUrl: "", timer: null, saving: false, retryable: false }; state.activeQuestionId = activeId; renderChapter(); }
 async function renewRecording() { const item = state.inline; if (!item) return; const accepted = await openDialog({ title: "Ricominciare da capo?", text: "La registrazione attuale verrà sostituita da una nuova.", confirmLabel: "Ricomincia", cancelLabel: "Annulla" }); if (!accepted) return; await deleteDraft(item.key); const question = item.question; const activeId = item.activeQuestionId; closeInline(); state.inline = { activeQuestionId: activeId, key: question.quizKey, question, saved: item.saved, phase: "ready", chunks: [], elapsed: 0, startedAt: 0, status: "Microfono non avviato. Premi il microfono per iniziare.", stream: null, recorder: null, blob: null, blobUrl: "", timer: null, saving: false, retryable: false }; state.activeQuestionId = activeId; renderChapter(); }
@@ -445,7 +471,7 @@ async function saveInline() {
   const item = state.inline; if (!item) return; if (item.phase === "recording") await pauseRecording(); if (!item.blob) { await showProblem("Nessun audio da salvare", "Premi il microfono, registra la spiegazione e poi salva.", "audio_empty"); return; }
   item.saving = true; item.status = "Caricamento sicuro in corso…"; renderChapter();
   try {
-    const payload = quizAudioPayload(item.question);
+    const payload = { ...quizAudioPayload(item.question), audioMimeType: item.blob.type || item.mimeType };
     const created = await api("createQuizAudioUpload", payload);
     // The signed R2 URL is generated for this exact header. Do not send the
     // MediaRecorder codec suffix (e.g. ";codecs=opus"), otherwise R2 rejects
@@ -463,7 +489,7 @@ async function saveInline() {
       await api("saveQuizAudio", {
         ...payload,
         audioBase64: await blobAsDataUrl(item.blob),
-        audioMimeType: "audio/webm",
+        audioMimeType: item.blob.type || item.mimeType,
         audioDurationMs: elapsed(item)
       });
     }

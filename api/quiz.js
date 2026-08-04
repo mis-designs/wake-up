@@ -11,6 +11,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { neon } from "@neondatabase/serverless";
 import { applyQuizFigureCorrections } from "./quiz-figure-corrections.mjs";
 import { applyExplanationAvailabilityByFigure } from "./quiz-explanation-availability.mjs";
+import { detectQuizAudioMimeType, normalizeQuizAudioMimeType } from "./audio-mime.mjs";
 import { fetchUpstream, withOperationalTimeout } from "./upstream-fetch.mjs";
 import { normalizeStudyChapter, selectStudyChapterRows } from "./study-quiz.mjs";
 import { matchesQuizAudioIdentityTicket } from "./quiz-audio-ticket.mjs";
@@ -65,6 +66,8 @@ let quizAudioDatabase = null;
 let quizAudioStorage = null;
 let quizAudioCatalogCache = { expiresAt: 0, rows: [] };
 let quizAudioCatalogLoading = null;
+const quizAudioObjectAvailabilityCache = new Map();
+const QUIZ_AUDIO_OBJECT_CACHE_TTL_MS = 5 * 60 * 1000;
 
 function isQuizAudioConfigured() {
   return Boolean(
@@ -106,12 +109,53 @@ function getQuizAudioStorage() {
   return quizAudioStorage;
 }
 
-// R2 signs the exact Content-Type header. MediaRecorder often reports
-// "audio/webm;codecs=opus", while the signed upload uses "audio/webm".
-// Keep one canonical value for both the signed PUT and the database row.
-function normalizeQuizAudioMimeType(value) {
-  const mimeType = String(value || "audio/webm").split(";", 1)[0].trim().toLowerCase();
-  return mimeType === "audio/webm" ? "audio/webm" : "audio/webm";
+async function readQuizAudioObject(row) {
+  const object = await getQuizAudioStorage().send(new GetObjectCommand({
+    Bucket: QUIZ_AUDIO_R2_BUCKET,
+    Key: row.audio_key
+  }));
+  const body = object.Body;
+  if (!body) throw new Error("quiz_audio_body_missing");
+  if (typeof body.transformToByteArray === "function") return body.transformToByteArray();
+  if (typeof body.arrayBuffer === "function") return new Uint8Array(await body.arrayBuffer());
+  if (Symbol.asyncIterator in Object(body)) {
+    const chunks = [];
+    for await (const chunk of body) chunks.push(Buffer.from(chunk));
+    return new Uint8Array(Buffer.concat(chunks));
+  }
+  throw new Error("quiz_audio_body_unsupported");
+}
+
+function isMissingQuizAudioObject(error) {
+  const code = String(error?.name || error?.Code || error?.code || "").toLowerCase();
+  const status = Number(error?.$metadata?.httpStatusCode || error?.statusCode || 0);
+  return status === 404 || code === "nosuchkey" || code === "notfound";
+}
+
+async function hasQuizAudioObject(row) {
+  const audioKey = String(row?.audio_key || "");
+  if (!audioKey) return false;
+  const cached = quizAudioObjectAvailabilityCache.get(audioKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.available;
+  try {
+    const object = await getQuizAudioStorage().send(new HeadObjectCommand({
+      Bucket: QUIZ_AUDIO_R2_BUCKET,
+      Key: audioKey
+    }));
+    const available = Number(object.ContentLength || 0) > 0;
+    quizAudioObjectAvailabilityCache.set(audioKey, {
+      available,
+      expiresAt: Date.now() + QUIZ_AUDIO_OBJECT_CACHE_TTL_MS
+    });
+    return available;
+  } catch (error) {
+    if (!isMissingQuizAudioObject(error)) throw error;
+    quizAudioObjectAvailabilityCache.set(audioKey, {
+      available: false,
+      expiresAt: Date.now() + QUIZ_AUDIO_OBJECT_CACHE_TTL_MS
+    });
+    return false;
+  }
 }
 
 function assertQuizAudioIdentityVersion(value) {
@@ -293,9 +337,15 @@ async function resolveQuizAudioRequest({
   });
 
   if (trustedIdentity) {
+    const trustedResult = await findQuizAudioRow(trustedIdentity, { allowAmbiguousLegacy: true });
     return {
       identity: trustedIdentity,
-      result: await findQuizAudioRow(trustedIdentity, { allowAmbiguousLegacy: true })
+      // The server-issued ticket binds phone, device, question ID, current
+      // quiz key and legacy key. That exact catalog row is safe to play even
+      // when the text-only legacy key belongs to a historical collision.
+      result: trustedResult.row
+        ? { ...trustedResult, requiresReview: false }
+        : trustedResult
     };
   }
 
@@ -409,6 +459,7 @@ async function deleteQuizAudioAssociation(matchedQuizKey, row) {
     RETURNING audio_key
   `;
   if (!deleted.length || !row?.audio_key) return false;
+  quizAudioObjectAvailabilityCache.delete(String(row.audio_key));
   const references = await sql`
     SELECT 1 FROM quiz_audio_explanations
     WHERE audio_key = ${row.audio_key}
@@ -1206,9 +1257,13 @@ export default async function handler(req, res) {
           }),
           { service: "audio_status", timeoutMs: 8_000 }
         );
+        const available = Boolean(result.row) && !result.requiresReview && await withOperationalTimeout(
+          hasQuizAudioObject(result.row),
+          { service: "audio_object_status", timeoutMs: 4_000 }
+        );
         return res.status(200).json({
           ok: true,
-          available: Boolean(result.row),
+          available,
           requiresReview: result.requiresReview,
           isAdmin,
           quizKey: identity.quizKey,
@@ -1284,13 +1339,10 @@ export default async function handler(req, res) {
       if (result.requiresReview) return res.status(409).json({ error: "quiz_audio_requires_review" });
       if (!result.row) return res.status(404).json({ error: "quiz_audio_not_found" });
 
-      const object = await getQuizAudioStorage().send(new GetObjectCommand({
-        Bucket: QUIZ_AUDIO_R2_BUCKET,
-        Key: result.row.audio_key
-      }));
-      const bytes = await object.Body.transformToByteArray();
+      const bytes = await readQuizAudioObject(result.row);
+      const mimeType = detectQuizAudioMimeType(bytes, result.row.audio_mime_type);
       res.statusCode = 200;
-      res.setHeader("Content-Type", result.row.audio_mime_type || "audio/webm");
+      res.setHeader("Content-Type", mimeType);
       res.setHeader("Content-Length", String(bytes.byteLength));
       res.setHeader("X-Audio-Duration-Ms", String(result.row.audio_duration_ms || 0));
       res.setHeader("Access-Control-Expose-Headers", "X-Audio-Duration-Ms");
@@ -1306,13 +1358,10 @@ export default async function handler(req, res) {
       }
       const row = await getQuizAudioRow(identity.legacyQuizKey);
       if (!row) return res.status(404).json({ error: "quiz_audio_legacy_not_found" });
-      const object = await getQuizAudioStorage().send(new GetObjectCommand({
-        Bucket: QUIZ_AUDIO_R2_BUCKET,
-        Key: row.audio_key
-      }));
-      const bytes = await object.Body.transformToByteArray();
+      const bytes = await readQuizAudioObject(row);
+      const mimeType = detectQuizAudioMimeType(bytes, row.audio_mime_type);
       res.statusCode = 200;
-      res.setHeader("Content-Type", row.audio_mime_type || "audio/webm");
+      res.setHeader("Content-Type", mimeType);
       res.setHeader("Content-Length", String(bytes.byteLength));
       res.setHeader("X-Audio-Duration-Ms", String(row.audio_duration_ms || 0));
       res.setHeader("Access-Control-Expose-Headers", "X-Audio-Duration-Ms");
@@ -1352,6 +1401,7 @@ export default async function handler(req, res) {
         Body: audioBuffer,
         ContentType: mimeType
       }));
+      quizAudioObjectAvailabilityCache.delete(audioKey);
 
       const durationMs = Math.max(0, Math.min(60 * 60 * 1000, Math.round(Number(audioDurationMs) || 0))) || null;
       const sql = getQuizAudioDatabase();
@@ -1376,16 +1426,17 @@ export default async function handler(req, res) {
       await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
       assertQuizAudioIdentityVersion(quizAudioIdentityVersion);
       const { quizKey, audioKey } = getQuizAudioIdentity(question, figure);
+      const uploadContentType = normalizeQuizAudioMimeType(audioMimeType);
       const uploadUrl = await getSignedUrl(
         getQuizAudioStorage(),
         new PutObjectCommand({
           Bucket: QUIZ_AUDIO_R2_BUCKET,
           Key: audioKey,
-          ContentType: "audio/webm"
+          ContentType: uploadContentType
         }),
         { expiresIn: 5 * 60 }
       );
-      return res.status(200).json({ ok: true, quizKey, audioKey, uploadUrl, uploadContentType: "audio/webm" });
+      return res.status(200).json({ ok: true, quizKey, audioKey, uploadUrl, uploadContentType });
     }
 
     if (req.method === "POST" && action === "confirmQuizAudioUpload") {
@@ -1397,6 +1448,7 @@ export default async function handler(req, res) {
         Bucket: QUIZ_AUDIO_R2_BUCKET,
         Key: audioKey
       }));
+      quizAudioObjectAvailabilityCache.delete(audioKey);
       const uploadedBytes = Number(uploadedObject.ContentLength || 0);
       if (!uploadedBytes || uploadedBytes > 20 * 1024 * 1024 || !String(uploadedObject.ContentType || "").startsWith("audio/")) {
         const error = new Error("invalid_uploaded_audio");
