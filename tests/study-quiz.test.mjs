@@ -50,6 +50,6 @@ test("the quiz menu and clean routes expose the study experience", () => {
   assert.match(page, /id="study-chapter-grid"/);
   assert.match(page, /id="study-question-list"/);
   assert.doesNotMatch(page, /id="timer"|id="true-btn"|id="false-btn"/);
-  assert.ok(routes.rewrites.some(route => route.source === "/studia-quiz" && route.destination === "/study-quiz.html"));
+  assert.ok(routes.rewrites.some(route => route.source === "/studia-quiz" && route.destination === "/study-quiz"));
   assert.ok(routes.rewrites.some(route => route.source === "/studia-quiz/capitolo-:chapter"));
 });

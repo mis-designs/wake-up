@@ -33,6 +33,8 @@
   applyReaderSize();
 
   const HELP_MANIFEST_SOURCE = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
+  const LOCAL_HELP_SOURCE = "/data/patente/quiz-help-runtime-v2.json";
+  const REMOTE_HELP_TIMEOUT_MS = 1800;
   const questionArea = document.querySelector(".question-area");
   const questionText = document.getElementById("question");
   const clickHint = document.querySelector(".quiz-click-hint");
@@ -94,7 +96,19 @@
   function loadLibrary() {
     if (!libraryPromise) {
       window.QUIZ_HELP_RUNTIME_V3_MANIFEST_URL = HELP_MANIFEST_SOURCE;
-      libraryPromise = window.QuizHelpRuntimeV3.load()
+      const remote = Promise.resolve().then(() => {
+        if (!window.QuizHelpRuntimeV3?.load) throw new Error("quiz_help_runtime_v3_missing");
+        return window.QuizHelpRuntimeV3.load();
+      });
+      const remoteDeadline = new Promise((_, reject) => {
+        window.setTimeout(() => reject(new Error("quiz_help_runtime_v3_timeout")), REMOTE_HELP_TIMEOUT_MS);
+      });
+      libraryPromise = Promise.race([remote, remoteDeadline])
+        .catch(() => fetch(LOCAL_HELP_SOURCE, { cache: "force-cache" })
+          .then(response => {
+            if (!response.ok) throw new Error(`quiz_help_local_${response.status}`);
+            return response.json();
+          }))
         .catch(error => {
           libraryPromise = null;
           throw error;
@@ -129,7 +143,7 @@
       || quizIdIndex.get(sourceId)
       || (sourceDigits ? quizIdIndex.get(String(Number(sourceDigits))) : null);
     if (!Array.isArray(row)) return null;
-    const [quizId, chapterId, topicId, wordIds = [], ttsBn = ""] = row;
+    const [quizId, chapterId, topicId, wordIds = [], questionBn = ""] = row;
     const chapter = data.chapters?.[chapterId] || [];
     const topic = data.topics?.[topicId] || [];
     const words = wordIds.map(id => {
@@ -146,7 +160,10 @@
     }).filter(Boolean);
     return {
       quizId,
-      ttsBn,
+      questionBn,
+      questionBnEasy: questionBn,
+      questionBnStandard: questionBn,
+      ttsBn: questionBn,
       chapter: { italian: chapter[0] || "", bangla: chapter[1] || "" },
       topic: { italian: topic[0] || "", bangla: topic[1] || "" },
       words
@@ -215,6 +232,13 @@
     });
   }
 
+  async function loadOnDemandTranslation(question) {
+    if (typeof fetchBengaliAudio !== "function") return "";
+    const cacheKey = `${String(question?.id || current)}_bn`;
+    const data = await fetchBengaliAudio(String(question?.question || ""), cacheKey);
+    return String(data?.translation || "").trim();
+  }
+
   async function render() {
     const question = currentQuestion();
     if (!question?.question) return;
@@ -224,29 +248,35 @@
     renderContext(null);
     wordsList.innerHTML = '<span class="quiz-help-skeleton"></span><span class="quiz-help-skeleton"></span><span class="quiz-help-skeleton"></span>';
 
+    let help = null;
     try {
       const data = await loadLibrary();
       if (ownRequest !== requestId) return;
-      const help = decodeHelp(question, data);
-      const verifiedTranslation = String(
-        help?.questionBnEasy
-        || help?.questionBn
-        || question.question_bd
-        || question.questionBD
-        || ""
-      ).trim();
-      translationText.textContent = verifiedTranslation;
-      translationStatus.textContent = verifiedTranslation ? "" : "Traduzione verificata non ancora disponibile.";
-      renderContext(help);
-      renderWords(help?.words || []);
+      help = decodeHelp(question, data);
     } catch (error) {
       if (ownRequest !== requestId) return;
-      const directTranslation = String(question.question_bd || question.questionBD || "").trim();
-      translationText.textContent = directTranslation;
-      translationStatus.textContent = directTranslation ? "" : "Traduzione verificata non disponibile.";
-      renderWords([]);
       console.warn("[Magic Book quiz help]", error.message);
     }
+
+    let verifiedTranslation = String(
+      help?.questionBnEasy
+      || help?.questionBn
+      || question.question_bd
+      || question.questionBD
+      || ""
+    ).trim();
+    if (!verifiedTranslation) {
+      try {
+        verifiedTranslation = await loadOnDemandTranslation(question);
+      } catch (_) {
+        verifiedTranslation = "";
+      }
+    }
+    if (ownRequest !== requestId) return;
+    translationText.textContent = verifiedTranslation;
+    translationStatus.textContent = verifiedTranslation ? "" : "Traduzione verificata non disponibile.";
+    renderContext(help);
+    renderWords(help?.words || []);
   }
 
   function setSlide(index) {

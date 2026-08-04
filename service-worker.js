@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v37-request-efficiency";
+const CACHE_NAME = "magicbook-pwa-v38-study-route-help-fallback";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -13,7 +13,7 @@ const STATIC_ASSETS = [
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=51-request-efficiency",
   "/quiz-help.css?v=20260714-magic-help-v4",
-  "/quiz-help.js?v=20260804-magic-shared-v3",
+  "/quiz-help.js?v=20260805-help-recovery",
   "/patenteContextResolverV3.js?v=3.0.1-keywords-fix",
   "/quizHelpRuntimeV3Loader.js?v=3.0.1-keywords-fix",
   "/data/patente/quiz-help-runtime-v2.json",
