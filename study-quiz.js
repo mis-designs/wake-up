@@ -61,6 +61,7 @@
   let toastTimer = 0;
   let loadRequestId = 0;
   const STUDY_AUDIO_STATUS_DELAY_MS = 400;
+  const STUDY_AUDIO_REQUEST_TIMEOUT_MS = 12000;
   const ttsCache = new Map();
   const helpCache = new Map();
   const audioStatusCache = new Map();
@@ -189,8 +190,12 @@
       copy.append(label, title);
       const arrow = document.createElement("span");
       arrow.className = "study-chapter-arrow";
+      const arrowIcon = document.createElement("img");
+      arrowIcon.className = "study-system-arrow";
+      arrowIcon.src = "icons/next.png";
+      arrowIcon.alt = "";
       arrow.setAttribute("aria-hidden", "true");
-      arrow.textContent = "→";
+      arrow.appendChild(arrowIcon);
       button.append(number, copy, arrow);
       button.addEventListener("click", () => openChapter(chapter));
       fragment.appendChild(button);
@@ -275,8 +280,16 @@
     button.type = "button";
     button.className = `study-action ${className}`;
     const symbol = document.createElement("span");
+    symbol.className = "study-action-icon";
     symbol.setAttribute("aria-hidden", "true");
-    symbol.textContent = icon;
+    if (String(icon).startsWith("icons/")) {
+      const image = document.createElement("img");
+      image.src = icon;
+      image.alt = "";
+      symbol.appendChild(image);
+    } else {
+      symbol.textContent = icon;
+    }
     const copy = document.createElement("span");
     copy.textContent = label;
     button.append(symbol, copy);
@@ -332,7 +345,7 @@
     bangla.lang = "bn";
     bangla.setAttribute("aria-label", `Ascolta in bengali la domanda ${index + 1}`);
     bangla.addEventListener("click", () => playTts(question, "bn", bangla, card));
-    const explanation = actionButton("study-action-explanation hidden", "Spiegazione audio", "▶");
+    const explanation = actionButton("study-action-explanation hidden", "Spiegazione audio", "icons/wave.svg");
     explanation.setAttribute("aria-label", `Ascolta la spiegazione audio della domanda ${index + 1}`);
     explanation.addEventListener("click", () => playExplanation(question, explanation));
     const help = actionButton("study-action-help", "Traduzione e parole chiave", "文");
@@ -467,7 +480,10 @@
     const translation = document.createElement("p");
     translation.className = "study-translation";
     translation.lang = "bn";
-    translation.textContent = help?.translation || "Traduzione verificata non ancora disponibile.";
+    const verifiedTranslation = String(help?.translation || "").trim();
+    translation.classList.toggle("is-missing", !verifiedTranslation);
+    translation.dataset.translationState = verifiedTranslation ? "ready" : "missing";
+    translation.textContent = verifiedTranslation || "Traduzione verificata non ancora disponibile.";
     translationSection.appendChild(translation);
     container.appendChild(translationSection);
 
@@ -547,13 +563,20 @@
       const key = String(question.id || fingerprint(question));
       let help = helpCache.get(key);
       if (!help) {
-        const data = await loadHelpLibrary();
-        help = decodeHelp(question, data) || {
+        let data = null;
+        try { data = await loadHelpLibrary(); } catch (_) {}
+        help = (data && decodeHelp(question, data)) || {
           translation: String(question.question_bd || question.questionBD || ""),
           words: []
         };
-        helpCache.set(key, help);
       }
+      if (!String(help.translation || "").trim()) {
+        try {
+          const translation = await loadOnDemandTranslation(question);
+          if (translation) help.translation = translation;
+        } catch (_) {}
+      }
+      helpCache.set(key, help);
       skeleton.replaceWith(renderHelp(question, help));
     } catch (_) {
       skeleton.replaceWith(renderHelp(question, {
@@ -561,6 +584,25 @@
         words: []
       }));
     }
+  }
+
+  async function loadOnDemandTranslation(question) {
+    const key = `bn:${question.id || fingerprint(question)}`;
+    const cached = ttsCache.get(key);
+    if (cached?.translation) return String(cached.translation).trim();
+    const query = new URLSearchParams({
+      action: "getBengaliAudio",
+      phone: session.phone,
+      deviceId: session.deviceId,
+      text: String(question.question || "")
+    });
+    const response = await fetch(`${API}?${query}`, {
+      headers: authHeaders({ withQuizSession: true }),
+      cache: "force-cache"
+    });
+    const data = await readApiResponse(response);
+    if (data?.audio) ttsCache.set(key, data);
+    return String(data?.translation || "").trim();
   }
 
   function stopPlayback() {
@@ -638,7 +680,11 @@
       }
       if (language === "bn" && data.translation) {
         const translation = card.querySelector(".study-translation");
-        if (translation && !translation.textContent.trim()) translation.textContent = data.translation;
+        if (translation && (translation.dataset.translationState === "missing" || !translation.textContent.trim())) {
+          translation.textContent = data.translation;
+          translation.dataset.translationState = "ready";
+          translation.classList.remove("is-missing");
+        }
       }
       await startAudio(base64AudioUrl(data.audio), button, key);
     } catch (_) {
@@ -663,26 +709,33 @@
   }
 
   async function audioApi(action, question, { blob = false } = {}) {
-    const response = await fetch(API, {
-      method: "POST",
-      headers: authHeaders({ json: true }),
-      body: JSON.stringify({
-        action,
-        phone: session.phone,
-        deviceId: session.deviceId,
-        questionId: question.id ?? "",
-        question: String(question.audioQuestion || question.question || ""),
-        figure: question.audioFigure ?? question.figure ?? "",
-        quizAudioIdentityVersion: window.QuizAudioIdentity?.VERSION || 2,
-        audioIdentityToken: question.audioIdentityToken || ""
-      })
-    });
-    if (blob) {
-      if (response.status === 401 || response.status === 403) clearSessionAndExit();
-      if (!response.ok) throw new Error(`audio_blob_${response.status}`);
-      return response.blob();
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), STUDY_AUDIO_REQUEST_TIMEOUT_MS);
+    try {
+      const response = await fetch(API, {
+        method: "POST",
+        signal: controller.signal,
+        headers: authHeaders({ json: true }),
+        body: JSON.stringify({
+          action,
+          phone: session.phone,
+          deviceId: session.deviceId,
+          questionId: question.id ?? "",
+          question: String(question.audioQuestion || question.question || ""),
+          figure: question.audioFigure ?? question.figure ?? "",
+          quizAudioIdentityVersion: window.QuizAudioIdentity?.VERSION || 2,
+          audioIdentityToken: question.audioIdentityToken || ""
+        })
+      });
+      if (blob) {
+        if (response.status === 401 || response.status === 403) clearSessionAndExit();
+        if (!response.ok) throw new Error(`audio_blob_${response.status}`);
+        return response.blob();
+      }
+      return readApiResponse(response);
+    } finally {
+      window.clearTimeout(timeoutId);
     }
-    return readApiResponse(response);
   }
 
   function audioStatusKey(question) {
@@ -691,6 +744,7 @@
 
   function paintAudioAvailability(button, available) {
     button.classList.toggle("hidden", available !== true);
+    button.dataset.audioState = available === true ? "ready" : "unavailable";
   }
 
   function cancelPendingAudioStatus(card) {
@@ -760,16 +814,51 @@
     }
     button.disabled = true;
     button.classList.add("is-loading");
+    button.setAttribute("aria-busy", "true");
     try {
-      const blob = await audioApi("getQuizAudioBlob", question, { blob: true });
+      const blob = await fetchExplanationBlob(question);
       if (!blob.size) throw new Error("empty_audio_blob");
       await startAudio(URL.createObjectURL(blob), button, key);
     } catch (_) {
       button.classList.add("hidden");
+      button.dataset.audioState = "unavailable";
       showToast("Spiegazione audio non disponibile.");
     } finally {
       button.disabled = false;
       button.classList.remove("is-loading");
+      button.removeAttribute("aria-busy");
+    }
+  }
+
+  async function fetchExplanationBlob(question) {
+    let firstError = null;
+    try {
+      const blob = await audioApi("getQuizAudioBlob", question, { blob: true });
+      if (blob?.size) return blob;
+      firstError = new Error("empty_audio_blob");
+    } catch (error) {
+      firstError = error;
+    }
+
+    // Use the signed object only after an explicit click, so scrolling never
+    // creates a second audio request for every visible question.
+    try {
+      const playback = await audioApi("getQuizAudioPlayback", question);
+      if (!playback?.audioUrl) throw firstError || new Error("audio_url_missing");
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), STUDY_AUDIO_REQUEST_TIMEOUT_MS);
+      let response;
+      try {
+        response = await fetch(playback.audioUrl, { cache: "no-store", signal: controller.signal });
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+      if (!response.ok) throw firstError || new Error(`audio_url_${response.status}`);
+      const blob = await response.blob();
+      if (!blob.size) throw firstError || new Error("empty_audio_blob");
+      return blob;
+    } catch (_) {
+      throw firstError || new Error("audio_not_available");
     }
   }
 
