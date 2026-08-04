@@ -4717,6 +4717,7 @@ body.app-mode #whatsappBtn {
 }
 
 .qms-badge-mix   { background: linear-gradient(135deg, #3a4efb 0%, #33a4fa 100%); }
+.qms-badge-study { background: linear-gradient(135deg, #7659e7 0%, #23ad8c 100%); }
 .qms-badge-cap   { background: linear-gradient(135deg, #c9f41d 0%, #b8e314 100%); }
 .qms-badge-multi { background: linear-gradient(135deg, #ff8c00 0%, #f8c000 100%); }
 .qms-badge-exam80 { background: linear-gradient(135deg, #15d66b 0%, #0fb858 100%); }
@@ -4893,6 +4894,16 @@ body.app-mode #whatsappBtn {
 
 .qms-start-mix:not(:disabled):hover {
     box-shadow: 0 12px 28px rgba(58, 78, 251, 0.38);
+}
+
+.qms-start-study {
+    background: linear-gradient(135deg, #7659e7 0%, #23ad8c 100%);
+    color: white;
+    box-shadow: 0 8px 22px rgba(86, 91, 190, 0.28);
+}
+
+.qms-start-study:not(:disabled):hover {
+    box-shadow: 0 12px 28px rgba(54, 126, 157, 0.36);
 }
 
 .qms-start-cap {

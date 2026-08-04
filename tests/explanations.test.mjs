@@ -7,6 +7,7 @@ test("explanation figure names use the final fig-number format", () => {
   assert.equal(normalizeExplanationFigure("fig101"), "fig101");
   assert.equal(normalizeExplanationFigure("Fig-101"), "fig101");
   assert.equal(normalizeExplanationFigure("fig_101"), "fig101");
+  assert.equal(normalizeExplanationFigure("/img_sign/101.png"), "fig101");
 });
 
 test("explanation value zero loads the new name before legacy suffixed names", () => {

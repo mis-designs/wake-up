@@ -544,7 +544,9 @@ const quizAudioRecordStatus = document.getElementById("quiz-audio-record-status"
 const quizAudioRecordTime = document.getElementById("quiz-audio-record-time");
 const quizAudioRecordPreview = document.getElementById("quiz-audio-record-preview");
 const sharedAudio = new Audio();
-sharedAudio.preload = "auto";
+sharedAudio.preload = "metadata";
+const SHARED_AUDIO_AVAILABILITY_DELAY_MS = 350;
+const QUIZ_IMAGE_REQUEST_DELAY_MS = 140;
 let sharedAudioQuestion = "";
 let sharedAudioLoading = null;
 let sharedAudioFrame = 0;
@@ -555,6 +557,12 @@ let sharedAudioSeeking = false;
 let sharedAudioDurationHint = 0;
 let sharedAudioContext = null;
 let sharedAudioFailure = null;
+let sharedAudioAvailabilityTimer = 0;
+let sharedAudioAvailabilityController = null;
+let quizImageRequestTimer = 0;
+let quizImageRequestId = 0;
+const sharedAudioAvailabilityCache = new Map();
+const loadedQuizFigures = new Set();
 
 function setSharedAudioVisualState(state) {
   if (!sharedAudioPlayer) return;
@@ -603,6 +611,10 @@ function revokeSharedAudioObjectUrl() {
 }
 
 function resetSharedAudioPlayer() {
+  if (sharedAudioAvailabilityTimer) window.clearTimeout(sharedAudioAvailabilityTimer);
+  sharedAudioAvailabilityTimer = 0;
+  sharedAudioAvailabilityController?.abort();
+  sharedAudioAvailabilityController = null;
   sharedAudioRequestId += 1;
   sharedAudio.pause();
   revokeSharedAudioObjectUrl();
@@ -655,17 +667,19 @@ function animateSharedAudioProgress() {
   if (!sharedAudio.paused && !sharedAudio.ended) sharedAudioFrame = requestAnimationFrame(animateSharedAudioProgress);
 }
 
-async function requestSharedAudio(action, question) {
+async function requestSharedAudio(action, question, { signal } = {}) {
   const audioQuestion = question?.audioQuestion || question?.question || question || "";
   const audioFigure = question?.audioFigure ?? question?.figure ?? "";
   const identityPayload = {
     questionId: question?.id ?? "",
     question: String(audioQuestion),
     figure: QuizAudioIdentity.normalizeFigure(audioFigure),
-    quizAudioIdentityVersion: QuizAudioIdentity.VERSION
+    quizAudioIdentityVersion: QuizAudioIdentity.VERSION,
+    audioIdentityToken: question?.audioIdentityToken || ""
   };
   const response = await fetch(QUIZ_API, {
     method: "POST",
+    signal,
     headers: {
       "Content-Type": "application/json",
       ...(getQuizAccessToken() ? { Authorization: `Bearer ${getQuizAccessToken()}` } : {})
@@ -689,7 +703,8 @@ async function requestSharedAudioBlob(question) {
     questionId: question?.id ?? "",
     question: String(audioQuestion),
     figure: QuizAudioIdentity.normalizeFigure(audioFigure),
-    quizAudioIdentityVersion: QuizAudioIdentity.VERSION
+    quizAudioIdentityVersion: QuizAudioIdentity.VERSION,
+    audioIdentityToken: question?.audioIdentityToken || ""
   };
   const response = await fetch(QUIZ_API, {
     method: "POST",
@@ -749,7 +764,49 @@ function updateQuizAudioAdminTool(hasAudio) {
   quizAudioEditMenu?.classList.add("hidden");
 }
 
-async function updateSharedAudioAvailability(question) {
+function sharedAudioAvailabilityKey(question) {
+  const id = String(question?.id ?? "").trim();
+  const audioQuestion = String(question?.audioQuestion || question?.question || "").trim();
+  const audioFigure = QuizAudioIdentity.normalizeFigure(question?.audioFigure ?? question?.figure ?? "");
+  return `${id}\u001f${audioQuestion}\u001f${audioFigure}`;
+}
+
+function invalidateSharedAudioAvailability(question) {
+  sharedAudioAvailabilityCache.delete(sharedAudioAvailabilityKey(question));
+}
+
+function applySharedAudioAvailability(data, question, requestId) {
+  if (requestId !== sharedAudioRequestId) return;
+  updateQuizAudioAdminTool(data.available === true);
+  if (data.available) {
+    sharedAudioPlayer.classList.remove("hidden");
+    sharedAudioPlayer.setAttribute("aria-hidden", "false");
+    sharedAudioQuestion = {
+      id: question.id ?? "",
+      question: String(question.audioQuestion || question.question),
+      figure: question.audioFigure ?? question.figure ?? "",
+      audioIdentityToken: question.audioIdentityToken || ""
+    };
+    sharedAudioDurationHint = Math.max(0, Number(data.durationMs) || 0) / 1000;
+    sharedAudioFailure = null;
+    // Availability is lightweight; the audio blob is downloaded only after
+    // the user explicitly presses Play.
+    setSharedAudioVisualState("active");
+    return;
+  }
+
+  sharedAudioPlayer.classList.add("hidden");
+  sharedAudioPlayer.setAttribute("aria-hidden", "true");
+  sharedAudioFailure = {
+    code: data.requiresReview ? "quiz_audio_requires_review" : "quiz_audio_not_found",
+    stage: "availability",
+    questionId: String(question.id ?? ""),
+    figure: QuizAudioIdentity.normalizeFigure(question.figure ?? "")
+  };
+  setSharedAudioVisualState("inactive");
+}
+
+function updateSharedAudioAvailability(question) {
   resetSharedAudioPlayer();
   const requestId = sharedAudioRequestId;
   sharedAudioContext = question ? {
@@ -762,52 +819,31 @@ async function updateSharedAudioAvailability(question) {
     return;
   }
   setSharedAudioVisualState("loading");
-  try {
-    const data = await requestSharedAudio("getQuizAudioStatus", question);
-    if (requestId !== sharedAudioRequestId) return;
-    updateQuizAudioAdminTool(data.available === true);
-    if (data.available) {
-      sharedAudioPlayer.classList.remove("hidden");
-      sharedAudioPlayer.setAttribute("aria-hidden", "false");
-      sharedAudioQuestion = {
-        id: question.id ?? "",
-        question: String(question.audioQuestion || question.question),
-        figure: question.audioFigure ?? question.figure ?? ""
-      };
-      sharedAudioDurationHint = Math.max(0, Number(data.durationMs) || 0) / 1000;
-      sharedAudioFailure = null;
-      setSharedAudioVisualState("loading");
-      sharedAudioPlay?.classList.add("is-loading");
-      sharedAudioLoading = loadSharedAudioSource(sharedAudioQuestion, requestId)
-        .then(() => {
-          if (requestId === sharedAudioRequestId) setSharedAudioVisualState("active");
-        })
-        .catch(error => {
-          if (requestId !== sharedAudioRequestId) return;
-          sharedAudioLoading = null;
-          sharedAudio.removeAttribute("src");
-          sharedAudio.load();
-          setSharedAudioFailure(error, "preload");
-        })
-        .finally(() => {
-          if (requestId === sharedAudioRequestId) sharedAudioPlay?.classList.remove("is-loading");
-        });
-    } else {
-      sharedAudioPlayer.classList.add("hidden");
-      sharedAudioPlayer.setAttribute("aria-hidden", "true");
-      sharedAudioFailure = {
-        code: data.requiresReview ? "quiz_audio_requires_review" : "quiz_audio_not_found",
-        stage: "availability",
-        questionId: String(question.id ?? ""),
-        figure: QuizAudioIdentity.normalizeFigure(question.figure ?? "")
-      };
-      setSharedAudioVisualState("inactive");
-    }
-  } catch (error) {
-    if (requestId !== sharedAudioRequestId) return;
-    updateQuizAudioAdminTool(false);
-    setSharedAudioFailure(error, "status");
+  const cacheKey = sharedAudioAvailabilityKey(question);
+  const cached = sharedAudioAvailabilityCache.get(cacheKey);
+  if (cached) {
+    applySharedAudioAvailability(cached, question, requestId);
+    return;
   }
+
+  sharedAudioAvailabilityTimer = window.setTimeout(async () => {
+    sharedAudioAvailabilityTimer = 0;
+    if (requestId !== sharedAudioRequestId) return;
+    const controller = new AbortController();
+    sharedAudioAvailabilityController = controller;
+    try {
+      const data = await requestSharedAudio("getQuizAudioStatus", question, { signal: controller.signal });
+      if (requestId !== sharedAudioRequestId) return;
+      if (data.temporaryUnavailable !== true) sharedAudioAvailabilityCache.set(cacheKey, data);
+      applySharedAudioAvailability(data, question, requestId);
+    } catch (error) {
+      if (error?.name === "AbortError" || requestId !== sharedAudioRequestId) return;
+      updateQuizAudioAdminTool(false);
+      setSharedAudioFailure(error, "status");
+    } finally {
+      if (sharedAudioAvailabilityController === controller) sharedAudioAvailabilityController = null;
+    }
+  }, SHARED_AUDIO_AVAILABILITY_DELAY_MS);
 }
 
 async function playSharedAudio() {
@@ -819,10 +855,12 @@ async function playSharedAudio() {
   try {
     if (!sharedAudio.src) {
       sharedAudioPlay?.classList.add("is-loading");
+      setSharedAudioVisualState("loading");
       sharedAudioLoading ||= loadSharedAudioSource(sharedAudioQuestion, requestId);
       await sharedAudioLoading;
       if (requestId !== sharedAudioRequestId) return;
       sharedAudioPlay?.classList.remove("is-loading");
+      setSharedAudioVisualState("active");
     }
     if (sharedAudio.paused) {
       await waitForSharedAudioReady();
@@ -1076,7 +1114,8 @@ async function saveInlineAudioRecording(event) {
       });
     }
     closeInlineAudioRecorder();
-    await updateSharedAudioAvailability(question);
+    invalidateSharedAudioAvailability(question);
+    updateSharedAudioAvailability(question);
     showAudioUnavailableToast("Spiegazione audio salvata");
   } catch (error) {
     item.saving = false;
@@ -1116,6 +1155,8 @@ quizAudioDelete?.addEventListener("click", async event => {
   if (!accepted) return;
   try {
     await quizAudioAdminApi("deleteQuizAudio", question);
+    invalidateSharedAudioAvailability(question);
+    sharedAudioAvailabilityCache.set(sharedAudioAvailabilityKey(question), { available: false });
     resetSharedAudioPlayer();
     updateQuizAudioAdminTool(false);
     showAudioUnavailableToast("Spiegazione audio eliminata");
@@ -1265,24 +1306,6 @@ async function fetchBengaliAudio(italianText, cacheKey) {
   }
 }
 
-function prefetchBengali(index) {
-  if (index < 0 || index >= quiz.length) return;
-  const q = quiz[index];
-  if (!q?.question) return;
-  const cacheKey = String(q.id || index) + "_bn";
-  if (bengaliAudioCache[cacheKey]) return;
-  fetchBengaliAudio(q.question, cacheKey).catch(() => {});
-}
-
-function prefetchItalian(index) {
-  if (index < 0 || index >= quiz.length) return;
-  const q = quiz[index];
-  if (!q?.question) return;
-  const cacheKey = String(q.id || index) + "_it";
-  if (italianAudioCache[cacheKey]) return;
-  fetchItalianAudio(q.question, cacheKey).catch(() => {});
-}
-
 // Bengali TTS — single reliable path via GAS proxy.
 // GAS uses LanguageApp.translate() for high-quality translation and fetches
 // TTS server-side so no browser CORS/403 restrictions apply.
@@ -1344,14 +1367,23 @@ function playBanglaAudio() {
  ***********************/
 
 function getExplanationValue(question) {
-  const value = String(question?.explanations ?? question?.Explanations ?? "").trim();
-  return value === "0" ? value : null;
+  const markers = [
+    question?.explanations,
+    question?.Explanations,
+    question?.explanation,
+    question?.Explanation
+  ];
+  return markers.some(marker => marker !== null && marker !== undefined && String(marker).trim() !== "")
+    ? "0"
+    : null;
 }
 
 function getNormalizedFigureKey(question) {
-  const figure = getFigureKey(question).toLowerCase();
-  const match = figure.match(/^fig[\s_-]*(\d+)$/i);
-  return match ? `fig${Number(match[1])}` : figure;
+  const figure = getFigureKey(question).normalize("NFKC").toLowerCase();
+  const clean = figure.split(/[?#]/, 1)[0].replace(/\\/g, "/");
+  const basename = clean.split("/").pop() || clean;
+  const match = basename.match(/^(?:fig[\s_-]*)?0*(\d+)(?:\.[a-z0-9]+)?$/i);
+  return match ? `fig${Number(match[1])}` : basename.replace(/\.[a-z0-9]+$/i, "");
 }
 
 function applyExplanationAvailability(questions) {
@@ -1438,11 +1470,16 @@ function loadQuizImage(q) {
   const skeleton   = document.getElementById("img-skeleton");
   if (!img || !figureWrap) return;
 
-  // Instantly hide any previous image and detach stale handlers
+  // Instantly hide any previous image and detach stale handlers.
+  // A short cancellable dwell avoids hitting the image endpoint when the user
+  // is only moving rapidly across questions.
+  if (quizImageRequestTimer) window.clearTimeout(quizImageRequestTimer);
+  quizImageRequestTimer = 0;
+  const requestId = ++quizImageRequestId;
   img.classList.remove("img-ready");
   img.onload  = null;
   img.onerror = null;
-  img.src     = "";
+  img.removeAttribute("src");
 
   const figVal   = String(q.figure ?? "").trim().toLowerCase();
   const noFigure = figVal === "" || figVal === "0" || figVal === "false" ||
@@ -1451,21 +1488,31 @@ function loadQuizImage(q) {
   figureWrap.classList.remove("hidden");
   skeleton?.classList.remove("hidden");
 
+  const requestedSource = noFigure ? "icons/wearetmm.svg" : buildFigureImageUrl(q.figure);
+  let showingFallback = false;
   const reveal = () => {
+    if (requestId !== quizImageRequestId) return;
+    if (!noFigure && !showingFallback) loadedQuizFigures.add(requestedSource);
     skeleton?.classList.add("hidden");
     img.classList.add("img-ready");
   };
 
   img.onerror = function () {
+    if (requestId !== quizImageRequestId) return;
+    showingFallback = true;
     this.onerror = null;
     this.onload  = reveal;
     this.src     = "icons/wearetmm.svg";
   };
 
   img.onload = reveal;
-  img.src    = noFigure
-    ? "icons/wearetmm.svg"
-    : buildFigureImageUrl(q.figure);
+  const startRequest = () => {
+    if (requestId !== quizImageRequestId) return;
+    quizImageRequestTimer = 0;
+    img.src = requestedSource;
+  };
+  if (noFigure || loadedQuizFigures.has(requestedSource)) startRequest();
+  else quizImageRequestTimer = window.setTimeout(startRequest, QUIZ_IMAGE_REQUEST_DELAY_MS);
 }
 
 function showLoading(message = "Caricamento...") {
@@ -2136,10 +2183,6 @@ function showQuestion() {
 
   updateFinishButtonState();
   updateAdminCorrectDots(q);
-  prefetchBengali(current + 1);
-  prefetchBengali(current - 1);
-  prefetchItalian(current + 1);
-  prefetchItalian(current - 1);
 }
 
 // RISPOSTA

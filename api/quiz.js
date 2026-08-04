@@ -10,7 +10,10 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { neon } from "@neondatabase/serverless";
 import { applyQuizFigureCorrections } from "./quiz-figure-corrections.mjs";
+import { applyExplanationAvailabilityByFigure } from "./quiz-explanation-availability.mjs";
 import { fetchUpstream, withOperationalTimeout } from "./upstream-fetch.mjs";
+import { normalizeStudyChapter, selectStudyChapterRows } from "./study-quiz.mjs";
+import { matchesQuizAudioIdentityTicket } from "./quiz-audio-ticket.mjs";
 
 const require = createRequire(import.meta.url);
 const {
@@ -260,6 +263,66 @@ async function resolveQuizAudioRow({ question, figure, questionId }) {
   return { identity: requestedIdentity, result: requestedResult };
 }
 
+function verifyQuizAudioIdentityToken({ token, phone, deviceId, questionId, question, figure }) {
+  const verified = verifySignedToken(token, { phone, deviceId, purpose: "quiz-audio" });
+  if (!verified.ok) return null;
+
+  const identity = getQuizAudioIdentity(question, figure);
+  return matchesQuizAudioIdentityTicket(verified.payload, {
+    questionId,
+    quizKey: identity.quizKey,
+    legacyQuizKey: identity.legacyQuizKey
+  }) ? identity : null;
+}
+
+async function resolveQuizAudioRequest({
+  question,
+  figure,
+  questionId,
+  audioIdentityToken,
+  phone,
+  deviceId
+}) {
+  const trustedIdentity = verifyQuizAudioIdentityToken({
+    token: audioIdentityToken,
+    phone,
+    deviceId,
+    questionId,
+    question,
+    figure
+  });
+
+  if (trustedIdentity) {
+    return {
+      identity: trustedIdentity,
+      result: await findQuizAudioRow(trustedIdentity, { allowAmbiguousLegacy: true })
+    };
+  }
+
+  return resolveQuizAudioRow({ question, figure, questionId });
+}
+
+function attachQuizAudioIdentityTokens(rows, { phone, deviceId, ttlMs }) {
+  return rows.map(row => {
+    const audioQuestion = String(row?.audioQuestion || row?.question || "");
+    if (!audioQuestion) return row;
+    const audioFigure = row?.audioFigure ?? row?.figure ?? "";
+    const identity = getQuizAudioIdentity(audioQuestion, audioFigure);
+    const signed = createSignedToken({
+      phone,
+      deviceId,
+      purpose: "quiz-audio",
+      ttlMs,
+      claims: {
+        questionId: String(row?.id ?? ""),
+        quizKey: identity.quizKey,
+        legacyQuizKey: identity.legacyQuizKey
+      }
+    });
+    return { ...row, audioIdentityToken: signed.token };
+  });
+}
+
 async function attachCanonicalAudioSources(rows) {
   try {
     return await Promise.all(rows.map(async row => {
@@ -464,9 +527,10 @@ function signTokenPayload(encodedPayload) {
   return crypto.createHmac("sha256", SESSION_SECRET).update(encodedPayload).digest("base64url");
 }
 
-function createSignedToken({ phone, deviceId, purpose, ttlMs, role = "user" }) {
+function createSignedToken({ phone, deviceId, purpose, ttlMs, role = "user", claims = {} }) {
   const expiresAt = Date.now() + ttlMs;
   const payload = {
+    ...(claims && typeof claims === "object" ? claims : {}),
     phone,
     deviceId,
     purpose,
@@ -608,6 +672,7 @@ function getRequestData(req) {
     questionId: body.questionId ?? query.questionId,
     figure: Object.prototype.hasOwnProperty.call(body, "figure") ? body.figure : query.figure,
     quizAudioIdentityVersion: body.quizAudioIdentityVersion ?? query.quizAudioIdentityVersion,
+    audioIdentityToken: body.audioIdentityToken || query.audioIdentityToken,
     audioDurationMs: body.audioDurationMs || query.audioDurationMs,
     audioBase64: body.audioBase64 || query.audioBase64,
     audioMimeType: body.audioMimeType || query.audioMimeType,
@@ -685,6 +750,15 @@ function getMappedValue(row, names) {
   return undefined;
 }
 
+function getExplanationMappedValue(row) {
+  const aliases = ["explanations", "explanation"];
+  for (const alias of aliases) {
+    const value = getMappedValue(row, [alias]);
+    if (value !== null && value !== undefined && String(value).trim() !== "") return value;
+  }
+  return getMappedValue(row, aliases);
+}
+
 function normalizeQuestionRow(row) {
   // image_0.png defines these database headers; image_1.png identifies the exam rows from index 790+.
   return applyQuizFigureCorrections({
@@ -695,7 +769,7 @@ function normalizeQuestionRow(row) {
     figure: getMappedValue(row, ["figure", "Figure", "img", "image", "Image", "figura", "Figura"]),
     correct: getMappedValue(row, ["correct", "Correct", "answer", "risposta", "Risposta"]),
     question_bd: getMappedValue(row, ["question_bd", "Question_BD", "questionBD", "questionBd"]),
-    explanations: getMappedValue(row, ["explanations", "Explanations"])
+    explanations: getExplanationMappedValue(row)
   });
 }
 
@@ -930,6 +1004,7 @@ export default async function handler(req, res) {
       questionId,
       figure,
       quizAudioIdentityVersion,
+      audioIdentityToken,
       audioDurationMs,
       audioBase64,
       audioMimeType,
@@ -963,7 +1038,9 @@ export default async function handler(req, res) {
           // A single Magic Book chapter must come from the same 788-row
           // catalog used by the audio admin page, not the generic quiz draw.
           const catalog = await forwardCatalogAction();
-          const catalogRows = getQuizRows(catalog).map(normalizeQuestionRow);
+          const catalogRows = applyExplanationAvailabilityByFigure(
+            getQuizRows(catalog).map(normalizeQuestionRow)
+          );
           const chapterKey = String(Number(chapters));
           const chapterIdPattern = new RegExp(`^cap(?:itolo)?[_-]?0*${chapterKey}(?:[_-]|$)`, "i");
           const matchingRows = catalogRows.filter(row =>
@@ -998,19 +1075,24 @@ export default async function handler(req, res) {
         ? await fetchExamRows(action, text, modeConfig)
         : (catalogChapterRows || getQuizRows(data)))
         .map(normalizeQuestionRow);
+      if (!modeConfig) rows = applyExplanationAvailabilityByFigure(rows);
       if (!modeConfig) rows = await attachCanonicalAudioSources(rows);
       const quiz = modeConfig ? buildExamQuiz(rows, modeConfig) : rows;
       const quizForClient = admin ? await addAdminCorrectAnswers(quiz) : quiz;
+      const sessionTtlMs = modeConfig?.sessionTtlMs || QUIZ_SESSION_TOKEN_TTL_MS;
+      const quizWithAudioTokens = modeConfig
+        ? quizForClient
+        : attachQuizAudioIdentityTokens(quizForClient, { phone, deviceId, ttlMs: sessionTtlMs });
       const quizSession = createSignedToken({
         phone,
         deviceId,
         purpose: "quiz",
-        ttlMs: modeConfig?.sessionTtlMs || QUIZ_SESSION_TOKEN_TTL_MS,
+        ttlMs: sessionTtlMs,
         role: admin ? "admin" : "user"
       });
 
       return res.status(200).json({
-        quiz: quizForClient,
+        quiz: quizWithAudioTokens,
         isAdmin: admin,
         mode: modeConfig?.mode || "default",
         title: modeConfig?.title || "Quiz",
@@ -1024,10 +1106,71 @@ export default async function handler(req, res) {
       });
     }
 
+    if (req.method === "GET" && action === "getStudyQuiz") {
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      res.setHeader("CDN-Cache-Control", "no-store");
+      res.setHeader("Vercel-CDN-Cache-Control", "no-store");
+
+      const chapter = normalizeStudyChapter(chapters);
+      if (!chapter) return res.status(400).json({ error: "invalid_study_chapter" });
+
+      const access = await ensureAccess({ phone, deviceId, accessToken, forceValidate: true });
+      if (!access.ok) {
+        return res.status(access.statusCode || 401).json({ error: access.error || "unauthorized" });
+      }
+
+      const catalog = await forwardCatalogAction();
+      const catalogRows = applyExplanationAvailabilityByFigure(
+        getQuizRows(catalog).map(normalizeQuestionRow)
+      );
+      const chapterRows = selectStudyChapterRows(catalogRows, chapter);
+      if (!chapterRows.length) return res.status(404).json({ error: "study_chapter_empty" });
+      const quiz = chapterRows.map(row => ({
+        id: row.id,
+        chapter: row.chapter,
+        question: row.question,
+        figure: row.figure,
+        correct: row.correct,
+        question_bd: row.question_bd,
+        explanations: row.explanations,
+        audioQuestion: row.audioQuestion,
+        audioFigure: row.audioFigure
+      }));
+
+      quizAudioCatalogCache = { expiresAt: Date.now() + 5 * 60 * 1000, rows: catalogRows };
+      const quizSession = createSignedToken({
+        phone,
+        deviceId,
+        purpose: "quiz",
+        ttlMs: QUIZ_SESSION_TOKEN_TTL_MS,
+        role: access.role === "admin" ? "admin" : "user"
+      });
+      const quizWithAudioTokens = attachQuizAudioIdentityTokens(quiz, {
+        phone,
+        deviceId,
+        ttlMs: QUIZ_SESSION_TOKEN_TTL_MS
+      });
+
+      return res.status(200).json({
+        ok: true,
+        chapter,
+        count: quiz.length,
+        quiz: quizWithAudioTokens,
+        quizSessionToken: quizSession.token,
+        quizSessionTokenExpiresAt: quizSession.expiresAt,
+        ...(access.accessToken ? {
+          accessToken: access.accessToken,
+          accessTokenExpiresAt: access.accessTokenExpiresAt
+        } : {})
+      });
+    }
+
     if (req.method === "POST" && action === "getMagicBookCatalog") {
       await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
       const data = await forwardCatalogAction();
-      const rows = getQuizRows(data).map(normalizeQuestionRow).filter(row => row.id && row.question);
+      const rows = applyExplanationAvailabilityByFigure(
+        getQuizRows(data).map(normalizeQuestionRow)
+      ).filter(row => row.id && row.question);
       if (rows.length !== 788) {
         const error = new Error("magic_catalog_count_mismatch");
         error.statusCode = 409;
@@ -1053,7 +1196,14 @@ export default async function handler(req, res) {
       assertQuizAudioIdentityVersion(quizAudioIdentityVersion);
       try {
         const { identity, result } = await withOperationalTimeout(
-          resolveQuizAudioRow({ question, figure, questionId }),
+          resolveQuizAudioRequest({
+            question,
+            figure,
+            questionId,
+            audioIdentityToken,
+            phone,
+            deviceId
+          }),
           { service: "audio_status", timeoutMs: 8_000 }
         );
         return res.status(200).json({
@@ -1096,7 +1246,14 @@ export default async function handler(req, res) {
     if (req.method === "POST" && action === "getQuizAudioPlayback") {
       await requireQuizAudioAccess({ phone, deviceId, accessToken });
       assertQuizAudioIdentityVersion(quizAudioIdentityVersion);
-      const { result } = await resolveQuizAudioRow({ question, figure, questionId });
+      const { result } = await resolveQuizAudioRequest({
+        question,
+        figure,
+        questionId,
+        audioIdentityToken,
+        phone,
+        deviceId
+      });
       if (result.requiresReview) return res.status(409).json({ error: "quiz_audio_requires_review" });
       if (!result.row) return res.status(404).json({ error: "quiz_audio_not_found" });
 
@@ -1116,7 +1273,14 @@ export default async function handler(req, res) {
     if (req.method === "POST" && action === "getQuizAudioBlob") {
       await requireQuizAudioAccess({ phone, deviceId, accessToken });
       assertQuizAudioIdentityVersion(quizAudioIdentityVersion);
-      const { result } = await resolveQuizAudioRow({ question, figure, questionId });
+      const { result } = await resolveQuizAudioRequest({
+        question,
+        figure,
+        questionId,
+        audioIdentityToken,
+        phone,
+        deviceId
+      });
       if (result.requiresReview) return res.status(409).json({ error: "quiz_audio_requires_review" });
       if (!result.row) return res.status(404).json({ error: "quiz_audio_not_found" });
 

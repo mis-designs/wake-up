@@ -9,12 +9,13 @@ test("Magic Book quiz q01131 receives its missing figure 37", () => {
   );
 });
 
-test("the correction accepts the catalog no-figure placeholder", () => {
-  assert.equal(applyQuizFigureCorrections({ id: "Q01131", figure: 0 }).figure, "fig37");
+test("the correction replaces legacy non-empty figure values", () => {
+  for (const figure of [0, 37, "37", "fig37.jpg", "/img_sign/37.png"]) {
+    assert.equal(applyQuizFigureCorrections({ id: "Q01131", figure }).figure, "fig37");
+  }
 });
 
 test("existing figures and unrelated quizzes are preserved", () => {
   assert.equal(applyQuizFigureCorrections({ id: "q01131", figure: "fig37" }).figure, "fig37");
   assert.equal(applyQuizFigureCorrections({ id: "q01132", figure: "" }).figure, "");
 });
-

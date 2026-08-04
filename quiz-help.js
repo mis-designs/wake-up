@@ -32,7 +32,7 @@
   });
   applyReaderSize();
 
-  const HELP_SOURCE = "data/patente/quiz-help-runtime-v2.json?v=20260713-magic-help-v2";
+  const HELP_MANIFEST_SOURCE = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const questionArea = document.querySelector(".question-area");
   const questionText = document.getElementById("question");
   const clickHint = document.querySelector(".quiz-click-hint");
@@ -93,15 +93,8 @@
 
   function loadLibrary() {
     if (!libraryPromise) {
-      libraryPromise = fetch(HELP_SOURCE, { cache: "force-cache" })
-        .then(response => {
-          if (!response.ok) throw new Error(`quiz_help_${response.status}`);
-          return response.json();
-        })
-        .then(data => {
-          if (!data?.quizzes || !data?.words) throw new Error("quiz_help_invalid");
-          return data;
-        })
+      window.QUIZ_HELP_RUNTIME_V3_MANIFEST_URL = HELP_MANIFEST_SOURCE;
+      libraryPromise = window.QuizHelpRuntimeV3.load()
         .catch(error => {
           libraryPromise = null;
           throw error;
@@ -119,6 +112,7 @@
   }
 
   function decodeHelp(question, data) {
+    if (data?.resolver) return data.resolver.resolve(question);
     if (!quizIdIndex) {
       quizIdIndex = new Map();
       Object.values(data.quizzes).forEach(value => {
@@ -230,30 +224,26 @@
     renderContext(null);
     wordsList.innerHTML = '<span class="quiz-help-skeleton"></span><span class="quiz-help-skeleton"></span><span class="quiz-help-skeleton"></span>';
 
-    const directTranslation = String(question.question_bd || question.questionBD || "").trim();
-    if (directTranslation) {
-      translationText.textContent = directTranslation;
-      translationStatus.textContent = "";
-    } else if (typeof fetchBengaliAudio === "function") {
-      fetchBengaliAudio(question.question, `${question.id || current}_bn`)
-        .then(data => {
-          if (ownRequest !== requestId) return;
-          translationText.textContent = data?.translation || "";
-          translationStatus.textContent = data?.translation ? "" : "Traduzione non disponibile.";
-        })
-        .catch(() => {
-          if (ownRequest === requestId) translationStatus.textContent = "Traduzione non disponibile. Riprova tra poco.";
-        });
-    }
-
     try {
       const data = await loadLibrary();
       if (ownRequest !== requestId) return;
       const help = decodeHelp(question, data);
+      const verifiedTranslation = String(
+        help?.questionBnEasy
+        || help?.questionBn
+        || question.question_bd
+        || question.questionBD
+        || ""
+      ).trim();
+      translationText.textContent = verifiedTranslation;
+      translationStatus.textContent = verifiedTranslation ? "" : "Traduzione verificata non ancora disponibile.";
       renderContext(help);
       renderWords(help?.words || []);
     } catch (error) {
       if (ownRequest !== requestId) return;
+      const directTranslation = String(question.question_bd || question.questionBD || "").trim();
+      translationText.textContent = directTranslation;
+      translationStatus.textContent = directTranslation ? "" : "Traduzione verificata non disponibile.";
       renderWords([]);
       console.warn("[Magic Book quiz help]", error.message);
     }

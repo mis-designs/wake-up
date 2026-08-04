@@ -15,3 +15,5 @@ https://magicph.netlify.app/* https://tmmmagic.eu/:splat 301!
 /quiz/capitolo-* /quiz.html 200
 /quiz/multi /quiz.html 200
 /quiz/esame-* /quiz.html 200
+/studia-quiz /study-quiz.html 200
+/studia-quiz/capitolo-* /study-quiz.html 200

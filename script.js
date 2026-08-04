@@ -3783,20 +3783,23 @@ function _qmsResetMultiMode() {
 // ── Visual state ───────────────────────────────────────────────────────────
 
 function _qmsUpdateCardStates() {
+  const cardStudy = document.getElementById("qmsCardStudy");
   const cardMix   = document.getElementById("qmsCardMix");
   const cardCap   = document.getElementById("qmsCardCap");
   const cardMulti = document.getElementById("qmsCardMulti");
 
-  [cardMix, cardCap, cardMulti].forEach(c => {
+  [cardStudy, cardMix, cardCap, cardMulti].forEach(c => {
     if (c) c.classList.remove("qms-card--active", "qms-card--inactive");
   });
 
   if (qmsActiveMode === "chapter") {
     cardCap?.classList.add("qms-card--active");
+    cardStudy?.classList.add("qms-card--inactive");
     cardMix?.classList.add("qms-card--inactive");
     cardMulti?.classList.add("qms-card--inactive");
   } else if (qmsActiveMode === "multi") {
     cardMulti?.classList.add("qms-card--active");
+    cardStudy?.classList.add("qms-card--inactive");
     cardMix?.classList.add("qms-card--inactive");
     cardCap?.classList.add("qms-card--inactive");
   }
@@ -3892,6 +3895,15 @@ function _buildQMSMultiPills() {
 }
 
 // ── Start actions ──────────────────────────────────────────────────────────
+
+function startStudyQuiz() {
+  if (trialGuestMode) {
+    openTrialPaywall("Studia quiz");
+    return;
+  }
+  closeQuizModeScreen();
+  setTimeout(() => { window.location.href = "/studia-quiz"; }, 460);
+}
 
 function startMixQuiz() {
   if (trialGuestMode) {

@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v32-security-hardening";
+const CACHE_NAME = "magicbook-pwa-v37-request-efficiency";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -6,12 +6,17 @@ const STATIC_ASSETS = [
   "/style.css?v=37",
   "/homebg.css?v=3",
   "/mystyle.css?v=26",
-  "/script.js?v=20-security-hardening",
+  "/script.js?v=21-study-quiz",
+  "/study-quiz.html",
+  "/study-quiz.css?v=1",
+  "/study-quiz.js?v=3-request-efficiency",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=48-security-headers",
+  "/quiz.js?v=51-request-efficiency",
   "/quiz-help.css?v=20260714-magic-help-v4",
-  "/quiz-help.js?v=20260714-magic-help-v4",
-  "/data/patente/quiz-help-runtime-v2.json?v=20260713-magic-help-v2",
+  "/quiz-help.js?v=20260804-magic-shared-v3",
+  "/patenteContextResolverV3.js?v=3.0.1-keywords-fix",
+  "/quizHelpRuntimeV3Loader.js?v=3.0.1-keywords-fix",
+  "/data/patente/quiz-help-runtime-v2.json",
   "/manifest.webmanifest?v=16",
   "/icons/mg_logo.png",
   "/icons/intro01.jpg?v=20260701"
@@ -50,6 +55,12 @@ self.addEventListener("fetch", event => {
     return;
   }
 
+  const fallbackPage = url.pathname.startsWith("/studia-quiz")
+    ? "/study-quiz.html"
+    : url.pathname.startsWith("/quiz")
+      ? "/quiz.html"
+      : "/index.html";
+
   // The admin recorder must always receive the current Permissions-Policy
   // header. Never serve or store an older cached copy of this page.
   if (url.pathname === "/aggiungi-spiegazioni" || url.pathname === "/aggiungi-spiegazioni.html") {
@@ -61,7 +72,7 @@ self.addEventListener("fetch", event => {
     fetch(request)
       .then(response => {
         if (request.mode === "navigate" && !response.ok) {
-          return caches.match(url.pathname.startsWith("/quiz") ? "/quiz.html" : "/index.html")
+          return caches.match(fallbackPage)
             .then(cached => cached || response);
         }
 
@@ -73,7 +84,7 @@ self.addEventListener("fetch", event => {
       })
       .catch(() => {
         if (request.mode === "navigate") {
-          return caches.match(url.pathname.startsWith("/quiz") ? "/quiz.html" : "/index.html");
+          return caches.match(fallbackPage);
         }
         return caches.match(request);
       })

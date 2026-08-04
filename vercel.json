@@ -43,6 +43,33 @@
       ]
     },
     {
+      "source": "/study-quiz.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/studia-quiz",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/studia-quiz/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/aggiungi-spiegazioni",
       "headers": [
         {
@@ -181,6 +208,14 @@
     {
       "source": "/quiz/prova-gratis",
       "destination": "/quiz"
+    },
+    {
+      "source": "/studia-quiz",
+      "destination": "/study-quiz.html"
+    },
+    {
+      "source": "/studia-quiz/capitolo-:chapter",
+      "destination": "/study-quiz.html"
     },
     {
       "source": "/prova-gratis/libro-:chapter",

@@ -1,3 +1,5 @@
+import { normalizeExplanationFigureKey } from "./quiz-explanation-availability.mjs";
+
 const BASE_URL = process.env.R2_BASE_URL;
 
 const PUBLIC_ASSETS = {
@@ -31,9 +33,8 @@ function isSafeFilePart(value) {
 }
 
 export function normalizeExplanationFigure(value) {
-  const figure = String(value || "").trim().toLowerCase();
-  const match = figure.match(/^fig[\s_-]*(\d+)$/i);
-  return match ? `fig${Number(match[1])}` : "";
+  const figureKey = normalizeExplanationFigureKey(value);
+  return /^fig\d+$/.test(figureKey) ? figureKey : "";
 }
 
 export function getExplanationAssetCandidates(figure, value, ext) {
@@ -78,7 +79,7 @@ function getDynamicAsset(query = {}) {
     const ext = String(query.ext || "").trim().toLowerCase();
 
     if (!figure || !IMAGE_CONTENT_TYPES[ext]) return null;
-    if (!isSafeFilePart(figure) || !isSafeFilePart(value)) return null;
+    if (!isSafeFilePart(value)) return null;
 
     const candidates = getExplanationAssetCandidates(figure, value, ext);
     return candidates.length ? candidates : null;
