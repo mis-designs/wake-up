@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v41-study-system-player";
+const CACHE_NAME = "magicbook-pwa-v42-translation-quality";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -9,13 +9,13 @@ const STATIC_ASSETS = [
   "/script.js?v=21-study-quiz",
   "/study-quiz.html",
   "/study-quiz.css?v=4-system-audio-player",
-  "/study-quiz.js?v=6-system-audio-player",
+  "/study-quiz.js?v=7-translation-quality",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=51-request-efficiency",
+  "/quiz.js?v=52-curated-bangla",
   "/quiz-help.css?v=20260714-magic-help-v4",
-  "/quiz-help.js?v=20260805-help-recovery",
+  "/quiz-help.js?v=20260805-translation-quality",
   "/patenteContextResolverV3.js?v=3.0.1-keywords-fix",
-  "/quizHelpRuntimeV3Loader.js?v=3.0.1-keywords-fix",
+  "/quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity",
   "/data/patente/quiz-help-runtime-v2.json",
   "/manifest.webmanifest?v=16",
   "/icons/mg_logo.png",

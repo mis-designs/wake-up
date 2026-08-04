@@ -15,6 +15,10 @@ import { detectQuizAudioMimeType, normalizeQuizAudioMimeType } from "./audio-mim
 import { fetchUpstream, withOperationalTimeout } from "./upstream-fetch.mjs";
 import { normalizeStudyChapter, selectStudyChapterRows } from "./study-quiz.mjs";
 import { matchesQuizAudioIdentityTicket } from "./quiz-audio-ticket.mjs";
+import {
+  applyCuratedQuizTranslation,
+  getCuratedQuizTranslation
+} from "./quiz-translations.mjs";
 
 const require = createRequire(import.meta.url);
 const {
@@ -812,7 +816,7 @@ function getExplanationMappedValue(row) {
 
 function normalizeQuestionRow(row) {
   // image_0.png defines these database headers; image_1.png identifies the exam rows from index 790+.
-  return applyQuizFigureCorrections({
+  const normalized = applyQuizFigureCorrections({
     ...row,
     id: getMappedValue(row, ["id", "ID", "quiz_id", "quizId"]),
     chapter: getMappedValue(row, ["chapter", "Chapter", "capitolo", "Capitolo"]),
@@ -822,6 +826,7 @@ function normalizeQuestionRow(row) {
     question_bd: getMappedValue(row, ["question_bd", "Question_BD", "questionBD", "questionBd"]),
     explanations: getExplanationMappedValue(row)
   });
+  return applyCuratedQuizTranslation(normalized);
 }
 
 function isExamQuestion(question) {
@@ -1183,6 +1188,7 @@ export default async function handler(req, res) {
         figure: row.figure,
         correct: row.correct,
         question_bd: row.question_bd,
+        questionTranslationSource: row.questionTranslationSource || "",
         explanations: row.explanations,
         audioQuestion: row.audioQuestion,
         audioFigure: row.audioFigure
@@ -1493,7 +1499,19 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: quizSession.error });
       }
 
-      const data = await forwardGetAction({ action, chapters, text });
+      const curatedTranslation = action === "getBengaliAudio"
+        ? getCuratedQuizTranslation({ id: questionId, question: text })
+        : "";
+      const data = curatedTranslation
+        ? await forwardGetAction({ action: "getTTS", chapters, text: curatedTranslation })
+        : await forwardGetAction({ action, chapters, text });
+      if (curatedTranslation) {
+        return res.status(200).json({
+          ...data,
+          translation: curatedTranslation,
+          translationSource: "curated"
+        });
+      }
       return res.status(200).json(data);
     }
 

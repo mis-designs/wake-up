@@ -1,6 +1,10 @@
 import crypto from "crypto";
 import { verifyGuestTrialToken } from "./trialAccess.js";
 import { fetchUpstream } from "./upstream-fetch.mjs";
+import {
+  applyCuratedQuizTranslation,
+  getCuratedQuizTranslation
+} from "./quiz-translations.mjs";
 
 const QUIZ_GAS_URL = process.env.QUIZ_GAS_URL;
 const QUIZ_PROXY_SECRET = process.env.QUIZ_PROXY_SECRET;
@@ -100,7 +104,9 @@ export default async function handler(req, res) {
       const quiz = getRows(data)
         .filter(question => String(question?.chapter ?? "").trim() === chapter)
         .slice(0, 30)
-        .map(({ id, chapter: rowChapter, question, figure, question_bd, explanations }) => ({ id, chapter: rowChapter, question, figure, question_bd, explanations }));
+        .map(({ id, chapter: rowChapter, question, figure, question_bd, explanations }) =>
+          applyCuratedQuizTranslation({ id, chapter: rowChapter, question, figure, question_bd, explanations })
+        );
       if (!quiz.length) return res.status(502).json({ error: "invalid_quiz_response" });
       const expiresAt = Date.now() + TRIAL_TOKEN_TTL_MS;
       const trialToken = sign({
@@ -118,13 +124,23 @@ export default async function handler(req, res) {
     if (req.method === "GET" && isAllowedTrialService(action)) {
       const payload = verify(req.query?.trialToken, trialId);
       const text = String(req.query?.text || "").trim();
+      const questionId = String(req.query?.questionId || "").trim();
       if (!payload) return res.status(401).json({ error: "trial_session_expired" });
       if (!isAllowedTrialChapter(payload.chapter) || !text || text.length > 500 || !payload.textHashes?.includes(textHash(text))) {
         return res.status(403).json({ error: "trial_content_forbidden" });
       }
-      const data = await callQuizBackend(action, { text });
+      const curatedTranslation = action === "getBengaliAudio"
+        ? getCuratedQuizTranslation({ id: questionId, question: text })
+        : "";
+      const data = curatedTranslation
+        ? await callQuizBackend("getTTS", { text: curatedTranslation })
+        : await callQuizBackend(action, { text });
       res.setHeader("Cache-Control", "private, max-age=300");
-      return res.status(200).json(data);
+      return res.status(200).json(curatedTranslation ? {
+        ...data,
+        translation: curatedTranslation,
+        translationSource: "curated"
+      } : data);
     }
 
     if (req.method === "POST" && action === "checkQuiz") {

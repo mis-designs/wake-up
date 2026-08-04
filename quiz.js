@@ -1284,7 +1284,7 @@ function speakItalian() {
 // Calls GAS endpoint that: translates Italian→Bengali with LanguageApp.translate()
 // (real Google Translate quality), fetches TTS audio server-side, caches result.
 // Returns { audio: base64_mp3, translation: bengaliText }.
-async function fetchBengaliAudio(italianText, cacheKey) {
+async function fetchBengaliAudio(italianText, cacheKey, questionId = "") {
   if (bengaliAudioCache[cacheKey]) return bengaliAudioCache[cacheKey];
 
   const controller = new AbortController();
@@ -1292,7 +1292,7 @@ async function fetchBengaliAudio(italianText, cacheKey) {
 
   try {
     const res = await fetchQuizJson(
-      buildQuizApiUrl("getBengaliAudio", { text: italianText }),
+      buildQuizApiUrl("getBengaliAudio", { text: italianText, questionId }),
       { signal: controller.signal }
     );
     clearTimeout(timeoutId);
@@ -1326,7 +1326,7 @@ function playBanglaAudio() {
 
   const cacheKey = String(q.id || current) + "_bn";
 
-  fetchBengaliAudio(q.question, cacheKey)
+  fetchBengaliAudio(q.question, cacheKey, q.id)
     .then(data => {
       if (banglaAudioId !== myId) return;
       banglaAudioBtn?.classList.remove("is-loading");

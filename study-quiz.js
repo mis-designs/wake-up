@@ -457,6 +457,14 @@
       .find(candidate => normalizedQuestion.includes(` ${normalize(candidate)} `)) || canonical;
   }
 
+  function usableBanglaTranslation(value = "") {
+    const text = String(value || "").trim();
+    return [...text].some(character => {
+      const codePoint = character.codePointAt(0);
+      return codePoint >= 0x0980 && codePoint <= 0x09ff;
+    }) ? text : "";
+  }
+
   function decodeHelp(question, data) {
     if (!helpIdIndex) {
       helpIdIndex = new Map();
@@ -474,7 +482,7 @@
       || helpIdIndex.get(sourceId)
       || (digits ? helpIdIndex.get(String(Number(digits))) : null);
     if (!Array.isArray(row)) return null;
-    const [quizId, chapterId, topicId, wordIds = [], translation = ""] = row;
+    const [quizId, chapterId, topicId, wordIds = [], contextBn = ""] = row;
     const chapter = data.chapters?.[chapterId] || [];
     const topic = data.topics?.[topicId] || [];
     const words = wordIds.map(id => {
@@ -491,7 +499,9 @@
     }).filter(Boolean);
     return {
       quizId,
-      translation: String(question.question_bd || question.questionBD || translation || "").trim(),
+      translation: usableBanglaTranslation(question.question_bd || question.questionBD),
+      translationSource: question.questionTranslationSource || "catalog",
+      contextBn: String(contextBn || "").trim(),
       chapter: { italian: chapter[0] || "", bangla: chapter[1] || "" },
       topic: { italian: topic[0] || "", bangla: topic[1] || "" },
       words
@@ -525,7 +535,7 @@
     const verifiedTranslation = String(help?.translation || "").trim();
     translation.classList.toggle("is-missing", !verifiedTranslation);
     translation.dataset.translationState = verifiedTranslation ? "ready" : "missing";
-    translation.textContent = verifiedTranslation || "Traduzione verificata non ancora disponibile.";
+    translation.textContent = verifiedTranslation || "Traduzione non disponibile.";
     translationSection.appendChild(translation);
     container.appendChild(translationSection);
 
@@ -608,21 +618,26 @@
         let data = null;
         try { data = await loadHelpLibrary(); } catch (_) {}
         help = (data && decodeHelp(question, data)) || {
-          translation: String(question.question_bd || question.questionBD || ""),
+          translation: usableBanglaTranslation(question.question_bd || question.questionBD),
+          translationSource: question.questionTranslationSource || "catalog",
           words: []
         };
       }
       if (!String(help.translation || "").trim()) {
         try {
-          const translation = await loadOnDemandTranslation(question);
-          if (translation) help.translation = translation;
+          const translated = await loadOnDemandTranslation(question);
+          if (translated.translation) {
+            help.translation = translated.translation;
+            help.translationSource = translated.translationSource;
+          }
         } catch (_) {}
       }
       helpCache.set(key, help);
       skeleton.replaceWith(renderHelp(question, help));
     } catch (_) {
       skeleton.replaceWith(renderHelp(question, {
-        translation: String(question.question_bd || question.questionBD || ""),
+        translation: usableBanglaTranslation(question.question_bd || question.questionBD),
+        translationSource: question.questionTranslationSource || "catalog",
         words: []
       }));
     }
@@ -631,11 +646,15 @@
   async function loadOnDemandTranslation(question) {
     const key = `bn:${question.id || fingerprint(question)}`;
     const cached = ttsCache.get(key);
-    if (cached?.translation) return String(cached.translation).trim();
+    if (cached?.translation) return {
+      translation: usableBanglaTranslation(cached.translation),
+      translationSource: String(cached.translationSource || "automatic")
+    };
     const query = new URLSearchParams({
       action: "getBengaliAudio",
       phone: session.phone,
       deviceId: session.deviceId,
+      questionId: String(question.id || ""),
       text: String(question.question || "")
     });
     const response = await fetch(`${API}?${query}`, {
@@ -644,7 +663,10 @@
     });
     const data = await readApiResponse(response);
     if (data?.audio) ttsCache.set(key, data);
-    return String(data?.translation || "").trim();
+    return {
+      translation: usableBanglaTranslation(data?.translation),
+      translationSource: String(data?.translationSource || "automatic")
+    };
   }
 
   function explanationDuration(playback) {
@@ -783,6 +805,7 @@
           action: language === "bn" ? "getBengaliAudio" : "getItalianAudio",
           phone: session.phone,
           deviceId: session.deviceId,
+          questionId: String(question.id || ""),
           text: String(question.question || "")
         });
         const response = await fetch(`${API}?${query}`, {
@@ -792,10 +815,11 @@
         if (!data.audio) throw new Error("audio_not_available");
         ttsCache.set(key, data);
       }
-      if (language === "bn" && data.translation) {
+      const safeTranslation = language === "bn" ? usableBanglaTranslation(data.translation) : "";
+      if (safeTranslation) {
         const translation = card.querySelector(".study-translation");
         if (translation && (translation.dataset.translationState === "missing" || !translation.textContent.trim())) {
-          translation.textContent = data.translation;
+          translation.textContent = safeTranslation;
           translation.dataset.translationState = "ready";
           translation.classList.remove("is-missing");
         }

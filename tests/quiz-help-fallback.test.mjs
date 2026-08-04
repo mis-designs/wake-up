@@ -11,14 +11,15 @@ test("quiz help falls back to the same-origin runtime when the shared host is un
   assert.match(source, /fetch\(LOCAL_HELP_SOURCE, \{ cache: "force-cache" \}\)/);
 });
 
-test("the local runtime exposes its Bangla field as the verified question translation", () => {
-  assert.match(source, /questionBnEasy:\s*questionBn/);
-  assert.match(source, /questionBnStandard:\s*questionBn/);
+test("the local runtime keeps contextual Bengali separate from the question translation", () => {
+  assert.match(source, /wordIds = \[\], contextBn = ""/);
+  assert.match(source, /contextBn:\s*String\(contextBn/);
+  assert.doesNotMatch(source, /questionBnEasy:\s*contextBn/);
 });
 
 test("a missing catalog translation is requested only after opening quiz help", () => {
   assert.match(source, /async function loadOnDemandTranslation\(question\)/);
-  assert.match(source, /fetchBengaliAudio\(String\(question\?\.question \|\| ""\), cacheKey\)/);
+  assert.match(source, /fetchBengaliAudio\(String\(question\?\.question \|\| ""\), cacheKey, question\?\.id\)/);
   assert.match(source, /if \(!verifiedTranslation\)/);
 });
 

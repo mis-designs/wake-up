@@ -54,6 +54,31 @@
     return new URL(manifest.url, source).href;
   }
 
+  function hasBengaliCharacters(value = "") {
+    return [...String(value || "")].some(character => {
+      const codePoint = character.codePointAt(0);
+      return codePoint >= 0x0980 && codePoint <= 0x09ff;
+    });
+  }
+
+  function assertTranslationEncoding(runtime) {
+    const questionTranslations = Object.values(runtime.quizzes || {})
+      .map(quiz => String(quiz?.question_bn_easy || quiz?.question_bn_standard || quiz?.question_bn || "").trim())
+      .filter(Boolean);
+    const validQuestionTranslations = questionTranslations.filter(hasBengaliCharacters).length;
+    if (questionTranslations.length && validQuestionTranslations / questionTranslations.length < 0.9) {
+      throw new Error("quiz_help_runtime_translation_encoding_invalid");
+    }
+
+    const wordTranslations = Object.values(runtime.entries || {})
+      .map(entry => String(entry?.bn || "").trim())
+      .filter(Boolean);
+    const validWordTranslations = wordTranslations.filter(hasBengaliCharacters).length;
+    if (wordTranslations.length && validWordTranslations / wordTranslations.length < 0.9) {
+      throw new Error("quiz_help_runtime_word_encoding_invalid");
+    }
+  }
+
   async function load() {
     if (!enabled()) throw new Error("quiz_help_runtime_v3_disabled");
     if (!root.PatenteContextResolverV3) throw new Error("context_resolver_v3_missing");
@@ -76,6 +101,7 @@
       if (runtime.schema_version !== "3.0.0" || Object.keys(runtime.quizzes || {}).length !== 7139) {
         throw new Error("quiz_help_runtime_invalid");
       }
+      assertTranslationEncoding(runtime);
       return {
         manifest,
         runtime,

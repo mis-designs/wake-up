@@ -1,0 +1,61 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import {
+  applyCuratedQuizTranslation,
+  getCuratedQuizTranslation,
+  isUsableBengaliTranslation,
+  listCuratedQuizTranslations
+} from "../api/quiz-translations.mjs";
+
+const targetQuestion = "La carreggiata non comprende le piste ciclabili";
+const targetTranslation = "গাড়ি চলার অংশের মধ্যে সাইকেল চলার পথ অন্তর্ভুক্ত নয়।";
+
+test("the known carreggiata question has a precise curated Bengali translation", () => {
+  assert.equal(getCuratedQuizTranslation({ id: "q00149", question: targetQuestion }), targetTranslation);
+  assert.equal(getCuratedQuizTranslation({ id: "149", question: `${targetQuestion}.` }), targetTranslation);
+  assert.equal(getCuratedQuizTranslation({ id: "wrong", question: targetQuestion }), targetTranslation);
+  assert.equal(getCuratedQuizTranslation({ id: "q00149", question: "Domanda diversa" }), "");
+});
+
+test("curated translations replace an inaccurate database value and remain valid Bengali", () => {
+  const row = applyCuratedQuizTranslation({
+    id: "q00149",
+    question: targetQuestion,
+    question_bd: "সড়কটিতে সাইকেল চলার পথ নেই।"
+  });
+  assert.equal(row.question_bd, targetTranslation);
+  assert.equal(row.questionTranslationSource, "curated");
+  assert.equal(isUsableBengaliTranslation(row.question_bd), true);
+  assert.equal(isUsableBengaliTranslation("??? ?????"), false);
+  assert.equal(isUsableBengaliTranslation("traduzione italiana"), false);
+  assert.ok(listCuratedQuizTranslations().every(item => item.translation.length <= 200));
+});
+
+test("the V2 fifth field is contextual speech, never the question translation", () => {
+  const runtime = JSON.parse(readFileSync(new URL("../data/patente/quiz-help-runtime-v2.json", import.meta.url), "utf8"));
+  const filled = Object.values(runtime.quizzes || {}).filter(row => String(row?.[4] || "").trim());
+  assert.ok(filled.length > 0);
+  assert.ok(filled.every(row => (row?.[3] || []).some(id => String(id).startsWith("ctx_"))));
+
+  const studySource = readFileSync(new URL("../study-quiz.js", import.meta.url), "utf8");
+  const helpSource = readFileSync(new URL("../quiz-help.js", import.meta.url), "utf8");
+  assert.match(studySource, /wordIds = \[\], contextBn = ""/);
+  assert.match(helpSource, /wordIds = \[\], contextBn = ""/);
+  assert.doesNotMatch(studySource, /questionBD \|\| translation/);
+  assert.doesNotMatch(helpSource, /questionBnEasy:\s*contextBn/);
+});
+
+test("corrupt remote translations are rejected before the V3 runtime is used", () => {
+  const loader = readFileSync(new URL("../quizHelpRuntimeV3Loader.js", import.meta.url), "utf8");
+  assert.match(loader, /assertTranslationEncoding\(runtime\)/);
+  assert.match(loader, /quiz_help_runtime_translation_encoding_invalid/);
+  assert.match(loader, /codePoint >= 0x0980 && codePoint <= 0x09ff/);
+});
+
+test("Bengali audio requests carry the quiz ID so the server can use curated text", () => {
+  const quizSource = readFileSync(new URL("../quiz.js", import.meta.url), "utf8");
+  const studySource = readFileSync(new URL("../study-quiz.js", import.meta.url), "utf8");
+  assert.match(quizSource, /fetchBengaliAudio\(q\.question, cacheKey, q\.id\)/);
+  assert.match(studySource, /questionId:\s*String\(question\.id \|\| ""\)/);
+});

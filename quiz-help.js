@@ -125,8 +125,28 @@
       .find(candidate => normalizedQuestion.includes(` ${normalize(candidate)} `)) || canonical;
   }
 
+  function usableBanglaTranslation(value = "") {
+    const text = String(value || "").trim();
+    return [...text].some(character => {
+      const codePoint = character.codePointAt(0);
+      return codePoint >= 0x0980 && codePoint <= 0x09ff;
+    }) ? text : "";
+  }
+
   function decodeHelp(question, data) {
-    if (data?.resolver) return data.resolver.resolve(question);
+    if (data?.resolver) {
+      const resolved = data.resolver.resolve(question);
+      if (!resolved) return null;
+      const questionBn = usableBanglaTranslation(
+        resolved.questionBnEasy || resolved.questionBnStandard || resolved.questionBn
+      );
+      return {
+        ...resolved,
+        questionBn,
+        questionBnEasy: questionBn,
+        questionBnStandard: questionBn
+      };
+    }
     if (!quizIdIndex) {
       quizIdIndex = new Map();
       Object.values(data.quizzes).forEach(value => {
@@ -143,7 +163,7 @@
       || quizIdIndex.get(sourceId)
       || (sourceDigits ? quizIdIndex.get(String(Number(sourceDigits))) : null);
     if (!Array.isArray(row)) return null;
-    const [quizId, chapterId, topicId, wordIds = [], questionBn = ""] = row;
+    const [quizId, chapterId, topicId, wordIds = [], contextBn = ""] = row;
     const chapter = data.chapters?.[chapterId] || [];
     const topic = data.topics?.[topicId] || [];
     const words = wordIds.map(id => {
@@ -160,10 +180,7 @@
     }).filter(Boolean);
     return {
       quizId,
-      questionBn,
-      questionBnEasy: questionBn,
-      questionBnStandard: questionBn,
-      ttsBn: questionBn,
+      contextBn: String(contextBn || "").trim(),
       chapter: { italian: chapter[0] || "", bangla: chapter[1] || "" },
       topic: { italian: topic[0] || "", bangla: topic[1] || "" },
       words
@@ -235,8 +252,8 @@
   async function loadOnDemandTranslation(question) {
     if (typeof fetchBengaliAudio !== "function") return "";
     const cacheKey = `${String(question?.id || current)}_bn`;
-    const data = await fetchBengaliAudio(String(question?.question || ""), cacheKey);
-    return String(data?.translation || "").trim();
+    const data = await fetchBengaliAudio(String(question?.question || ""), cacheKey, question?.id);
+    return usableBanglaTranslation(data?.translation);
   }
 
   async function render() {
@@ -258,13 +275,13 @@
       console.warn("[Magic Book quiz help]", error.message);
     }
 
-    let verifiedTranslation = String(
+    let verifiedTranslation = usableBanglaTranslation(
       help?.questionBnEasy
       || help?.questionBn
       || question.question_bd
       || question.questionBD
       || ""
-    ).trim();
+    );
     if (!verifiedTranslation) {
       try {
         verifiedTranslation = await loadOnDemandTranslation(question);
@@ -274,7 +291,7 @@
     }
     if (ownRequest !== requestId) return;
     translationText.textContent = verifiedTranslation;
-    translationStatus.textContent = verifiedTranslation ? "" : "Traduzione verificata non disponibile.";
+    translationStatus.textContent = verifiedTranslation ? "" : "Traduzione non disponibile.";
     renderContext(help);
     renderWords(help?.words || []);
   }
