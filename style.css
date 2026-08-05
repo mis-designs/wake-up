@@ -3621,8 +3621,48 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 2 
 }
 
 .lesson-tool-quiz {
-    background: var(--gradient-main);
+    position: relative;
+    overflow: visible;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    background:
+        radial-gradient(circle at 18% 0%, rgba(255,255,255,.34), transparent 34%),
+        linear-gradient(120deg, #4437ff 0%, #396dff 46%, #25aff5 100%);
     color: var(--color-white);
+    box-shadow: 0 13px 28px rgba(50, 91, 244, 0.32), inset 0 1px 0 rgba(255,255,255,.35);
+    text-shadow: 0 2px 8px rgba(26, 38, 142, .28);
+}
+
+.lesson-tool-quiz::before {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 17px;
+    pointer-events: none;
+}
+
+.premium-new-badge {
+    display: inline-grid;
+    place-items: center;
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    padding: 0;
+    border: 0;
+    clip-path: polygon(50% 0%,61% 7%,74% 4%,82% 15%,95% 18%,96% 32%,100% 50%,93% 61%,96% 74%,85% 82%,82% 95%,68% 96%,50% 100%,39% 93%,26% 96%,18% 85%,5% 82%,4% 68%,0% 50%,7% 39%,4% 26%,15% 18%,18% 5%,32% 4%);
+    background: linear-gradient(135deg, #ff395d, #e90d36);
+    color: #fff;
+    font: 950 9px/1 Inter, Arial, sans-serif;
+    letter-spacing: .09em;
+    text-shadow: 0 1px 3px rgba(117, 0, 22, .3);
+    filter: drop-shadow(0 5px 7px rgba(224, 15, 54, .3));
+}
+
+#quizButton > .premium-new-badge {
+    position: absolute;
+    top: -9px;
+    right: 12px;
+    z-index: 2;
 }
 
 #examButton {
@@ -4910,9 +4950,39 @@ body.app-mode #whatsappBtn {
 }
 
 .qms-start-study {
-    background: linear-gradient(135deg, #7659e7 0%, #23ad8c 100%);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.42);
+    background:
+        radial-gradient(circle at 12% 0%, rgba(255,255,255,.3), transparent 36%),
+        linear-gradient(120deg, #6547e9 0%, #3a72e8 48%, #18b695 100%);
     color: white;
-    box-shadow: 0 8px 22px rgba(86, 91, 190, 0.28);
+    box-shadow: 0 10px 25px rgba(65, 90, 190, 0.32), inset 0 1px 0 rgba(255,255,255,.3);
+}
+
+.qms-start-study::before {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border: 1px solid rgba(255,255,255,.16);
+    border-radius: 11px;
+    pointer-events: none;
+}
+
+.qms-start-study > * { position: relative; z-index: 1; }
+
+.premium-new-badge-inline {
+    flex: 0 0 auto;
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    font-size: 8px;
+}
+
+.qms-start-study .qms-start-arrow {
+    border: 1px solid rgba(255,255,255,.32);
+    background: linear-gradient(145deg, rgba(255,255,255,.3), rgba(255,255,255,.14));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.2);
 }
 
 .qms-start-study:not(:disabled):hover {
