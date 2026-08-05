@@ -119,6 +119,7 @@ const QUIZ_LOADING_FIGURES = [
   "fig550"
 ];
 const EXPLANATION_EXTENSIONS = ["png", "webp", "jpg", "jpeg"];
+const EXPLANATION_FIGURES_CACHE_KEY = "magicbook_explanation_figures_v1";
 const QUIZ_MODE_CONFIG = {
   exam80: { title: "Exam", timerMinutes: 50 },
   exam30: { title: "Exam", timerMinutes: 20 },
@@ -1367,15 +1368,7 @@ function playBanglaAudio() {
  ***********************/
 
 function getExplanationValue(question) {
-  const markers = [
-    question?.explanations,
-    question?.Explanations,
-    question?.explanation,
-    question?.Explanation
-  ];
-  return markers.some(marker => marker !== null && marker !== undefined && String(marker).trim() !== "")
-    ? "0"
-    : null;
+  return explanationFigures.has(getNormalizedFigureKey(question)) ? "0" : null;
 }
 
 function getNormalizedFigureKey(question) {
@@ -1386,21 +1379,27 @@ function getNormalizedFigureKey(question) {
   return match ? `fig${Number(match[1])}` : basename.replace(/\.[a-z0-9]+$/i, "");
 }
 
-function applyExplanationAvailability(questions) {
-  if (!Array.isArray(questions)) return [];
+let explanationFigures = readCachedExplanationFigures();
 
-  const figuresWithExplanation = new Set(
-    questions
-      .filter(question => getExplanationValue(question) === "0")
-      .map(getNormalizedFigureKey)
-      .filter(Boolean)
-  );
+function readCachedExplanationFigures() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(EXPLANATION_FIGURES_CACHE_KEY) || "null");
+    return new Set(Array.isArray(cached?.figures) ? cached.figures : []);
+  } catch (_) {
+    return new Set();
+  }
+}
 
-  return questions.map(question => {
-    const figureKey = getNormalizedFigureKey(question);
-    if (!figureKey || !figuresWithExplanation.has(figureKey)) return question;
-    return { ...question, explanations: 0 };
-  });
+async function refreshExplanationFigures() {
+  if (TRIAL_MODE) return explanationFigures;
+  const data = await fetchQuizJson(buildQuizApiUrl("getExplanationFigures"), { cache: "no-store" });
+  const figures = Array.isArray(data.figures) ? data.figures.filter(value => /^fig\d+$/.test(value)) : [];
+  explanationFigures = new Set(figures);
+  try {
+    localStorage.setItem(EXPLANATION_FIGURES_CACHE_KEY, JSON.stringify({ figures, savedAt: Date.now() }));
+  } catch (_) {}
+  if (quiz[current]) updateExplanationButton(quiz[current]);
+  return explanationFigures;
 }
 
 function getFigureKey(question) {
@@ -1564,6 +1563,10 @@ async function loadQuiz() {
   showLoading("Caricamento quiz...");
 
   try {
+    void refreshExplanationFigures().catch(error => {
+      console.warn("[quiz] explanation figures unavailable", error?.message || error);
+      return explanationFigures;
+    });
     const routeInfo = getQuizRouteInfo();
     const chapters = routeInfo.chapters || "";
     if (TRIAL_MODE && !["2", "4"].includes(chapters)) throw new Error("trial_chapter_forbidden");
@@ -1587,7 +1590,7 @@ async function loadQuiz() {
     if (!Array.isArray(data.quiz)) {
       throw new Error("invalid_quiz_response");
     }
-    quiz = applyExplanationAvailability(data.quiz);
+    quiz = data.quiz;
 
     const modeConfig = getQuizModeConfig(quizMode);
     const titleEl = document.querySelector(".top-bar h2");

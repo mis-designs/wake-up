@@ -2,9 +2,23 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   applyExplanationAvailabilityByFigure,
+  getExplanationFigureFromObjectKey,
+  getExplanationFiguresFromObjectKeys,
   hasExplanationMarker,
   normalizeExplanationFigureKey
 } from "../api/quiz-explanation-availability.mjs";
+
+test("Cloudflare explanation object names produce a canonical figure list", () => {
+  assert.equal(getExplanationFigureFromObjectKey("explanations/fig022.png"), "fig22");
+  assert.equal(getExplanationFigureFromObjectKey("explanations/fig22_0.webp"), "fig22");
+  assert.equal(getExplanationFigureFromObjectKey("Figure/fig22.jpg"), "");
+  assert.deepEqual(getExplanationFiguresFromObjectKeys([
+    "explanations/fig22.png",
+    "explanations/fig1_1.jpg",
+    "explanations/fig022_0.webp",
+    "explanations/readme.txt"
+  ]), ["fig1", "fig22"]);
+});
 
 test("one explanation marker enables Spiega for every quiz with the same figure", () => {
   const rows = [

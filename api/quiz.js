@@ -4,13 +4,17 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { neon } from "@neondatabase/serverless";
 import { applyQuizFigureCorrections } from "./quiz-figure-corrections.mjs";
-import { applyExplanationAvailabilityByFigure } from "./quiz-explanation-availability.mjs";
+import {
+  applyExplanationAvailabilityByFigure,
+  getExplanationFiguresFromObjectKeys
+} from "./quiz-explanation-availability.mjs";
 import { detectQuizAudioMimeType, normalizeQuizAudioMimeType } from "./audio-mime.mjs";
 import { fetchUpstream, withOperationalTimeout } from "./upstream-fetch.mjs";
 import { normalizeStudyChapter, selectStudyChapterRows } from "./study-quiz.mjs";
@@ -40,7 +44,7 @@ const QUIZ_AUDIO_R2_ACCESS_KEY_ID = process.env.QUIZ_AUDIO_R2_ACCESS_KEY_ID;
 const QUIZ_AUDIO_R2_SECRET_ACCESS_KEY = process.env.QUIZ_AUDIO_R2_SECRET_ACCESS_KEY;
 const QUIZ_AUDIO_DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_URL || process.env.NEON_DATABASE_URL;
 
-const GET_ACTIONS = new Set(["getQuiz", "getItalianAudio", "getBengaliAudio", "getTTS"]);
+const GET_ACTIONS = new Set(["getQuiz", "getExplanationFigures", "getItalianAudio", "getBengaliAudio", "getTTS"]);
 const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
 const QUIZ_SESSION_TOKEN_TTL_MS = 30 * 60 * 1000;
 const PASSING_SCORE_RATIO = 0.9;
@@ -72,10 +76,19 @@ let quizAudioCatalogCache = { expiresAt: 0, rows: [] };
 let quizAudioCatalogLoading = null;
 const quizAudioObjectAvailabilityCache = new Map();
 const QUIZ_AUDIO_OBJECT_CACHE_TTL_MS = 5 * 60 * 1000;
+const EXPLANATION_FIGURES_CACHE_TTL_MS = 5 * 60 * 1000;
+let explanationFiguresCache = { expiresAt: 0, figures: [] };
+let explanationFiguresLoading = null;
 
 function isQuizAudioConfigured() {
   return Boolean(
     QUIZ_AUDIO_DATABASE_URL &&
+    isQuizAudioStorageConfigured()
+  );
+}
+
+function isQuizAudioStorageConfigured() {
+  return Boolean(
     QUIZ_AUDIO_R2_BUCKET &&
     QUIZ_AUDIO_R2_ACCOUNT_ID &&
     QUIZ_AUDIO_R2_ACCESS_KEY_ID &&
@@ -94,7 +107,7 @@ function getQuizAudioDatabase() {
 }
 
 function getQuizAudioStorage() {
-  if (!isQuizAudioConfigured()) {
+  if (!isQuizAudioStorageConfigured()) {
     const error = new Error("quiz_audio_not_configured");
     error.statusCode = 503;
     throw error;
@@ -111,6 +124,36 @@ function getQuizAudioStorage() {
     });
   }
   return quizAudioStorage;
+}
+
+async function listExplanationFigures() {
+  if (explanationFiguresCache.expiresAt > Date.now()) return explanationFiguresCache.figures;
+  if (explanationFiguresLoading) return explanationFiguresLoading;
+
+  explanationFiguresLoading = (async () => {
+    const keys = [];
+    let continuationToken;
+    do {
+      const page = await getQuizAudioStorage().send(new ListObjectsV2Command({
+        Bucket: QUIZ_AUDIO_R2_BUCKET,
+        Prefix: "explanations/",
+        ContinuationToken: continuationToken
+      }));
+      for (const object of page.Contents || []) {
+        if (object?.Key) keys.push(object.Key);
+      }
+      continuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (continuationToken);
+
+    const figures = getExplanationFiguresFromObjectKeys(keys);
+    explanationFiguresCache = {
+      figures,
+      expiresAt: Date.now() + EXPLANATION_FIGURES_CACHE_TTL_MS
+    };
+    return figures;
+  })().finally(() => { explanationFiguresLoading = null; });
+
+  return explanationFiguresLoading;
 }
 
 async function readQuizAudioObject(row) {
@@ -1074,6 +1117,24 @@ export default async function handler(req, res) {
 
     if (!hasValidRequestShape({ phone, deviceId, text, chapters, question, figure })) {
       return res.status(400).json({ error: "invalid_request" });
+    }
+
+    if (req.method === "GET" && action === "getExplanationFigures") {
+      const access = await ensureAccess({ phone, deviceId, accessToken });
+      if (!access.ok) {
+        return res.status(access.statusCode || 401).json({ error: access.error || "unauthorized" });
+      }
+      const figures = await listExplanationFigures();
+      res.setHeader("Cache-Control", "private, max-age=60");
+      return res.status(200).json({
+        ok: true,
+        count: figures.length,
+        figures,
+        ...(access.accessToken ? {
+          accessToken: access.accessToken,
+          accessTokenExpiresAt: access.accessTokenExpiresAt
+        } : {})
+      });
     }
 
     if (req.method === "GET" && action === "getQuiz") {

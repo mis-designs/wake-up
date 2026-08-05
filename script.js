@@ -8,6 +8,7 @@ const WHATSAPP_GROUP_CODE = "LBL1G7nvz2B3SThJj4uRxD";
 const AUTH_API = "/api/auth";
 const ADMIN_API = "/api/admin";
 const APP_TITLE = "MagicBook";
+const EXPLANATION_FIGURES_CACHE_KEY = "magicbook_explanation_figures_v1";
 let applyingRouteFromHistory = false;
 
 function openExternalUrl(url) {
@@ -660,6 +661,7 @@ async function validateRestoredSession(phone, deviceId) {
         });
         updateAdminEntryVisibility();
         checkRenewReminder();
+        void warmExplanationFiguresCache();
         return true;
       }
 
@@ -745,6 +747,7 @@ function completeLogin(phone, deviceId, data) {
   hideOtpUI();
   openRouteState(getRouteStateFromLocation());
   startAccessValidationTimer();
+  void warmExplanationFiguresCache();
   checkRenewReminder(true);
   maybeShowWhatsAppGroupPopup();
 }
@@ -1650,6 +1653,29 @@ function getCurrentSessionPhone() {
 function getCurrentSessionDeviceId() {
   const session = readStoredSession();
   return Storage.get(KEYS.deviceId) || session?.deviceId || getDeviceId();
+}
+
+async function warmExplanationFiguresCache() {
+  const phone = getCurrentSessionPhone();
+  const deviceId = getCurrentSessionDeviceId();
+  if (!phone || !deviceId) return;
+
+  const query = new URLSearchParams({ action: "getExplanationFigures", phone, deviceId });
+  try {
+    const token = getCurrentAccessToken();
+    const response = await fetch(`/api/quiz?${query.toString()}`, {
+      cache: "no-store",
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!response.ok) return;
+    const data = await response.json();
+    const figures = Array.isArray(data?.figures)
+      ? data.figures.filter(value => /^fig\d+$/.test(value))
+      : [];
+    Storage.set(EXPLANATION_FIGURES_CACHE_KEY, JSON.stringify({ figures, savedAt: Date.now() }));
+  } catch (error) {
+    console.warn("Explanation figures preload unavailable", error);
+  }
 }
 
 function updateProfileUI(isLoggedIn = true) {
@@ -4793,7 +4819,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-      .register("/service-worker.js?v=21-admin-role-recovery", { updateViaCache: "none" })
+      .register("/service-worker.js?v=22-explanation-figures", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });

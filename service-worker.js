@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v45-study-goal-card";
+const CACHE_NAME = "magicbook-pwa-v46-explanation-figures";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -6,12 +6,12 @@ const STATIC_ASSETS = [
   "/style.css?v=38-quiz-mode-icons",
   "/homebg.css?v=3",
   "/mystyle.css?v=26",
-  "/script.js?v=21-study-quiz",
+  "/script.js?v=22-explanation-figures",
   "/study-quiz.html",
   "/study-quiz.css?v=6-goal-card",
   "/study-quiz.js?v=7-translation-quality",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=52-curated-bangla",
+  "/quiz.js?v=53-explanation-figures",
   "/quiz-help.css?v=20260714-magic-help-v4",
   "/quiz-help.js?v=20260805-translation-quality",
   "/patenteContextResolverV3.js?v=3.0.1-keywords-fix",
