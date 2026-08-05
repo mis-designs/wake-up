@@ -89,7 +89,7 @@ function getDynamicAsset(query = {}) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "GET") {
+  if (req.method !== "GET" && req.method !== "HEAD") {
     return res.status(405).json({ error: "method_not_allowed" });
   }
 
@@ -111,7 +111,10 @@ export default async function handler(req, res) {
 
     for (const candidate of candidates) {
       const url = new URL(candidate.path, `${BASE_URL}/`).toString();
-      const candidateResponse = await fetch(url);
+      let candidateResponse = await fetch(url, { method: req.method });
+      if (req.method === "HEAD" && candidateResponse.status === 405) {
+        candidateResponse = await fetch(url);
+      }
       if (candidateResponse.ok) {
         response = candidateResponse;
         selectedAsset = candidate;
@@ -120,6 +123,11 @@ export default async function handler(req, res) {
     }
 
     if (!response || !selectedAsset) return res.status(404).json({ error: "not_found" });
+
+    if (req.method === "HEAD") {
+      res.setHeader("Cache-Control", "public, max-age=300, s-maxage=3600");
+      return res.status(204).end();
+    }
 
     const buffer = await response.arrayBuffer();
 

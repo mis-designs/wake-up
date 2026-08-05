@@ -1380,6 +1380,7 @@ function getNormalizedFigureKey(question) {
 }
 
 let explanationFigures = readCachedExplanationFigures();
+const explanationFigureChecks = new Map();
 
 function readCachedExplanationFigures() {
   try {
@@ -1402,6 +1403,62 @@ async function refreshExplanationFigures() {
   return explanationFigures;
 }
 
+function saveExplanationFigures() {
+  const figures = [...explanationFigures];
+  try {
+    localStorage.setItem(EXPLANATION_FIGURES_CACHE_KEY, JSON.stringify({ figures, savedAt: Date.now() }));
+  } catch (_) {}
+}
+
+async function checkExplanationFigure(figureKey) {
+  if (!figureKey) return false;
+  if (explanationFigures.has(figureKey)) return true;
+  if (explanationFigureChecks.has(figureKey)) return explanationFigureChecks.get(figureKey);
+
+  const check = (async () => {
+    for (const extension of EXPLANATION_EXTENSIONS) {
+      const response = await fetch(buildExplanationImageUrl(figureKey, 0, extension), {
+        method: "HEAD",
+        cache: "no-store"
+      }).catch(() => null);
+      if (response?.ok) {
+        explanationFigures.add(figureKey);
+        saveExplanationFigures();
+        return true;
+      }
+    }
+    return false;
+  })().finally(() => explanationFigureChecks.delete(figureKey));
+
+  explanationFigureChecks.set(figureKey, check);
+  return check;
+}
+
+function checkCurrentExplanationFigure(question) {
+  const figureKey = getNormalizedFigureKey(question);
+  if (!figureKey || explanationFigures.has(figureKey)) return;
+  void checkExplanationFigure(figureKey).then(available => {
+    if (available && getNormalizedFigureKey(quiz[current]) === figureKey) {
+      updateExplanationButton(quiz[current]);
+    }
+  });
+}
+
+async function checkQuizExplanationFigures(questions) {
+  const figures = [...new Set((Array.isArray(questions) ? questions : [])
+    .map(getNormalizedFigureKey)
+    .filter(Boolean))];
+  const concurrency = 6;
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < figures.length) {
+      const figureKey = figures[cursor++];
+      await checkExplanationFigure(figureKey);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, figures.length) }, worker));
+}
+
 function getFigureKey(question) {
   const figure = String(question?.figure ?? "").trim();
   const normalized = figure.toLowerCase();
@@ -1417,6 +1474,7 @@ function updateExplanationButton(question) {
   if (!available && explanationModal && !explanationModal.classList.contains("hidden")) {
     closeExplanation();
   }
+  if (!available) checkCurrentExplanationFigure(question);
 }
 
 function closeExplanation() {
@@ -1563,7 +1621,7 @@ async function loadQuiz() {
   showLoading("Caricamento quiz...");
 
   try {
-    void refreshExplanationFigures().catch(error => {
+    const explanationFiguresRequest = refreshExplanationFigures().catch(error => {
       console.warn("[quiz] explanation figures unavailable", error?.message || error);
       return explanationFigures;
     });
@@ -1591,6 +1649,7 @@ async function loadQuiz() {
       throw new Error("invalid_quiz_response");
     }
     quiz = data.quiz;
+    void explanationFiguresRequest.finally(() => checkQuizExplanationFigures(quiz));
 
     const modeConfig = getQuizModeConfig(quizMode);
     const titleEl = document.querySelector(".top-bar h2");
