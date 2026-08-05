@@ -11,10 +11,7 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { neon } from "@neondatabase/serverless";
 import { applyQuizFigureCorrections } from "./quiz-figure-corrections.mjs";
-import {
-  applyExplanationAvailabilityByFigure,
-  getExplanationFiguresFromObjectKeys
-} from "./quiz-explanation-availability.mjs";
+import { getExplanationFiguresFromObjectKeys } from "./quiz-explanation-availability.mjs";
 import { detectQuizAudioMimeType, normalizeQuizAudioMimeType } from "./audio-mime.mjs";
 import { fetchUpstream, withOperationalTimeout } from "./upstream-fetch.mjs";
 import { normalizeStudyChapter, selectStudyChapterRows } from "./study-quiz.mjs";
@@ -42,6 +39,19 @@ const QUIZ_AUDIO_R2_BUCKET = process.env.QUIZ_AUDIO_R2_BUCKET;
 const QUIZ_AUDIO_R2_ACCOUNT_ID = process.env.QUIZ_AUDIO_R2_ACCOUNT_ID;
 const QUIZ_AUDIO_R2_ACCESS_KEY_ID = process.env.QUIZ_AUDIO_R2_ACCESS_KEY_ID;
 const QUIZ_AUDIO_R2_SECRET_ACCESS_KEY = process.env.QUIZ_AUDIO_R2_SECRET_ACCESS_KEY;
+const EXPLANATION_R2_BUCKET = process.env.EXPLANATION_R2_BUCKET
+  || process.env.R2_BUCKET_NAME
+  || process.env.R2_BUCKET
+  || QUIZ_AUDIO_R2_BUCKET;
+const EXPLANATION_R2_ACCOUNT_ID = process.env.EXPLANATION_R2_ACCOUNT_ID
+  || process.env.R2_ACCOUNT_ID
+  || QUIZ_AUDIO_R2_ACCOUNT_ID;
+const EXPLANATION_R2_ACCESS_KEY_ID = process.env.EXPLANATION_R2_ACCESS_KEY_ID
+  || process.env.R2_ACCESS_KEY_ID
+  || QUIZ_AUDIO_R2_ACCESS_KEY_ID;
+const EXPLANATION_R2_SECRET_ACCESS_KEY = process.env.EXPLANATION_R2_SECRET_ACCESS_KEY
+  || process.env.R2_SECRET_ACCESS_KEY
+  || QUIZ_AUDIO_R2_SECRET_ACCESS_KEY;
 const QUIZ_AUDIO_DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_URL || process.env.NEON_DATABASE_URL;
 
 const GET_ACTIONS = new Set(["getQuiz", "getExplanationFigures", "getItalianAudio", "getBengaliAudio", "getTTS"]);
@@ -72,6 +82,7 @@ const EXAM_QUIZ_MODES = {
 
 let quizAudioDatabase = null;
 let quizAudioStorage = null;
+let explanationStorage = null;
 let quizAudioCatalogCache = { expiresAt: 0, rows: [] };
 let quizAudioCatalogLoading = null;
 const quizAudioObjectAvailabilityCache = new Map();
@@ -126,6 +137,29 @@ function getQuizAudioStorage() {
   return quizAudioStorage;
 }
 
+function getExplanationStorage() {
+  if (!EXPLANATION_R2_BUCKET
+    || !EXPLANATION_R2_ACCOUNT_ID
+    || !EXPLANATION_R2_ACCESS_KEY_ID
+    || !EXPLANATION_R2_SECRET_ACCESS_KEY) {
+    const error = new Error("explanation_r2_not_configured");
+    error.statusCode = 503;
+    throw error;
+  }
+  if (!explanationStorage) {
+    explanationStorage = new S3Client({
+      region: "auto",
+      forcePathStyle: true,
+      endpoint: `https://${EXPLANATION_R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: EXPLANATION_R2_ACCESS_KEY_ID,
+        secretAccessKey: EXPLANATION_R2_SECRET_ACCESS_KEY
+      }
+    });
+  }
+  return explanationStorage;
+}
+
 async function listExplanationFigures() {
   if (explanationFiguresCache.expiresAt > Date.now()) return explanationFiguresCache.figures;
   if (explanationFiguresLoading) return explanationFiguresLoading;
@@ -134,8 +168,8 @@ async function listExplanationFigures() {
     const keys = [];
     let continuationToken;
     do {
-      const page = await getQuizAudioStorage().send(new ListObjectsV2Command({
-        Bucket: QUIZ_AUDIO_R2_BUCKET,
+      const page = await getExplanationStorage().send(new ListObjectsV2Command({
+        Bucket: EXPLANATION_R2_BUCKET,
         Prefix: "explanations/",
         ContinuationToken: continuationToken
       }));
@@ -848,26 +882,15 @@ function getMappedValue(row, names) {
   return undefined;
 }
 
-function getExplanationMappedValue(row) {
-  const aliases = ["explanations", "explanation"];
-  for (const alias of aliases) {
-    const value = getMappedValue(row, [alias]);
-    if (value !== null && value !== undefined && String(value).trim() !== "") return value;
-  }
-  return getMappedValue(row, aliases);
-}
-
 function normalizeQuestionRow(row) {
   // image_0.png defines these database headers; image_1.png identifies the exam rows from index 790+.
   const normalized = applyQuizFigureCorrections({
-    ...row,
     id: getMappedValue(row, ["id", "ID", "quiz_id", "quizId"]),
     chapter: getMappedValue(row, ["chapter", "Chapter", "capitolo", "Capitolo"]),
     question: getMappedValue(row, ["question", "Question", "q", "domanda", "Domanda"]),
     figure: getMappedValue(row, ["figure", "Figure", "img", "image", "Image", "figura", "Figura"]),
     correct: getMappedValue(row, ["correct", "Correct", "answer", "risposta", "Risposta"]),
-    question_bd: getMappedValue(row, ["question_bd", "Question_BD", "questionBD", "questionBd"]),
-    explanations: getExplanationMappedValue(row)
+    question_bd: getMappedValue(row, ["question_bd", "Question_BD", "questionBD", "questionBd"])
   });
   return applyCuratedQuizTranslation(normalized);
 }
@@ -1155,9 +1178,7 @@ export default async function handler(req, res) {
           // A single Magic Book chapter must come from the same 788-row
           // catalog used by the audio admin page, not the generic quiz draw.
           const catalog = await forwardCatalogAction();
-          const catalogRows = applyExplanationAvailabilityByFigure(
-            getQuizRows(catalog).map(normalizeQuestionRow)
-          );
+          const catalogRows = getQuizRows(catalog).map(normalizeQuestionRow);
           const chapterKey = String(Number(chapters));
           const chapterIdPattern = new RegExp(`^cap(?:itolo)?[_-]?0*${chapterKey}(?:[_-]|$)`, "i");
           const matchingRows = catalogRows.filter(row =>
@@ -1192,7 +1213,6 @@ export default async function handler(req, res) {
         ? await fetchExamRows(action, text, modeConfig)
         : (catalogChapterRows || getQuizRows(data)))
         .map(normalizeQuestionRow);
-      if (!modeConfig) rows = applyExplanationAvailabilityByFigure(rows);
       if (!modeConfig) rows = await attachCanonicalAudioSources(rows);
       const quiz = modeConfig ? buildExamQuiz(rows, modeConfig) : rows;
       const quizForClient = admin ? await addAdminCorrectAnswers(quiz) : quiz;
@@ -1237,9 +1257,7 @@ export default async function handler(req, res) {
       }
 
       const catalog = await forwardCatalogAction();
-      const catalogRows = applyExplanationAvailabilityByFigure(
-        getQuizRows(catalog).map(normalizeQuestionRow)
-      );
+      const catalogRows = getQuizRows(catalog).map(normalizeQuestionRow);
       const chapterRows = selectStudyChapterRows(catalogRows, chapter);
       if (!chapterRows.length) return res.status(404).json({ error: "study_chapter_empty" });
       const quiz = chapterRows.map(row => ({
@@ -1250,7 +1268,6 @@ export default async function handler(req, res) {
         correct: row.correct,
         question_bd: row.question_bd,
         questionTranslationSource: row.questionTranslationSource || "",
-        explanations: row.explanations,
         audioQuestion: row.audioQuestion,
         audioFigure: row.audioFigure
       }));
@@ -1286,9 +1303,7 @@ export default async function handler(req, res) {
     if (req.method === "POST" && action === "getMagicBookCatalog") {
       await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
       const data = await forwardCatalogAction();
-      const rows = applyExplanationAvailabilityByFigure(
-        getQuizRows(data).map(normalizeQuestionRow)
-      ).filter(row => row.id && row.question);
+      const rows = getQuizRows(data).map(normalizeQuestionRow).filter(row => row.id && row.question);
       if (rows.length !== 788) {
         const error = new Error("magic_catalog_count_mismatch");
         error.statusCode = 409;
