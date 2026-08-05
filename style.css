@@ -3642,6 +3642,7 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 2 
 }
 
 .premium-new-badge {
+    position: relative;
     display: inline-grid;
     place-items: center;
     width: 42px;
@@ -3649,13 +3650,33 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 2 
     height: 42px;
     padding: 0;
     border: 0;
-    clip-path: polygon(50% 0%,61% 7%,74% 4%,82% 15%,95% 18%,96% 32%,100% 50%,93% 61%,96% 74%,85% 82%,82% 95%,68% 96%,50% 100%,39% 93%,26% 96%,18% 85%,5% 82%,4% 68%,0% 50%,7% 39%,4% 26%,15% 18%,18% 5%,32% 4%);
-    background: linear-gradient(135deg, #ff395d, #e90d36);
     color: #fff;
     font: 950 9px/1 Inter, Arial, sans-serif;
     letter-spacing: .09em;
     text-shadow: 0 1px 3px rgba(117, 0, 22, .3);
     filter: drop-shadow(0 5px 7px rgba(224, 15, 54, .3));
+}
+
+.premium-new-badge::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(50% 0%,61% 7%,74% 4%,82% 15%,95% 18%,96% 32%,100% 50%,93% 61%,96% 74%,85% 82%,82% 95%,68% 96%,50% 100%,39% 93%,26% 96%,18% 85%,5% 82%,4% 68%,0% 50%,7% 39%,4% 26%,15% 18%,18% 5%,32% 4%);
+    background: linear-gradient(135deg, #ff395d, #e90d36);
+    animation: premiumNewSpin 5s linear infinite;
+}
+
+.premium-new-badge > span {
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes premiumNewSpin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .premium-new-badge::before { animation: none; }
 }
 
 #quizButton > .premium-new-badge {
@@ -4918,6 +4939,12 @@ body.app-mode #whatsappBtn {
     line-height: 1;
     font-weight: 900;
     transition: transform 0.16s ease, background 0.16s ease;
+}
+
+.qms-start-arrow svg {
+    display: block;
+    width: 22px;
+    height: 22px;
 }
 
 .qms-start:disabled {
