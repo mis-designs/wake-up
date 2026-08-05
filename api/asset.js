@@ -37,6 +37,15 @@ export function normalizeExplanationFigure(value) {
   return /^fig\d+$/.test(figureKey) ? figureKey : "";
 }
 
+export function normalizeFigureAssetName(value) {
+  const raw = String(value ?? "").normalize("NFKC").trim();
+  if (!raw) return "";
+  const clean = raw.split(/[?#]/, 1)[0].replace(/\\/g, "/");
+  const basename = clean.split("/").pop() || clean;
+  const match = basename.match(/^(?:fig[\s_-]*)?0*(\d+)(?:\.[a-z0-9]+)?$/i);
+  return match ? `fig${Number(match[1])}` : "";
+}
+
 export function getExplanationAssetCandidates(figure, value, ext) {
   const normalizedFigure = normalizeExplanationFigure(figure);
   const normalizedValue = String(value ?? "").trim();
@@ -64,7 +73,7 @@ function getDynamicAsset(query = {}) {
   const kind = String(query.kind || "").trim();
 
   if (kind === "figure") {
-    const figure = String(query.figure || "").trim();
+    const figure = normalizeFigureAssetName(query.figure);
     if (!figure || !isSafeFilePart(figure)) return null;
 
     return {

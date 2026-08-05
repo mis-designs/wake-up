@@ -2,11 +2,26 @@ const FIGURE_CORRECTIONS_BY_ID = new Map([
   ["q01131", "fig37"]
 ]);
 
+function normalizeQuestion(value) {
+  return String(value ?? "").normalize("NFKC").trim().toLowerCase();
+}
+
+function getFigureCorrection(row) {
+  const id = String(row?.id ?? "").trim().toLowerCase();
+  const byId = FIGURE_CORRECTIONS_BY_ID.get(id);
+  if (byId) return byId;
+
+  const question = normalizeQuestion(row?.question);
+  if (question.includes("forte vento laterale") && question.includes("entrata delle gallerie")) {
+    return "fig37";
+  }
+  return "";
+}
+
 export function applyQuizFigureCorrections(row) {
   if (!row || typeof row !== "object") return row;
 
-  const id = String(row.id ?? "").trim().toLowerCase();
-  const correctedFigure = FIGURE_CORRECTIONS_BY_ID.get(id);
+  const correctedFigure = getFigureCorrection(row);
   if (!correctedFigure || row.figure === correctedFigure) return row;
 
   // Corrections in this map are authoritative. Some catalog rows contain a

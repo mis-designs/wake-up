@@ -2,7 +2,17 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 
-import { getExplanationAssetCandidates, normalizeExplanationFigure } from "../api/asset.js";
+import {
+  getExplanationAssetCandidates,
+  normalizeExplanationFigure,
+  normalizeFigureAssetName
+} from "../api/asset.js";
+
+test("quiz figure paths always resolve to the canonical Cloudflare basename", () => {
+  for (const value of [37, "37", "fig37", "Fig-037.jpg", "Figure/fig37.jpg", "/img_sign/37.png"]) {
+    assert.equal(normalizeFigureAssetName(value), "fig37");
+  }
+});
 
 test("explanation figure names use the final fig-number format", () => {
   assert.equal(normalizeExplanationFigure("fig101"), "fig101");

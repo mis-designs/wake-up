@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v47-explanation-file-check";
+const CACHE_NAME = "magicbook-pwa-v48-cloudflare-figure-fix";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -11,7 +11,7 @@ const STATIC_ASSETS = [
   "/study-quiz.css?v=6-goal-card",
   "/study-quiz.js?v=7-translation-quality",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=54-explanation-file-check",
+  "/quiz.js?v=55-cloudflare-figure-fix",
   "/quiz-help.css?v=20260714-magic-help-v4",
   "/quiz-help.js?v=20260805-translation-quality",
   "/patenteContextResolverV3.js?v=3.0.1-keywords-fix",
