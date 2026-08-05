@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v44-study-performance-green";
+const CACHE_NAME = "magicbook-pwa-v45-study-goal-card";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -8,7 +8,7 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=26",
   "/script.js?v=21-study-quiz",
   "/study-quiz.html",
-  "/study-quiz.css?v=5-performance-green",
+  "/study-quiz.css?v=6-goal-card",
   "/study-quiz.js?v=7-translation-quality",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=52-curated-bangla",

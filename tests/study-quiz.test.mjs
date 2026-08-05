@@ -75,3 +75,14 @@ test("study chapter picker uses the layered performance-green visual system", ()
   assert.match(styles, /--lime:\s*#67f528/);
   assert.doesNotMatch(styles, /\.study-intro\s*\{[^}]*background:\s*#[0-9a-f]{3,8}\s*;/i);
 });
+
+test("the chapter hero presents the supplied 25-goal artwork as a square editorial card", () => {
+  const page = readFileSync(new URL("../study-quiz.html", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../study-quiz.css", import.meta.url), "utf8");
+  assert.match(page, /src="icons\/24goal\.png"[^>]*fetchpriority="high"/);
+  assert.doesNotMatch(page, /study-intro-mark[^>]*><strong>25<\/strong>/);
+  assert.match(styles, /\.study-intro-mark\s*\{[^}]*aspect-ratio:\s*1[^}]*border-radius:\s*30px/s);
+  assert.match(styles, /\.study-intro-mark::before/);
+  assert.match(styles, /\.study-intro-mark::after/);
+  assert.match(styles, /\.study-intro-mark img\s*\{[^}]*object-fit:\s*cover/s);
+});

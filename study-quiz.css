@@ -45,10 +45,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .study-intro h2 { margin: 10px 0 11px; font-size: clamp(1.8rem, 5vw, 3.15rem); line-height: .98; letter-spacing: -.055em; text-shadow: 0 6px 28px rgba(0, 0, 0, .18); }
 .study-intro h2 em { color: #78ff38; font-style: normal; font-weight: inherit; }
 .study-intro p { max-width: 650px; margin: 0; color: rgba(247, 255, 245, .76); font-size: .94rem; line-height: 1.55; }
-.study-intro-mark { position: relative; z-index: 3; display: grid; width: clamp(112px, 16vw, 172px); aspect-ratio: 1; place-content: center; place-items: center; border: 1px solid rgba(163, 255, 115, .31); border-radius: 50%; background: radial-gradient(circle at 38% 29%, rgba(144, 255, 89, .20), transparent 25%), radial-gradient(circle, rgba(13, 89, 31, .88) 0 48%, rgba(5, 30, 13, .76) 49% 64%, rgba(108, 255, 44, .13) 65% 100%); color: #fff; box-shadow: inset 0 0 0 11px rgba(255, 255, 255, .035), 0 18px 48px rgba(0, 18, 7, .32), 0 0 42px rgba(94, 255, 34, .10); backdrop-filter: blur(8px); }
-.study-intro-mark::before { content: ""; position: absolute; inset: 13%; border: 1px solid rgba(168, 255, 124, .16); border-radius: 50%; }
-.study-intro-mark strong { font-size: clamp(2.9rem, 7vw, 5rem); font-weight: 950; line-height: .82; letter-spacing: -.07em; }
-.study-intro-mark span { margin-top: 10px; color: #78ff38; font-size: .57rem; letter-spacing: .22em; }
+.study-intro-mark { position: relative; z-index: 3; width: clamp(150px, 18vw, 214px); aspect-ratio: 1; padding: 7px; border: 1px solid rgba(181, 255, 145, .26); border-radius: 30px; background: linear-gradient(145deg, rgba(222, 255, 208, .18), rgba(4, 35, 13, .50)); box-shadow: 0 26px 54px rgba(0, 19, 7, .38), 0 0 0 1px rgba(104, 255, 43, .08) inset; transform: rotate(2.25deg); }
+.study-intro-mark::before { content: ""; position: absolute; z-index: -1; inset: -9px 9px 9px -9px; border: 1px solid rgba(115, 255, 52, .31); border-radius: 33px; background: linear-gradient(145deg, rgba(105, 255, 39, .10), rgba(3, 27, 10, .16)); transform: rotate(-5deg); }
+.study-intro-mark::after { content: ""; position: absolute; top: -11px; right: -11px; width: 13px; height: 13px; border: 3px solid #0a3516; border-radius: 4px; background: #78ff38; box-shadow: 0 0 0 1px rgba(181, 255, 145, .58), 0 0 20px rgba(120, 255, 56, .68); transform: rotate(12deg); }
+.study-intro-mark img { display: block; width: 100%; height: 100%; border-radius: 23px; object-fit: cover; box-shadow: 0 1px 0 rgba(255, 255, 255, .12) inset; user-select: none; }
 
 .study-chapter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 15px; }
 .study-chapter { position: relative; isolation: isolate; display: grid; grid-template-columns: 54px minmax(0, 1fr) 26px; gap: 13px; align-items: center; min-height: 112px; padding: 17px; overflow: hidden; border: 1px solid rgba(31, 100, 49, .15); border-radius: 22px; background: radial-gradient(circle at 100% 0, rgba(103, 245, 40, .075), transparent 43%), linear-gradient(145deg, rgba(255, 255, 255, .98), rgba(246, 251, 247, .96)); color: var(--ink); text-align: left; cursor: pointer; box-shadow: 0 8px 27px rgba(15, 67, 31, .065); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease; }
@@ -156,7 +156,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .study-practice-link { display: none; }
   .study-main { width: min(100% - 22px, 620px); padding-top: 18px; }
   .study-intro { border-radius: 23px; padding: 23px; }
-  .study-intro-mark { width: 78px; }
+  .study-intro-mark { width: clamp(112px, 22vw, 150px); border-radius: 23px; }
+  .study-intro-mark::before { border-radius: 26px; }
+  .study-intro-mark img { border-radius: 17px; }
   .study-chapter-grid { grid-template-columns: 1fr; gap: 10px; }
   .study-chapter { min-height: 88px; border-radius: 18px; }
   .study-reader-toolbar { grid-template-columns: 1fr; gap: 14px; }
@@ -166,7 +168,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 @media (max-width: 430px) {
   .study-intro { grid-template-columns: 1fr; }
-  .study-intro-mark { display: none; }
+  .study-intro-mark { display: block; width: 124px; justify-self: end; margin: 2px 5px 0 0; }
   .study-question-main, .study-help { padding: 18px; }
   .study-question-card { border-radius: 19px; }
   .study-action { flex: 1 1 calc(50% - 9px); justify-content: center; }
