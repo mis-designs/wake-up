@@ -63,3 +63,15 @@ test("study questions use the supplied audio icon and the complete explanation p
   assert.match(source, /seekExplanation\(controls\)/);
   assert.match(source, /changeExplanationSpeed\(controls\)/);
 });
+
+test("study chapter picker uses the layered performance-green visual system", () => {
+  const page = readFileSync(new URL("../study-quiz.html", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../study-quiz.css", import.meta.url), "utf8");
+  assert.match(page, /Scegli cosa <em>studiare<\/em>/);
+  assert.match(styles, /\.study-intro::before/);
+  assert.match(styles, /\.study-intro::after/);
+  assert.match(styles, /background-image:\s*linear-gradient[\s\S]*?background-size:\s*68px 68px/);
+  assert.match(styles, /\.study-chapter::before/);
+  assert.match(styles, /--lime:\s*#67f528/);
+  assert.doesNotMatch(styles, /\.study-intro\s*\{[^}]*background:\s*#[0-9a-f]{3,8}\s*;/i);
+});

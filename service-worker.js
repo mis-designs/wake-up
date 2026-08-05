@@ -1,14 +1,14 @@
-const CACHE_NAME = "magicbook-pwa-v42-translation-quality";
+const CACHE_NAME = "magicbook-pwa-v44-study-performance-green";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
-  "/style.css?v=37",
+  "/style.css?v=38-quiz-mode-icons",
   "/homebg.css?v=3",
   "/mystyle.css?v=26",
   "/script.js?v=21-study-quiz",
   "/study-quiz.html",
-  "/study-quiz.css?v=4-system-audio-player",
+  "/study-quiz.css?v=5-performance-green",
   "/study-quiz.js?v=7-translation-quality",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=52-curated-bangla",

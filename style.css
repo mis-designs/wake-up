@@ -4736,6 +4736,19 @@ body.app-mode #whatsappBtn {
     filter: brightness(0) invert(1);
 }
 
+.qms-card-badge.qms-badge-art {
+    overflow: hidden;
+    background: #fff;
+}
+
+.qms-card-badge.qms-badge-art img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: none;
+}
+
 .qms-badge-photo img {
     width: 100%;
     height: 100%;
