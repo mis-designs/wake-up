@@ -1282,22 +1282,42 @@ function speakItalian() {
     });
 }
 
-// Calls GAS endpoint that: translates Italian→Bengali with LanguageApp.translate()
-// (real Google Translate quality), fetches TTS audio server-side, caches result.
+// Uses the shared verified Bengali text when it exists. Only missing entries
+// use the automatic Italian-to-Bengali translation provided by the API.
 // Returns { audio: base64_mp3, translation: bengaliText }.
-async function fetchBengaliAudio(italianText, cacheKey, questionId = "") {
+async function fetchBengaliAudio(question, cacheKey) {
   if (bengaliAudioCache[cacheKey]) return bengaliAudioCache[cacheKey];
 
   const controller = new AbortController();
   const timeoutId  = setTimeout(() => controller.abort(), 15000);
 
   try {
+    const italianText = String(question?.question || "");
+    const questionId = String(question?.id || "");
+    let curatedTranslation = "";
+    try {
+      const runtime = await window.QuizHelpRuntimeV3?.load?.();
+      const resolved = runtime?.resolver?.resolve(question);
+      const candidate = String(
+        resolved?.questionBnEasy || resolved?.questionBnStandard || resolved?.questionBn || ""
+      ).trim();
+      if ([...candidate].some(character => {
+        const codePoint = character.codePointAt(0);
+        return codePoint >= 0x0980 && codePoint <= 0x09ff;
+      })) curatedTranslation = candidate;
+    } catch (_) {}
+
     const res = await fetchQuizJson(
-      buildQuizApiUrl("getBengaliAudio", { text: italianText, questionId }),
+      buildQuizApiUrl(curatedTranslation ? "getTTS" : "getBengaliAudio", {
+        text: curatedTranslation || italianText,
+        questionId
+      }),
       { signal: controller.signal }
     );
     clearTimeout(timeoutId);
-    const data = res;
+    const data = curatedTranslation
+      ? { ...res, translation: curatedTranslation, translationSource: "runtime_v3" }
+      : res;
     if (!data.audio) throw new Error(data.error || "no audio in response");
     bengaliAudioCache[cacheKey] = data;
     return data;
@@ -1327,7 +1347,7 @@ function playBanglaAudio() {
 
   const cacheKey = String(q.id || current) + "_bn";
 
-  fetchBengaliAudio(q.question, cacheKey, q.id)
+  fetchBengaliAudio(q, cacheKey)
     .then(data => {
       if (banglaAudioId !== myId) return;
       banglaAudioBtn?.classList.remove("is-loading");

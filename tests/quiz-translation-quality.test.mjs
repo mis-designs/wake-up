@@ -56,6 +56,24 @@ test("corrupt remote translations are rejected before the V3 runtime is used", (
 test("Bengali audio requests carry the quiz ID so the server can use curated text", () => {
   const quizSource = readFileSync(new URL("../quiz.js", import.meta.url), "utf8");
   const studySource = readFileSync(new URL("../study-quiz.js", import.meta.url), "utf8");
-  assert.match(quizSource, /fetchBengaliAudio\(q\.question, cacheKey, q\.id\)/);
+  assert.match(quizSource, /fetchBengaliAudio\(q, cacheKey\)/);
+  assert.match(quizSource, /curatedTranslation \? "getTTS" : "getBengaliAudio"/);
+  assert.match(quizSource, /questionId = String\(question\?\.id \|\| ""\)/);
   assert.match(studySource, /questionId:\s*String\(question\.id \|\| ""\)/);
+});
+
+test("study mode resolves V3 translations before using the automatic fallback", () => {
+  const page = readFileSync(new URL("../study-quiz.html", import.meta.url), "utf8");
+  const source = readFileSync(new URL("../study-quiz.js", import.meta.url), "utf8");
+
+  const resolverPosition = page.indexOf("patenteContextResolverV3.js");
+  const loaderPosition = page.indexOf("quizHelpRuntimeV3Loader.js");
+  const studyPosition = page.indexOf("study-quiz.js");
+  assert.ok(resolverPosition >= 0 && resolverPosition < loaderPosition);
+  assert.ok(loaderPosition < studyPosition);
+  assert.match(page, /QUIZ_HELP_RUNTIME_V3_DEFAULT_ENABLED\s*=\s*true/);
+  assert.match(source, /data\.resolver\.resolve\(question\)/);
+  assert.match(source, /resolved\.questionBnEasy \|\| resolved\.questionBnStandard \|\| resolved\.questionBn/);
+  assert.match(source, /if \(!String\(help\.translation \|\| ""\)\.trim\(\)\)/);
+  assert.match(source, /preferredTranslation \? "getTTS" : "getBengaliAudio"/);
 });

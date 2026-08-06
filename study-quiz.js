@@ -3,7 +3,9 @@
 
   const API = "/api/quiz";
   const HOME = "/magic-book";
-  const HELP_LIBRARY = "/data/patente/quiz-help-runtime-v2.json";
+  const HELP_MANIFEST_SOURCE = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
+  const LOCAL_HELP_SOURCE = "/data/patente/quiz-help-runtime-v2.json";
+  const REMOTE_HELP_TIMEOUT_MS = 10000;
   const AUDIO_ACTION_ICON = '<svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.80688 18.5304C5.82459 18.5005 5.84273 18.4709 5.8613 18.4413C7.2158 16.2881 7.99991 13.7418 7.99991 11C7.99991 8.79086 9.79077 7 11.9999 7C14.209 7 15.9999 8.79086 15.9999 11C15.9999 12.017 15.9307 13.0186 15.7966 14M13.6792 20.8436C14.2909 19.6226 14.7924 18.3369 15.1707 17M19.0097 18.132C19.6547 15.8657 20 13.4732 20 11C20 6.58172 16.4183 3 12 3C10.5429 3 9.17669 3.38958 8 4.07026M3 15.3641C3.64066 14.0454 4 12.5646 4 11C4 9.54285 4.38958 8.17669 5.07026 7M11.9999 11C11.9999 14.5172 10.9911 17.7988 9.24707 20.5712" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const CHAPTERS = [
     "Doveri nell'uso della strada",
@@ -437,15 +439,26 @@
   }
 
   async function loadHelpLibrary() {
-    helpPromise ||= fetch(HELP_LIBRARY, { cache: "force-cache" })
-      .then(response => {
-        if (!response.ok) throw new Error(`study_help_${response.status}`);
-        return response.json();
-      })
-      .catch(error => {
-        helpPromise = null;
-        throw error;
+    if (!helpPromise) {
+      window.QUIZ_HELP_RUNTIME_V3_MANIFEST_URL = HELP_MANIFEST_SOURCE;
+      const remote = Promise.resolve().then(() => {
+        if (!window.QuizHelpRuntimeV3?.load) throw new Error("study_help_runtime_v3_missing");
+        return window.QuizHelpRuntimeV3.load();
       });
+      const remoteDeadline = new Promise((_, reject) => {
+        window.setTimeout(() => reject(new Error("study_help_runtime_v3_timeout")), REMOTE_HELP_TIMEOUT_MS);
+      });
+      helpPromise = Promise.race([remote, remoteDeadline])
+        .catch(() => fetch(LOCAL_HELP_SOURCE, { cache: "force-cache" })
+          .then(response => {
+            if (!response.ok) throw new Error(`study_help_local_${response.status}`);
+            return response.json();
+          }))
+        .catch(error => {
+          helpPromise = null;
+          throw error;
+        });
+    }
     return helpPromise;
   }
 
@@ -466,6 +479,18 @@
   }
 
   function decodeHelp(question, data) {
+    if (data?.resolver) {
+      const resolved = data.resolver.resolve(question);
+      if (!resolved) return null;
+      const translation = usableBanglaTranslation(
+        resolved.questionBnEasy || resolved.questionBnStandard || resolved.questionBn
+      );
+      return {
+        ...resolved,
+        translation,
+        translationSource: translation ? "runtime_v3" : ""
+      };
+    }
     if (!helpIdIndex) {
       helpIdIndex = new Map();
       Object.values(data.quizzes || {}).forEach(value => {
@@ -506,6 +531,21 @@
       topic: { italian: topic[0] || "", bangla: topic[1] || "" },
       words
     };
+  }
+
+  async function getQuestionHelp(question) {
+    const key = String(question.id || fingerprint(question));
+    const cached = helpCache.get(key);
+    if (cached) return cached;
+    let data = null;
+    try { data = await loadHelpLibrary(); } catch (_) {}
+    const help = (data && decodeHelp(question, data)) || {
+      translation: usableBanglaTranslation(question.question_bd || question.questionBD),
+      translationSource: question.questionTranslationSource || "catalog",
+      words: []
+    };
+    helpCache.set(key, help);
+    return help;
   }
 
   function helpSkeleton() {
@@ -614,15 +654,7 @@
     try {
       const key = String(question.id || fingerprint(question));
       let help = helpCache.get(key);
-      if (!help) {
-        let data = null;
-        try { data = await loadHelpLibrary(); } catch (_) {}
-        help = (data && decodeHelp(question, data)) || {
-          translation: usableBanglaTranslation(question.question_bd || question.questionBD),
-          translationSource: question.questionTranslationSource || "catalog",
-          words: []
-        };
-      }
+      if (!help) help = await getQuestionHelp(question);
       if (!String(help.translation || "").trim()) {
         try {
           const translated = await loadOnDemandTranslation(question);
@@ -801,18 +833,34 @@
     try {
       let data = ttsCache.get(key);
       if (!data) {
+        let preferredTranslation = "";
+        let preferredTranslationSource = "";
+        if (language === "bn") {
+          const help = await getQuestionHelp(question);
+          preferredTranslation = usableBanglaTranslation(help?.translation);
+          preferredTranslationSource = String(help?.translationSource || "runtime_v3");
+        }
         const query = new URLSearchParams({
-          action: language === "bn" ? "getBengaliAudio" : "getItalianAudio",
+          action: language === "bn"
+            ? (preferredTranslation ? "getTTS" : "getBengaliAudio")
+            : "getItalianAudio",
           phone: session.phone,
           deviceId: session.deviceId,
           questionId: String(question.id || ""),
-          text: String(question.question || "")
+          text: preferredTranslation || String(question.question || "")
         });
         const response = await fetch(`${API}?${query}`, {
           headers: authHeaders({ withQuizSession: true })
         });
         data = await readApiResponse(response);
         if (!data.audio) throw new Error("audio_not_available");
+        if (preferredTranslation) {
+          data = {
+            ...data,
+            translation: preferredTranslation,
+            translationSource: preferredTranslationSource
+          };
+        }
         ttsCache.set(key, data);
       }
       const safeTranslation = language === "bn" ? usableBanglaTranslation(data.translation) : "";

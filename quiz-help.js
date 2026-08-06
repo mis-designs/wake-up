@@ -34,7 +34,7 @@
 
   const HELP_MANIFEST_SOURCE = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const LOCAL_HELP_SOURCE = "/data/patente/quiz-help-runtime-v2.json";
-  const REMOTE_HELP_TIMEOUT_MS = 1800;
+  const REMOTE_HELP_TIMEOUT_MS = 10000;
   const questionArea = document.querySelector(".question-area");
   const questionText = document.getElementById("question");
   const clickHint = document.querySelector(".quiz-click-hint");
