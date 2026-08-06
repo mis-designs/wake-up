@@ -20,6 +20,15 @@ import {
   applyCuratedQuizTranslation,
   getCuratedQuizTranslation
 } from "./quiz-translations.mjs";
+import {
+  LOCAL_EXAM_ROWS,
+  LOCAL_MAGIC_BOOK_ROWS,
+  addLocalAdminAnswers,
+  getLocalCatalog,
+  gradeLocalQuiz,
+  hideLocalCorrectAnswers,
+  selectLocalQuizRows
+} from "./local-quiz-bank.mjs";
 
 const require = createRequire(import.meta.url);
 const {
@@ -59,10 +68,7 @@ const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
 const QUIZ_SESSION_TOKEN_TTL_MS = 30 * 60 * 1000;
 const PASSING_SCORE_RATIO = 0.9;
 const EXAM_CHAPTER_CODE = "0";
-const EXAM_POOL_START_INDEX = 790;
 const EXAM_POOL_SIZE = 80;
-const EXAM_POOL_FETCH_ATTEMPTS = 20;
-const EXAM_POOL_FETCH_BATCH_SIZE = 4;
 const EXAM_QUIZ_MODES = {
   exam80: {
     mode: "exam80",
@@ -84,7 +90,6 @@ let quizAudioDatabase = null;
 let quizAudioStorage = null;
 let explanationStorage = null;
 let quizAudioCatalogCache = { expiresAt: 0, rows: [] };
-let quizAudioCatalogLoading = null;
 const quizAudioObjectAvailabilityCache = new Map();
 const QUIZ_AUDIO_OBJECT_CACHE_TTL_MS = 5 * 60 * 1000;
 const EXPLANATION_FIGURES_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -293,15 +298,10 @@ async function findQuizAudioRow(identity, { allowAmbiguousLegacy = false } = {})
 async function getCanonicalQuizAudioCandidates(questionId, question, figure) {
   const now = Date.now();
   if (quizAudioCatalogCache.expiresAt <= now || !quizAudioCatalogCache.rows.length) {
-    quizAudioCatalogLoading ||= forwardCatalogAction()
-      .then(catalog => {
-        quizAudioCatalogCache = {
-          expiresAt: Date.now() + 5 * 60 * 1000,
-          rows: getQuizRows(catalog).map(normalizeQuestionRow)
-        };
-      })
-      .finally(() => { quizAudioCatalogLoading = null; });
-    await quizAudioCatalogLoading;
+    quizAudioCatalogCache = {
+      expiresAt: Date.now() + 5 * 60 * 1000,
+      rows: LOCAL_MAGIC_BOOK_ROWS.map(normalizeQuestionRow)
+    };
   }
 
   const id = String(questionId ?? "").trim();
@@ -627,7 +627,7 @@ function normalizePhoneNumber(phone) {
 }
 
 function isConfigured() {
-  return ACCESS_GAS_URL && ACCESS_GAS_SECRET && QUIZ_GAS_URL && QUIZ_PROXY_SECRET && SESSION_SECRET;
+  return ACCESS_GAS_URL && ACCESS_GAS_SECRET && SESSION_SECRET;
 }
 
 function getAuthError(authData) {
@@ -823,6 +823,11 @@ function hasValidRequestShape({ phone, deviceId, text, chapters, question, figur
 }
 
 async function forwardGetAction({ action, chapters, text, mode, limit, count, questionCount }) {
+  if (!QUIZ_GAS_URL || !QUIZ_PROXY_SECRET) {
+    const error = new Error("quiz_media_service_not_configured");
+    error.statusCode = 503;
+    throw error;
+  }
   const params = new URLSearchParams({
     action,
     token: QUIZ_PROXY_SECRET
@@ -839,27 +844,6 @@ async function forwardGetAction({ action, chapters, text, mode, limit, count, qu
   const url = `${QUIZ_GAS_URL}?${params.toString()}`;
   const response = await fetchUpstream(url, {}, { service: "quiz_service" });
   return readJsonResponse(response);
-}
-
-async function forwardCatalogAction() {
-  const params = new URLSearchParams({
-    action: "getCatalog",
-    token: QUIZ_PROXY_SECRET
-  });
-  const response = await fetchUpstream(
-    `${QUIZ_GAS_URL}?${params.toString()}`,
-    {},
-    { service: "quiz_catalog", timeoutMs: 15_000 }
-  );
-  return readJsonResponse(response);
-}
-
-function getQuizRows(data) {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.quiz)) return data.quiz;
-  if (Array.isArray(data?.questions)) return data.questions;
-  if (Array.isArray(data?.rows)) return data.rows;
-  return [];
 }
 
 function getExamModeConfig(mode) {
@@ -912,85 +896,7 @@ function shuffleQuestions(questions) {
 
 function getExamPool(rows) {
   const normalized = rows.map(normalizeQuestionRow);
-  const examRows = normalized.filter(isExamQuestion);
-
-  if (examRows.length >= EXAM_POOL_SIZE) {
-    return examRows.slice(0, EXAM_POOL_SIZE);
-  }
-
-  if (normalized.length === EXAM_POOL_SIZE) {
-    return normalized;
-  }
-
-  if (normalized.length >= EXAM_POOL_START_INDEX + EXAM_POOL_SIZE) {
-    return normalized.slice(EXAM_POOL_START_INDEX, EXAM_POOL_START_INDEX + EXAM_POOL_SIZE);
-  }
-
-  return examRows;
-}
-
-function mergeQuestionsById(existingRows, nextRows) {
-  const merged = existingRows.slice();
-  const seen = new Set(merged.map((question, index) => String(question?.id ?? `__index_${index}`)));
-
-  nextRows.forEach((question, index) => {
-    const key = String(question?.id ?? `__new_${merged.length}_${index}`);
-    if (seen.has(key)) return;
-    seen.add(key);
-    merged.push(question);
-  });
-
-  return merged;
-}
-
-async function fetchExamRows(action, text, modeConfig) {
-  let collected = [];
-  let lastReceived = 0;
-  const targetCount = modeConfig.questionCount;
-
-  const firstData = await forwardGetAction({
-    action,
-    chapters: EXAM_CHAPTER_CODE,
-    text,
-    mode: modeConfig.mode,
-    limit: modeConfig.questionCount,
-    count: modeConfig.questionCount,
-    questionCount: modeConfig.questionCount
-  });
-  collected = mergeQuestionsById(collected, getExamPool(getQuizRows(firstData)));
-  lastReceived = collected.length;
-
-  for (let attempt = 0; attempt < EXAM_POOL_FETCH_ATTEMPTS && collected.length < targetCount; attempt += EXAM_POOL_FETCH_BATCH_SIZE) {
-    const remainingAttempts = EXAM_POOL_FETCH_ATTEMPTS - attempt;
-    const batchSize = Math.min(EXAM_POOL_FETCH_BATCH_SIZE, remainingAttempts);
-    const batch = await Promise.all(
-      Array.from({ length: batchSize }, () => forwardGetAction({
-        action,
-        chapters: EXAM_CHAPTER_CODE,
-        text,
-        mode: modeConfig.mode,
-        limit: targetCount,
-        count: targetCount,
-        questionCount: targetCount
-      }))
-    );
-
-    batch.forEach(data => {
-      const rows = getExamPool(getQuizRows(data));
-      lastReceived = rows.length;
-      collected = mergeQuestionsById(collected, rows);
-    });
-  }
-
-  if (collected.length < targetCount) {
-    console.warn("[api/quiz] incomplete exam pool", {
-      expected: targetCount,
-      collected: collected.length,
-      lastReceived
-    });
-  }
-
-  return collected;
+  return normalized.filter(isExamQuestion).slice(0, EXAM_POOL_SIZE);
 }
 
 function buildExamQuiz(rows, modeConfig) {
@@ -1007,100 +913,8 @@ function buildExamQuiz(rows, modeConfig) {
   return shuffleQuestions(pool).slice(0, modeConfig.questionCount);
 }
 
-async function forwardCheckQuiz(answers) {
-  const url = `${QUIZ_GAS_URL}?action=checkQuiz`;
-  const response = await fetchUpstream(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      token: QUIZ_PROXY_SECRET,
-      answers
-    })
-  }, { service: "quiz_grading", timeoutMs: 15_000 });
-
-  return readJsonResponse(response);
-}
-
-function getReviewItems(result = {}) {
-  const reviewArrays = [
-    result.review,
-    result.details,
-    result.answers,
-    result.results,
-    result.questions
-  ];
-
-  return reviewArrays.find(Array.isArray) || [];
-}
-
-function normalizeAnswerValue(value) {
-  if (value === null || value === undefined || value === "") return null;
-  if (value === 1 || value === true) return 1;
-  if (value === 0 || value === false) return 0;
-
-  const normalized = String(value).trim().toLowerCase();
-  if (["1", "true", "vero", "v", "yes"].includes(normalized)) return 1;
-  if (["0", "false", "falso", "f", "no"].includes(normalized)) return 0;
-
-  return null;
-}
-
-function getReviewCorrectAnswer(item, submittedAnswer) {
-  const explicitAnswer = normalizeAnswerValue(
-    item?.correctAnswer ??
-    item?.correct_answer ??
-    item?.rightAnswer ??
-    item?.right_answer ??
-    item?.solution ??
-    item?.soluzione ??
-    item?.risposta_corretta
-  );
-  if (explicitAnswer !== null) return explicitAnswer;
-
-  if (typeof item?.correct === "boolean") {
-    return item.correct ? submittedAnswer : (submittedAnswer === 1 ? 0 : 1);
-  }
-
-  if (typeof item?.isCorrect === "boolean") {
-    return item.isCorrect ? submittedAnswer : (submittedAnswer === 1 ? 0 : 1);
-  }
-
-  return null;
-}
-
 async function addAdminCorrectAnswers(quiz) {
-  if (!Array.isArray(quiz) || quiz.length === 0) return quiz;
-
-  const submittedAnswer = 1;
-  const probeAnswers = quiz.map((question, index) => ({
-    id: question?.id ?? index,
-    answer: submittedAnswer
-  }));
-
-  const result = await forwardCheckQuiz(probeAnswers);
-  const reviewItems = getReviewItems(result);
-  if (!reviewItems.length) return quiz;
-
-  const answerById = new Map();
-  reviewItems.forEach((item, index) => {
-    const correctAnswer = getReviewCorrectAnswer(item, submittedAnswer);
-    if (correctAnswer === null) return;
-
-    if (item?.id !== undefined && item?.id !== null) {
-      answerById.set(String(item.id), correctAnswer);
-    }
-    answerById.set(`__index_${index}`, correctAnswer);
-  });
-
-  return quiz.map((question, index) => {
-    const correctAnswer = answerById.get(String(question?.id)) ?? answerById.get(`__index_${index}`);
-    if (correctAnswer === undefined) return question;
-
-    return {
-      ...question,
-      admin_correct_answer: correctAnswer
-    };
-  });
+  return addLocalAdminAnswers(quiz);
 }
 
 export default async function handler(req, res) {
@@ -1165,57 +979,29 @@ export default async function handler(req, res) {
       res.setHeader("CDN-Cache-Control", "no-store");
       res.setHeader("Vercel-CDN-Cache-Control", "no-store");
 
-      const access = await ensureAccess({ phone, deviceId, accessToken, forceValidate: true });
+      // A valid short-lived signed access token is sufficient here. This keeps
+      // quiz loading independent of a fresh Google Apps Script round trip.
+      const access = await ensureAccess({ phone, deviceId, accessToken });
       if (!access.ok) {
         return res.status(access.statusCode || 401).json({ error: access.error || "unauthorized" });
       }
 
       const modeConfig = getExamModeConfig(mode);
-      let data = null;
-      let catalogChapterRows = null;
-      if (!modeConfig && /^\d+$/.test(String(chapters || "").trim())) {
-        try {
-          // A single Magic Book chapter must come from the same 788-row
-          // catalog used by the audio admin page, not the generic quiz draw.
-          const catalog = await forwardCatalogAction();
-          const catalogRows = getQuizRows(catalog).map(normalizeQuestionRow);
-          const chapterKey = String(Number(chapters));
-          const chapterIdPattern = new RegExp(`^cap(?:itolo)?[_-]?0*${chapterKey}(?:[_-]|$)`, "i");
-          const matchingRows = catalogRows.filter(row =>
-            String(Number(String(row.chapter ?? "").trim())) === chapterKey
-            || chapterIdPattern.test(String(row.id ?? "").trim())
-          );
-          if (matchingRows.length) {
-            // Preserve the exact Magic Book question/figure pair. The same
-            // pair is used by the audio admin page to create its audio key.
-            // This is deliberately non-blocking: an audio metadata issue must
-            // never prevent every user from opening their quiz.
-            catalogChapterRows = shuffleQuestions(matchingRows.map(row => ({
-              ...row,
-              audioQuestion: row.question,
-              audioFigure: row.figure
-            }))).slice(0, 30);
-            quizAudioCatalogCache = { expiresAt: Date.now() + 5 * 60 * 1000, rows: catalogRows };
-          }
-        } catch (_) {
-          // Keep the quiz usable if the catalog service has a temporary fault.
-          // The normal path above is always the Magic Book catalog.
-          catalogChapterRows = null;
-        }
-      }
-      if (!catalogChapterRows) data = modeConfig ? null : await forwardGetAction({ action, chapters, text });
       // Admin authority comes only from a valid signed admin token.
       const admin = access.role === "admin";
-      // Use the same canonical row shape as the Magic Book audio catalog.
-      // Audio identity depends on question + figure, so the two entry points
-      // must never interpret sheet column aliases differently.
-      let rows = (modeConfig
-        ? await fetchExamRows(action, text, modeConfig)
-        : (catalogChapterRows || getQuizRows(data)))
-        .map(normalizeQuestionRow);
-      if (!modeConfig) rows = await attachCanonicalAudioSources(rows);
+      let rows = (modeConfig ? LOCAL_EXAM_ROWS : selectLocalQuizRows(chapters)).map(normalizeQuestionRow);
+      if (!modeConfig) {
+        rows = shuffleQuestions(rows).slice(0, 30);
+        rows = await attachCanonicalAudioSources(rows);
+        quizAudioCatalogCache = {
+          expiresAt: Date.now() + 5 * 60 * 1000,
+          rows: LOCAL_MAGIC_BOOK_ROWS.map(normalizeQuestionRow)
+        };
+      }
       const quiz = modeConfig ? buildExamQuiz(rows, modeConfig) : rows;
-      const quizForClient = admin ? await addAdminCorrectAnswers(quiz) : quiz;
+      const quizWithAdminAnswers = admin ? await addAdminCorrectAnswers(quiz) : quiz;
+      // Correct answers remain server-side and are never serialized for normal users.
+      const quizForClient = hideLocalCorrectAnswers(quizWithAdminAnswers);
       const sessionTtlMs = modeConfig?.sessionTtlMs || QUIZ_SESSION_TOKEN_TTL_MS;
       const quizWithAudioTokens = modeConfig
         ? quizForClient
@@ -1251,13 +1037,12 @@ export default async function handler(req, res) {
       const chapter = normalizeStudyChapter(chapters);
       if (!chapter) return res.status(400).json({ error: "invalid_study_chapter" });
 
-      const access = await ensureAccess({ phone, deviceId, accessToken, forceValidate: true });
+      const access = await ensureAccess({ phone, deviceId, accessToken });
       if (!access.ok) {
         return res.status(access.statusCode || 401).json({ error: access.error || "unauthorized" });
       }
 
-      const catalog = await forwardCatalogAction();
-      const catalogRows = getQuizRows(catalog).map(normalizeQuestionRow);
+      const catalogRows = LOCAL_MAGIC_BOOK_ROWS.map(normalizeQuestionRow);
       const chapterRows = selectStudyChapterRows(catalogRows, chapter);
       if (!chapterRows.length) return res.status(404).json({ error: "study_chapter_empty" });
       const quiz = chapterRows.map(row => ({
@@ -1302,8 +1087,8 @@ export default async function handler(req, res) {
 
     if (req.method === "POST" && action === "getMagicBookCatalog") {
       await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
-      const data = await forwardCatalogAction();
-      const rows = getQuizRows(data).map(normalizeQuestionRow).filter(row => row.id && row.question);
+      const data = getLocalCatalog();
+      const rows = data.quiz.map(normalizeQuestionRow).filter(row => row.id && row.question);
       if (rows.length !== 788) {
         const error = new Error("magic_catalog_count_mismatch");
         error.statusCode = 409;
@@ -1312,7 +1097,7 @@ export default async function handler(req, res) {
       }
       return res.status(200).json({
         ok: true,
-        source: data?.source || "magicph-google-sheet-quiz",
+        source: data?.source || "local-quiz-bank",
         count: rows.length,
         quiz: rows.map(row => ({
           id: row.id,
@@ -1603,7 +1388,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "missing_answers" });
       }
 
-      const data = await forwardCheckQuiz(answers);
+      const data = gradeLocalQuiz(answers);
       const normalizedResult = normalizeQuizResult(data, answers.length);
       return res.status(200).json(normalizedResult);
     }
