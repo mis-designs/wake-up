@@ -1,5 +1,14 @@
 const DEFAULT_TIMEOUT_MS = 12_000;
 
+export function publicApiError(error) {
+  const statusCode = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+  if (statusCode === 503) return { statusCode, error: "service_unavailable" };
+  if (statusCode >= 400 && statusCode < 500) {
+    return { statusCode, error: String(error?.message || "invalid_request") };
+  }
+  return { statusCode: 500, error: "server_error" };
+}
+
 function upstreamError(service, reason, details = {}) {
   const error = new Error(`${service}_${reason}`);
   error.statusCode = 503;

@@ -33,9 +33,18 @@ export function verifyGuestTrialToken(token, trialId, secret = SESSION_SECRET) {
 }
 
 export default function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "method_not_allowed" });
+  res.setHeader("Cache-Control", "no-store");
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ error: "method_not_allowed" });
+  }
   if (!SESSION_SECRET) return res.status(500).json({ error: "missing_server_config" });
-  const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+  let body;
+  try {
+    body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+  } catch {
+    return res.status(400).json({ error: "invalid_json" });
+  }
   const trialId = String(body.trialId || "");
   if (!/^[a-zA-Z0-9_-]{16,80}$/.test(trialId)) return res.status(400).json({ error: "invalid_trial" });
   const guest = createGuestTrialToken(trialId);

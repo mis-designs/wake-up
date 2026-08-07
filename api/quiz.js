@@ -13,7 +13,7 @@ import { neon } from "@neondatabase/serverless";
 import { applyQuizFigureCorrections } from "./quiz-figure-corrections.mjs";
 import { getExplanationFiguresFromObjectKeys } from "./quiz-explanation-availability.mjs";
 import { detectQuizAudioMimeType, normalizeQuizAudioMimeType } from "./audio-mime.mjs";
-import { fetchUpstream, withOperationalTimeout } from "./upstream-fetch.mjs";
+import { fetchUpstream, publicApiError, withOperationalTimeout } from "./upstream-fetch.mjs";
 import { normalizeStudyChapter, selectStudyChapterRows } from "./study-quiz.mjs";
 import { matchesQuizAudioIdentityTicket } from "./quiz-audio-ticket.mjs";
 import {
@@ -1395,7 +1395,7 @@ export default async function handler(req, res) {
 
     return res.status(400).json({ error: "invalid_action" });
   } catch (err) {
-    const statusCode = err.statusCode || 500;
+    const { statusCode, error: publicError } = publicApiError(err);
     const log = statusCode >= 500 ? console.error : console.warn;
     log("[api/quiz] server_error", {
       code: err.message || "server_error",
@@ -1404,8 +1404,7 @@ export default async function handler(req, res) {
     });
     if (statusCode === 503) res.setHeader("Retry-After", "5");
     return res.status(statusCode).json({
-      error: err.message || "server_error",
-      ...(err.details ? { details: err.details } : {})
+      error: publicError
     });
   }
 }

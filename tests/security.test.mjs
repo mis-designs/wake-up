@@ -1,7 +1,37 @@
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import test from "node:test";
 
 import { getSessionRole } from "../api/getPages.js";
+import { verifyAdminToken } from "../api/admin.js";
+
+function signAdminToken({ phone, deviceId, role = "admin", exp = Date.now() + 60_000 }, secret) {
+  const payload = { phone, deviceId, role, purpose: "access", exp };
+  const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signature = crypto.createHmac("sha256", secret)
+    .update(encoded)
+    .digest("base64url");
+  return `${encoded}.${signature}`;
+}
+
+test("the admin API rejects missing, forged, expired and non-admin tokens", () => {
+  const secret = "test-session-secret-with-enough-entropy";
+  const phone = "391234567890";
+  const deviceId = "device_12345678";
+
+  assert.equal(verifyAdminToken("", phone, deviceId, secret).ok, false);
+
+  const valid = signAdminToken({ phone, deviceId }, secret);
+  assert.equal(verifyAdminToken(valid, phone, deviceId, secret).ok, true);
+  assert.equal(verifyAdminToken(`${valid}x`, phone, deviceId, secret).ok, false);
+
+  const expired = signAdminToken({ phone, deviceId, exp: Date.now() - 1 }, secret);
+  assert.equal(verifyAdminToken(expired, phone, deviceId, secret).error, "token_expired");
+
+  const userToken = signAdminToken({ phone, deviceId, role: "user" }, secret);
+  assert.equal(verifyAdminToken(userToken, phone, deviceId, secret).error, "admin_required");
+  assert.equal(verifyAdminToken(valid, phone, "other_device_123", secret).ok, false);
+});
 
 test("a phone allow-list entry cannot create admin authority without a valid signed token", () => {
   const adminPhones = ["391234567890"];

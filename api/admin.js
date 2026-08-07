@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { fetchUpstream } from "./upstream-fetch.mjs";
+import { fetchUpstream, publicApiError } from "./upstream-fetch.mjs";
 
 const GAS_ACCESS_URL = process.env.GAS_ACCESS_URL;
 const GAS_SECRET = process.env.GAS_SECRET;
@@ -38,14 +38,17 @@ function signTokenPayload(encodedPayload) {
   return crypto.createHmac("sha256", SESSION_SECRET).update(encodedPayload).digest("base64url");
 }
 
-function verifyAdminToken(token, phone, deviceId) {
+export function verifyAdminToken(token, phone, deviceId, secret = SESSION_SECRET) {
   if (!token || !phone || !deviceId) return { ok: false, error: "unauthorized" };
 
   const parts = String(token).split(".");
   if (parts.length !== 2) return { ok: false, error: "unauthorized" };
 
   const [encodedPayload, signature] = parts;
-  const expectedSignature = signTokenPayload(encodedPayload);
+  if (!secret || encodedPayload.length > 2048 || signature.length > 128) {
+    return { ok: false, error: "unauthorized" };
+  }
+  const expectedSignature = crypto.createHmac("sha256", secret).update(encodedPayload).digest("base64url");
   const provided = Buffer.from(signature);
   const expected = Buffer.from(expectedSignature);
 
@@ -147,7 +150,9 @@ function sanitizeAdminFields(action, body) {
 }
 
 export default async function handler(req, res) {
+  res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
     return res.status(405).json({ success: false, error: "method_not_allowed" });
   }
 
@@ -178,13 +183,13 @@ export default async function handler(req, res) {
 
     const data = await callGasAdmin(getGasAction(action), sanitized.fields);
     if (data?.success !== true) {
-      return res.status(200).json({ success: false, error: readAdminError(data), details: data || null });
+      return res.status(200).json({ success: false, error: readAdminError(data) });
     }
 
     return res.status(200).json(data);
   } catch (error) {
-    const statusCode = error?.statusCode || 500;
+    const { statusCode, error: publicError } = publicApiError(error);
     if (statusCode === 503) res.setHeader("Retry-After", "5");
-    return res.status(statusCode).json({ success: false, error: error?.message || "server_error" });
+    return res.status(statusCode).json({ success: false, error: publicError });
   }
 }

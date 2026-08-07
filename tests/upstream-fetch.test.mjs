@@ -1,6 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fetchUpstream, withOperationalTimeout } from "../api/upstream-fetch.mjs";
+import { fetchUpstream, publicApiError, withOperationalTimeout } from "../api/upstream-fetch.mjs";
+
+test("public API errors do not expose upstream service names or internal details", () => {
+  const internal = new Error("private_database_timeout");
+  internal.statusCode = 503;
+  internal.details = { service: "private_database", upstreamStatus: 502 };
+  assert.deepEqual(publicApiError(internal), { statusCode: 503, error: "service_unavailable" });
+  assert.deepEqual(publicApiError(new Error("secret_internal_path")), { statusCode: 500, error: "server_error" });
+});
 
 test("fetchUpstream returns successful upstream responses", async t => {
   t.mock.method(globalThis, "fetch", async () => new Response("ok", { status: 200 }));

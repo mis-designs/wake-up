@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { fetchUpstream } from "./upstream-fetch.mjs";
+import { fetchUpstream, publicApiError } from "./upstream-fetch.mjs";
 
 const BASE_URL = process.env.R2_BASE_URL;
 const GOOGLE_SCRIPT_URL = process.env.GAS_ACCESS_URL;
@@ -170,7 +170,9 @@ function verifyAccessToken(token, phone, deviceId) {
 }
 
 export default async function handler(req, res) {
+  res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "method_not_allowed" });
   }
 
@@ -180,11 +182,16 @@ export default async function handler(req, res) {
 
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
-    const { action, book, type, chapter, page, phone, deviceId, registerDevice, accessToken } = body;
+    const { action, book, type, chapter, page, registerDevice, accessToken } = body;
+    const phone = normalizePhone(body.phone);
+    const deviceId = String(body.deviceId || "").trim();
     const pageNumber = Number(page);
     const chapterNumber = chapter === undefined ? undefined : Number(chapter);
 
     if (action === "validate") {
+      if (!/^[0-9]{6,15}$/.test(phone) || !/^[A-Za-z0-9_-]{8,128}$/.test(deviceId)) {
+        return res.status(400).json({ error: "invalid_request" });
+      }
       const authData = await validateAccess(phone, deviceId, {
         registerDevice: registerDevice === true
       });
@@ -259,8 +266,8 @@ export default async function handler(req, res) {
     res.setHeader("Cache-Control", "no-store");
     return res.send(Buffer.from(buffer));
   } catch (err) {
-    const statusCode = err?.statusCode || 500;
+    const { statusCode, error: publicError } = publicApiError(err);
     if (statusCode === 503) res.setHeader("Retry-After", "5");
-    return res.status(statusCode).json({ error: err?.message || "server_error" });
+    return res.status(statusCode).json({ error: publicError });
   }
 }

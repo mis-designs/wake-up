@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { fetchUpstream } from "./upstream-fetch.mjs";
+import { fetchUpstream, publicApiError } from "./upstream-fetch.mjs";
 
 const GAS_ACCESS_URL = process.env.GAS_ACCESS_URL;
 const GAS_SECRET = process.env.GAS_SECRET;
@@ -439,7 +439,9 @@ async function sendOtpForDevice({ res, phone, deviceId, action }) {
 }
 
 export default async function handler(req, res) {
+  res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "method_not_allowed" });
   }
 
@@ -534,8 +536,8 @@ export default async function handler(req, res) {
 
     return res.status(400).json({ success: false, error: "invalid_action" });
   } catch (error) {
-    const statusCode = error?.statusCode || 500;
+    const { statusCode, error: publicError } = publicApiError(error);
     if (statusCode === 503) res.setHeader("Retry-After", "5");
-    return res.status(statusCode).json({ error: error?.message || "server_error" });
+    return res.status(statusCode).json({ error: publicError });
   }
 }

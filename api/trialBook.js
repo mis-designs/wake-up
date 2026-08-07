@@ -1,5 +1,5 @@
 import { verifyGuestTrialToken } from "./trialAccess.js";
-import { fetchUpstream } from "./upstream-fetch.mjs";
+import { fetchUpstream, publicApiError } from "./upstream-fetch.mjs";
 
 const BASE_URL = process.env.R2_BASE_URL;
 export const TRIAL_BOOK_CHAPTERS = new Set(["2", "4"]);
@@ -38,8 +38,8 @@ export default async function handler(req, res) {
     res.setHeader("Cache-Control", "private, max-age=300");
     return res.send(Buffer.from(buffer));
   } catch (error) {
-    const statusCode = error?.statusCode || 500;
+    const { statusCode, error: publicError } = publicApiError(error);
     if (statusCode === 503) res.setHeader("Retry-After", "5");
-    return res.status(statusCode).json({ error: error?.message || "server_error" });
+    return res.status(statusCode).json({ error: publicError });
   }
 }
