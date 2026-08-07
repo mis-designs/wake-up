@@ -7,7 +7,24 @@
 .env
 .env.*
 !.env.example
+.envrc
 *.local
+*.secret
+secrets/
+
+# Private keys, certificates and machine credentials
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa*
+id_ed25519*
+credentials*.json
+service-account*.json
+.npmrc
+.netrc
 
 # Dependencies, build output and tooling caches
 node_modules/
@@ -16,6 +33,8 @@ coverage/
 dist/
 *.log
 *.tmp
+*.bak
+*.orig
 
 # Operating system files
 .DS_Store

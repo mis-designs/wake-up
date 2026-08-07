@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "security:audit": "node --test tests/repository-security.test.mjs tests/security.test.mjs tests/trial-access-security.test.mjs tests/trial-book-security.test.mjs tests/trial-security.test.mjs tests/upstream-fetch.test.mjs"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1088.0",
     "@aws-sdk/s3-request-presigner": "^3.1088.0",

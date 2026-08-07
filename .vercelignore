@@ -1,3 +1,42 @@
-# Repository documentation is versioned in Git but is not part of the website.
+# Development-only files must never enter the production deployment bundle.
+.agents/
+.claude/
+.vscode/
+.idea/
 docs/
+tests/
+scripts/
+skills/
+database/
+node_modules/
 
+# Local configuration and credentials
+.env
+.env.*
+.envrc
+*.local
+*.secret
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+credentials*.json
+service-account*.json
+.npmrc
+.netrc
+
+# Google Apps Script sources are deployed separately.
+*_gas.js
+
+# Local notes, caches and temporary files
+*_NOTES.md
+MAGICPH_ALLBOOKS_AUDIO_SYNC.md
+coverage/
+dist/
+*.log
+*.tmp
+*.bak
+*.orig
