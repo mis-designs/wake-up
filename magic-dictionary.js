@@ -7,13 +7,15 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function createMagicDictionary(root) {
   "use strict";
 
-  const VERSION = "1.1.0";
+  const VERSION = "1.2.0";
   const MANIFEST_URL = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const FALLBACK_URL = "/data/patente/quiz-help-runtime-v2.json";
   const STORAGE_PREFIX = "magicbook.wordLearning.v1";
   const GATE_INTERVAL_MS = 12 * 60 * 60 * 1000;
   const REQUIRED_CORRECT = 5;
   const CATALOG_LIMIT = 800;
+  const HISTORY_LIMIT = CATALOG_LIMIT;
+  const RECENT_REPEAT_GUARD = 50;
   const PAGE_SIZE = 60;
   const BASE_ENTRY_PATTERN = /^(?:w|gw)_/u;
   const AI_ENTRY_PATTERN = /^ai_kw_/u;
@@ -139,13 +141,25 @@
     return `${STORAGE_PREFIX}.${hashString(identity)}`;
   }
 
+  function normalizeHistory(history, limit = HISTORY_LIMIT) {
+    const seen = new Set();
+    const ordered = [];
+    for (const value of Array.isArray(history) ? history : []) {
+      const id = String(value || "").trim();
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      ordered.push(id);
+    }
+    return ordered.slice(-Math.max(REQUIRED_CORRECT, Number(limit) || HISTORY_LIMIT));
+  }
+
   function readPreference() {
     const value = parseJson(readLocal(preferenceKey()), {});
     return {
       disabled: value?.disabled === true,
       disabledAt: Number(value?.disabledAt || 0),
       lastCompletedAt: Number(value?.lastCompletedAt || 0),
-      history: Array.isArray(value?.history) ? value.history.filter(Boolean).slice(-100) : [],
+      history: normalizeHistory(value?.history),
       active: value?.active && typeof value.active === "object" ? value.active : null
     };
   }
@@ -155,7 +169,7 @@
       disabled: value?.disabled === true,
       disabledAt: Number(value?.disabledAt || 0),
       lastCompletedAt: Number(value?.lastCompletedAt || 0),
-      history: Array.isArray(value?.history) ? value.history.filter(Boolean).slice(-100) : [],
+      history: normalizeHistory(value?.history),
       active: value?.active && typeof value.active === "object" ? value.active : null
     }));
   }
@@ -164,7 +178,7 @@
     if (!isAuthenticated() || isTrialRoute()) return false;
     const preference = readPreference();
     if (preference.disabled) return false;
-    if (preference.active?.wordIds?.length === REQUIRED_CORRECT) return true;
+    if (preference.active?.manual !== true && preference.active?.wordIds?.length === REQUIRED_CORRECT) return true;
     return !preference.lastCompletedAt || now - preference.lastCompletedAt >= GATE_INTERVAL_MS;
   }
 
@@ -364,12 +378,36 @@
     return catalog.find(word => word.id === id) || null;
   }
 
+  function selectFreshWords(words, history = [], seed = VERSION) {
+    const knownIds = new Set();
+    const available = (Array.isArray(words) ? words : []).filter(word => {
+      const id = String(word?.id || "");
+      if (!id || knownIds.has(id)) return false;
+      knownIds.add(id);
+      return true;
+    });
+    const orderedHistory = normalizeHistory(history);
+    const seen = new Set(orderedHistory);
+    const fresh = available.filter(word => !seen.has(word.id));
+
+    if (fresh.length >= REQUIRED_CORRECT) {
+      return shuffled(fresh, `${seed}|fresh`).slice(0, REQUIRED_CORRECT);
+    }
+
+    const selected = shuffled(fresh, `${seed}|remaining-fresh`);
+    const selectedIds = new Set(selected.map(word => word.id));
+    const guardSize = Math.min(RECENT_REPEAT_GUARD, Math.max(0, available.length - REQUIRED_CORRECT));
+    const recentIds = new Set(orderedHistory.slice(-guardSize));
+    const recycled = available.filter(word => !selectedIds.has(word.id) && !recentIds.has(word.id));
+    return [
+      ...selected,
+      ...shuffled(recycled, `${seed}|new-cycle`).slice(0, REQUIRED_CORRECT - selected.length)
+    ];
+  }
+
   function chooseGateWords(preference, now = Date.now()) {
-    const previous = new Set(preference.history || []);
-    const fresh = catalog.filter(word => !previous.has(word.id));
-    const pool = fresh.length >= REQUIRED_CORRECT ? fresh : catalog;
     const seed = `${currentPhone()}|${Math.floor(now / GATE_INTERVAL_MS)}|${manifestInfo?.sha256 || VERSION}`;
-    return shuffled(pool, seed).slice(0, REQUIRED_CORRECT);
+    return selectFreshWords(catalog, preference.history, seed);
   }
 
   function createGateSession(preference, now = Date.now()) {
@@ -408,22 +446,54 @@
           <img src="icons/go-back.png" alt="">
         </button>
         <div><small>MAGIC BOOK</small><h1 id="magicDictionaryTitle">Dizionario italiano–বাংলা</h1></div>
-        <button id="magicDictionaryPractice" class="magic-dictionary-practice" type="button">Ripassa 5 parole</button>
       </header>
       <main class="magic-dictionary-main">
-        <section class="magic-dictionary-hero">
-          <div><span>DIZIONARIO DELLA PATENTE</span><h2>Parole e locuzioni</h2><p>Traduzioni italiano–Bangla utilizzate nei quiz e aggiornate dallo stesso catalogo.</p></div>
-          <div class="magic-dictionary-total"><strong id="magicDictionaryTotal">—</strong><span>voci disponibili</span></div>
+        <section class="magic-dictionary-dashboard" aria-labelledby="magicDictionaryOverviewTitle">
+          <article class="magic-dictionary-overview">
+            <span class="magic-dictionary-eyebrow"><i></i> ITALIANO · বাংলা</span>
+            <h2 id="magicDictionaryOverviewTitle">Costruisci il tuo vocabolario della patente.</h2>
+            <p>Le stesse traduzioni utilizzate nei quiz, organizzate per imparare e ripassare con continuità.</p>
+            <div class="magic-dictionary-metrics">
+              <div><strong id="magicDictionaryTotal">—</strong><span>Voci disponibili</span></div>
+              <div><strong id="magicDictionaryLearned">0</strong><span>Già viste</span></div>
+            </div>
+          </article>
+          <article class="magic-dictionary-plan">
+            <div class="magic-dictionary-plan-top">
+              <span class="magic-dictionary-plan-icon" aria-hidden="true">Aa</span>
+              <span class="magic-dictionary-plan-chip">OGNI 12 ORE</span>
+            </div>
+            <h2>Ripasso rapido</h2>
+            <p id="magicDictionaryNextReview">Disponibile ora</p>
+            <div class="magic-dictionary-goal">
+              <div id="magicDictionaryProgressRing" class="magic-dictionary-progress-ring"><strong id="magicDictionaryProgress">0%</strong></div>
+              <div><strong>5 parole nuove</strong><span>Circa 2 minuti</span></div>
+            </div>
+            <button id="magicDictionaryPractice" class="magic-dictionary-practice" type="button"><span>Inizia il ripasso</span><small>5 parole</small></button>
+          </article>
+        </section>
+        <section class="magic-dictionary-featured" aria-label="Parola in evidenza">
+          <div id="magicDictionaryFeaturedSymbol" class="magic-dictionary-featured-symbol" aria-hidden="true">Aa</div>
+          <div class="magic-dictionary-featured-copy">
+            <span id="magicDictionaryFeaturedKind">PAROLA IN EVIDENZA</span>
+            <h2 id="magicDictionaryFeaturedItalian">—</h2>
+            <strong id="magicDictionaryFeaturedBangla" lang="bn">—</strong>
+            <p id="magicDictionaryFeaturedMeaning" lang="bn"></p>
+          </div>
+          <small>Dal catalogo dei quiz</small>
         </section>
         <section class="magic-dictionary-tools" aria-label="Cerca e filtra">
-          <label><span class="sr-only">Cerca nel dizionario</span><input id="magicDictionarySearch" type="search" placeholder="Cerca in italiano o Bangla…" autocomplete="off"></label>
+          <label class="magic-dictionary-search"><span class="sr-only">Cerca nel dizionario</span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2"></circle><path d="M16 16L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg><input id="magicDictionarySearch" type="search" placeholder="Cerca in italiano o Bangla…" autocomplete="off"></label>
           <div id="magicDictionaryFilters" class="magic-dictionary-filters" role="group" aria-label="Tipo di voce">
             <button class="is-active" type="button" data-filter="all">Tutte</button>
             <button type="button" data-filter="word">Parole</button>
             <button type="button" data-filter="phrase">Locuzioni</button>
           </div>
         </section>
-        <p id="magicDictionaryStatus" class="magic-dictionary-status" role="status">Caricamento del dizionario…</p>
+        <section class="magic-dictionary-list-heading">
+          <div><span>VOCABOLARIO</span><h2>Esplora tutte le voci</h2></div>
+          <p id="magicDictionaryStatus" class="magic-dictionary-status" role="status">Caricamento del dizionario…</p>
+        </section>
         <div id="magicDictionaryList" class="magic-dictionary-list"></div>
         <button id="magicDictionaryMore" class="magic-dictionary-more hidden" type="button">Mostra altre parole</button>
         <section class="magic-dictionary-settings">
@@ -578,7 +648,11 @@
     const preference = readPreference();
     const completedIds = [...(activeQuiz?.wordIds || [])];
     preference.lastCompletedAt = Date.now();
-    preference.history = [...preference.history, ...completedIds].slice(-100);
+    const completed = new Set(completedIds);
+    preference.history = normalizeHistory([
+      ...preference.history.filter(id => !completed.has(id)),
+      ...completedIds
+    ]);
     preference.active = null;
     writePreference(preference);
     activeQuiz = null;
@@ -594,7 +668,10 @@
         <h2 id="magicWordGateTitle">5 parole ripassate</h2>
         <p>Ottimo lavoro. Puoi continuare a consultare il dizionario.</p>
         <button id="magicWordGateEnter" class="magic-word-primary" type="button">Torna al dizionario</button>`;
-      root.document.getElementById("magicWordGateEnter")?.addEventListener("click", () => setGateOpen(false));
+      root.document.getElementById("magicWordGateEnter")?.addEventListener("click", () => {
+        setGateOpen(false);
+        renderDictionary();
+      });
       root.document.getElementById("magicWordGateEnter")?.focus();
       return;
     }
@@ -690,6 +767,71 @@
       .replace(/'/gu, "&#39;");
   }
 
+  function dictionaryLearningStats(words, preference, now = Date.now()) {
+    const availableIds = new Set((Array.isArray(words) ? words : []).map(word => word?.id).filter(Boolean));
+    const learned = normalizeHistory(preference?.history).filter(id => availableIds.has(id)).length;
+    const total = availableIds.size;
+    const percent = total ? Math.min(100, Math.round((learned / total) * 100)) : 0;
+    const lastCompletedAt = Number(preference?.lastCompletedAt || 0);
+    let nextReview = "Disponibile ora";
+
+    if (preference?.disabled === true) {
+      nextReview = "Ripasso disattivato";
+    } else if (lastCompletedAt > 0) {
+      const remainingMinutes = Math.ceil(Math.max(0, lastCompletedAt + GATE_INTERVAL_MS - now) / 60000);
+      if (remainingMinutes > 0) {
+        const hours = Math.floor(remainingMinutes / 60);
+        const minutes = remainingMinutes % 60;
+        nextReview = hours > 0
+          ? `Tra ${hours} h${minutes ? ` ${minutes} min` : ""}`
+          : `Tra ${Math.max(1, minutes)} min`;
+      }
+    }
+
+    return { learned, total, percent, nextReview };
+  }
+
+  function featuredDictionaryWord(now = Date.now()) {
+    if (!catalog.length) return null;
+    const date = new Date(now);
+    const dayKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+    return shuffled(catalog, `featured|${dayKey}|${manifestInfo?.sha256 || VERSION}`)[0] || null;
+  }
+
+  function updateDictionaryDashboard(preference = readPreference()) {
+    if (!catalog.length) return;
+    const stats = dictionaryLearningStats(catalog, preference);
+    const total = root.document?.getElementById("magicDictionaryTotal");
+    const learned = root.document?.getElementById("magicDictionaryLearned");
+    const progress = root.document?.getElementById("magicDictionaryProgress");
+    const ring = root.document?.getElementById("magicDictionaryProgressRing");
+    const nextReview = root.document?.getElementById("magicDictionaryNextReview");
+    const featured = featuredDictionaryWord();
+
+    if (total) {
+      total.textContent = String(stats.total);
+      total.setAttribute("aria-label", `${stats.total} voci sincronizzate`);
+    }
+    if (learned) learned.textContent = String(stats.learned);
+    if (progress) progress.textContent = `${stats.percent}%`;
+    if (ring) ring.style.setProperty("--dictionary-progress", `${stats.percent}%`);
+    if (nextReview) nextReview.textContent = stats.nextReview;
+
+    if (featured) {
+      const phrase = featured.type === "phrase";
+      const symbol = root.document?.getElementById("magicDictionaryFeaturedSymbol");
+      const kind = root.document?.getElementById("magicDictionaryFeaturedKind");
+      const italian = root.document?.getElementById("magicDictionaryFeaturedItalian");
+      const bangla = root.document?.getElementById("magicDictionaryFeaturedBangla");
+      const meaning = root.document?.getElementById("magicDictionaryFeaturedMeaning");
+      if (symbol) symbol.textContent = phrase ? "“”" : "Aa";
+      if (kind) kind.textContent = phrase ? "LOCUZIONE IN EVIDENZA" : "PAROLA IN EVIDENZA";
+      if (italian) italian.textContent = featured.it;
+      if (bangla) bangla.textContent = featured.bn;
+      if (meaning) meaning.textContent = featured.simpleBn;
+    }
+  }
+
   function filteredDictionaryWords() {
     const input = root.document?.getElementById("magicDictionarySearch");
     const query = String(input?.value || "").normalize("NFKC").trim().toLocaleLowerCase("it-IT");
@@ -709,8 +851,6 @@
 
     const filtered = filteredDictionaryWords();
     const visible = filtered.slice(0, dictionaryVisibleCount);
-    total.textContent = String(catalog.length);
-    total.setAttribute("aria-label", `${catalog.length} voci sincronizzate`);
     status.textContent = filtered.length === catalog.length
       ? `${catalog.length} parole e locuzioni sincronizzate`
       : `${filtered.length} risultati`;
@@ -719,8 +859,8 @@
       list.innerHTML = `<p class="magic-dictionary-empty">Nessuna parola trovata.</p>`;
     } else {
       list.innerHTML = visible.map(word => `
-        <article class="magic-dictionary-word">
-          <div><small>${word.type === "phrase" ? "LOCUZIONE" : "PAROLA"}</small><h3>${escapeHtml(word.it)}</h3></div>
+        <article class="magic-dictionary-word is-${word.type}">
+          <div class="magic-dictionary-term"><span aria-hidden="true">${word.type === "phrase" ? "&ldquo;&rdquo;" : "Aa"}</span><div><small>${word.type === "phrase" ? "LOCUZIONE" : "PAROLA"}</small><h3>${escapeHtml(word.it)}</h3></div></div>
           <div lang="bn"><strong>${escapeHtml(word.bn)}</strong><p>${escapeHtml(word.simpleBn)}</p></div>
         </article>`).join("");
     }
@@ -736,6 +876,7 @@
       ? "Disattivato su questo dispositivo"
       : "Attivo · 5 parole prima dell’accesso";
     enable?.classList.toggle("hidden", !preference.disabled);
+    updateDictionaryDashboard(preference);
   }
 
   async function showDictionary(options = {}) {
@@ -766,7 +907,7 @@
     try {
       await loadCatalog();
       const preference = readPreference();
-      activeQuiz = createGateSession({ ...preference, history: [] });
+      activeQuiz = createGateSession(preference);
       activeQuiz.manual = true;
       renderGateQuestion();
     } catch (error) {
@@ -847,7 +988,10 @@
     startManualPractice,
     __test: {
       hashString,
+      dictionaryLearningStats,
+      normalizeHistory,
       normalizeItalian,
+      selectFreshWords,
       seededRandom,
       shuffled
     }

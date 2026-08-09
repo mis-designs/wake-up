@@ -49,9 +49,53 @@ test("the authenticated learning gate requires five correct words every twelve h
   storage.set(preferenceKey, JSON.stringify({ lastCompletedAt: 0, disabled: true }));
   assert.equal(feature.isGateDue(now), false);
 
+  storage.set(preferenceKey, JSON.stringify({
+    lastCompletedAt: now,
+    disabled: false,
+    active: { manual: true, wordIds: ["w1", "w2", "w3", "w4", "w5"] }
+  }));
+  assert.equal(feature.isGateDue(now), false, "manual practice must not become an access gate after refresh");
+
   storage.set("user_session", JSON.stringify({ phone, role: "admin" }));
   storage.delete(preferenceKey);
   assert.equal(feature.isGateDue(now), true, "the learning gate also applies to administrators");
+});
+
+test("consecutive sessions select five new words and only recycle after the catalog is exhausted", () => {
+  const words = Array.from({ length: 80 }, (_, index) => ({ id: `word-${index}` }));
+  const first = feature.__test.selectFreshWords(words, [], "same-period");
+  const firstIds = first.map(word => word.id);
+  const second = feature.__test.selectFreshWords(words, firstIds, "same-period");
+
+  assert.equal(first.length, 5);
+  assert.equal(second.length, 5);
+  assert.equal(second.some(word => firstIds.includes(word.id)), false);
+
+  const almostComplete = words.slice(0, 78).map(word => word.id);
+  const rollover = feature.__test.selectFreshWords(words, almostComplete, "rollover");
+  const rolloverIds = rollover.map(word => word.id);
+  const recent = new Set(almostComplete.slice(-50));
+  assert.ok(rolloverIds.includes("word-78"));
+  assert.ok(rolloverIds.includes("word-79"));
+  assert.equal(rolloverIds.some(id => recent.has(id)), false);
+  assert.equal(new Set(rolloverIds).size, 5);
+  assert.doesNotMatch(source, /createGateSession\(\{ \.\.\.preference, history: \[\] \}\)/u);
+});
+
+test("dictionary dashboard reports real catalog progress and review timing", () => {
+  const words = Array.from({ length: 20 }, (_, index) => ({ id: `word-${index}` }));
+  const now = Date.now();
+  const stats = feature.__test.dictionaryLearningStats(words, {
+    history: ["word-0", "word-1", "word-2", "word-3", "word-4", "removed-word"],
+    lastCompletedAt: now,
+    disabled: false
+  }, now);
+
+  assert.equal(stats.total, 20);
+  assert.equal(stats.learned, 5);
+  assert.equal(stats.percent, 25);
+  assert.match(stats.nextReview, /^Tra 12 h$/u);
+  assert.equal(feature.__test.dictionaryLearningStats(words, { disabled: true }, now).nextReview, "Ripasso disattivato");
 });
 
 test("the local fallback remains a valid non-grammar Italian-Bangla dictionary", () => {
@@ -109,17 +153,20 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(index, /premium-new-badge home-dictionary-new-badge/u);
   assert.doesNotMatch(index, /home-dictionary-mark/u);
   assert.match(index, /openDictionaryFromMenu\(\)/u);
-  assert.match(index, /magic-dictionary\.js\?v=1\.1\.0/u);
+  assert.match(index, /magic-dictionary\.js\?v=1\.2\.0/u);
   assert.match(script, /state\.screen === "dictionary"/u);
   assert.match(script, /MagicDictionaryFeature\?\.onAuthenticated/u);
-  assert.match(quiz, /magic-dictionary\.js\?v=1\.1\.0/u);
-  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.1\.0/u);
-  assert.match(worker, /magicbook-pwa-v52-dictionary-new-badge/u);
-  assert.match(worker, /magic-dictionary\.css\?v=1\.1\.1/u);
+  assert.match(quiz, /magic-dictionary\.js\?v=1\.2\.0/u);
+  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.2\.0/u);
+  assert.match(worker, /magicbook-pwa-v54-dictionary-learning-dashboard/u);
+  assert.match(worker, /magic-dictionary\.css\?v=1\.2\.0/u);
   assert.ok(vercel.rewrites.some(route => route.source === "/dizionario" && route.destination === "/"));
   assert.match(redirects, /^\/dizionario \/index\.html 200$/mu);
   assert.match(source, /magic-word-unlock/u);
   assert.match(source, /openHomeAfterUnlock/u);
+  assert.match(source, /magic-dictionary-dashboard/u);
+  assert.match(source, /magicDictionaryFeaturedItalian/u);
+  assert.match(source, /magicDictionaryProgressRing/u);
   assert.match(source, /Non voglio imparare/u);
   assert.match(source, /Sei sicuro\?/u);
   assert.match(source, /Sì, disattiva/u);
