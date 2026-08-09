@@ -51,7 +51,7 @@ test("the authenticated learning gate requires five correct words every twelve h
 
   storage.set("user_session", JSON.stringify({ phone, role: "admin" }));
   storage.delete(preferenceKey);
-  assert.equal(feature.isGateDue(now), false);
+  assert.equal(feature.isGateDue(now), true, "the learning gate also applies to administrators");
 });
 
 test("the local fallback remains a valid non-grammar Italian-Bangla dictionary", () => {
@@ -105,13 +105,13 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
 
   assert.match(index, /home-dictionary-entry/u);
   assert.match(index, /openDictionaryFromMenu\(\)/u);
-  assert.match(index, /magic-dictionary\.js\?v=1\.0\.0/u);
+  assert.match(index, /magic-dictionary\.js\?v=1\.0\.1/u);
   assert.match(script, /state\.screen === "dictionary"/u);
   assert.match(script, /MagicDictionaryFeature\?\.onAuthenticated/u);
-  assert.match(quiz, /magic-dictionary\.js\?v=1\.0\.0/u);
-  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.0\.0/u);
-  assert.match(worker, /magicbook-pwa-v49-dictionary-gate/u);
-  assert.match(worker, /magic-dictionary\.css\?v=1\.0\.0/u);
+  assert.match(quiz, /magic-dictionary\.js\?v=1\.0\.1/u);
+  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.0\.1/u);
+  assert.match(worker, /magicbook-pwa-v50-admin-dictionary-gate/u);
+  assert.match(worker, /magic-dictionary\.css\?v=1\.0\.1/u);
   assert.match(source, /Non voglio imparare/u);
   assert.match(source, /Sei sicuro\?/u);
   assert.match(source, /Sì, disattiva/u);

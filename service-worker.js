@@ -1,10 +1,10 @@
-const CACHE_NAME = "magicbook-pwa-v49-dictionary-gate";
+const CACHE_NAME = "magicbook-pwa-v50-admin-dictionary-gate";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
   "/style.css?v=38-quiz-mode-icons",
-  "/magic-dictionary.css?v=1.0.0",
+  "/magic-dictionary.css?v=1.0.1",
   "/homebg.css?v=3",
   "/mystyle.css?v=26",
   "/script.js?v=23-magic-dictionary",
@@ -18,7 +18,7 @@ const STATIC_ASSETS = [
   "/patenteGlossaryResolver.js?v=1.0.0",
   "/patenteContextResolverV3.js?v=3.0.1-keywords-fix",
   "/quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity",
-  "/magic-dictionary.js?v=1.0.0",
+  "/magic-dictionary.js?v=1.0.1",
   "/data/patente/quiz-help-runtime-v2.json",
   "/manifest.webmanifest?v=16",
   "/icons/mg_logo.png",

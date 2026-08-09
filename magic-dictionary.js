@@ -7,7 +7,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function createMagicDictionary(root) {
   "use strict";
 
-  const VERSION = "1.0.0";
+  const VERSION = "1.0.1";
   const MANIFEST_URL = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const FALLBACK_URL = "/data/patente/quiz-help-runtime-v2.json";
   const STORAGE_PREFIX = "magicbook.wordLearning.v1";
@@ -129,11 +129,6 @@
     return Boolean(currentPhone() && (readLocal("loggedIn") === "true" || storedSession().phone));
   }
 
-  function isAdminSession() {
-    const session = storedSession();
-    return String(session.role || "").toLocaleLowerCase("it-IT") === "admin";
-  }
-
   function isTrialRoute() {
     const path = String(root.location?.pathname || "");
     return path.startsWith("/prova-gratis") || path.includes("prova-gratis");
@@ -166,7 +161,7 @@
   }
 
   function isGateDue(now = Date.now()) {
-    if (!isAuthenticated() || isAdminSession() || isTrialRoute()) return false;
+    if (!isAuthenticated() || isTrialRoute()) return false;
     const preference = readPreference();
     if (preference.disabled) return false;
     if (preference.active?.wordIds?.length === REQUIRED_CORRECT) return true;
