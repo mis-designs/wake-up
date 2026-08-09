@@ -1,10 +1,10 @@
-const CACHE_NAME = "magicbook-pwa-v51-dictionary-professional";
+const CACHE_NAME = "magicbook-pwa-v52-dictionary-new-badge";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
   "/style.css?v=38-quiz-mode-icons",
-  "/magic-dictionary.css?v=1.1.0",
+  "/magic-dictionary.css?v=1.1.1",
   "/homebg.css?v=3",
   "/mystyle.css?v=26",
   "/script.js?v=25-dictionary-professional",

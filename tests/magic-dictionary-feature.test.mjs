@@ -106,14 +106,16 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   const redirects = fs.readFileSync(path.join(root, "_redirects"), "utf8");
 
   assert.match(index, /home-dictionary-entry/u);
+  assert.match(index, /premium-new-badge home-dictionary-new-badge/u);
+  assert.doesNotMatch(index, /home-dictionary-mark/u);
   assert.match(index, /openDictionaryFromMenu\(\)/u);
   assert.match(index, /magic-dictionary\.js\?v=1\.1\.0/u);
   assert.match(script, /state\.screen === "dictionary"/u);
   assert.match(script, /MagicDictionaryFeature\?\.onAuthenticated/u);
   assert.match(quiz, /magic-dictionary\.js\?v=1\.1\.0/u);
   assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.1\.0/u);
-  assert.match(worker, /magicbook-pwa-v51-dictionary-professional/u);
-  assert.match(worker, /magic-dictionary\.css\?v=1\.1\.0/u);
+  assert.match(worker, /magicbook-pwa-v52-dictionary-new-badge/u);
+  assert.match(worker, /magic-dictionary\.css\?v=1\.1\.1/u);
   assert.ok(vercel.rewrites.some(route => route.source === "/dizionario" && route.destination === "/"));
   assert.match(redirects, /^\/dizionario \/index\.html 200$/mu);
   assert.match(source, /magic-word-unlock/u);
