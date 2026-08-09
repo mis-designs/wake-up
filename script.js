@@ -4850,7 +4850,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-      .register("/service-worker.js?v=24-admin-dictionary", { updateViaCache: "none" })
+      .register("/service-worker.js?v=25-dictionary-professional", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });

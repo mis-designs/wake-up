@@ -102,16 +102,22 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   const quiz = fs.readFileSync(path.join(root, "quiz.html"), "utf8");
   const studyQuiz = fs.readFileSync(path.join(root, "study-quiz.html"), "utf8");
   const worker = fs.readFileSync(path.join(root, "service-worker.js"), "utf8");
+  const vercel = JSON.parse(fs.readFileSync(path.join(root, "vercel.json"), "utf8"));
+  const redirects = fs.readFileSync(path.join(root, "_redirects"), "utf8");
 
   assert.match(index, /home-dictionary-entry/u);
   assert.match(index, /openDictionaryFromMenu\(\)/u);
-  assert.match(index, /magic-dictionary\.js\?v=1\.0\.1/u);
+  assert.match(index, /magic-dictionary\.js\?v=1\.1\.0/u);
   assert.match(script, /state\.screen === "dictionary"/u);
   assert.match(script, /MagicDictionaryFeature\?\.onAuthenticated/u);
-  assert.match(quiz, /magic-dictionary\.js\?v=1\.0\.1/u);
-  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.0\.1/u);
-  assert.match(worker, /magicbook-pwa-v50-admin-dictionary-gate/u);
-  assert.match(worker, /magic-dictionary\.css\?v=1\.0\.1/u);
+  assert.match(quiz, /magic-dictionary\.js\?v=1\.1\.0/u);
+  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.1\.0/u);
+  assert.match(worker, /magicbook-pwa-v51-dictionary-professional/u);
+  assert.match(worker, /magic-dictionary\.css\?v=1\.1\.0/u);
+  assert.ok(vercel.rewrites.some(route => route.source === "/dizionario" && route.destination === "/"));
+  assert.match(redirects, /^\/dizionario \/index\.html 200$/mu);
+  assert.match(source, /magic-word-unlock/u);
+  assert.match(source, /openHomeAfterUnlock/u);
   assert.match(source, /Non voglio imparare/u);
   assert.match(source, /Sei sicuro\?/u);
   assert.match(source, /Sì, disattiva/u);

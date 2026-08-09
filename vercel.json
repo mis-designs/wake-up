@@ -34,6 +34,15 @@
       ]
     },
     {
+      "source": "/dizionario",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/quiz.html",
       "headers": [
         {
@@ -180,6 +189,10 @@
     },
     {
       "source": "/capitoli",
+      "destination": "/"
+    },
+    {
+      "source": "/dizionario",
       "destination": "/"
     },
     {

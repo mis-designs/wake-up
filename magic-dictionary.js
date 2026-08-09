@@ -7,7 +7,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function createMagicDictionary(root) {
   "use strict";
 
-  const VERSION = "1.0.1";
+  const VERSION = "1.1.0";
   const MANIFEST_URL = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const FALLBACK_URL = "/data/patente/quiz-help-runtime-v2.json";
   const STORAGE_PREFIX = "magicbook.wordLearning.v1";
@@ -407,13 +407,13 @@
         <button id="magicDictionaryBack" class="magic-dictionary-back" type="button" aria-label="Indietro">
           <img src="icons/go-back.png" alt="">
         </button>
-        <div><small>ITALIANO · বাংলা</small><h1 id="magicDictionaryTitle">Dizionario</h1></div>
-        <button id="magicDictionaryPractice" class="magic-dictionary-practice" type="button">Allenati · 5</button>
+        <div><small>MAGIC BOOK</small><h1 id="magicDictionaryTitle">Dizionario italiano–বাংলা</h1></div>
+        <button id="magicDictionaryPractice" class="magic-dictionary-practice" type="button">Ripassa 5 parole</button>
       </header>
       <main class="magic-dictionary-main">
         <section class="magic-dictionary-hero">
-          <div><span>PAROLE DELLA PATENTE</span><h2>Impara poco, ricorda a lungo.</h2><p>Le stesse traduzioni verificate usate nei quiz, sempre sincronizzate.</p></div>
-          <strong id="magicDictionaryTotal">—</strong>
+          <div><span>DIZIONARIO DELLA PATENTE</span><h2>Parole e locuzioni</h2><p>Traduzioni italiano–Bangla utilizzate nei quiz e aggiornate dallo stesso catalogo.</p></div>
+          <div class="magic-dictionary-total"><strong id="magicDictionaryTotal">—</strong><span>voci disponibili</span></div>
         </section>
         <section class="magic-dictionary-tools" aria-label="Cerca e filtra">
           <label><span class="sr-only">Cerca nel dizionario</span><input id="magicDictionarySearch" type="search" placeholder="Cerca in italiano o Bangla…" autocomplete="off"></label>
@@ -558,7 +558,23 @@
     }, 650);
   }
 
+  function openHomeAfterUnlock() {
+    const gate = root.document?.getElementById("magicWordGate");
+    gate?.classList.add("is-unlocking");
+    root.setTimeout(() => {
+      setGateOpen(false);
+      gate?.classList.remove("is-unlocking");
+      if (typeof root.showHome === "function") {
+        root.showHome();
+        return;
+      }
+      if (typeof root.location?.assign === "function") root.location.assign("/home");
+      else if (root.location) root.location.href = "/home";
+    }, 280);
+  }
+
   function finishGateSession() {
+    const manualSession = activeQuiz?.manual === true;
     const preference = readPreference();
     const completedIds = [...(activeQuiz?.wordIds || [])];
     preference.lastCompletedAt = Date.now();
@@ -571,14 +587,30 @@
     if (meter) meter.style.width = "100%";
     const content = gateContent();
     if (!content) return;
+    if (manualSession) {
+      content.innerHTML = `
+        <span class="magic-word-kicker">ALLENAMENTO COMPLETATO</span>
+        <div class="magic-word-symbol is-success">✓</div>
+        <h2 id="magicWordGateTitle">5 parole ripassate</h2>
+        <p>Ottimo lavoro. Puoi continuare a consultare il dizionario.</p>
+        <button id="magicWordGateEnter" class="magic-word-primary" type="button">Torna al dizionario</button>`;
+      root.document.getElementById("magicWordGateEnter")?.addEventListener("click", () => setGateOpen(false));
+      root.document.getElementById("magicWordGateEnter")?.focus();
+      return;
+    }
+
     content.innerHTML = `
-      <span class="magic-word-kicker">COMPLETATO</span>
-      <div class="magic-word-symbol is-success">✓</div>
-      <h2 id="magicWordGateTitle">5 parole imparate</h2>
-      <p>Ottimo lavoro. Ora puoi usare tutti i servizi di Magic Book.</p>
-      <button id="magicWordGateEnter" class="magic-word-primary" type="button">Entra in Magic Book</button>`;
-    root.document.getElementById("magicWordGateEnter")?.addEventListener("click", () => setGateOpen(false));
-    root.document.getElementById("magicWordGateEnter")?.focus();
+      <span class="magic-word-kicker">ACCESSO COMPLETATO</span>
+      <div class="magic-word-unlock" aria-hidden="true">
+        <span class="magic-word-unlock-shackle"></span>
+        <span class="magic-word-unlock-body"><i></i></span>
+      </div>
+      <h2 id="magicWordGateTitle">Accesso sbloccato</h2>
+      <p>Hai completato le 5 parole. Apertura della Home…</p>
+      <div class="magic-word-unlock-line" aria-hidden="true"><span></span></div>`;
+
+    const reducedMotion = root.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+    root.setTimeout(openHomeAfterUnlock, reducedMotion ? 240 : 1650);
   }
 
   function renderOptOutConfirmation() {
