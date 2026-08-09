@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "security:audit": "node --test tests/repository-security.test.mjs tests/security.test.mjs tests/trial-access-security.test.mjs tests/trial-book-security.test.mjs tests/trial-security.test.mjs tests/upstream-fetch.test.mjs"
+    "security:audit": "node --test tests/repository-security.test.mjs tests/security.test.mjs tests/trial-access-security.test.mjs tests/trial-book-security.test.mjs tests/trial-security.test.mjs tests/upstream-fetch.test.mjs",
+    "test:dictionary-gate": "node --test tests/magic-dictionary-feature.test.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1088.0",

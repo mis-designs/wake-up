@@ -92,6 +92,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <meta name="apple-mobile-web-app-title" content="MagicBook">
 <link rel="stylesheet" href="style.css?v=38-quiz-mode-icons">
 <link rel="stylesheet" href="homebg.css?v=3">
+<link rel="stylesheet" href="magic-dictionary.css?v=1.0.0">
 </head>
 <body>
 
@@ -575,6 +576,11 @@ gtag('config', 'G-C5JPY9HFHD', {
     <button class="home-start-btn" onclick="showChapters()" type="button" aria-label="Apri Magic Book">
       <img src="assets/images/startbtn.gif" alt="">
     </button>
+    <button class="home-dictionary-entry" onclick="showMagicDictionary()" type="button" aria-label="Apri il dizionario italiano Bangla">
+      <span aria-hidden="true">A · অ</span>
+      <strong>Dizionario</strong>
+      <small>Impara le parole della patente</small>
+    </button>
   </div>
   <a class="watermark-link" data-nosnippet href="https://www.facebook.com/share/14aaeMyWJGw/" target="_blank" rel="noopener noreferrer">
     By MiskatDesigns
@@ -874,6 +880,10 @@ gtag('config', 'G-C5JPY9HFHD', {
       <img src="icons/false.png" alt="" class="menu-icon">
       <span>Quiz — Practice Mode</span>
     </div>
+    <div class="menu-item menu-dictionary" onclick="openDictionaryFromMenu()">
+      <img src="icons/study_quiz.png" alt="" class="menu-icon">
+      <span>Dizionario — Italiano · বাংলা</span>
+    </div>
   </div>
 </div>
 
@@ -1038,6 +1048,8 @@ gtag('config', 'G-C5JPY9HFHD', {
   </div>
 </div>
 
-<script src="script.js?v=22-explanation-figures"></script>
+<script src="patenteGlossaryResolver.js?v=1.0.0"></script>
+<script src="magic-dictionary.js?v=1.0.0"></script>
+<script src="script.js?v=23-magic-dictionary"></script>
 </body>
 </html>

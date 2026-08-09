@@ -44,6 +44,7 @@ function getAppRoute(state = {}) {
   if (state.screen === "trialHub") return "/prova-gratis";
   if (state.screen === "home") return "/home";
   if (state.screen === "chapters") return "/magic-book";
+  if (state.screen === "dictionary") return "/dizionario";
   if (state.screen === "admin") return "/admin";
   if (state.screen === "exam") return "/magic-book/esame-pdf";
   if (state.screen === "viewer" && state.chapter) return getChapterPath(state.chapter);
@@ -57,6 +58,7 @@ function getRouteTitle(state = {}) {
   if (state.screen === "about") return `${APP_TITLE} | About`;
   if (state.screen === "home") return `${APP_TITLE} | Home`;
   if (state.screen === "chapters") return `${APP_TITLE} | Capitoli`;
+  if (state.screen === "dictionary") return `${APP_TITLE} | Dizionario`;
   if (state.screen === "admin") return `${APP_TITLE} | Admin`;
   if (state.screen === "exam") return `${APP_TITLE} | Esame PDF`;
   if (state.screen === "viewer" && state.chapter) return `${APP_TITLE} | Capitolo ${state.chapter}`;
@@ -86,6 +88,7 @@ function getRouteStateFromLocation() {
   }
   if (path === "/magic-book/esame-pdf") return { screen: "exam" };
   if (path === "/magic-book" || path === "/capitoli") return { screen: "chapters" };
+  if (path === "/dizionario") return { screen: "dictionary" };
   if (path === "/admin") return { screen: "admin" };
   if (path === "/login") return { screen: "login" };
   if (path === "/join") return { screen: "join" };
@@ -113,6 +116,8 @@ function openRouteState(state = getRouteStateFromLocation()) {
       showAdminPanel();
     } else if (nextState.screen === "chapters") {
       showChapters();
+    } else if (nextState.screen === "dictionary") {
+      showMagicDictionary({ replace: true });
     } else if (nextState.screen === "viewer") {
       openMagicBookPages({ type: "chapter", chapter: nextState.chapter });
     } else if (nextState.screen === "exam") {
@@ -542,6 +547,7 @@ window.addEventListener("load", async () => {
 
   if ((session || logged === "true") && phone && deviceId) {
     openRouteState(getRouteStateFromLocation());
+    void window.MagicDictionaryFeature?.onAuthenticated();
     checkRenewReminder();
     startAccessValidationTimer();
     // Always reconcile a restored session once with the server. This repairs
@@ -746,6 +752,7 @@ function completeLogin(phone, deviceId, data) {
   hideAdminPasswordUI();
   hideOtpUI();
   openRouteState(getRouteStateFromLocation());
+  void window.MagicDictionaryFeature?.onAuthenticated();
   startAccessValidationTimer();
   void warmExplanationFiguresCache();
   checkRenewReminder(true);
@@ -2640,7 +2647,7 @@ function showWhatsAppGroupPopup() {
  ***********************/
 function hideAll() {
   cleanupMagicBookViewer();
-  ["landing", "about", "join", "login", "home", "chapters", "viewer", "adminPanel", "trialHub"].forEach(id => {
+  ["landing", "about", "join", "login", "home", "chapters", "viewer", "adminPanel", "trialHub", "magicDictionaryScreen"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.add("hidden");
   });
@@ -2675,6 +2682,23 @@ function showChapters() {
   setAppRoute({ screen: "chapters" });
   requestAnimationFrame(() => updateCardTrack());
   if (trialGuestMode) decorateGuestTrialUI();
+}
+
+function showMagicDictionary(options = {}) {
+  if (trialGuestMode) {
+    openTrialPaywall("Dizionario");
+    return;
+  }
+  const returnScreen = currentScreen === "home" ? "home" : "chapters";
+  hideAll();
+  setChapterMode(false);
+  document.body.classList.add("app-mode");
+  currentScreen = "dictionary";
+  updateProfileUI(true);
+  setProfileIconVisible(false);
+  setLoggedInChrome();
+  setAppRoute({ screen: "dictionary" }, { replace: options.replace === true });
+  window.MagicDictionaryFeature?.showDictionary({ returnScreen });
 }
 
 function isGuestTrialChapter(chapter) { return trialGuestMode && [2, 4].includes(Number(chapter)); }
@@ -3146,6 +3170,8 @@ function goBack() {
     showChapters();
   } else if (currentScreen === "chapters") {
     showHome();
+  } else if (currentScreen === "dictionary") {
+    showChapters();
   } else if (currentScreen === "join" || currentScreen === "login" || currentScreen === "about") {
     showLandingScreen();
   }
@@ -3182,6 +3208,11 @@ function openExamFromMenu() {
 function openQuizFromMenu() {
   closeChapterMenu();
   openQuiz();
+}
+
+function openDictionaryFromMenu() {
+  closeChapterMenu();
+  showMagicDictionary();
 }
 
 /***********************
@@ -4819,7 +4850,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-      .register("/service-worker.js?v=22-explanation-figures", { updateViaCache: "none" })
+      .register("/service-worker.js?v=23-magic-dictionary", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });

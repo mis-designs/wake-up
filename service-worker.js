@@ -1,12 +1,13 @@
-const CACHE_NAME = "magicbook-pwa-v48-cloudflare-figure-fix";
+const CACHE_NAME = "magicbook-pwa-v49-dictionary-gate";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
   "/style.css?v=38-quiz-mode-icons",
+  "/magic-dictionary.css?v=1.0.0",
   "/homebg.css?v=3",
   "/mystyle.css?v=26",
-  "/script.js?v=22-explanation-figures",
+  "/script.js?v=23-magic-dictionary",
   "/study-quiz.html",
   "/study-quiz.css?v=6-goal-card",
   "/study-quiz.js?v=7-translation-quality",
@@ -14,8 +15,10 @@ const STATIC_ASSETS = [
   "/quiz.js?v=55-cloudflare-figure-fix",
   "/quiz-help.css?v=20260714-magic-help-v4",
   "/quiz-help.js?v=20260805-translation-quality",
+  "/patenteGlossaryResolver.js?v=1.0.0",
   "/patenteContextResolverV3.js?v=3.0.1-keywords-fix",
   "/quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity",
+  "/magic-dictionary.js?v=1.0.0",
   "/data/patente/quiz-help-runtime-v2.json",
   "/manifest.webmanifest?v=16",
   "/icons/mg_logo.png",
