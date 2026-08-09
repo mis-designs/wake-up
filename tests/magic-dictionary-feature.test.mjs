@@ -153,13 +153,13 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(index, /premium-new-badge home-dictionary-new-badge/u);
   assert.doesNotMatch(index, /home-dictionary-mark/u);
   assert.match(index, /openDictionaryFromMenu\(\)/u);
-  assert.match(index, /magic-dictionary\.js\?v=1\.2\.0/u);
+  assert.match(index, /magic-dictionary\.js\?v=1\.2\.1/u);
   assert.match(script, /state\.screen === "dictionary"/u);
   assert.match(script, /MagicDictionaryFeature\?\.onAuthenticated/u);
-  assert.match(quiz, /magic-dictionary\.js\?v=1\.2\.0/u);
-  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.2\.0/u);
-  assert.match(worker, /magicbook-pwa-v54-dictionary-learning-dashboard/u);
-  assert.match(worker, /magic-dictionary\.css\?v=1\.2\.0/u);
+  assert.match(quiz, /magic-dictionary\.js\?v=1\.2\.1/u);
+  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.2\.1/u);
+  assert.match(worker, /magicbook-pwa-v55-dictionary-clean-cards/u);
+  assert.match(worker, /magic-dictionary\.css\?v=1\.2\.1/u);
   assert.ok(vercel.rewrites.some(route => route.source === "/dizionario" && route.destination === "/"));
   assert.match(redirects, /^\/dizionario \/index\.html 200$/mu);
   assert.match(source, /magic-word-unlock/u);
@@ -167,6 +167,8 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(source, /magic-dictionary-dashboard/u);
   assert.match(source, /magicDictionaryFeaturedItalian/u);
   assert.match(source, /magicDictionaryProgressRing/u);
+  assert.match(source, /<h1 id="magicDictionaryTitle">Dizionario<\/h1>/u);
+  assert.doesNotMatch(source, /magic-dictionary-term"><span/u);
   assert.match(source, /Non voglio imparare/u);
   assert.match(source, /Sei sicuro\?/u);
   assert.match(source, /Sì, disattiva/u);

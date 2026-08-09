@@ -7,7 +7,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function createMagicDictionary(root) {
   "use strict";
 
-  const VERSION = "1.2.0";
+  const VERSION = "1.2.1";
   const MANIFEST_URL = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const FALLBACK_URL = "/data/patente/quiz-help-runtime-v2.json";
   const STORAGE_PREFIX = "magicbook.wordLearning.v1";
@@ -445,7 +445,10 @@
         <button id="magicDictionaryBack" class="magic-dictionary-back" type="button" aria-label="Indietro">
           <img src="icons/go-back.png" alt="">
         </button>
-        <div><small>MAGIC BOOK</small><h1 id="magicDictionaryTitle">Dizionario italiano–বাংলা</h1></div>
+        <div class="magic-dictionary-header-title"><small>MAGIC BOOK</small><h1 id="magicDictionaryTitle">Dizionario</h1></div>
+        <div class="magic-dictionary-language-badge" aria-label="Italiano e Bangla">
+          <span>IT</span><i aria-hidden="true"></i><span lang="bn">বাংলা</span>
+        </div>
       </header>
       <main class="magic-dictionary-main">
         <section class="magic-dictionary-dashboard" aria-labelledby="magicDictionaryOverviewTitle">
@@ -860,7 +863,7 @@
     } else {
       list.innerHTML = visible.map(word => `
         <article class="magic-dictionary-word is-${word.type}">
-          <div class="magic-dictionary-term"><span aria-hidden="true">${word.type === "phrase" ? "&ldquo;&rdquo;" : "Aa"}</span><div><small>${word.type === "phrase" ? "LOCUZIONE" : "PAROLA"}</small><h3>${escapeHtml(word.it)}</h3></div></div>
+          <div class="magic-dictionary-term"><div><small>${word.type === "phrase" ? "LOCUZIONE" : "PAROLA"}</small><h3>${escapeHtml(word.it)}</h3></div></div>
           <div lang="bn"><strong>${escapeHtml(word.bn)}</strong><p>${escapeHtml(word.simpleBn)}</p></div>
         </article>`).join("");
     }
@@ -884,6 +887,8 @@
     dictionaryReturnScreen = options.returnScreen === "home" ? "home" : "chapters";
     const screen = root.document?.getElementById("magicDictionaryScreen");
     screen?.classList.remove("hidden");
+    if (screen) screen.scrollTop = 0;
+    root.scrollTo?.(0, 0);
     const status = root.document?.getElementById("magicDictionaryStatus");
     if (status) status.textContent = "Caricamento del dizionario…";
     try {
