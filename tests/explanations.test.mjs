@@ -7,6 +7,7 @@ import {
   normalizeExplanationFigure,
   normalizeFigureAssetName
 } from "../api/asset.js";
+import { getAdminItalianQuestionText } from "../api/quiz.js";
 
 test("quiz figure paths always resolve to the canonical Cloudflare basename", () => {
   for (const value of [37, "37", "fig37", "Fig-037.jpg", "Figure/fig37.jpg", "/img_sign/37.png"]) {
@@ -40,4 +41,20 @@ test("quiz data flows never read the database explanation column", () => {
 
   assert.doesNotMatch(apiSource, /getExplanationMappedValue|applyExplanationAvailabilityByFigure/);
   assert.doesNotMatch(gasSource, /q\.explanations|columns\.explanations|figuresWithExplanation/);
+});
+
+test("admin explanation cards can play only canonical Italian quiz questions", () => {
+  const clientSource = fs.readFileSync(new URL("../aggiungi-spiegazioni.js", import.meta.url), "utf8");
+  const apiSource = fs.readFileSync(new URL("../api/quiz.js", import.meta.url), "utf8");
+
+  assert.equal(getAdminItalianQuestionText("cap1_q1"), "La carreggiata non comprende le piste ciclabili");
+  assert.equal(getAdminItalianQuestionText("missing-question"), "");
+  assert.match(clientSource, /getAdminItalianQuestionAudio/);
+  assert.match(clientSource, /<span>Italiano<\/span>/);
+  assert.doesNotMatch(clientSource, /speechSynthesis|SpeechSynthesisUtterance/);
+  assert.match(
+    apiSource,
+    /action === "getAdminItalianQuestionAudio"[\s\S]*?requireQuizAudioAccess\(\{ phone, deviceId, accessToken, adminOnly: true \}\)/
+  );
+  assert.match(apiSource, /getAdminItalianQuestionText\(questionId\)/);
 });

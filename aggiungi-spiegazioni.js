@@ -7,6 +7,7 @@ const PAUSE_ICON = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><pat
 const SAVE_ICON = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 3h12l2 2v16H5V3Z" stroke="currentColor" stroke-width="2"/><path d="M8 3v6h8V3M8 21v-7h8v7" stroke="currentColor" stroke-width="2"/></svg>';
 const TRASH_ICON = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const RENEW_ICON = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.9-3M4 5v4h4M4 13a8 8 0 0 0 14.9 3M20 19v-4h-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const SPEAKER_ICON = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10H4Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 const FILTER_OPTIONS = [
   { value: "all", label: "Tutti i quiz" },
   { value: "missing", label: "Da aggiungere" },
@@ -24,7 +25,9 @@ const state = {
   reviewOpen: false,
   inline: null,
   activeQuestionId: null,
-  playing: null
+  playing: null,
+  playbackRequestId: 0,
+  italianAudioCache: new Map()
 };
 let dialogResolver = null;
 const DRAFT_DB = "magicph-quiz-audio-drafts";
@@ -295,10 +298,11 @@ function questionRow(question, position) {
   if (imageSource) { const image = document.createElement("img"); image.src = imageSource; image.alt = "Figura della domanda"; image.loading = "lazy"; image.onerror = () => image.remove(); copy.append(image); }
   const actions = document.createElement("div"); actions.className = "audio-admin-actions";
   const activeId = `chapter-${state.selected}-quiz-${question.id}`;
+  const italianPlayer = createItalianQuestionPlayer(question);
   if (isIdentityAvailable(question.identity)) {
-    const player = createAudioPlayer(question); const edit = iconButton("renew", "Registra di nuovo", RENEW_ICON); edit.addEventListener("click", () => beginInline(question, activeId)); actions.append(player, answerBadge(question.correct), edit);
+    const player = createAudioPlayer(question); const edit = iconButton("renew", "Registra di nuovo", RENEW_ICON); edit.addEventListener("click", () => beginInline(question, activeId)); actions.append(italianPlayer, player, answerBadge(question.correct), edit);
   } else {
-    const add = iconButton("add", "Aggiungi spiegazione", ADD_ICON); add.addEventListener("click", () => beginInline(question, activeId)); actions.append(answerBadge(question.correct), add);
+    const add = iconButton("add", "Aggiungi spiegazione", ADD_ICON); add.addEventListener("click", () => beginInline(question, activeId)); actions.append(italianPlayer, answerBadge(question.correct), add);
   }
   row.append(copy, actions);
   if (state.activeQuestionId === activeId) row.append(inlineRecorder());
@@ -308,6 +312,90 @@ function questionRow(question, position) {
 function stopCurrentPlayer(except = null) {
   if (!state.playing || state.playing === except) return;
   state.playing.audio.pause(); state.playing.button.classList.remove("is-playing"); state.playing = null;
+}
+
+function base64AudioUrl(base64) {
+  const binary = atob(String(base64 || ""));
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return URL.createObjectURL(new Blob([bytes], { type: "audio/mpeg" }));
+}
+
+function createItalianQuestionPlayer(question) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "audio-admin-italian-listen";
+  button.innerHTML = `${SPEAKER_ICON}<span>Italiano</span>`;
+  button.setAttribute("aria-label", "Ascolta la domanda in italiano");
+  button.title = "Ascolta la domanda in italiano";
+
+  const audio = new Audio();
+  audio.preload = "metadata";
+  let objectUrl = "";
+  const instance = { audio, button };
+  const questionId = String(question?.id ?? "").trim();
+  const clearSource = () => {
+    audio.pause();
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    objectUrl = "";
+    audio.removeAttribute("src");
+    audio.load();
+  };
+
+  button.addEventListener("click", async () => {
+    if (state.playing === instance && !audio.paused) {
+      state.playbackRequestId += 1;
+      audio.pause();
+      return;
+    }
+
+    const requestId = ++state.playbackRequestId;
+    stopCurrentPlayer(instance);
+    button.disabled = true;
+    button.classList.add("is-loading");
+    button.setAttribute("aria-label", "Caricamento audio italiano");
+    try {
+      let data = state.italianAudioCache.get(questionId);
+      if (!data) {
+        data = await api("getAdminItalianQuestionAudio", { questionId });
+        if (!data?.audio) throw new Error("italian_audio_unavailable");
+        state.italianAudioCache.set(questionId, data);
+      }
+      if (requestId !== state.playbackRequestId) return;
+      if (!audio.src) {
+        objectUrl = base64AudioUrl(data.audio);
+        audio.src = objectUrl;
+      }
+      state.playing = instance;
+      await audio.play();
+    } catch (error) {
+      clearSource();
+      console.error("[aggiungi-spiegazioni] italian_audio_unavailable", error);
+      await showProblem("Audio italiano non disponibile", "Riprova tra poco.", "");
+    } finally {
+      button.disabled = false;
+      button.classList.remove("is-loading");
+      if (!button.classList.contains("is-playing")) button.setAttribute("aria-label", "Ascolta la domanda in italiano");
+    }
+  });
+
+  audio.addEventListener("play", () => {
+    button.classList.add("is-playing");
+    button.setAttribute("aria-label", "Metti in pausa la domanda in italiano");
+  });
+  audio.addEventListener("pause", () => {
+    button.classList.remove("is-playing");
+    button.setAttribute("aria-label", "Ascolta la domanda in italiano");
+  });
+  audio.addEventListener("ended", () => {
+    if (state.playing === instance) state.playing = null;
+    clearSource();
+  });
+  audio.addEventListener("error", () => {
+    if (state.playing === instance) state.playing = null;
+    button.classList.remove("is-playing");
+  });
+  return button;
 }
 
 function createAudioPlayer(question, { legacy = false } = {}) {
@@ -353,7 +441,7 @@ function createAudioPlayer(question, { legacy = false } = {}) {
     }
     return loading;
   };
-  button.addEventListener("click", async () => { try { if (!audio.src) await load(); if (audio.paused) { try { await waitForReady(); stopCurrentPlayer(instance); state.playing = instance; await audio.play(); } catch (error) { if (sourceMode !== "signed" || blobFallbackTried) throw error; blobFallbackTried = true; clearSource(); await loadBlob(); await waitForReady(); stopCurrentPlayer(instance); state.playing = instance; await audio.play(); } } else audio.pause(); } catch (error) { loading = null; clearSource(); await showProblem("Audio non disponibile", "Il sito non riesce a recuperare questa spiegazione.", error); } });
+  button.addEventListener("click", async () => { const requestId = ++state.playbackRequestId; try { if (!audio.src) await load(); if (requestId !== state.playbackRequestId) return; if (audio.paused) { try { await waitForReady(); stopCurrentPlayer(instance); state.playing = instance; await audio.play(); } catch (error) { if (sourceMode !== "signed" || blobFallbackTried) throw error; blobFallbackTried = true; clearSource(); await loadBlob(); if (requestId !== state.playbackRequestId) return; await waitForReady(); stopCurrentPlayer(instance); state.playing = instance; await audio.play(); } } else audio.pause(); } catch (error) { loading = null; clearSource(); await showProblem("Audio non disponibile", "Il sito non riesce a recuperare questa spiegazione.", error); } });
   progress.addEventListener("pointerdown", event => { seeking = true; progress.setPointerCapture?.(event.pointerId); });
   progress.addEventListener("touchstart", () => { seeking = true; }, { passive: true });
   progress.addEventListener("input", seek);

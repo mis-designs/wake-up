@@ -95,6 +95,15 @@ const QUIZ_AUDIO_OBJECT_CACHE_TTL_MS = 5 * 60 * 1000;
 const EXPLANATION_FIGURES_CACHE_TTL_MS = 5 * 60 * 1000;
 let explanationFiguresCache = { expiresAt: 0, figures: [] };
 let explanationFiguresLoading = null;
+const magicBookQuestionById = new Map(
+  LOCAL_MAGIC_BOOK_ROWS.map(row => [String(row.id ?? "").trim(), String(row.question ?? "").trim()])
+);
+
+export function getAdminItalianQuestionText(questionId) {
+  const id = String(questionId ?? "").trim();
+  if (!id) return "";
+  return magicBookQuestionById.get(id) || "";
+}
 
 function isQuizAudioConfigured() {
   return Boolean(
@@ -1107,6 +1116,24 @@ export default async function handler(req, res) {
           correct: row.correct
         }))
       });
+    }
+
+    if (req.method === "POST" && action === "getAdminItalianQuestionAudio") {
+      await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
+      const canonicalQuestion = getAdminItalianQuestionText(questionId);
+      if (!canonicalQuestion) {
+        return res.status(404).json({ error: "quiz_question_not_found" });
+      }
+
+      // The browser sends only the catalog id. The server chooses the text so
+      // this admin-only route cannot be turned into an arbitrary TTS proxy.
+      const data = await forwardGetAction({ action: "getItalianAudio", text: canonicalQuestion });
+      if (!data?.audio || typeof data.audio !== "string") {
+        const error = new Error("italian_audio_unavailable");
+        error.statusCode = 502;
+        throw error;
+      }
+      return res.status(200).json({ ok: true, audio: data.audio });
     }
 
     if (req.method === "POST" && action === "getQuizAudioStatus") {

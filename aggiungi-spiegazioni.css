@@ -49,6 +49,13 @@ body { margin: 0; min-width: 320px; background: linear-gradient(135deg, #f4f7fb,
 .audio-admin-icon svg { width: 22px; height: 22px; }
 .audio-admin-icon.add, .audio-admin-icon.record { background: #fff2e9; border-color: #ffd1b7; color: #f05c0b; }
 .audio-admin-icon.listen { background: #e5f7f4; border-color: #abe5dc; color: #087e72; }
+.audio-admin-italian-listen { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; gap: 7px; padding: 8px 13px; border: 1px solid #a9d8cf; border-radius: 999px; background: #e5f7f4; color: #087e72; font: inherit; font-size: .84rem; font-weight: 900; cursor: pointer; box-shadow: 0 5px 12px rgba(26, 47, 78, .1); transition: transform .15s ease, box-shadow .15s ease, background .15s ease, color .15s ease; }
+.audio-admin-italian-listen:hover:not(:disabled), .audio-admin-italian-listen:focus-visible { outline: none; transform: translateY(-2px); box-shadow: 0 8px 18px rgba(8, 126, 114, .18); }
+.audio-admin-italian-listen:disabled { cursor: wait; opacity: .72; }
+.audio-admin-italian-listen svg { width: 19px; height: 19px; flex: 0 0 19px; }
+.audio-admin-italian-listen.is-playing { border-color: #087e72; background: #087e72; color: #fff; }
+.audio-admin-italian-listen.is-loading svg { animation: audioItalianPulse .8s ease-in-out infinite alternate; }
+@keyframes audioItalianPulse { to { opacity: .35; transform: scale(.86); } }
 .audio-admin-icon.pause { background: #e8eff8; border-color: #c7d8ef; }
 .audio-admin-icon.renew { background: #eeeaff; border-color: #cfc5ff; }
 .audio-admin-icon.save { background: #e4f5ed; border-color: #afe0c8; }
