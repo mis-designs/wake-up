@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v58-admin-entry-visibility";
+const CACHE_NAME = "magicbook-pwa-v59-bangla-study-intro";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -9,8 +9,8 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=26",
   "/script.js?v=29-admin-entry-visibility",
   "/study-quiz.html",
-  "/study-quiz.css?v=6-goal-card",
-  "/study-quiz.js?v=9-server-bangla-tts",
+  "/study-quiz.css?v=9-bangla-study-intro",
+  "/study-quiz.js?v=10-study-return-message",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=56-friendly-exam-errors",
   "/quiz-help.css?v=20260714-magic-help-v4",

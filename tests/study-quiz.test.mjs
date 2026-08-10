@@ -67,13 +67,34 @@ test("study questions use the supplied audio icon and the complete explanation p
 test("study chapter picker uses the layered performance-green visual system", () => {
   const page = readFileSync(new URL("../study-quiz.html", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../study-quiz.css", import.meta.url), "utf8");
-  assert.match(page, /Scegli cosa <em>studiare<\/em>/);
+  assert.match(page, /আজকে কোন অধ্যায়টি পড়তে চাচ্ছেন \?/u);
   assert.match(styles, /\.study-intro::before/);
   assert.match(styles, /\.study-intro::after/);
   assert.match(styles, /background-image:\s*linear-gradient[\s\S]*?background-size:\s*68px 68px/);
   assert.match(styles, /\.study-chapter::before/);
   assert.match(styles, /--lime:\s*#67f528/);
   assert.doesNotMatch(styles, /\.study-intro\s*\{[^}]*background:\s*#[0-9a-f]{3,8}\s*;/i);
+});
+
+test("the study intro uses Hadi Rounded and recalls the last chapter after five minutes", () => {
+  const page = readFileSync(new URL("../study-quiz.html", import.meta.url), "utf8");
+  const source = readFileSync(new URL("../study-quiz.js", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../study-quiz.css", import.meta.url), "utf8");
+  const routes = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8"));
+  const policy = routes.headers[0].headers.find(header => header.key === "Content-Security-Policy")?.value || "";
+
+  assert.match(page, /https:\/\/banglawebfonts\.pages\.dev\/css\/hadi-rounded\.css/u);
+  assert.match(page, /id="study-last-chapter" class="hidden"/u);
+  assert.match(styles, /font-family:\s*"Hadi Rounded"/u);
+  assert.match(source, /STUDY_RETURN_DELAY_MS\s*=\s*5 \* 60 \* 1000/u);
+  assert.match(source, /শেষবার আপনি পড়েছিলেন অধ্যায়/u);
+  assert.match(source, /BANGLA_DIGITS\s*=\s*\["০", "১", "২", "৩", "৪", "৫"/u);
+  assert.match(source, /rememberStudyChapter\(chapter\)/u);
+  assert.match(source, /markStudyChapterExit\(currentChapter\)/u);
+  assert.match(source, /visibilitychange[\s\S]*?visibilityState === "visible"[\s\S]*?renderStudyIntro\(\)/u);
+  assert.match(source, /pageshow[\s\S]*?renderStudyIntro\(\)/u);
+  assert.match(policy, /style-src[^;]*https:\/\/banglawebfonts\.pages\.dev/u);
+  assert.match(policy, /font-src[^;]*https:\/\/banglawebfonts\.pages\.dev/u);
 });
 
 test("the chapter hero presents the supplied 25-goal artwork as a square editorial card", () => {

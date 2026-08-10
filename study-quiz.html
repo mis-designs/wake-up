@@ -13,7 +13,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Bengali:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="study-quiz.css?v=8-driving-loader">
+  <link href="https://banglawebfonts.pages.dev/css/hadi-rounded.css" rel="stylesheet">
+  <link rel="stylesheet" href="study-quiz.css?v=9-bangla-study-intro">
   <link rel="stylesheet" href="magic-dictionary.css?v=1.2.1">
 </head>
 <body>
@@ -32,9 +33,9 @@
   <main class="study-main">
     <section id="study-chapters" aria-labelledby="study-chapters-title">
       <div class="study-intro">
-        <div>
-          <h2 id="study-chapters-title">Scegli cosa <em>studiare</em></h2>
-          <p>Apri un capitolo per vedere insieme tutte le sue domande, traduzioni, parole chiave e audio.</p>
+        <div class="study-intro-copy" lang="bn">
+          <h2 id="study-chapters-title">আজকে কোন অধ্যায়টি পড়তে চাচ্ছেন ?</h2>
+          <p id="study-last-chapter" class="hidden" aria-live="polite"></p>
         </div>
       </div>
       <div id="study-chapter-grid" class="study-chapter-grid"></div>
@@ -83,6 +84,6 @@
   <script src="quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity"></script>
   <script src="magic-dictionary.js?v=1.2.1"></script>
   <script src="quiz-audio-identity.js?v=2"></script>
-  <script src="study-quiz.js?v=9-server-bangla-tts"></script>
+  <script src="study-quiz.js?v=10-study-return-message"></script>
 </body>
 </html>

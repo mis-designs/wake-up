@@ -6,6 +6,10 @@
   const HELP_MANIFEST_SOURCE = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const LOCAL_HELP_SOURCE = "/data/patente/quiz-help-runtime-v2.json";
   const REMOTE_HELP_TIMEOUT_MS = 10000;
+  const STUDY_HISTORY_KEY = "magicph-study-history-v1";
+  const STUDY_RETURN_DELAY_MS = 5 * 60 * 1000;
+  const STUDY_INTRO_QUESTION = "আজকে কোন অধ্যায়টি পড়তে চাচ্ছেন ?";
+  const BANGLA_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
   const AUDIO_ACTION_ICON = '<svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.80688 18.5304C5.82459 18.5005 5.84273 18.4709 5.8613 18.4413C7.2158 16.2881 7.99991 13.7418 7.99991 11C7.99991 8.79086 9.79077 7 11.9999 7C14.209 7 15.9999 8.79086 15.9999 11C15.9999 12.017 15.9307 13.0186 15.7966 14M13.6792 20.8436C14.2909 19.6226 14.7924 18.3369 15.1707 17M19.0097 18.132C19.6547 15.8657 20 13.4732 20 11C20 6.58172 16.4183 3 12 3C10.5429 3 9.17669 3.38958 8 4.07026M3 15.3641C3.64066 14.0454 4 12.5646 4 11C4 9.54285 4.38958 8.17669 5.07026 7M11.9999 11C11.9999 14.5172 10.9911 17.7988 9.24707 20.5712" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const CHAPTERS = [
     "Doveri nell'uso della strada",
@@ -39,6 +43,8 @@
     back: document.getElementById("study-back"),
     title: document.getElementById("study-title"),
     subtitle: document.getElementById("study-subtitle"),
+    introTitle: document.getElementById("study-chapters-title"),
+    lastChapter: document.getElementById("study-last-chapter"),
     chapters: document.getElementById("study-chapters"),
     chapterGrid: document.getElementById("study-chapter-grid"),
     reader: document.getElementById("study-reader"),
@@ -165,6 +171,49 @@
     return `/studia-quiz/capitolo-${String(chapter).padStart(2, "0")}`;
   }
 
+  function toBanglaNumber(value) {
+    return String(value).replace(/\d/g, digit => BANGLA_DIGITS[Number(digit)]);
+  }
+
+  function readStudyHistory() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(STUDY_HISTORY_KEY) || "null");
+      const chapter = Number(stored?.chapter);
+      const leftAt = Number(stored?.leftAt);
+      if (!Number.isInteger(chapter) || chapter < 1 || chapter > CHAPTERS.length) return null;
+      return { chapter, leftAt: Number.isFinite(leftAt) && leftAt > 0 ? leftAt : 0 };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function rememberStudyChapter(chapter) {
+    try {
+      localStorage.setItem(STUDY_HISTORY_KEY, JSON.stringify({ chapter, leftAt: 0 }));
+    } catch (_) {}
+  }
+
+  function markStudyChapterExit(chapter) {
+    const history = readStudyHistory();
+    if (!history || history.chapter !== chapter) return;
+    try {
+      localStorage.setItem(STUDY_HISTORY_KEY, JSON.stringify({ chapter, leftAt: Date.now() }));
+    } catch (_) {}
+  }
+
+  function renderStudyIntro(now = Date.now()) {
+    if (elements.introTitle) elements.introTitle.textContent = STUDY_INTRO_QUESTION;
+    if (!elements.lastChapter) return;
+    const history = readStudyHistory();
+    const showLastChapter = Boolean(
+      history?.leftAt && now - history.leftAt >= STUDY_RETURN_DELAY_MS
+    );
+    elements.lastChapter.textContent = showLastChapter
+      ? `শেষবার আপনি পড়েছিলেন অধ্যায় ${toBanglaNumber(history.chapter)}`
+      : "";
+    elements.lastChapter.classList.toggle("hidden", !showLastChapter);
+  }
+
   function showToast(message) {
     elements.toast.textContent = message;
     elements.toast.classList.add("is-visible");
@@ -210,6 +259,7 @@
   function showPicker({ updateHistory = false } = {}) {
     loadRequestId += 1;
     resetAudioObservation();
+    if (currentChapter) markStudyChapterExit(currentChapter);
     currentChapter = null;
     questions = [];
     stopPlayback();
@@ -219,6 +269,7 @@
     elements.chapters.classList.remove("hidden");
     elements.title.textContent = "Studia quiz";
     elements.subtitle.textContent = "Scegli un capitolo e studia tutte le domande.";
+    renderStudyIntro();
     document.title = "MagicBook | Studia quiz";
     if (updateHistory) history.pushState({ screen: "study" }, "", "/studia-quiz");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -256,6 +307,7 @@
       quizSessionToken = String(data.quizSessionToken || "");
       questions = Array.isArray(data.quiz) ? data.quiz : [];
       renderQuestions();
+      rememberStudyChapter(chapter);
       elements.loading.classList.add("hidden");
       elements.reader.classList.remove("hidden");
       window.scrollTo({ top: 0, behavior: "auto" });
@@ -1122,7 +1174,14 @@
     if (chapter) openChapter(chapter, { updateHistory: false });
     else showPicker();
   });
+  window.addEventListener("pageshow", () => {
+    if (!currentChapter) renderStudyIntro();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && !currentChapter) renderStudyIntro();
+  });
   window.addEventListener("pagehide", () => {
+    if (currentChapter) markStudyChapterExit(currentChapter);
     stopPlayback();
     resetAudioObservation();
   });
