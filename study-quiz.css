@@ -16,7 +16,7 @@
 
 * { box-sizing: border-box; }
 html { min-height: 100%; background: #f4f8f4; }
-body { min-width: 320px; min-height: 100vh; margin: 0; color: var(--ink); background: radial-gradient(circle at 10% 2%, rgba(95, 245, 40, .10), transparent 27rem), radial-gradient(circle at 92% 10%, rgba(10, 137, 48, .10), transparent 25rem), linear-gradient(rgba(16, 91, 39, .025) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 91, 39, .025) 1px, transparent 1px), #f4f8f4; background-size: auto, auto, 64px 64px, 64px 64px, auto; }
+body { min-width: 320px; min-height: 100vh; margin: 0; color: var(--ink); background: radial-gradient(circle at 10% 2%, rgba(95, 245, 40, .10), transparent 27rem), radial-gradient(circle at 92% 10%, rgba(10, 137, 48, .10), transparent 25rem), linear-gradient(rgba(16, 91, 39, .025) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 91, 39, .025) 1px, transparent 1px), #f4f8f4; background-size: auto, auto, 64px 64px, 64px 64px, auto; font-family: "Hadi Rounded", sans-serif; font-weight: 400; font-style: normal; }
 button, input { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 .hidden { display: none !important; }
@@ -43,7 +43,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .study-intro span, .study-reader-toolbar > div > span { color: #78ff38; font-size: .67rem; font-weight: 900; letter-spacing: .16em; }
 .study-intro > div:first-child > span { display: inline-flex; align-items: center; gap: 9px; }
 .study-intro > div:first-child > span::before { content: ""; width: 20px; height: 2px; border-radius: 9px; background: currentColor; box-shadow: 0 0 12px rgba(120, 255, 56, .72); }
-.study-intro h2 { max-width: 760px; margin: 0 0 14px; font-family: inherit; font-size: clamp(2rem, 5vw, 3.35rem); font-weight: 700; line-height: 1.18; letter-spacing: 0; text-shadow: 0 3px 5px rgba(0, 0, 0, .7), 0 10px 34px rgba(0, 0, 0, .55); }
+.study-intro h2 { max-width: 760px; margin: 0 0 14px; font-family: "Hadi Rounded", sans-serif; font-size: clamp(2rem, 5vw, 3.35rem); font-weight: 400; font-style: normal; line-height: 1.18; letter-spacing: 0; text-shadow: 0 3px 5px rgba(0, 0, 0, .7), 0 10px 34px rgba(0, 0, 0, .55); }
 .study-intro h2 em { color: #78ff38; font-style: normal; font-weight: inherit; }
 .study-intro p { width: fit-content; max-width: 680px; margin: 0; border: 1px solid rgba(120, 255, 56, .28); border-radius: 999px; padding: 8px 13px; background: rgba(1, 24, 8, .62); color: rgba(255, 255, 255, .95); font-family: inherit; font-size: clamp(1rem, 2vw, 1.2rem); font-weight: 400; line-height: 1.45; text-shadow: 0 2px 4px rgba(0, 0, 0, .9), 0 7px 20px rgba(0, 0, 0, .72); backdrop-filter: blur(7px); }
 
