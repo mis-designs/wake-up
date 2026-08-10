@@ -2652,6 +2652,7 @@ function hideAll() {
     if (el) el.classList.add("hidden");
   });
   document.body.classList.remove("admin-mode", "app-mode", "public-mode", "trial-hub-mode");
+  updateAdminEntryVisibility();
 }
 
 function showHome() {
@@ -4019,7 +4020,12 @@ function isCurrentSessionAdmin() {
 function updateAdminEntryVisibility() {
   const btn = document.getElementById("adminEntryBtn");
   if (!btn) return;
-  btn.classList.toggle("hidden", !getCurrentSessionPhone() || !isCurrentSessionAdmin());
+  const adminPanel = document.getElementById("adminPanel");
+  const adminPanelIsOpen = Boolean(adminPanel && !adminPanel.classList.contains("hidden"));
+  const shouldShow = Boolean(getCurrentSessionPhone())
+    && isCurrentSessionAdmin()
+    && !adminPanelIsOpen;
+  btn.classList.toggle("hidden", !shouldShow);
 }
 
 function refreshAdminEntryOnResume() {
@@ -4217,6 +4223,7 @@ async function showAdminPanel() {
   setProfileIconVisible(false);
   setLoggedInChrome();
   currentScreen = "admin";
+  updateAdminEntryVisibility();
   setAppRoute({ screen: "admin" });
   await adminLoadUsers();
 }

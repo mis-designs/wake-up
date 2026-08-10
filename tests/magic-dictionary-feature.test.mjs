@@ -158,7 +158,7 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(script, /MagicDictionaryFeature\?\.onAuthenticated/u);
   assert.match(quiz, /magic-dictionary\.js\?v=1\.2\.1/u);
   assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.2\.1/u);
-  assert.match(worker, /magicbook-pwa-v57-friendly-exam-errors/u);
+  assert.match(worker, /magicbook-pwa-v58-admin-entry-visibility/u);
   assert.match(worker, /magic-dictionary\.css\?v=1\.2\.1/u);
   assert.ok(vercel.rewrites.some(route => route.source === "/dizionario" && route.destination === "/"));
   assert.match(redirects, /^\/dizionario \/index\.html 200$/mu);
