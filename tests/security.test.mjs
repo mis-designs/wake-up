@@ -34,21 +34,52 @@ test("the admin API rejects missing, forged, expired and non-admin tokens", () =
 });
 
 test("a phone allow-list entry cannot create admin authority without a valid signed token", () => {
+  const phone = "391234567890";
   const adminPhones = ["391234567890"];
-  assert.equal(getSessionRole("391234567890", null, adminPhones), "user");
-  assert.equal(getSessionRole("391234567890", {}, adminPhones), "user");
-  assert.equal(getSessionRole("391234567890", { ok: false, payload: { role: "admin" } }, adminPhones), "user");
+  assert.equal(getSessionRole(phone, null, adminPhones), "user");
+  assert.equal(getSessionRole(phone, {}, adminPhones), "user");
+  assert.equal(getSessionRole(phone, {
+    ok: false,
+    signatureValid: false,
+    payload: { phone, role: "admin" }
+  }, adminPhones), "user");
 });
 
-test("only a valid signed token carrying the admin role grants admin authority", () => {
-  const signedAdmin = { ok: true, payload: { role: "admin" } };
-  const signedUser = { ok: true, payload: { role: "user" } };
-  assert.equal(getSessionRole("391234567890", signedAdmin, []), "admin");
-  assert.equal(getSessionRole("391234567890", signedUser, ["391234567890"]), "user");
+test("a signed admin session keeps its role across token expiry while it remains allowed", () => {
+  const phone = "391234567890";
+  const signedAdmin = {
+    ok: true,
+    signatureValid: true,
+    payload: { phone, role: "admin" }
+  };
+  const expiredSignedAdmin = {
+    ...signedAdmin,
+    ok: false,
+    error: "token_expired"
+  };
+
+  assert.equal(getSessionRole(phone, signedAdmin, [phone]), "admin");
+  assert.equal(getSessionRole(phone, expiredSignedAdmin, [phone]), "admin");
+  assert.equal(getSessionRole(`+39 123 456 7890`, expiredSignedAdmin, [phone]), "admin");
 });
 
-test("expired or invalid admin tokens fail closed", () => {
-  const expiredAdmin = { ok: false, error: "token_expired", payload: { role: "admin" } };
-  assert.equal(getSessionRole("391234567890", expiredAdmin, ["391234567890"]), "user");
-  assert.equal(getSessionRole("391234567890", { ok: true, payload: {} }, ["391234567890"]), "user");
+test("admin renewal fails closed when the proof, phone binding or allow-list does not match", () => {
+  const phone = "391234567890";
+  const signedAdmin = {
+    ok: false,
+    error: "token_expired",
+    signatureValid: true,
+    payload: { phone, role: "admin" }
+  };
+
+  assert.equal(getSessionRole(phone, signedAdmin, []), "user");
+  assert.equal(getSessionRole(phone, signedAdmin, ["399999999999"]), "user");
+  assert.equal(getSessionRole(phone, {
+    ...signedAdmin,
+    payload: { phone: "399999999999", role: "admin" }
+  }, [phone]), "user");
+  assert.equal(getSessionRole(phone, {
+    ...signedAdmin,
+    payload: { phone, role: "user" }
+  }, [phone]), "user");
 });

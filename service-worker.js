@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v55-dictionary-clean-cards";
+const CACHE_NAME = "magicbook-pwa-v57-friendly-exam-errors";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -10,11 +10,11 @@ const STATIC_ASSETS = [
   "/script.js?v=28-dictionary-clean-cards",
   "/study-quiz.html",
   "/study-quiz.css?v=6-goal-card",
-  "/study-quiz.js?v=7-translation-quality",
+  "/study-quiz.js?v=9-server-bangla-tts",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=55-cloudflare-figure-fix",
+  "/quiz.js?v=56-friendly-exam-errors",
   "/quiz-help.css?v=20260714-magic-help-v4",
-  "/quiz-help.js?v=20260805-translation-quality",
+  "/quiz-help.js?v=20260810-server-bangla-tts",
   "/patenteGlossaryResolver.js?v=1.0.0",
   "/patenteContextResolverV3.js?v=3.0.1-keywords-fix",
   "/quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity",

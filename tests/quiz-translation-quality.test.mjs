@@ -56,10 +56,15 @@ test("corrupt remote translations are rejected before the V3 runtime is used", (
 test("Bengali audio requests carry the quiz ID so the server can use curated text", () => {
   const quizSource = readFileSync(new URL("../quiz.js", import.meta.url), "utf8");
   const studySource = readFileSync(new URL("../study-quiz.js", import.meta.url), "utf8");
+  const helpSource = readFileSync(new URL("../quiz-help.js", import.meta.url), "utf8");
   assert.match(quizSource, /fetchBengaliAudio\(q, cacheKey\)/);
   assert.match(quizSource, /curatedTranslation \? "getTTS" : "getBengaliAudio"/);
   assert.match(quizSource, /questionId = String\(question\?\.id \|\| ""\)/);
   assert.match(studySource, /questionId:\s*String\(question\.id \|\| ""\)/);
+  assert.match(studySource, /action:\s*"getTTS"[\s\S]*?text:\s*value/);
+  assert.match(helpSource, /buildQuizApiUrl\("getTTS", \{ text: cleanText \}\)/);
+  assert.doesNotMatch(studySource, /speechSynthesis|SpeechSynthesisUtterance/);
+  assert.doesNotMatch(helpSource, /speechSynthesis|SpeechSynthesisUtterance/);
 });
 
 test("study mode resolves V3 translations before using the automatic fallback", () => {

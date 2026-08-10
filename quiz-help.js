@@ -55,6 +55,9 @@
   let requestId = 0;
   let activeSlide = 0;
   let cardLayer = 1;
+  let activeWordPlayback = null;
+  let wordAudioRequestId = 0;
+  const wordAudioCache = new Map();
 
   // Make the existing click-to-open help discoverable on the first question,
   // including the free-trial route, without covering or replacing the question.
@@ -187,14 +190,77 @@
     };
   }
 
-  function speak(text, language) {
+  function stopWordAudio() {
+    wordAudioRequestId += 1;
+    const playback = activeWordPlayback;
+    activeWordPlayback = null;
+    if (!playback) return;
+    playback.audio.pause();
+    playback.button.classList.remove("is-playing", "is-loading");
+    playback.button.disabled = false;
+    URL.revokeObjectURL(playback.url);
+  }
+
+  window.stopQuizHelpAudio = stopWordAudio;
+
+  function wordAudioUrl(base64) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    return URL.createObjectURL(new Blob([bytes], { type: "audio/mpeg" }));
+  }
+
+  async function playBanglaWord(text, button) {
     const cleanText = String(text || "").trim();
-    if (!cleanText || !window.speechSynthesis) return;
+    if (!usableBanglaTranslation(cleanText)) {
+      showAudioUnavailableToast?.("Audio bangla non disponibile");
+      return;
+    }
+    if (typeof TRIAL_MODE !== "undefined" && TRIAL_MODE) {
+      showAudioUnavailableToast?.("Audio parole disponibile con l'accesso completo");
+      return;
+    }
+
+    const key = hash(cleanText);
+    if (activeWordPlayback?.key === key) {
+      if (activeWordPlayback.audio.paused) {
+        await activeWordPlayback.audio.play().catch(() => stopWordAudio());
+      } else {
+        stopWordAudio();
+      }
+      return;
+    }
+
     stopAllAudio?.();
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = language;
-    utterance.rate = language.startsWith("bn") ? 0.82 : 0.92;
-    window.speechSynthesis.speak(utterance);
+    const ownRequest = ++wordAudioRequestId;
+    button.disabled = true;
+    button.classList.add("is-loading");
+    try {
+      let data = wordAudioCache.get(key);
+      if (!data) {
+        data = await fetchQuizJson(buildQuizApiUrl("getTTS", { text: cleanText }));
+        if (!data?.audio) throw new Error("audio_not_available");
+        wordAudioCache.set(key, data);
+      }
+      if (ownRequest !== wordAudioRequestId) return;
+
+      const url = wordAudioUrl(data.audio);
+      const audio = new Audio(url);
+      activeWordPlayback = { audio, url, button, key };
+      audio.addEventListener("play", () => button.classList.add("is-playing"));
+      audio.addEventListener("ended", stopWordAudio, { once: true });
+      audio.addEventListener("error", () => {
+        stopWordAudio();
+        showAudioUnavailableToast?.("Audio bangla non disponibile");
+      }, { once: true });
+      await audio.play();
+    } catch (_) {
+      stopWordAudio();
+      showAudioUnavailableToast?.("Audio bangla non disponibile");
+    } finally {
+      button.disabled = false;
+      button.classList.remove("is-loading");
+    }
   }
 
   function renderContext(help) {
@@ -219,7 +285,7 @@
     audio.type = "button";
     audio.className = "quiz-help-word-audio";
     audio.textContent = "🔊 Ascolta";
-    audio.addEventListener("click", () => speak(word.ttsBn || `${word.bangla}। ${word.simpleBn}`, "bn-BD"));
+    audio.addEventListener("click", () => playBanglaWord(word.ttsBn || `${word.bangla}। ${word.simpleBn}`, audio));
     wordDetail.append(heading, italian, bangla, audio);
     wordDetail.classList.remove("hidden");
   }
@@ -319,7 +385,7 @@
     workspace.classList.add("hidden");
     workspace.setAttribute("aria-hidden", "true");
     document.body.classList.remove("quiz-help-open");
-    window.speechSynthesis?.cancel();
+    stopWordAudio();
   }
 
   function bringCardToFront(card) {

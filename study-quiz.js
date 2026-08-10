@@ -63,6 +63,7 @@
   let activePlayback = null;
   let toastTimer = 0;
   let loadRequestId = 0;
+  let wordTtsRequestId = 0;
   const STUDY_AUDIO_STATUS_DELAY_MS = 400;
   const STUDY_AUDIO_REQUEST_TIMEOUT_MS = 12000;
   const ttsCache = new Map();
@@ -635,7 +636,7 @@
     listen.type = "button";
     listen.className = "study-word-listen";
     listen.textContent = "🔊 Ascolta";
-    listen.addEventListener("click", () => speakWord(word));
+    listen.addEventListener("click", () => playBanglaWord(word, listen));
     detail.append(heading, italian, bangla, listen);
     detail.classList.remove("hidden");
   }
@@ -742,7 +743,6 @@
   }
 
   function stopPlayback() {
-    window.speechSynthesis?.cancel();
     if (!activePlayback) return;
     if (activePlayback.frame) cancelAnimationFrame(activePlayback.frame);
     activePlayback.audio.pause();
@@ -823,6 +823,7 @@
   }
 
   async function playTts(question, language, button, card) {
+    wordTtsRequestId += 1;
     const key = `${language}:${question.id || fingerprint(question)}`;
     if (activePlayback?.key === key) {
       await startAudio(activePlayback.url, button, key).catch(() => showToast("Audio non disponibile al momento."));
@@ -881,17 +882,47 @@
     }
   }
 
-  function speakWord(word) {
-    const value = String(word.ttsBn || `${word.bangla}। ${word.simpleBn}`).trim();
-    if (!value || !window.speechSynthesis) {
+  async function playBanglaWord(word, button) {
+    const value = usableBanglaTranslation(word.ttsBn || `${word.bangla}। ${word.simpleBn}`);
+    if (!value) {
       showToast("Audio parola non disponibile.");
       return;
     }
-    stopPlayback();
-    const utterance = new SpeechSynthesisUtterance(value);
-    utterance.lang = "bn-BD";
-    utterance.rate = .82;
-    window.speechSynthesis.speak(utterance);
+
+    const key = `bn-word:${hash(value)}`;
+    if (activePlayback?.key === key) {
+      await startAudio(activePlayback.url, button, key)
+        .catch(() => showToast("Audio parola non disponibile."));
+      return;
+    }
+
+    const ownRequest = ++wordTtsRequestId;
+    button.disabled = true;
+    button.classList.add("is-loading");
+    try {
+      let data = ttsCache.get(key);
+      if (!data) {
+        const query = new URLSearchParams({
+          action: "getTTS",
+          phone: session.phone,
+          deviceId: session.deviceId,
+          text: value
+        });
+        const response = await fetch(`${API}?${query}`, {
+          headers: authHeaders({ withQuizSession: true })
+        });
+        data = await readApiResponse(response);
+        if (!data.audio) throw new Error("audio_not_available");
+        ttsCache.set(key, data);
+      }
+      if (ownRequest !== wordTtsRequestId) return;
+      await startAudio(base64AudioUrl(data.audio), button, key);
+    } catch (_) {
+      showToast("Audio parola non disponibile.");
+    } finally {
+      button.disabled = false;
+      button.classList.remove("is-loading");
+    }
   }
 
   async function audioApi(action, question, { blob = false } = {}) {
@@ -1000,6 +1031,7 @@
   }
 
   async function playExplanation(question, controls) {
+    wordTtsRequestId += 1;
     const { root, play: button, key } = controls;
     if (activePlayback?.key === key) {
       await startAudio(activePlayback.url, button, key, controls, activePlayback.durationHint)

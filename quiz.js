@@ -383,12 +383,14 @@ function getQuizAccessErrorMessage(error) {
   return "Accesso non autorizzato.";
 }
 
-function getQuizLoadErrorMessage(error) {
-  if (error === "invalid_exam_pool") {
-    return "Domande Exam insufficienti. Controlla che il backend quiz restituisca il capitolo 0.";
-  }
+function isExamQuizMode(mode = quizMode) {
+  return mode === "exam80" || mode === "exam30";
+}
 
-  return "Errore caricamento quiz";
+function getQuizLoadErrorMessage(mode = quizMode) {
+  return isExamQuizMode(mode)
+    ? "Non è stato possibile avviare l’Exam. Riprova tra qualche istante."
+    : "Non è stato possibile caricare il quiz. Riprova tra qualche istante.";
 }
 
 function isQuizAccessError(error) {
@@ -1191,6 +1193,7 @@ function showAudioUnavailableToast(message = "Audio non disponibile") {
 function stopAllAudio() {
   italianAudioId++;
   banglaAudioId++;
+  window.stopQuizHelpAudio?.();
   if (googleItalianAudio) {
     googleItalianAudio.pause();
     googleItalianAudio.src = "";
@@ -1639,6 +1642,7 @@ function rifaiScheda() {
 // LOAD QUIZ
 async function loadQuiz() {
   showLoading("Caricamento quiz...");
+  let recoveryAction = null;
 
   try {
     const explanationFiguresRequest = refreshExplanationFigures().catch(error => {
@@ -1684,10 +1688,22 @@ async function loadQuiz() {
     startTimer();
   } catch (err) {
     if (quizAccessErrorHandled) return;
-    showMessage("Errore", getQuizLoadErrorMessage(err.message));
     console.error("[quiz] loadQuiz failed:", err.message);
+    hideLoading();
+    recoveryAction = await showConfirm(
+      isExamQuizMode() ? "Exam non disponibile" : "Quiz non disponibile",
+      getQuizLoadErrorMessage(),
+      "Riprova",
+      "Torna al menu"
+    );
   } finally {
     hideLoading();
+  }
+
+  if (recoveryAction === true) {
+    void loadQuiz();
+  } else if (recoveryAction === false) {
+    returnToBook();
   }
 }
 loadQuiz();

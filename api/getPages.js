@@ -21,10 +21,23 @@ function normalizePhone(input) {
   return phone;
 }
 
-export function getSessionRole(_phone, tokenStatus, _adminPhoneNumbers = ADMIN_PHONE_NUMBERS) {
-  // Admin authority must come from a valid signed token issued only after
-  // the dedicated admin-password flow, never from a phone number alone.
-  return tokenStatus?.ok && tokenStatus?.payload?.role === "admin" ? "admin" : "user";
+export function getSessionRole(phone, tokenStatus, adminPhoneNumbers = ADMIN_PHONE_NUMBERS) {
+  const normalizedPhone = normalizePhone(phone);
+  const adminIsStillAllowed = adminPhoneNumbers
+    .map(normalizePhone)
+    .includes(normalizedPhone);
+  const signedAdminProofMatchesPhone = tokenStatus?.signatureValid === true
+    && tokenStatus?.payload?.role === "admin"
+    && normalizePhone(tokenStatus?.payload?.phone) === normalizedPhone;
+
+  // The access backend has just revalidated this phone and device before this
+  // function is called. An expired token may therefore renew its admin role,
+  // but only when its server signature is valid, it is bound to this phone,
+  // and the phone remains in the server-side allow-list. Missing, forged and
+  // user tokens always fail closed.
+  return normalizedPhone && adminIsStillAllowed && signedAdminProofMatchesPhone
+    ? "admin"
+    : "user";
 }
 
 function buildMagicBookPath({ type, chapter, page }) {

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
+import { readFileSync } from "node:fs";
 import {
   LOCAL_EXAM_ROWS,
   LOCAL_MAGIC_BOOK_ROWS,
@@ -102,6 +103,16 @@ test("quiz loading and grading complete without a quiz upstream request", async 
     assert.equal(examResponse.body.quiz.length, 80);
     assert.ok(examResponse.body.quiz.every(question => !("correct" in question)));
 
+    const compactExamResponse = responseRecorder();
+    await handler({
+      method: "GET",
+      query: { action: "getQuiz", phone, deviceId, mode: "exam30" },
+      headers: { authorization: `Bearer ${accessToken}` }
+    }, compactExamResponse);
+    assert.equal(compactExamResponse.statusCode, 200, JSON.stringify(compactExamResponse.body));
+    assert.equal(compactExamResponse.body.quiz.length, 30);
+    assert.ok(compactExamResponse.body.quiz.every(question => !("correct" in question)));
+
     const studyResponse = responseRecorder();
     await handler({
       method: "GET",
@@ -127,4 +138,12 @@ test("quiz loading and grading complete without a quiz upstream request", async 
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("quiz load failures use a user-safe message without backend details", () => {
+  const source = readFileSync(new URL("../quiz.js", import.meta.url), "utf8");
+  assert.match(source, /Exam non disponibile/);
+  assert.match(source, /Non è stato possibile avviare l’Exam\. Riprova tra qualche istante\./);
+  assert.match(source, /"Riprova",\s*"Torna al menu"/);
+  assert.doesNotMatch(source, /Controlla che il backend|capitolo 0|Domande Exam insufficienti/);
 });
