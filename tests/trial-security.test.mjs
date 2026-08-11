@@ -34,9 +34,26 @@ test("every browser trial surface uses only chapters 1 and 3", () => {
   assert.match(main, /FREE_TRIAL_CHAPTERS\s*=\s*Object\.freeze\(\[1, 3\]\)/);
   assert.match(quiz, /TRIAL_ALLOWED_CHAPTERS\s*=\s*new Set\(\["1", "3"\]\)/);
   assert.match(study, /TRIAL_ALLOWED_CHAPTERS\s*=\s*new Set\(\[1, 3\]\)/);
-  assert.match(page, /Capitoli 1 e 3 con libro, audio e quiz/);
+  assert.match(page, /অধ্যায় ১ ও ৩/);
+  assert.match(main, /Capitoli 1 e 3 con libro, audio e quiz/);
   assert.doesNotMatch(main, /\[2, 4\]/);
   assert.doesNotMatch(quiz, /\["2", "4"\]/);
+});
+
+test("trial promotion starts in Bangla and alternates safely every ten seconds", () => {
+  const main = readFileSync(new URL("../script.js", import.meta.url), "utf8");
+  const page = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../style.css", import.meta.url), "utf8");
+
+  assert.match(page, /id="trialPromoCopy" lang="bn"/);
+  assert.match(page, /৪ দিনের ফ্রি উপহার/);
+  assert.match(main, /setInterval\(\(\) => \{[\s\S]*?\}, 10000\)/);
+  assert.match(main, /replaceChildren\(copy\.kicker\)/);
+  assert.doesNotMatch(main, /trialPromoCopy[\s\S]{0,800}innerHTML/);
+  assert.match(styles, /"Hind Siliguri","Noto Sans Bengali",sans-serif/);
+  assert.match(styles, /@keyframes trialPromoGiftSwing/);
+  assert.match(styles, /translateX\(-10px\)[\s\S]*translateX\(10px\)/);
+  assert.match(styles, /prefers-reduced-motion:reduce[\s\S]*trial-promo-gift/);
 });
 
 test("trial study mode and locked chapters stay on the isolated trial path", () => {

@@ -1317,8 +1317,65 @@ function showLandingScreen(options = {}) {
 
 const TRIAL_COUNTDOWN_KEY = "trial_offer_ends_at_v3";
 let trialCountdownTimer = null;
+let trialPromoCopyTimer = null;
+let trialPromoCopySwapTimer = null;
+
+const TRIAL_PROMO_COPY = Object.freeze([
+  Object.freeze({
+    lang: "bn",
+    label: "MagicBook বিনামূল্যে ব্যবহার করে দেখুন",
+    kicker: "৪ দিনের ফ্রি উপহার",
+    title: "MagicBook ফ্রি ট্রাই করুন",
+    subtitle: "লগইন ছাড়াই অধ্যায় ১ ও ৩: বই, অডিও ও কুইজ।"
+  }),
+  Object.freeze({
+    lang: "it",
+    label: "Prova MagicBook gratis",
+    kicker: "4 GIORNI IN REGALO",
+    title: "Prova MagicBook",
+    subtitle: "Capitoli 1 e 3 con libro, audio e quiz. Senza login."
+  })
+]);
+
+function setupTrialPromoCopy() {
+  const copyRoot = document.getElementById("trialPromoCopy");
+  const trialCard = copyRoot?.closest(".trial-card");
+  if (!copyRoot || !trialCard) return;
+
+  if (trialPromoCopyTimer) clearInterval(trialPromoCopyTimer);
+  if (trialPromoCopySwapTimer) clearTimeout(trialPromoCopySwapTimer);
+  trialPromoCopyTimer = null;
+  trialPromoCopySwapTimer = null;
+  let activeCopy = 0;
+
+  const applyCopy = copy => {
+    copyRoot.querySelector('[data-trial-copy="kicker"]')?.replaceChildren(copy.kicker);
+    copyRoot.querySelector('[data-trial-copy="title"]')?.replaceChildren(copy.title);
+    copyRoot.querySelector('[data-trial-copy="subtitle"]')?.replaceChildren(copy.subtitle);
+    copyRoot.lang = copy.lang;
+    copyRoot.classList.toggle("is-bangla", copy.lang === "bn");
+    trialCard.setAttribute("aria-label", copy.label);
+  };
+
+  applyCopy(TRIAL_PROMO_COPY[activeCopy]);
+  trialPromoCopyTimer = setInterval(() => {
+    activeCopy = (activeCopy + 1) % TRIAL_PROMO_COPY.length;
+    const nextCopy = TRIAL_PROMO_COPY[activeCopy];
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+      applyCopy(nextCopy);
+      return;
+    }
+    copyRoot.classList.add("is-copy-swapping");
+    trialPromoCopySwapTimer = setTimeout(() => {
+      applyCopy(nextCopy);
+      requestAnimationFrame(() => copyRoot.classList.remove("is-copy-swapping"));
+      trialPromoCopySwapTimer = null;
+    }, 220);
+  }, 10000);
+}
 
 function setupTrialMarketing(serverExpiresAt = 0) {
+  setupTrialPromoCopy();
   const signedDeadline = Number(serverExpiresAt || getTrialGuestCredentials().expiresAt || 0);
   let endsAt = signedDeadline > 0 ? signedDeadline : Number(Storage.get(TRIAL_COUNTDOWN_KEY) || 0);
   if (!endsAt) {
@@ -4884,7 +4941,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-      .register("/service-worker.js?v=29-trial-chapters-1-3", { updateViaCache: "none" })
+      .register("/service-worker.js?v=30-bilingual-trial-promo", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });
