@@ -1323,17 +1323,15 @@ let trialPromoCopySwapTimer = null;
 const TRIAL_PROMO_COPY = Object.freeze([
   Object.freeze({
     lang: "bn",
-    label: "ম্যাজিকবুক ব্যবহার করে দেখুন",
+    label: "৪ দিন বিনামূল্যে ম্যাজিক বই",
     kicker: "৪ দিন বিনামূল্যে",
-    title: "ম্যাজিকবুক ব্যবহার করে দেখুন",
-    subtitle: "লগইন ছাড়াই অধ্যায় ১ ও ৩: বই, অডিও ও কুইজ।"
+    title: "ম্যাজিক বই"
   }),
   Object.freeze({
     lang: "it",
     label: "Prova MagicBook gratis",
-    kicker: "4 GIORNI IN REGALO",
-    title: "Prova MagicBook",
-    subtitle: "Capitoli 1 e 3 con libro, audio e quiz. Senza login."
+    kicker: "4 GIORNI GRATIS",
+    title: "MagicBook"
   })
 ]);
 
@@ -1352,7 +1350,6 @@ function setupTrialPromoCopy() {
   const applyCopy = copy => {
     copyRoot.querySelector('[data-trial-copy="kicker"]')?.replaceChildren(copy.kicker);
     copyRoot.querySelector('[data-trial-copy="title"]')?.replaceChildren(copy.title);
-    copyRoot.querySelector('[data-trial-copy="subtitle"]')?.replaceChildren(copy.subtitle);
     copyRoot.lang = copy.lang;
     copyRoot.classList.toggle("is-bangla", copy.lang === "bn");
     trialCard.setAttribute("aria-label", copy.label);
@@ -4956,7 +4953,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-      .register("/service-worker.js?v=34-professional-trial", { updateViaCache: "none" })
+      .register("/service-worker.js?v=35-minimal-trial-copy", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });

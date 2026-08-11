@@ -27,7 +27,7 @@ test("the admin entry is hidden while the admin panel is already open", () => {
 test("leaving the admin panel restores the entry and ships the new script version", () => {
   const hideAll = functionSource("hideAll", "showHome");
   assert.match(hideAll, /adminPanel[\s\S]*?classList\.add\("hidden"\)[\s\S]*?updateAdminEntryVisibility\(\)/);
-  assert.match(htmlSource, /script\.js\?v=35-professional-trial/);
-  assert.match(workerSource, /script\.js\?v=35-professional-trial/);
-  assert.match(workerSource, /CACHE_NAME = "magicbook-pwa-v66-professional-trial"/);
+  assert.match(htmlSource, /script\.js\?v=36-minimal-trial-copy/);
+  assert.match(workerSource, /script\.js\?v=36-minimal-trial-copy/);
+  assert.match(workerSource, /CACHE_NAME = "magicbook-pwa-v68-minimal-trial-copy"/);
 });

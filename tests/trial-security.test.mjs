@@ -34,8 +34,7 @@ test("every browser trial surface uses only chapters 1 and 3", () => {
   assert.match(main, /FREE_TRIAL_CHAPTERS\s*=\s*Object\.freeze\(\[1, 3\]\)/);
   assert.match(quiz, /TRIAL_ALLOWED_CHAPTERS\s*=\s*new Set\(\["1", "3"\]\)/);
   assert.match(study, /TRIAL_ALLOWED_CHAPTERS\s*=\s*new Set\(\[1, 3\]\)/);
-  assert.match(page, /অধ্যায় ১ ও ৩/);
-  assert.match(main, /Capitoli 1 e 3 con libro, audio e quiz/);
+  assert.match(page, /I capitoli 1 e 3 sono sbloccati/);
   assert.doesNotMatch(main, /\[2, 4\]/);
   assert.doesNotMatch(quiz, /\["2", "4"\]/);
 });
@@ -48,7 +47,8 @@ test("trial promotion starts in Bangla and alternates safely every ten seconds",
   assert.match(page, /id="trialPromoCopy" lang="bn"/);
   assert.match(page, /href="https:\/\/banglawebfonts\.pages\.dev\/css\/ekush\.css" rel="stylesheet"/);
   assert.match(page, /৪ দিন বিনামূল্যে/);
-  assert.match(page, /ম্যাজিকবুক ব্যবহার করে দেখুন/);
+  assert.match(page, /ম্যাজিক বই/);
+  assert.doesNotMatch(page, /data-trial-copy="subtitle"/);
   const banglaCopy = page.match(/<span class="trial-card-copy is-bangla"[\s\S]*?<\/span>/)?.[0] || "";
   assert.doesNotMatch(banglaCopy.replace(/<[^>]+>/g, ""), /[A-Za-z]/);
   assert.match(main, /setInterval\(\(\) => \{[\s\S]*?\}, 10000\)/);
@@ -59,6 +59,7 @@ test("trial promotion starts in Bangla and alternates safely every ten seconds",
   assert.match(styles, /is-copy-leaving[^{]*\{[^}]*filter:blur\(5px\)/);
   assert.match(styles, /is-copy-entering[^{]*\{[^}]*translateY\(10px\)/);
   assert.match(page, /class="trial-countdown" data-trial-digital role="timer"/);
+  assert.doesNotMatch(page, /trial-countdown-heading/);
   assert.match(page, /data-trial-hours>96<\/b>/);
   assert.match(page, /data-trial-minutes>00<\/b>/);
   assert.match(page, /data-trial-seconds>00<\/b>/);
