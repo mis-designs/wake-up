@@ -1323,9 +1323,9 @@ let trialPromoCopySwapTimer = null;
 const TRIAL_PROMO_COPY = Object.freeze([
   Object.freeze({
     lang: "bn",
-    label: "MagicBook বিনামূল্যে ব্যবহার করে দেখুন",
-    kicker: "৪ দিনের ফ্রি উপহার",
-    title: "MagicBook ফ্রি ট্রাই করুন",
+    label: "ম্যাজিকবুক ব্যবহার করে দেখুন",
+    kicker: "৪ দিন বিনামূল্যে",
+    title: "ম্যাজিকবুক ব্যবহার করে দেখুন",
     subtitle: "লগইন ছাড়াই অধ্যায় ১ ও ৩: বই, অডিও ও কুইজ।"
   }),
   Object.freeze({
@@ -1344,6 +1344,7 @@ function setupTrialPromoCopy() {
 
   if (trialPromoCopyTimer) clearInterval(trialPromoCopyTimer);
   if (trialPromoCopySwapTimer) clearTimeout(trialPromoCopySwapTimer);
+  copyRoot.classList.remove("is-copy-leaving", "is-copy-entering");
   trialPromoCopyTimer = null;
   trialPromoCopySwapTimer = null;
   let activeCopy = 0;
@@ -1365,12 +1366,16 @@ function setupTrialPromoCopy() {
       applyCopy(nextCopy);
       return;
     }
-    copyRoot.classList.add("is-copy-swapping");
+    copyRoot.classList.add("is-copy-leaving");
     trialPromoCopySwapTimer = setTimeout(() => {
       applyCopy(nextCopy);
-      requestAnimationFrame(() => copyRoot.classList.remove("is-copy-swapping"));
+      copyRoot.classList.remove("is-copy-leaving");
+      copyRoot.classList.add("is-copy-entering");
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => copyRoot.classList.remove("is-copy-entering"));
+      });
       trialPromoCopySwapTimer = null;
-    }, 220);
+    }, 520);
   }, 10000);
 }
 
@@ -1400,6 +1405,10 @@ function setupTrialMarketing(serverExpiresAt = 0) {
     const minutes = Math.floor(remaining % 3600000 / 60000);
     const seconds = Math.floor(remaining % 60000 / 1000);
     const clock = [hours, minutes, seconds].map(value => String(value).padStart(2, "0")).join(":");
+    const progress = Math.max(0, Math.min(100, remaining / FREE_TRIAL_DURATION_MS * 100));
+    document.querySelectorAll("[data-trial-progress]").forEach(el => {
+      el.style.setProperty("--trial-progress", `${progress.toFixed(4)}%`);
+    });
     document.querySelectorAll("[data-trial-countdown]").forEach(el => {
       el.textContent = clock;
       el.setAttribute("aria-label", `${hours} ore, ${minutes} minuti e ${seconds} secondi`);
@@ -4941,7 +4950,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-      .register("/service-worker.js?v=30-bilingual-trial-promo", { updateViaCache: "none" })
+      .register("/service-worker.js?v=33-circular-trial-cta", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });

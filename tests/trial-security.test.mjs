@@ -46,11 +46,26 @@ test("trial promotion starts in Bangla and alternates safely every ten seconds",
   const styles = readFileSync(new URL("../style.css", import.meta.url), "utf8");
 
   assert.match(page, /id="trialPromoCopy" lang="bn"/);
-  assert.match(page, /৪ দিনের ফ্রি উপহার/);
+  assert.match(page, /href="https:\/\/banglawebfonts\.pages\.dev\/css\/ekush\.css" rel="stylesheet"/);
+  assert.match(page, /৪ দিন বিনামূল্যে/);
+  assert.match(page, /ম্যাজিকবুক ব্যবহার করে দেখুন/);
+  const banglaCopy = page.match(/<span class="trial-card-copy is-bangla"[\s\S]*?<\/span>/)?.[0] || "";
+  assert.doesNotMatch(banglaCopy.replace(/<[^>]+>/g, ""), /[A-Za-z]/);
   assert.match(main, /setInterval\(\(\) => \{[\s\S]*?\}, 10000\)/);
   assert.match(main, /replaceChildren\(copy\.kicker\)/);
   assert.doesNotMatch(main, /trialPromoCopy[\s\S]{0,800}innerHTML/);
-  assert.match(styles, /"Hind Siliguri","Noto Sans Bengali",sans-serif/);
+  assert.match(styles, /font-family:"Ekush",serif/);
+  assert.match(main, /classList\.add\("is-copy-leaving"\)[\s\S]*?classList\.add\("is-copy-entering"\)/);
+  assert.match(styles, /is-copy-leaving[^{]*\{[^}]*filter:blur\(5px\)/);
+  assert.match(styles, /is-copy-entering[^{]*\{[^}]*translateY\(10px\)/);
+  assert.match(page, /class="trial-countdown-ring" data-trial-progress/);
+  assert.match(main, /remaining \/ FREE_TRIAL_DURATION_MS \* 100/);
+  assert.match(main, /setProperty\("--trial-progress", `\$\{progress\.toFixed\(4\)\}%`\)/);
+  assert.match(page, /startGuestTrial\(\{ openChapter: 1 \}\)/);
+  assert.match(page, /startGuestTrial\(\{ openChapter: 3 \}\)/);
+  assert.doesNotMatch(page, /startGuestTrial\(\{ openChapter: (?:2|4) \}\)/);
+  assert.match(styles, /@keyframes trialCountdownBreath/);
+  assert.match(styles, /@keyframes trialChapterShine/);
   assert.match(styles, /@keyframes trialPromoGiftSwing/);
   assert.match(styles, /translateX\(-10px\)[\s\S]*translateX\(10px\)/);
   assert.match(styles, /prefers-reduced-motion:reduce[\s\S]*trial-promo-gift/);

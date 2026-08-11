@@ -87,10 +87,12 @@ gtag('config', 'G-C5JPY9HFHD', {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400&family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://banglawebfonts.pages.dev" crossorigin>
+<link href="https://banglawebfonts.pages.dev/css/ekush.css" rel="stylesheet">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MagicBook">
-<link rel="stylesheet" href="style.css?v=40-bilingual-trial-promo">
+<link rel="stylesheet" href="style.css?v=43-circular-trial-cta">
 <link rel="stylesheet" href="homebg.css?v=3">
 <link rel="stylesheet" href="magic-dictionary.css?v=1.2.1">
 </head>
@@ -137,14 +139,27 @@ gtag('config', 'G-C5JPY9HFHD', {
     <div class="public-logo public-logo-dark">
       <strong>MagicBook</strong>
     </div>
-    <button class="trial-card" type="button" onclick="openTrialChapterPicker()" aria-label="MagicBook বিনামূল্যে ব্যবহার করে দেখুন">
+    <section class="trial-card" aria-label="ম্যাজিকবুক ব্যবহার করে দেখুন">
       <span class="trial-promo-burst" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
       <span class="trial-promo-gift" aria-hidden="true"><i class="gift-lid"></i><i class="gift-box"></i><i class="gift-ribbon"></i><i class="gift-bow gift-bow-left"></i><i class="gift-bow gift-bow-right"></i></span>
-      <span class="trial-card-copy is-bangla" id="trialPromoCopy" lang="bn"><small data-trial-copy="kicker">৪ দিনের ফ্রি উপহার</small><strong data-trial-copy="title">MagicBook ফ্রি ট্রাই করুন</strong><em data-trial-copy="subtitle">লগইন ছাড়াই অধ্যায় ১ ও ৩: বই, অডিও ও কুইজ।</em></span>
-      <span class="trial-countdown"><small>PROVA DISPONIBILE PER</small><span class="trial-countdown-clock"><b id="trialCountdown" data-trial-countdown>96:00:00</b><em><i>ORE</i><i>MIN</i><i>SEC</i></em></span></span>
-      <span class="trial-ticket-row" aria-hidden="true"><i><b>CAP 1</b><small>GRATIS</small></i><i><b>CAP 3</b><small>GRATIS</small></i></span>
-      <span class="trial-promo-cta">Scegli il capitolo <b aria-hidden="true"></b></span>
-    </button>
+      <span class="trial-card-copy is-bangla" id="trialPromoCopy" lang="bn"><small data-trial-copy="kicker">৪ দিন বিনামূল্যে</small><strong data-trial-copy="title">ম্যাজিকবুক ব্যবহার করে দেখুন</strong><em data-trial-copy="subtitle">লগইন ছাড়াই অধ্যায় ১ ও ৩: বই, অডিও ও কুইজ।</em></span>
+      <div class="trial-countdown">
+        <small class="trial-countdown-kicker">IL TUO TEMPO GRATIS</small>
+        <span class="trial-countdown-ring" data-trial-progress style="--trial-progress:100%">
+          <span class="trial-countdown-clock"><b id="trialCountdown" data-trial-countdown role="timer">96:00:00</b><em><i>ORE</i><i>MIN</i><i>SEC</i></em></span>
+        </span>
+        <span class="trial-countdown-note"><b>4 giorni</b><i>Il cerchio si chiude con il tempo</i></span>
+      </div>
+      <div class="trial-chapter-actions" aria-label="Apri un capitolo gratuito">
+        <button class="trial-chapter-action is-chapter-one" type="button" onclick="startGuestTrial({ openChapter: 1 })" aria-label="Apri gratis il libro del capitolo 1">
+          <span class="trial-chapter-index" aria-hidden="true">01</span><span class="trial-chapter-details"><small>CAPITOLO 1</small><strong>Apri il libro</strong></span><span class="trial-chapter-status">GRATIS</span>
+        </button>
+        <button class="trial-chapter-action is-chapter-three" type="button" onclick="startGuestTrial({ openChapter: 3 })" aria-label="Apri gratis il libro del capitolo 3">
+          <span class="trial-chapter-index" aria-hidden="true">03</span><span class="trial-chapter-details"><small>CAPITOLO 3</small><strong>Apri il libro</strong></span><span class="trial-chapter-status">GRATIS</span>
+        </button>
+      </div>
+      <button class="trial-promo-cta" type="button" onclick="openTrialChapterPicker()"><span><small>LIBRO · AUDIO · QUIZ</small><strong>Scegli come iniziare</strong></span><b aria-hidden="true"></b></button>
+    </section>
     <div class="landing-actions" aria-label="Scegli accesso">
       <button class="landing-choice glass-button is-highlight" type="button" onclick="showLoginScreen()" aria-label="Login">
         <span class="landing-choice-label">LOGIN</span>
@@ -1049,6 +1064,6 @@ gtag('config', 'G-C5JPY9HFHD', {
 
 <script src="patenteGlossaryResolver.js?v=1.0.0"></script>
 <script src="magic-dictionary.js?v=1.2.1"></script>
-<script src="script.js?v=31-bilingual-trial-promo"></script>
+<script src="script.js?v=34-circular-trial-cta"></script>
 </body>
 </html>
