@@ -2962,6 +2962,11 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 56px);
 }
 
+#login,
+#login * {
+    font-family: "Rubik", "Inter", sans-serif;
+}
+
 #login > :not(.watermark-link),
 #home > :not(.watermark-link) {
     width: min(100%, 460px);
@@ -2993,6 +2998,137 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     margin-right: 0;
 }
 
+#login .login-greeting-cloud {
+    width: min(100%, 330px);
+    height: 118px;
+    margin: 0 auto clamp(18px, 3.2dvh, 30px);
+    position: relative;
+    flex: 0 0 auto;
+    isolation: isolate;
+    animation: loginGreetingEnter 650ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+#login .login-greeting-cloud::before {
+    content: "";
+    position: absolute;
+    inset: 10px 24px 5px;
+    z-index: -1;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(124, 255, 107, 0.14), rgba(10, 130, 112, 0.055) 42%, transparent 72%);
+    filter: blur(7px);
+}
+
+#login .login-greeting-cloud::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 27px;
+    width: 54px;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, rgba(10, 130, 112, 0.32), transparent);
+    transform: translateX(-50%);
+}
+
+#login .login-greeting {
+    position: absolute;
+    display: block;
+    white-space: nowrap;
+    line-height: 1;
+    user-select: none;
+    animation: loginGreetingBreathe 6s ease-in-out infinite;
+}
+
+#login .login-greeting-ciao {
+    top: 5px;
+    left: 2px;
+    color: #e36c59;
+    font-family: "Bodoni Moda", Georgia, serif;
+    font-size: clamp(1.25rem, 5vw, 1.65rem);
+    font-weight: 700;
+    font-style: italic;
+    transform: rotate(-7deg);
+    animation-delay: -1.2s;
+}
+
+#login .login-greeting-hello {
+    top: 7px;
+    right: 4px;
+    color: #7464d7;
+    font-size: clamp(1.05rem, 4.4vw, 1.4rem);
+    font-weight: 800;
+    font-style: italic;
+    letter-spacing: -0.04em;
+    transform: rotate(5deg);
+    animation-delay: -3.8s;
+}
+
+#login .login-greeting-welcome {
+    top: 35px;
+    left: 50%;
+    z-index: 2;
+    color: #0A8270;
+    background: linear-gradient(98deg, #17203b 4%, #0A8270 48%, #59d95d 82%, #17203b 100%);
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: clamp(1.65rem, 7vw, 2.25rem);
+    font-weight: 800;
+    letter-spacing: -0.065em;
+    transform: translateX(-50%);
+    animation: loginGreetingShimmer 7s ease-in-out infinite;
+}
+
+#login .login-greeting-time {
+    left: 3px;
+    bottom: 24px;
+    color: #bd8a24;
+    font-family: "Bodoni Moda", Georgia, serif;
+    font-size: clamp(.78rem, 3.2vw, .98rem);
+    font-weight: 700;
+    font-style: italic;
+    transform: rotate(-3deg);
+    animation-delay: -2.4s;
+}
+
+#login .login-greeting-bangla {
+    right: 4px;
+    bottom: 21px;
+    color: #159778;
+    font-family: "Ekush", "Hind Siliguri", sans-serif;
+    font-size: clamp(1rem, 4vw, 1.28rem);
+    font-weight: 400;
+    transform: rotate(2deg);
+    animation-delay: -4.6s;
+}
+
+#login .login-greeting-salaam {
+    left: 50%;
+    bottom: 2px;
+    color: #596174;
+    font-size: clamp(.7rem, 2.9vw, .86rem);
+    font-weight: 600;
+    letter-spacing: .035em;
+    transform: translateX(-50%);
+    animation-delay: -5.2s;
+}
+
+@keyframes loginGreetingEnter {
+    from { opacity: 0; transform: translateY(-10px) scale(.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes loginGreetingBreathe {
+    0%, 100% { opacity: .72; filter: saturate(.88); }
+    50% { opacity: 1; filter: saturate(1.1) drop-shadow(0 4px 9px rgba(10, 130, 112, .1)); }
+}
+
+@keyframes loginGreetingShimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
 #login .login-hero-img {
     width: min(100%, 230px, 34dvh);
     height: auto;
@@ -3002,11 +3138,16 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
 
 #login h1 {
     margin: 0 0 8px;
-    color: #5e8b4a;
-    font-size: 1.42rem;
-    font-weight: 900;
-    letter-spacing: 0;
+    color: #0A8270;
+    background: linear-gradient(100deg, #0A8270 0%, #20b875 58%, #7CFF6B 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 1.46rem;
+    font-weight: 800;
+    letter-spacing: -0.025em;
     line-height: 1.1;
+    filter: drop-shadow(0 5px 12px rgba(10, 130, 112, 0.14));
 }
 
 #login .login-subtitle {
@@ -3014,7 +3155,7 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     margin: 0 auto clamp(24px, 5dvh, 40px);
     color: rgba(37, 41, 67, 0.58);
     font-size: 0.92rem;
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1.35;
 }
 
@@ -3060,13 +3201,13 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     margin: 0;
     padding: 0 22px;
     border-radius: 999px;
-    border: 1.5px solid rgba(94, 139, 74, 0.28);
-    background: #ffffff;
+    border: 1.5px solid rgba(10, 130, 112, 0.22);
+    background: #f9fcfb;
     color: #252943;
     text-align: center;
     font-size: 0.98rem;
-    font-weight: 700;
-    box-shadow: 0 8px 24px rgba(37, 41, 67, 0.06);
+    font-weight: 600;
+    box-shadow: 0 8px 24px rgba(10, 130, 112, 0.07);
 }
 
 #login input::placeholder {
@@ -3075,8 +3216,8 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
 }
 
 #login input:focus {
-    border-color: rgba(94, 139, 74, 0.72);
-    box-shadow: 0 0 0 4px rgba(94, 139, 74, 0.14), 0 10px 28px rgba(37, 41, 67, 0.08);
+    border-color: #0A8270;
+    box-shadow: 0 0 0 4px rgba(124, 255, 107, 0.18), 0 10px 28px rgba(10, 130, 112, 0.1);
     background: #ffffff;
 }
 
@@ -3086,17 +3227,24 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     padding: 0 18px;
     margin: 0;
     border-radius: 16px;
-    background: linear-gradient(135deg, #5e8b4a 0%, #466f38 100%);
+    background:
+        radial-gradient(circle at 82% 18%, rgba(124, 255, 107, 0.78) 0%, rgba(124, 255, 107, 0.18) 31%, transparent 52%),
+        linear-gradient(112deg, #086f64 0%, #0A8270 48%, #18a968 100%);
+    background-size: 140% 140%;
+    background-position: 0% 50%;
     color: #ffffff;
     font-size: 1rem;
-    font-weight: 900;
+    font-weight: 800;
     letter-spacing: 0.02em;
-    box-shadow: 0 14px 28px rgba(70, 111, 56, 0.24);
+    box-shadow: 0 14px 30px rgba(10, 130, 112, 0.26), 0 8px 24px rgba(124, 255, 107, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    text-shadow: 0 1px 2px rgba(3, 59, 50, 0.28);
+    animation: loginGradientBlend 5.5s ease-in-out infinite;
 }
 
 #login .login-submit:hover {
     transform: translateY(-1px);
-    box-shadow: 0 16px 30px rgba(70, 111, 56, 0.28);
+    background-position: 100% 50%;
+    box-shadow: 0 18px 34px rgba(10, 130, 112, 0.3), 0 10px 30px rgba(124, 255, 107, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.32);
 }
 
 #login .login-submit:active {
@@ -3110,14 +3258,18 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     color: rgba(37, 41, 67, 0.42);
     box-shadow: none;
     transform: none;
+    text-shadow: none;
+    animation: none;
 }
 
 #login .login-submit.is-loading {
     position: relative;
     cursor: wait;
-    background: linear-gradient(135deg, #5e8b4a 0%, #466f38 100%);
+    background:
+        radial-gradient(circle at 82% 18%, rgba(124, 255, 107, 0.78) 0%, rgba(124, 255, 107, 0.18) 31%, transparent 52%),
+        linear-gradient(112deg, #086f64 0%, #0A8270 48%, #18a968 100%);
     color: #ffffff;
-    box-shadow: 0 14px 28px rgba(70, 111, 56, 0.2);
+    box-shadow: 0 14px 30px rgba(10, 130, 112, 0.24), 0 8px 24px rgba(124, 255, 107, 0.1);
 }
 
 #login .login-submit.is-loading::after {
@@ -3138,10 +3290,10 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     min-height: 48px;
     padding: 0 18px;
     margin: 0;
-    border: 1.5px solid rgba(94, 139, 74, 0.22);
+    border: 1.5px solid rgba(10, 130, 112, 0.22);
     border-radius: 16px;
     background: #ffffff;
-    color: #466f38;
+    color: #0A8270;
     font-size: 0.95rem;
     font-weight: 900;
     box-shadow: 0 8px 22px rgba(37, 41, 67, 0.06);
@@ -3149,7 +3301,18 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
 
 #login .otp-resend {
     color: #252943;
-    background: #eef3eb;
+    background: #eef8f4;
+}
+
+@keyframes loginGradientBlend {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #login .login-submit { animation: none; }
+    #login .login-greeting-cloud,
+    #login .login-greeting { animation: none; }
 }
 
 #login .otp-resend:hover,
@@ -4469,6 +4632,31 @@ body.app-mode #whatsappBtn {
     #login:not(.hidden) {
         padding-top: calc(env(safe-area-inset-top, 0px) + 18px);
         padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+    }
+    #login .login-greeting-cloud {
+        width: min(100%, 280px);
+        height: 76px;
+        margin-bottom: 8px;
+    }
+    #login .login-greeting-welcome {
+        top: 23px;
+        font-size: 1.55rem;
+    }
+    #login .login-greeting-ciao,
+    #login .login-greeting-hello {
+        top: 0;
+        font-size: 1rem;
+    }
+    #login .login-greeting-time,
+    #login .login-greeting-bangla {
+        display: none;
+    }
+    #login .login-greeting-salaam {
+        bottom: 1px;
+        font-size: .7rem;
+    }
+    #login .login-greeting-cloud::after {
+        bottom: 19px;
     }
     #login .login-hero-img {
         width: min(100%, 190px, 31dvh);

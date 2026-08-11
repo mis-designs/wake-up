@@ -1723,11 +1723,25 @@ function openJoinWhatsApp(price, duration) {
   openExternalUrl(url);
 }
 
+function updateLoginTimeGreeting(now = new Date()) {
+  const greeting = document.querySelector("[data-login-time-greeting]");
+  if (!greeting) return;
+  const hour = now.getHours();
+  greeting.textContent = hour >= 5 && hour < 12
+    ? "Good morning"
+    : hour >= 12 && hour < 17
+      ? "Good afternoon"
+      : hour >= 17 && hour < 22
+        ? "Good evening"
+        : "Good night";
+}
+
 function showLoginScreen(message = "", options = {}) {
   hideAll();
   pendingOtpLogin = null;
   hideOtpUI();
   document.getElementById("login")?.classList.remove("hidden");
+  updateLoginTimeGreeting();
   setChapterMode(false);
   const err = document.getElementById("err");
   if (err) err.textContent = message;
@@ -4953,7 +4967,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-      .register("/service-worker.js?v=35-minimal-trial-copy", { updateViaCache: "none" })
+      .register("/service-worker.js?v=36-login-greetings", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });
