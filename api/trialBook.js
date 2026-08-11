@@ -1,8 +1,8 @@
-import { verifyGuestTrialToken } from "./trialAccess.js";
+import { GUEST_TRIAL_CHAPTERS, verifyGuestTrialToken } from "./trialAccess.js";
 import { fetchUpstream, publicApiError } from "./upstream-fetch.mjs";
 
 const BASE_URL = process.env.R2_BASE_URL;
-export const TRIAL_BOOK_CHAPTERS = new Set(["2", "4"]);
+export const TRIAL_BOOK_CHAPTERS = new Set(GUEST_TRIAL_CHAPTERS.map(String));
 
 export function isAllowedTrialBookRequest(chapter, page) {
   const normalizedChapter = String(chapter || "").trim();
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     const buffer = await response.arrayBuffer();
     if (!buffer.byteLength) return res.status(500).json({ error: "empty_file" });
     res.setHeader("Content-Type", "image/jpeg");
-    res.setHeader("Cache-Control", "private, max-age=300");
+    res.setHeader("Cache-Control", "no-store");
     return res.send(Buffer.from(buffer));
   } catch (error) {
     const { statusCode, error: publicError } = publicApiError(error);

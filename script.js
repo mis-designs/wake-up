@@ -9,7 +9,15 @@ const AUTH_API = "/api/auth";
 const ADMIN_API = "/api/admin";
 const APP_TITLE = "MagicBook";
 const EXPLANATION_FIGURES_CACHE_KEY = "magicbook_explanation_figures_v1";
+const FREE_TRIAL_CHAPTERS = Object.freeze([1, 3]);
+const FREE_TRIAL_CHAPTER_SET = new Set(FREE_TRIAL_CHAPTERS);
+const FREE_TRIAL_DURATION_MS = 4 * 24 * 60 * 60 * 1000;
+const FREE_TRIAL_POLICY_VERSION = "chapters-1-3-v1";
 let applyingRouteFromHistory = false;
+
+function isFreeTrialChapter(chapter) {
+  return FREE_TRIAL_CHAPTER_SET.has(Number(chapter));
+}
 
 function openExternalUrl(url) {
   const opened = window.open(url, "_blank", "noopener,noreferrer");
@@ -80,7 +88,7 @@ function setAppRoute(state = {}, options = {}) {
 function getRouteStateFromLocation() {
   const path = normalizeRoutePath();
   if (path === "/prova-gratis") return { screen: "trialHub" };
-  const trialBookMatch = path.match(/^\/prova-gratis\/libro-(2|4)$/);
+  const trialBookMatch = path.match(/^\/prova-gratis\/libro-(1|3)$/);
   if (trialBookMatch) return { screen: "trialBook", chapter: Number(trialBookMatch[1]) };
   const chapterMatch = path.match(/^\/magic-book\/capitolo-(\d{1,2})$/);
   if (chapterMatch) {
@@ -1307,19 +1315,16 @@ function showLandingScreen(options = {}) {
   setAppRoute({ screen: "welcome" }, { replace: options.replace === true });
 }
 
-const TRIAL_COUNTDOWN_MS = 71 * 60 * 60 * 1000;
-const LEGACY_TRIAL_COUNTDOWN_MS = 36 * 60 * 60 * 1000;
-const TRIAL_COUNTDOWN_KEY = "trial_offer_ends_at_v2";
+const TRIAL_COUNTDOWN_KEY = "trial_offer_ends_at_v3";
 let trialCountdownTimer = null;
 
-function setupTrialMarketing() {
-  let endsAt = Number(Storage.get(TRIAL_COUNTDOWN_KEY) || 0);
+function setupTrialMarketing(serverExpiresAt = 0) {
+  const signedDeadline = Number(serverExpiresAt || getTrialGuestCredentials().expiresAt || 0);
+  let endsAt = signedDeadline > 0 ? signedDeadline : Number(Storage.get(TRIAL_COUNTDOWN_KEY) || 0);
   if (!endsAt) {
-    const legacyEndsAt = Number(Storage.get("trial_offer_ends_at") || 0);
-    // Extend countdowns created with the old 36-hour offer by the requested 35 hours.
-    endsAt = legacyEndsAt > 0 ? legacyEndsAt + (TRIAL_COUNTDOWN_MS - LEGACY_TRIAL_COUNTDOWN_MS) : Date.now() + TRIAL_COUNTDOWN_MS;
-    Storage.set(TRIAL_COUNTDOWN_KEY, String(endsAt));
+    endsAt = Date.now() + FREE_TRIAL_DURATION_MS;
   }
+  Storage.set(TRIAL_COUNTDOWN_KEY, String(endsAt));
   const render = () => {
     const remaining = Math.max(0, endsAt - Date.now());
     const active = remaining > 0;
@@ -1337,8 +1342,11 @@ function setupTrialMarketing() {
     const hours = Math.floor(remaining / 3600000);
     const minutes = Math.floor(remaining % 3600000 / 60000);
     const seconds = Math.floor(remaining % 60000 / 1000);
-    const el = document.getElementById("trialCountdown");
-    if (el) el.textContent = [hours, minutes, seconds].map(value => String(value).padStart(2, "0")).join(":");
+    const clock = [hours, minutes, seconds].map(value => String(value).padStart(2, "0")).join(":");
+    document.querySelectorAll("[data-trial-countdown]").forEach(el => {
+      el.textContent = clock;
+      el.setAttribute("aria-label", `${hours} ore, ${minutes} minuti e ${seconds} secondi`);
+    });
     if (!active && trialCountdownTimer) {
       clearInterval(trialCountdownTimer);
       trialCountdownTimer = null;
@@ -1349,8 +1357,9 @@ function setupTrialMarketing() {
   trialCountdownTimer = setInterval(render, 1000);
   const params = new URLSearchParams(location.search);
   if (params.get("trialOffer") === "1") {
+    const requestedFeature = String(params.get("feature") || "").trim().slice(0, 80);
     history.replaceState({}, "", "/");
-    setTimeout(() => document.getElementById("trialOfferModal")?.classList.remove("hidden"), 450);
+    setTimeout(() => openTrialPaywall(requestedFeature || "Questa funzione"), 450);
   }
 }
 
@@ -1420,10 +1429,10 @@ function renderTrialOnboardingStep() {
   const text = document.getElementById("trialOnboardingText");
   const guide = document.getElementById("trialOnboarding");
   const content = [
-    ["Inizia dai capitoli gratuiti", "Il capitolo 2 è aperto: il badge verde FREE indica che libro e quiz sono disponibili.", ".chapter-card[data-chapter='2']"],
-    ["Anche il capitolo 4 è gratuito", "Puoi studiare e fare il quiz anche dal capitolo 4. Tutti gli altri capitoli restano protetti.", ".chapter-card[data-chapter='4']"],
-    ["Scegli la modalità Quiz", "Apri Quiz per vedere subito quali capitoli puoi usare: 02 e 04 sono verdi, gli altri sono grigi e bloccati.", "#quizButton"],
-    ["Hai 2 prove Mix Quiz 786", `Il Mix Quiz 786 è disponibile per ${Math.max(0, 2 - getTrialMixAttempts())} prove gratuite. Dalla terza apparirà l'offerta.`, "#qmsCardMix"]
+    ["Inizia dai capitoli gratuiti", "Il capitolo 1 è aperto: il badge verde FREE indica che libro, audio e quiz sono disponibili.", ".chapter-card[data-chapter='1']"],
+    ["Anche il capitolo 3 è gratuito", "Puoi studiare e fare il quiz anche dal capitolo 3. Tutti gli altri capitoli restano protetti.", ".chapter-card[data-chapter='3']"],
+    ["Scegli la modalità Quiz", "Apri Quiz per vedere subito quali capitoli puoi usare: 01 e 03 sono verdi, gli altri sono grigi e bloccati.", "#quizButton"],
+    ["Hai 2 prove Mix Quiz 786", `Il Mix Quiz 786 include ${Math.max(0, 2 - getTrialMixAttempts())} prove dimostrative. Il limite è indicato prima di iniziare.`, "#qmsCardMix"]
   ][trialOnboardingStep];
   if (!content || !guide) return;
   if (step) step.textContent = String(trialOnboardingStep + 1);
@@ -1464,12 +1473,15 @@ function neverShowTrialOnboarding() {
 
 function getTrialGuestCredentials() {
   try {
+    const policyVersion = sessionStorage.getItem("magicbook_trial_guest_policy") || "";
+    const policyMatches = policyVersion === FREE_TRIAL_POLICY_VERSION;
     return {
       trialId: sessionStorage.getItem("magicbook_trial_id") || "",
-      guestKey: sessionStorage.getItem("magicbook_trial_guest_key") || "",
-      expiresAt: Number(sessionStorage.getItem("magicbook_trial_guest_expires") || 0)
+      guestKey: policyMatches ? sessionStorage.getItem("magicbook_trial_guest_key") || "" : "",
+      expiresAt: policyMatches ? Number(sessionStorage.getItem("magicbook_trial_guest_expires") || 0) : 0,
+      policyVersion
     };
-  } catch { return { trialId: "", guestKey: "", expiresAt: 0 }; }
+  } catch { return { trialId: "", guestKey: "", expiresAt: 0, policyVersion: "" }; }
 }
 async function startGuestTrial(options = {}) {
   let credentials = getTrialGuestCredentials();
@@ -1485,24 +1497,27 @@ async function startGuestTrial(options = {}) {
     sessionStorage.setItem("magicbook_trial_id", trialId);
     sessionStorage.setItem("magicbook_trial_guest_key", data.guestKey);
     sessionStorage.setItem("magicbook_trial_guest_expires", String(data.expiresAt));
+    sessionStorage.setItem("magicbook_trial_guest_policy", FREE_TRIAL_POLICY_VERSION);
+    credentials = { trialId, guestKey: data.guestKey, expiresAt: Number(data.expiresAt), policyVersion: FREE_TRIAL_POLICY_VERSION };
   }
+  setupTrialMarketing(credentials.expiresAt);
   trialGuestMode = true;
-  selectedChapter = [2, 4].includes(selectedChapter) ? selectedChapter : 2;
+  selectedChapter = isFreeTrialChapter(selectedChapter) ? selectedChapter : FREE_TRIAL_CHAPTERS[0];
   showChapters();
   decorateGuestTrialUI();
-  if (![2, 4].includes(Number(options.openChapter))) scheduleTrialOnboarding();
+  if (!isFreeTrialChapter(options.openChapter)) scheduleTrialOnboarding();
   setAppRoute({ screen: "trialHub" }, { replace: options.replace === true });
-  if ([2, 4].includes(Number(options.openChapter))) openTrialBook(Number(options.openChapter));
+  if (isFreeTrialChapter(options.openChapter)) openTrialBook(Number(options.openChapter));
   return true;
 }
 function openTrialChapterPicker() { startGuestTrial(); }
 function closeTrialChapterPicker() { document.getElementById("trialChapterModal")?.classList.add("hidden"); }
 function startFreeTrial(chapter) {
-  if (![2, 4].includes(Number(chapter))) return;
+  if (!isFreeTrialChapter(chapter)) return;
   window.location.href = `/quiz/prova-gratis?chapter=${Number(chapter)}`;
 }
 function startTrialBook(chapter) {
-  if (![2, 4].includes(Number(chapter))) return;
+  if (!isFreeTrialChapter(chapter)) return;
   closeTrialChapterPicker();
   openTrialBook(Number(chapter));
 }
@@ -1514,7 +1529,7 @@ function buildTrialHubChapters() {
   const container = document.getElementById("trialHubChapters");
   if (!container || container.childElementCount) return;
   for (let chapter = 1; chapter <= 25; chapter++) {
-    const unlocked = chapter === 2 || chapter === 4;
+    const unlocked = isFreeTrialChapter(chapter);
     const card = document.createElement("article");
     card.className = `trial-hub-chapter${unlocked ? " is-open" : " is-locked"}`;
     card.innerHTML = `<span>${unlocked ? "APERTO" : "🔒"}</span><small>CAPITOLO</small><strong>${chapter}</strong><p>${unlocked ? "Libro e quiz disponibili" : "Contenuto Premium"}</p>`;
@@ -1541,7 +1556,9 @@ function showTrialHub(options = {}) {
 }
 function openTrialPaywall(feature = "Questa funzione") {
   const title = document.getElementById("trialOfferTitle");
-  if (title) title.textContent = `${feature} è Premium`;
+  const message = document.getElementById("trialOfferMessage");
+  if (title) title.textContent = `${feature} è bloccato`;
+  if (message) message.textContent = "Hai già visto il metodo in azione. Sblocca capitoli, audio, quiz e simulazioni per costruire una preparazione completa e arrivare all’esame più sicuro.";
   document.getElementById("trialOfferModal")?.classList.remove("hidden");
 }
 let trialPreviewTimer = null;
@@ -1568,7 +1585,9 @@ function startTrialPreview(feature) {
 function closeTrialOffer() {
   document.getElementById("trialOfferModal")?.classList.add("hidden");
   const title = document.getElementById("trialOfferTitle");
+  const message = document.getElementById("trialOfferMessage");
   if (title) title.textContent = "Sblocca tutto MagicBook";
+  if (message) message.textContent = "Continua con tutti i capitoli, gli audio, i quiz e le simulazioni per prepararti con un percorso completo.";
 }
 function openTrialJoinOffer() {
   closeTrialOffer();
@@ -2702,11 +2721,11 @@ function showMagicDictionary(options = {}) {
   window.MagicDictionaryFeature?.showDictionary({ returnScreen });
 }
 
-function isGuestTrialChapter(chapter) { return trialGuestMode && [2, 4].includes(Number(chapter)); }
+function isGuestTrialChapter(chapter) { return trialGuestMode && isFreeTrialChapter(chapter); }
 function decorateGuestTrialUI() {
   document.body.classList.toggle("guest-trial-mode", trialGuestMode);
   document.querySelectorAll(".chapter-card").forEach(card => {
-    const allowed = [2, 4].includes(Number(card.dataset.chapter));
+    const allowed = isFreeTrialChapter(card.dataset.chapter);
     card.classList.toggle("guest-locked", trialGuestMode && !allowed);
     card.classList.toggle("guest-open", trialGuestMode && allowed);
     let badge = card.querySelector(".guest-lock-badge");
@@ -2717,7 +2736,7 @@ function decorateGuestTrialUI() {
   });
   document.getElementById("examButton")?.classList.toggle("guest-locked-tool", trialGuestMode);
   const kicker = document.querySelector("#chapters .lesson-kicker");
-  if (kicker) kicker.textContent = trialGuestMode ? "Guest Trial · Capitoli 2 e 4" : "License Journey";
+  if (kicker) kicker.textContent = trialGuestMode ? "Guest Trial · Capitoli 1 e 3" : "License Journey";
 }
 
 function back() { goBack(); }
@@ -2842,7 +2861,7 @@ function initCardTrack() {
       const tapped = releaseTarget?.closest(".chapter-card") || e.target.closest(".chapter-card");
       if (tapped) {
         const ch = parseInt(tapped.dataset.chapter);
-        if (trialGuestMode && ![2, 4].includes(ch)) {
+        if (trialGuestMode && !isFreeTrialChapter(ch)) {
           selectChapter(ch);
           openTrialPaywall(`Capitolo ${ch}`);
         } else if (ch === selectedChapter) startEngineSequence();
@@ -2875,7 +2894,7 @@ initCardTrack();
 let engineStarting = false;
 
 function startEngineSequence() {
-  if (trialGuestMode && ![2, 4].includes(selectedChapter)) {
+  if (trialGuestMode && !isFreeTrialChapter(selectedChapter)) {
     openTrialPaywall(`Capitolo ${selectedChapter}`);
     return;
   }
@@ -3293,7 +3312,7 @@ function startViewerLoadingAnimation(loader) {
 
 async function fetchMagicBookPage({ type, chapter, page }) {
   if (isTrialBookViewer) {
-    if (![2, 4].includes(Number(chapter)) || type !== "chapter") return null;
+    if (!isFreeTrialChapter(chapter) || type !== "chapter") return null;
     const guest = getTrialGuestCredentials();
     const params = new URLSearchParams({ chapter: String(Number(chapter)), page: String(Number(page)), trialId: guest.trialId, guestKey: guest.guestKey });
     const response = await fetch(`/api/trialBook?${params.toString()}`);
@@ -3724,7 +3743,7 @@ async function openMagicBookPages({ type, chapter = null }) {
 
 function openTrialBook(chapter) {
   const normalizedChapter = Number(chapter);
-  if (![2, 4].includes(normalizedChapter)) {
+  if (!isFreeTrialChapter(normalizedChapter)) {
     showLandingScreen({ replace: true });
     return;
   }
@@ -3773,8 +3792,14 @@ function openQuizModeScreen() {
 
 function decorateGuestQuizUI() {
   if (!trialGuestMode) return;
+  const studyCard = document.getElementById("qmsCardStudy");
+  studyCard?.classList.add("guest-qms-free-card");
+  const studySubtitle = studyCard?.querySelector(".qms-card-sub");
+  const studyLabel = studyCard?.querySelector(".qms-start-label");
+  if (studySubtitle) studySubtitle.textContent = "Capitoli 1 e 3: domande, audio, traduzioni e parole chiave";
+  if (studyLabel) studyLabel.textContent = "Studia 01 e 03 gratis";
   document.querySelectorAll("#qmsCapPills .qms-pill").forEach(pill => {
-    const free = [2, 4].includes(Number(pill.dataset.ch));
+    const free = isFreeTrialChapter(pill.dataset.ch);
     pill.classList.toggle("guest-qms-free", free);
     pill.classList.toggle("guest-qms-locked", !free);
   });
@@ -3876,7 +3901,7 @@ function _buildQMSCapPills() {
     pill.dataset.ch  = i;
 
     pill.addEventListener("click", () => {
-      if (trialGuestMode && ![2, 4].includes(i)) { openTrialPaywall(`Quiz Capitolo ${i}`); return; }
+      if (trialGuestMode && !isFreeTrialChapter(i)) { openTrialPaywall(`Quiz Capitolo ${i}`); return; }
       // Entering chapter mode clears any multi selection
       if (qmsActiveMode === "multi") _qmsResetMultiMode();
 
@@ -3914,6 +3939,7 @@ function _buildQMSMultiPills() {
     pill.dataset.ch  = i;
 
     pill.addEventListener("click", () => {
+      if (trialGuestMode) { openTrialPaywall("Quiz Multi"); return; }
       // Entering multi mode clears any chapter selection
       if (qmsActiveMode === "chapter") _qmsResetCapMode();
 
@@ -3956,7 +3982,8 @@ function _buildQMSMultiPills() {
 
 function startStudyQuiz() {
   if (trialGuestMode) {
-    openTrialPaywall("Studia quiz");
+    closeQuizModeScreen();
+    setTimeout(() => { window.location.href = "/studia-quiz/prova-gratis"; }, 460);
     return;
   }
   closeQuizModeScreen();
@@ -3969,7 +3996,7 @@ function startMixQuiz() {
     if (attempts >= 2) { openTrialPaywall("Quiz Mix 786"); return; }
     setTrialMixAttempts(attempts + 1);
     closeQuizModeScreen();
-    setTimeout(() => { window.location.href = "/quiz/prova-gratis?chapter=2&mix=1"; }, 460);
+    setTimeout(() => { window.location.href = "/quiz/prova-gratis?chapter=1&mix=1"; }, 460);
     return;
   }
   closeQuizModeScreen();
@@ -3977,7 +4004,7 @@ function startMixQuiz() {
 }
 
 function startCapQuiz() {
-  if (trialGuestMode && ![2, 4].includes(qmsCapSelected)) { openTrialPaywall("Questo quiz"); return; }
+  if (trialGuestMode && !isFreeTrialChapter(qmsCapSelected)) { openTrialPaywall("Questo quiz"); return; }
   if (qmsCapSelected === null) return;
   const ch = qmsCapSelected;
   closeQuizModeScreen();
@@ -4043,7 +4070,7 @@ function getAdminStatus(user) {
     return { key: "no-expiry", label: "No expiry", days: null };
   }
   if (trialGuestMode) {
-    document.querySelectorAll("#qmsCapPills .qms-pill").forEach(pill => pill.classList.toggle("guest-qms-locked", ![2, 4].includes(Number(pill.dataset.ch))));
+    document.querySelectorAll("#qmsCapPills .qms-pill").forEach(pill => pill.classList.toggle("guest-qms-locked", !isFreeTrialChapter(pill.dataset.ch)));
     document.getElementById("qmsCardMix")?.classList.add("guest-qms-locked-card");
     document.getElementById("qmsCardMulti")?.classList.add("guest-qms-locked-card");
   }
@@ -4857,7 +4884,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-      .register("/service-worker.js?v=28-dictionary-clean-cards", { updateViaCache: "none" })
+      .register("/service-worker.js?v=29-trial-chapters-1-3", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });

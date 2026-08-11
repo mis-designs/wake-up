@@ -6,6 +6,7 @@ const CLIENT_AUTH_RESET_KEY = "client_auth_reset_version";
 const HOME_ROUTE = "/magic-book";
 const TRIAL_MODE = window.location.pathname.replace(/\/+$/, "") === "/quiz/prova-gratis";
 const TRIAL_HOME_ROUTE = "/?trialOffer=1";
+const TRIAL_ALLOWED_CHAPTERS = new Set(["1", "3"]);
 const RESULT_VIDEO_SOURCES = {
   pass: "assets/videos/pial_vhai%20applauso.mp4",
   fail: "assets/videos/delusione.mp4"
@@ -192,7 +193,7 @@ function getQuizRouteInfo() {
   const examMatch = path.match(/^\/quiz\/esame-(80|30)$/);
   if (TRIAL_MODE) {
     const chapter = params.get("chapter") || "";
-    return { chapters: ["2", "4"].includes(chapter) ? chapter : "", mode: "default" };
+    return { chapters: TRIAL_ALLOWED_CHAPTERS.has(chapter) ? chapter : "", mode: "default" };
   }
 
   if (chapterMatch) {
@@ -1651,7 +1652,7 @@ async function loadQuiz() {
     });
     const routeInfo = getQuizRouteInfo();
     const chapters = routeInfo.chapters || "";
-    if (TRIAL_MODE && !["2", "4"].includes(chapters)) throw new Error("trial_chapter_forbidden");
+    if (TRIAL_MODE && !TRIAL_ALLOWED_CHAPTERS.has(chapters)) throw new Error("trial_chapter_forbidden");
     quizMode = getRequestedQuizMode();
     const url = buildQuizApiUrl("getQuiz", { chapters, mode: quizMode === "default" ? "" : quizMode });
     const data = await fetchQuizJson(url, { cache: "no-store" });

@@ -59,6 +59,13 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .study-chapter-arrow { display: grid; place-items: center; color: #3a8a4e; }
 .study-chapter-arrow .study-system-arrow { width: 17px; height: 17px; opacity: .72; transition: transform .18s ease, opacity .18s ease; }
 .study-chapter:hover .study-chapter-arrow .study-system-arrow, .study-chapter:focus-visible .study-chapter-arrow .study-system-arrow { opacity: 1; transform: translateX(3px); }
+body.study-trial-mode .study-header{border-bottom-color:rgba(217,155,22,.35);box-shadow:0 8px 30px rgba(166,106,8,.08)}
+.study-chapter.is-trial-open{border-color:#44bd78;box-shadow:0 10px 26px rgba(24,139,77,.12)}
+.study-chapter.is-trial-open::after{content:"FREE";position:absolute;z-index:2;top:10px;right:10px;bottom:auto;left:auto;width:auto;height:auto;padding:5px 8px;border:0;border-radius:999px;background:#d9ffe8;color:#08743a;font-size:.58rem;font-weight:900;letter-spacing:.08em}
+.study-chapter.is-trial-locked{border-color:#e0e3e8;background:#f2f3f5;color:#6f7682;filter:saturate(.28);cursor:pointer}
+.study-chapter.is-trial-locked:hover,.study-chapter.is-trial-locked:focus-visible{border-color:#e0a52b;background:#fff8e6;filter:saturate(.7)}
+.study-chapter.is-trial-locked .study-chapter-arrow{font-size:1rem}
+.study-action-locked{border-style:dashed;border-color:#d9a526;background:#fff8e5;color:#76520b}
 
 .study-reader-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(230px, 340px); gap: 22px; align-items: end; margin-bottom: 20px; }
 .study-reader-toolbar > div > span { color: var(--purple); }

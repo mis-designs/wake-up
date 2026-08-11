@@ -1,16 +1,21 @@
 import crypto from "crypto";
-import { verifyGuestTrialToken } from "./trialAccess.js";
+import {
+  GUEST_TRIAL_CHAPTERS,
+  GUEST_TRIAL_DURATION_MS,
+  verifyGuestTrialToken
+} from "./trialAccess.js";
 import { fetchUpstream, publicApiError } from "./upstream-fetch.mjs";
 import {
   applyCuratedQuizTranslation,
   getCuratedQuizTranslation
 } from "./quiz-translations.mjs";
+import { selectLocalQuizRows } from "./local-quiz-bank.mjs";
 
 const QUIZ_GAS_URL = process.env.QUIZ_GAS_URL;
 const QUIZ_PROXY_SECRET = process.env.QUIZ_PROXY_SECRET;
 const SESSION_SECRET = process.env.SESSION_SECRET;
-export const TRIAL_CHAPTERS = new Set(["2", "4"]);
-const TRIAL_TOKEN_TTL_MS = 71 * 60 * 60 * 1000;
+export const TRIAL_CHAPTERS = new Set(GUEST_TRIAL_CHAPTERS.map(String));
+const TRIAL_TOKEN_TTL_MS = GUEST_TRIAL_DURATION_MS;
 const TRIAL_SERVICE_ACTIONS = new Set(["getItalianAudio", "getBengaliAudio", "getTTS"]);
 
 export function isAllowedTrialChapter(value) {
@@ -89,26 +94,36 @@ function getRows(data) {
 
 export default async function handler(req, res) {
   if (!QUIZ_GAS_URL || !QUIZ_PROXY_SECRET || !SESSION_SECRET) return res.status(500).json({ error: "missing_server_config" });
-  const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+  res.setHeader("Cache-Control", "no-store");
+  let body;
+  try {
+    body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+  } catch {
+    return res.status(400).json({ error: "invalid_json" });
+  }
   const action = body.action || req.query?.action;
   const trialId = String(body.trialId || req.query?.trialId || "");
   if (!/^[a-zA-Z0-9_-]{16,80}$/.test(trialId)) return res.status(400).json({ error: "invalid_trial" });
 
   try {
-    if (req.method === "GET" && action === "getQuiz") {
+    if (req.method === "GET" && (action === "getQuiz" || action === "getStudyQuiz")) {
       const chapter = String(req.query?.chapter || "").trim();
       const guest = verifyGuestTrialToken(req.query?.guestKey, trialId);
       if (!guest || !guest.chapters.includes(Number(chapter))) return res.status(401).json({ error: "invalid_guest_key" });
       if (!isAllowedTrialChapter(chapter)) return res.status(403).json({ error: "trial_chapter_forbidden" });
-      const data = await callQuizBackend("getQuiz", { chapter });
-      const quiz = getRows(data)
+      const isStudyMode = action === "getStudyQuiz";
+      const sourceRows = isStudyMode
+        ? selectLocalQuizRows(chapter)
+        : getRows(await callQuizBackend("getQuiz", { chapter }));
+      const quiz = sourceRows
         .filter(question => String(question?.chapter ?? "").trim() === chapter)
-        .slice(0, 30)
-        .map(({ id, chapter: rowChapter, question, figure, question_bd, explanations }) =>
-          applyCuratedQuizTranslation({ id, chapter: rowChapter, question, figure, question_bd, explanations })
-        );
+        .slice(0, isStudyMode ? sourceRows.length : 30)
+        .map(({ id, chapter: rowChapter, question, figure, question_bd, explanations, correct }) => ({
+          ...applyCuratedQuizTranslation({ id, chapter: rowChapter, question, figure, question_bd, explanations }),
+          ...(isStudyMode ? { correct } : {})
+        }));
       if (!quiz.length) return res.status(502).json({ error: "invalid_quiz_response" });
-      const expiresAt = Date.now() + TRIAL_TOKEN_TTL_MS;
+      const expiresAt = Math.min(guest.exp, Date.now() + TRIAL_TOKEN_TTL_MS);
       const trialToken = sign({
         purpose: "trial",
         trialId,
@@ -117,8 +132,13 @@ export default async function handler(req, res) {
         textHashes: quiz.map(q => textHash(q.question)),
         exp: expiresAt
       });
-      res.setHeader("Cache-Control", "no-store");
-      return res.status(200).json({ quiz, trialToken, trialTokenExpiresAt: expiresAt, timerMinutes: 20, title: `Prova gratuita · Capitolo ${chapter}` });
+      return res.status(200).json({
+        quiz,
+        trialToken,
+        trialTokenExpiresAt: expiresAt,
+        timerMinutes: 20,
+        title: `${isStudyMode ? "Studia quiz" : "Prova gratuita"} · Capitolo ${chapter}`
+      });
     }
 
     if (req.method === "GET" && isAllowedTrialService(action)) {
@@ -135,7 +155,6 @@ export default async function handler(req, res) {
       const data = curatedTranslation
         ? await callQuizBackend("getTTS", { text: curatedTranslation })
         : await callQuizBackend(action, { text });
-      res.setHeader("Cache-Control", "private, max-age=300");
       return res.status(200).json(curatedTranslation ? {
         ...data,
         translation: curatedTranslation,

@@ -1,15 +1,15 @@
 import crypto from "crypto";
 
 const SESSION_SECRET = process.env.SESSION_SECRET;
-const TTL_MS = 71 * 60 * 60 * 1000;
-export const GUEST_TRIAL_CHAPTERS = [2, 4];
+export const GUEST_TRIAL_DURATION_MS = 4 * 24 * 60 * 60 * 1000;
+export const GUEST_TRIAL_CHAPTERS = Object.freeze([1, 3]);
 
 function signature(encoded, secret = SESSION_SECRET) {
   return crypto.createHmac("sha256", secret).update(encoded).digest("base64url");
 }
 
 export function createGuestTrialToken(trialId, secret = SESSION_SECRET) {
-  const expiresAt = Date.now() + TTL_MS;
+  const expiresAt = Date.now() + GUEST_TRIAL_DURATION_MS;
   const payload = { purpose: "guest_trial", trialId, chapters: GUEST_TRIAL_CHAPTERS, exp: expiresAt };
   const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
   return { token: `${encoded}.${signature(encoded, secret)}`, expiresAt };

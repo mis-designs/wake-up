@@ -1,8 +1,11 @@
 (() => {
   "use strict";
 
-  const API = "/api/quiz";
-  const HOME = "/magic-book";
+  const TRIAL_MODE = window.location.pathname.replace(/\/+$/, "") === "/studia-quiz/prova-gratis";
+  const API = TRIAL_MODE ? "/api/trial" : "/api/quiz";
+  const HOME = TRIAL_MODE ? "/prova-gratis" : "/magic-book";
+  const TRIAL_ALLOWED_CHAPTERS = new Set([1, 3]);
+  const TRIAL_POLICY_VERSION = "chapters-1-3-v1";
   const HELP_MANIFEST_SOURCE = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const LOCAL_HELP_SOURCE = "/data/patente/quiz-help-runtime-v2.json";
   const REMOTE_HELP_TIMEOUT_MS = 10000;
@@ -107,17 +110,43 @@
     return fallback.phone && fallback.deviceId ? fallback : null;
   }
 
-  const session = getSession();
+  function getTrialSession() {
+    try {
+      const deviceId = String(sessionStorage.getItem("magicbook_trial_id") || "");
+      const guestKey = String(sessionStorage.getItem("magicbook_trial_guest_key") || "");
+      const expiresAt = Number(sessionStorage.getItem("magicbook_trial_guest_expires") || 0);
+      const policyVersion = String(sessionStorage.getItem("magicbook_trial_guest_policy") || "");
+      if (!/^[a-zA-Z0-9_-]{16,80}$/.test(deviceId) || !guestKey || expiresAt <= Date.now() || policyVersion !== TRIAL_POLICY_VERSION) return null;
+      return { phone: "trial", deviceId, guestKey, accessToken: "" };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function trialOfferUrl(feature) {
+    return `/?trialOffer=1&feature=${encodeURIComponent(String(feature || "Studia quiz"))}`;
+  }
+
+  const session = TRIAL_MODE ? getTrialSession() : getSession();
   if (!session) {
-    window.location.replace(HOME);
+    window.location.replace(TRIAL_MODE ? trialOfferUrl("Prova gratuita scaduta") : HOME);
     return;
+  }
+  document.body.classList.toggle("study-trial-mode", TRIAL_MODE);
+  if (TRIAL_MODE) {
+    const headerKicker = document.querySelector(".study-heading small");
+    const practiceLink = document.querySelector(".study-practice-link");
+    if (headerKicker) headerKicker.textContent = "PROVA GRATUITA · 4 GIORNI";
+    if (practiceLink) practiceLink.href = "/quiz/prova-gratis?chapter=1";
   }
 
   function accessToken() {
+    if (TRIAL_MODE) return "";
     return String(localStorage.getItem("accessToken") || session.accessToken || "");
   }
 
   function saveAccessToken(token, expiresAt) {
+    if (TRIAL_MODE) return;
     if (!token || !expiresAt) return;
     session.accessToken = token;
     localStorage.setItem("accessToken", token);
@@ -142,6 +171,14 @@
   }
 
   function clearSessionAndExit() {
+    if (TRIAL_MODE) {
+      try {
+        ["magicbook_trial_guest_key", "magicbook_trial_guest_expires", "magicbook_trial_guest_policy"]
+          .forEach(key => sessionStorage.removeItem(key));
+      } catch (_) {}
+      window.location.replace(trialOfferUrl("Prova gratuita scaduta"));
+      return;
+    }
     ["loggedIn", "phone", "expiry", "user_session", "session", "accessToken", "accessTokenExpiresAt"]
       .forEach(key => localStorage.removeItem(key));
     window.location.replace(HOME);
@@ -151,7 +188,7 @@
     const data = await response.json().catch(() => ({}));
     if (response.status === 401 || response.status === 403) {
       const code = String(data.error || "unauthorized");
-      if (["expired", "not_found", "device_replaced", "device_mismatch", "unauthorized"].includes(code)) {
+      if (["expired", "not_found", "device_replaced", "device_mismatch", "unauthorized", "invalid_guest_key", "trial_session_expired"].includes(code)) {
         clearSessionAndExit();
       }
       throw new Error(code);
@@ -168,6 +205,7 @@
   }
 
   function chapterPath(chapter) {
+    if (TRIAL_MODE) return `/studia-quiz/prova-gratis?chapter=${Number(chapter)}`;
     return `/studia-quiz/capitolo-${String(chapter).padStart(2, "0")}`;
   }
 
@@ -229,7 +267,12 @@
       button.type = "button";
       button.className = "study-chapter";
       button.dataset.chapter = String(chapter);
-      button.setAttribute("aria-label", `Studia il capitolo ${chapter}: ${name}`);
+      const trialChapterOpen = !TRIAL_MODE || TRIAL_ALLOWED_CHAPTERS.has(chapter);
+      button.classList.toggle("is-trial-open", TRIAL_MODE && trialChapterOpen);
+      button.classList.toggle("is-trial-locked", TRIAL_MODE && !trialChapterOpen);
+      button.setAttribute("aria-label", trialChapterOpen
+        ? `Studia il capitolo ${chapter}: ${name}`
+        : `Capitolo ${chapter} bloccato. Scopri i pacchetti MagicBook.`);
 
       const number = document.createElement("span");
       number.className = "study-chapter-number";
@@ -248,9 +291,16 @@
       arrowIcon.src = "icons/next.png";
       arrowIcon.alt = "";
       arrow.setAttribute("aria-hidden", "true");
-      arrow.appendChild(arrowIcon);
+      if (trialChapterOpen) arrow.appendChild(arrowIcon);
+      else arrow.textContent = "🔒";
       button.append(number, copy, arrow);
-      button.addEventListener("click", () => openChapter(chapter));
+      button.addEventListener("click", () => {
+        if (!trialChapterOpen) {
+          window.location.href = trialOfferUrl(`Studia quiz · Capitolo ${chapter}`);
+          return;
+        }
+        openChapter(chapter);
+      });
       fragment.appendChild(button);
     });
     elements.chapterGrid.replaceChildren(fragment);
@@ -268,15 +318,21 @@
     elements.reader.classList.add("hidden");
     elements.chapters.classList.remove("hidden");
     elements.title.textContent = "Studia quiz";
-    elements.subtitle.textContent = "Scegli un capitolo e studia tutte le domande.";
+    elements.subtitle.textContent = TRIAL_MODE
+      ? "Capitoli 1 e 3 gratuiti per quattro giorni."
+      : "Scegli un capitolo e studia tutte le domande.";
     renderStudyIntro();
     document.title = "MagicBook | Studia quiz";
-    if (updateHistory) history.pushState({ screen: "study" }, "", "/studia-quiz");
+    if (updateHistory) history.pushState({ screen: "study" }, "", TRIAL_MODE ? "/studia-quiz/prova-gratis" : "/studia-quiz");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function openChapter(chapter, { updateHistory = true } = {}) {
     if (!Number.isInteger(chapter) || chapter < 1 || chapter > CHAPTERS.length) return;
+    if (TRIAL_MODE && !TRIAL_ALLOWED_CHAPTERS.has(chapter)) {
+      window.location.href = trialOfferUrl(`Studia quiz · Capitolo ${chapter}`);
+      return;
+    }
     const ownRequest = ++loadRequestId;
     currentChapter = chapter;
     stopPlayback();
@@ -291,7 +347,12 @@
     if (updateHistory) history.pushState({ screen: "studyChapter", chapter }, "", chapterPath(chapter));
 
     try {
-      const query = new URLSearchParams({
+      const query = new URLSearchParams(TRIAL_MODE ? {
+        action: "getStudyQuiz",
+        trialId: session.deviceId,
+        guestKey: session.guestKey,
+        chapter: String(chapter)
+      } : {
         action: "getStudyQuiz",
         phone: session.phone,
         deviceId: session.deviceId,
@@ -304,7 +365,7 @@
       const data = await readApiResponse(response);
       if (ownRequest !== loadRequestId) return;
       saveAccessToken(data.accessToken, data.accessTokenExpiresAt);
-      quizSessionToken = String(data.quizSessionToken || "");
+      quizSessionToken = String((TRIAL_MODE ? data.trialToken : data.quizSessionToken) || "");
       questions = Array.isArray(data.quiz) ? data.quiz : [];
       renderQuestions();
       rememberStudyChapter(chapter);
@@ -445,13 +506,19 @@
     bangla.setAttribute("aria-label", `Ascolta in bengali la domanda ${index + 1}`);
     bangla.addEventListener("click", () => playTts(question, "bn", bangla, card));
     const explanation = createExplanationPlayer(question, index);
+    const lockedExplanation = TRIAL_MODE
+      ? actionButton("study-action-locked", "Spiegazione audio Premium", "🔒")
+      : null;
+    lockedExplanation?.addEventListener("click", () => {
+      window.location.href = trialOfferUrl("Spiegazioni audio complete");
+    });
     const help = actionButton("study-action-help", "Traduzione e parole chiave", "文");
     help.setAttribute("aria-expanded", "false");
     help.addEventListener("click", () => toggleHelp(question, card, help));
-    actions.append(italian, bangla, explanation.root, help);
+    actions.append(italian, bangla, lockedExplanation || explanation.root, help);
     main.appendChild(actions);
     card.appendChild(main);
-    observeAudioAvailability(card, question, explanation.root);
+    if (!TRIAL_MODE) observeAudioAvailability(card, question, explanation.root);
     return card;
   }
 
@@ -735,7 +802,13 @@
       translation: usableBanglaTranslation(cached.translation),
       translationSource: String(cached.translationSource || "automatic")
     };
-    const query = new URLSearchParams({
+    const query = new URLSearchParams(TRIAL_MODE ? {
+      action: "getBengaliAudio",
+      trialId: session.deviceId,
+      trialToken: quizSessionToken,
+      questionId: String(question.id || ""),
+      text: String(question.question || "")
+    } : {
       action: "getBengaliAudio",
       phone: session.phone,
       deviceId: session.deviceId,
@@ -888,12 +961,18 @@
       if (!data) {
         let preferredTranslation = "";
         let preferredTranslationSource = "";
-        if (language === "bn") {
+        if (language === "bn" && !TRIAL_MODE) {
           const help = await getQuestionHelp(question);
           preferredTranslation = usableBanglaTranslation(help?.translation);
           preferredTranslationSource = String(help?.translationSource || "runtime_v3");
         }
-        const query = new URLSearchParams({
+        const query = new URLSearchParams(TRIAL_MODE ? {
+          action: language === "bn" ? "getBengaliAudio" : "getItalianAudio",
+          trialId: session.deviceId,
+          trialToken: quizSessionToken,
+          questionId: String(question.id || ""),
+          text: String(question.question || "")
+        } : {
           action: language === "bn"
             ? (preferredTranslation ? "getTTS" : "getBengaliAudio")
             : "getItalianAudio",
@@ -935,6 +1014,10 @@
   }
 
   async function playBanglaWord(word, button) {
+    if (TRIAL_MODE) {
+      window.location.href = trialOfferUrl("Audio parole e ripasso completo");
+      return;
+    }
     const value = usableBanglaTranslation(word.ttsBn || `${word.bangla}। ${word.simpleBn}`);
     if (!value) {
       showToast("Audio parola non disponibile.");
@@ -978,6 +1061,7 @@
   }
 
   async function audioApi(action, question, { blob = false } = {}) {
+    if (TRIAL_MODE) throw new Error("trial_premium_audio");
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), STUDY_AUDIO_REQUEST_TIMEOUT_MS);
     try {

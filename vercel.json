@@ -236,6 +236,10 @@
       "destination": "/study-quiz"
     },
     {
+      "source": "/studia-quiz/prova-gratis",
+      "destination": "/study-quiz"
+    },
+    {
       "source": "/studia-quiz/capitolo-:chapter",
       "destination": "/study-quiz"
     },
