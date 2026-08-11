@@ -58,16 +58,21 @@ test("trial promotion starts in Bangla and alternates safely every ten seconds",
   assert.match(main, /classList\.add\("is-copy-leaving"\)[\s\S]*?classList\.add\("is-copy-entering"\)/);
   assert.match(styles, /is-copy-leaving[^{]*\{[^}]*filter:blur\(5px\)/);
   assert.match(styles, /is-copy-entering[^{]*\{[^}]*translateY\(10px\)/);
-  assert.match(page, /class="trial-countdown-ring" data-trial-progress/);
+  assert.match(page, /class="trial-countdown" data-trial-digital role="timer"/);
+  assert.match(page, /data-trial-hours>96<\/b>/);
+  assert.match(page, /data-trial-minutes>00<\/b>/);
+  assert.match(page, /data-trial-seconds>00<\/b>/);
+  assert.doesNotMatch(page, /trial-countdown-ring/);
   assert.match(main, /remaining \/ FREE_TRIAL_DURATION_MS \* 100/);
   assert.match(main, /setProperty\("--trial-progress", `\$\{progress\.toFixed\(4\)\}%`\)/);
   assert.match(page, /startGuestTrial\(\{ openChapter: 1 \}\)/);
   assert.match(page, /startGuestTrial\(\{ openChapter: 3 \}\)/);
   assert.doesNotMatch(page, /startGuestTrial\(\{ openChapter: (?:2|4) \}\)/);
-  assert.match(styles, /@keyframes trialCountdownBreath/);
-  assert.match(styles, /@keyframes trialChapterShine/);
+  assert.match(main, /querySelectorAll\("\[data-trial-hours\]"\)/);
+  assert.match(styles, /\.trial-countdown-units/);
+  assert.match(styles, /@keyframes trialProgressSweep/);
   assert.match(styles, /@keyframes trialPromoGiftSwing/);
-  assert.match(styles, /translateX\(-10px\)[\s\S]*translateX\(10px\)/);
+  assert.match(styles, /translateX\(-6px\)[\s\S]*translateX\(6px\)/);
   assert.match(styles, /prefers-reduced-motion:reduce[\s\S]*trial-promo-gift/);
 });
 

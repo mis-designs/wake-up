@@ -1409,6 +1409,12 @@ function setupTrialMarketing(serverExpiresAt = 0) {
     document.querySelectorAll("[data-trial-progress]").forEach(el => {
       el.style.setProperty("--trial-progress", `${progress.toFixed(4)}%`);
     });
+    document.querySelectorAll("[data-trial-hours]").forEach(el => { el.textContent = String(hours).padStart(2, "0"); });
+    document.querySelectorAll("[data-trial-minutes]").forEach(el => { el.textContent = String(minutes).padStart(2, "0"); });
+    document.querySelectorAll("[data-trial-seconds]").forEach(el => { el.textContent = String(seconds).padStart(2, "0"); });
+    document.querySelectorAll("[data-trial-digital]").forEach(el => {
+      el.setAttribute("aria-label", `${hours} ore, ${minutes} minuti e ${seconds} secondi`);
+    });
     document.querySelectorAll("[data-trial-countdown]").forEach(el => {
       el.textContent = clock;
       el.setAttribute("aria-label", `${hours} ore, ${minutes} minuti e ${seconds} secondi`);
@@ -4950,7 +4956,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-      .register("/service-worker.js?v=33-circular-trial-cta", { updateViaCache: "none" })
+      .register("/service-worker.js?v=34-professional-trial", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });
