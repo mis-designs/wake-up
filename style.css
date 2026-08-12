@@ -3152,7 +3152,7 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
 
 #login .login-subtitle {
     width: min(100%, 302px);
-    margin: 0 auto clamp(24px, 5dvh, 40px);
+    margin: 0 auto clamp(18px, 3dvh, 30px);
     color: rgba(37, 41, 67, 0.58);
     font-size: 0.92rem;
     font-weight: 600;
@@ -3219,6 +3219,57 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     border-color: #0A8270;
     box-shadow: 0 0 0 4px rgba(124, 255, 107, 0.18), 0 10px 28px rgba(10, 130, 112, 0.1);
     background: #ffffff;
+}
+
+#login .login-promo-input {
+    border-style: dashed;
+    border-color: rgba(10, 130, 112, 0.34);
+    background:
+        linear-gradient(#f9fcfb, #f9fcfb) padding-box,
+        linear-gradient(100deg, rgba(10, 130, 112, 0.38), rgba(124, 255, 107, 0.5)) border-box;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+#login .login-promo-input::placeholder {
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+#login .promo-code-hint {
+    width: 100%;
+    margin: -3px 0 1px;
+    color: rgba(10, 111, 96, 0.72);
+    font-size: 0.7rem;
+    font-weight: 650;
+    line-height: 1.35;
+    text-align: center;
+}
+
+.promo-login-toast {
+    position: fixed;
+    top: max(18px, env(safe-area-inset-top));
+    left: 50%;
+    z-index: 1000000;
+    width: min(calc(100% - 32px), 410px);
+    padding: 14px 17px;
+    border: 1px solid rgba(10, 130, 112, 0.18);
+    border-radius: 16px;
+    background: rgba(250, 255, 252, 0.96);
+    color: #075f54;
+    box-shadow: 0 18px 45px rgba(10, 65, 56, 0.18);
+    font-family: "Rubik", "Inter", sans-serif;
+    font-size: 0.86rem;
+    font-weight: 750;
+    line-height: 1.35;
+    text-align: center;
+    transform: translate(-50%, -18px);
+    opacity: 0;
+    animation: promoToastIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes promoToastIn {
+    to { transform: translate(-50%, 0); opacity: 1; }
 }
 
 #login .login-submit {
@@ -3313,6 +3364,7 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     #login .login-submit { animation: none; }
     #login .login-greeting-cloud,
     #login .login-greeting { animation: none; }
+    .promo-login-toast { animation: none; transform: translate(-50%, 0); opacity: 1; }
 }
 
 #login .otp-resend:hover,

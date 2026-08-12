@@ -756,6 +756,8 @@ function completeLogin(phone, deviceId, data) {
 
   const err = document.getElementById("err");
   if (err) err.textContent = "";
+  const promoCodeInput = document.getElementById("promoCode");
+  if (promoCodeInput) promoCodeInput.value = "";
   pendingOtpLogin = null;
   hideAdminPasswordUI();
   hideOtpUI();
@@ -765,6 +767,24 @@ function completeLogin(phone, deviceId, data) {
   void warmExplanationFiguresCache();
   checkRenewReminder(true);
   maybeShowWhatsAppGroupPopup();
+
+  if (data?.promoGranted) {
+    const usedDays = Math.max(0, Math.min(30, Number(data.promoDaysUsed) || 0));
+    setTimeout(() => showPromoLoginToast(`Promo attivata: 5 giorni di accesso completo. Hai utilizzato ${usedDays}/30 giorni promozionali.`), 120);
+  } else if (data?.promoNotice === "access_already_active") {
+    setTimeout(() => showPromoLoginToast("Il tuo accesso era già attivo: la scadenza non è stata modificata."), 120);
+  }
+}
+
+function showPromoLoginToast(message) {
+  document.querySelector(".promo-login-toast")?.remove();
+  const toast = document.createElement("div");
+  toast.className = "promo-login-toast";
+  toast.setAttribute("role", "status");
+  toast.setAttribute("aria-live", "polite");
+  toast.textContent = String(message || "");
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 5200);
 }
 
 /***********************
@@ -772,11 +792,13 @@ function completeLogin(phone, deviceId, data) {
  ***********************/
 async function login() {
   const phoneInput = document.getElementById("user");
+  const promoCodeInput = document.getElementById("promoCode");
   const adminPasswordInput = document.getElementById("adminPassword");
   const err = document.getElementById("err");
   const loginButton = document.querySelector("#login .login-submit");
 
   const phone = normalizePhone(phoneInput?.value);
+  const promoCode = String(promoCodeInput?.value || "").trim();
 
   if (!isValidPhoneNumber(phoneInput?.value)) {
     if (err) err.textContent = "Inserisci un numero di telefono valido";
@@ -800,6 +822,7 @@ async function login() {
       action: "login",
       phone,
       deviceId,
+      promoCode: promoCode || undefined,
       adminPassword: adminPasswordRequired ? String(adminPasswordInput?.value || "") : undefined
     });
 
@@ -824,6 +847,9 @@ async function login() {
 
       const loginError = data?.error || data?.status;
       if (loginError === "expired") {
+        setTimeout(showExpiredRenewPopup, 80);
+      }
+      if (loginError === "promo_limit_reached") {
         setTimeout(showExpiredRenewPopup, 80);
       }
       if (err) err.textContent = getLoginErrorMessage(loginError);
@@ -1187,6 +1213,15 @@ function getLoginErrorMessage(error) {
   if (error === "admin_password_invalid") return "Password amministratore non corretta.";
   if (error === "missing_admin_password_config") return "Password amministratore non configurata.";
   if (error === "too_many_attempts") return "Troppi tentativi. Attendi qualche minuto prima di riprovare.";
+  if (error === "promo_invalid") return "Promo code non valido.";
+  if (error === "promo_expired") return "Questo promo code è scaduto. Richiedi il nuovo codice.";
+  if (error === "promo_unavailable") return "La promozione non è disponibile in questo momento.";
+  if (error === "promo_code_reused") return "Hai già utilizzato questo promo code. Attendi il nuovo codice.";
+  if (error === "promo_limit_reached") return "Hai già utilizzato 30 giorni promozionali. Scegli il tuo pacchetto.";
+  if (error === "promo_backend_not_ready") return "La promozione è in configurazione. Riprova più tardi.";
+  if (error === "promo_host_forbidden") return "Promozione disponibile soltanto sul sito ufficiale.";
+  if (error === "request_expired" || error === "request_replayed") return "Richiesta promozionale scaduta. Riprova.";
+  if (error === "promo_users_sheet_missing" || error === "promo_user_columns_missing") return "Promozione temporaneamente non disponibile.";
   if (error === "expired") return "Accesso scaduto. Contatta il supporto per rinnovare.";
   if (error === "not_found") return "Numero non autorizzato.";
   if (error === "device_replaced") return "Questo dispositivo non è più autorizzato perché l’accesso è stato spostato su un altro dispositivo.";
@@ -1230,6 +1265,7 @@ function setupLoginUI() {
   ensureAdminPasswordUI();
 
   const phoneInput = document.getElementById("user");
+  const promoCodeInput = document.getElementById("promoCode");
   const loginButton = document.querySelector("#login .login-submit");
   const err = document.getElementById("err");
 
@@ -1241,6 +1277,11 @@ function setupLoginUI() {
     hideAdminPasswordUI();
     if (err) err.textContent = "";
     updateLoginButtonState();
+  });
+
+  promoCodeInput?.addEventListener("input", () => {
+    promoCodeInput.value = promoCodeInput.value.toUpperCase().replace(/\s+/g, "");
+    if (err) err.textContent = "";
   });
 
   updateLoginButtonState();
@@ -4967,7 +5008,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-      .register("/service-worker.js?v=36-login-greetings", { updateViaCache: "none" })
+      .register("/service-worker.js?v=37-promo-login", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });

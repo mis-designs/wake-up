@@ -50,6 +50,7 @@ test("development files and Apps Script sources are excluded from Vercel", () =>
     "scripts/",
     "skills/",
     "database/",
+    "google-apps-script/",
     "*_gas.js",
     "*.pem",
     "*.key"
@@ -84,7 +85,10 @@ test("server credential names never enter browser-delivered source files", () =>
     "TWILIO_AUTH_TOKEN",
     "QUIZ_PROXY_SECRET",
     "R2_SECRET_ACCESS_KEY",
-    "DATABASE_URL"
+    "DATABASE_URL",
+    "PROMO_CODE_5_DAYS",
+    "PROMO_CODE_5_DAYS_EXPIRES_AT",
+    "PROMO_ALLOWED_HOSTS"
   ];
 
   for (const relativePath of browserFiles) {

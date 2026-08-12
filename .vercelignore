@@ -8,6 +8,7 @@ tests/
 scripts/
 skills/
 database/
+google-apps-script/
 node_modules/
 
 # Local configuration and credentials

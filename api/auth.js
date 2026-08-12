@@ -1,5 +1,13 @@
 import crypto from "crypto";
 import { fetchUpstream, publicApiError } from "./upstream-fetch.mjs";
+import {
+  createPromoCodeId,
+  createPromoRedeemProof,
+  isAllowedPromoHost,
+  normalizePromoCode,
+  PROMO_MAX_DAYS,
+  validatePromoCode
+} from "./promo-code.js";
 
 const GAS_ACCESS_URL = process.env.GAS_ACCESS_URL;
 const GAS_SECRET = process.env.GAS_SECRET;
@@ -8,6 +16,9 @@ const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID;
 const SESSION_SECRET = process.env.SESSION_SECRET;
 const ADMIN_LOGIN_PASSWORD = process.env.ADMIN_LOGIN_PASSWORD || "";
+const PROMO_CODE_5_DAYS = process.env.PROMO_CODE_5_DAYS || "";
+const PROMO_CODE_5_DAYS_EXPIRES_AT = process.env.PROMO_CODE_5_DAYS_EXPIRES_AT || "";
+const PROMO_ALLOWED_HOSTS = process.env.PROMO_ALLOWED_HOSTS || "";
 
 const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
 const OTP_COOLDOWN_SECONDS = 120;
@@ -19,6 +30,11 @@ const USER_LOGIN_MAX_FAILURES_PER_IP = 10;
 const USER_LOGIN_MAX_FAILURES_PER_PHONE = 5;
 const userLoginIpFailures = new Map();
 const userLoginPhoneFailures = new Map();
+const PROMO_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
+const PROMO_MAX_FAILURES_PER_IP = 10;
+const PROMO_MAX_FAILURES_PER_PHONE = 5;
+const promoIpFailures = new Map();
+const promoPhoneFailures = new Map();
 
 function getClientIp(req) {
   return String(req.headers?.["x-forwarded-for"] || req.socket?.remoteAddress || "unknown")
@@ -106,6 +122,22 @@ function getUserLoginLimit(req, phone) {
 function recordUserLoginFailure(ipKey, phone) {
   recordFailure(userLoginIpFailures, ipKey, USER_LOGIN_WINDOW_MS);
   recordFailure(userLoginPhoneFailures, phone, USER_LOGIN_WINDOW_MS);
+}
+
+function getPromoAttemptLimit(req, phone) {
+  const ipKey = getClientIp(req);
+  const ipLimit = readFailureLimit(promoIpFailures, ipKey, PROMO_MAX_FAILURES_PER_IP);
+  const phoneLimit = readFailureLimit(promoPhoneFailures, phone, PROMO_MAX_FAILURES_PER_PHONE);
+  return {
+    blocked: ipLimit.blocked || phoneLimit.blocked,
+    retryAfter: Math.max(ipLimit.retryAfter, phoneLimit.retryAfter),
+    ipKey
+  };
+}
+
+function recordPromoFailure(ipKey, phone) {
+  recordFailure(promoIpFailures, ipKey, PROMO_ATTEMPT_WINDOW_MS);
+  recordFailure(promoPhoneFailures, phone, PROMO_ATTEMPT_WINDOW_MS);
 }
 
 function shouldCountUserLoginFailure(error) {
@@ -494,9 +526,84 @@ export default async function handler(req, res) {
         });
       }
 
-      const authData = await callAccessBackend("login", phone, deviceId, {
-        registerDevice: true
-      });
+      const submittedPromoCode = normalizePromoCode(body.promoCode);
+      let authData;
+      let promoExtra = {};
+
+      if (submittedPromoCode) {
+        const promoLimit = getPromoAttemptLimit(req, phone);
+        if (promoLimit.blocked) {
+          res.setHeader("Retry-After", String(promoLimit.retryAfter));
+          return res.status(429).json({ success: false, error: "too_many_attempts" });
+        }
+
+        const hostAllowed = isAllowedPromoHost(
+          req.headers?.host,
+          PROMO_ALLOWED_HOSTS,
+          process.env.VERCEL_ENV === "production"
+        );
+        if (!hostAllowed) {
+          return res.status(403).json({ success: false, error: "promo_host_forbidden" });
+        }
+
+        if (submittedPromoCode.length > 64) {
+          recordPromoFailure(promoLimit.ipKey, phone);
+          return res.status(200).json({ success: false, error: "promo_invalid" });
+        }
+
+        const promoValidation = validatePromoCode({
+          submittedCode: submittedPromoCode,
+          configuredCode: PROMO_CODE_5_DAYS,
+          expiresAt: PROMO_CODE_5_DAYS_EXPIRES_AT
+        });
+        if (!promoValidation.ok) {
+          if (promoValidation.error === "promo_invalid") recordPromoFailure(promoLimit.ipKey, phone);
+          return res.status(promoValidation.error === "promo_unavailable" ? 503 : 200).json({
+            success: false,
+            error: promoValidation.error
+          });
+        }
+
+        const promoCodeId = createPromoCodeId(PROMO_CODE_5_DAYS, SESSION_SECRET);
+        const proof = createPromoRedeemProof({
+          phone,
+          deviceId,
+          promoCodeId,
+          promoValidUntil: promoValidation.expiresAt,
+          secret: GAS_SECRET
+        });
+        const promoData = await callAccessBackend("promo_redeem", phone, deviceId, {
+          promoCodeId,
+          promoValidUntil: promoValidation.expiresAt,
+          ...proof
+        });
+        const promoError = getAuthError(promoData);
+
+        if (isAuthSuccess(promoData)) {
+          promoPhoneFailures.delete(phone);
+          authData = promoData;
+          promoExtra = {
+            promoGranted: true,
+            promoDaysUsed: Math.min(PROMO_MAX_DAYS, Number(promoData.promoDaysUsed) || 0),
+            promoRedemptions: Math.min(6, Number(promoData.promoRedemptions) || 0)
+          };
+        } else if (promoError === "active_access") {
+          authData = await callAccessBackend("login", phone, deviceId, { registerDevice: true });
+          promoExtra = { promoNotice: "access_already_active" };
+        } else {
+          const publicPromoError = promoError === "invalid_action"
+            ? "promo_backend_not_ready"
+            : promoError;
+          return res.status(publicPromoError === "promo_backend_not_ready" ? 503 : 200).json({
+            success: false,
+            error: publicPromoError
+          });
+        }
+      } else {
+        authData = await callAccessBackend("login", phone, deviceId, {
+          registerDevice: true
+        });
+      }
 
       if (isAuthSuccess(authData)) {
         userLoginPhoneFailures.delete(phone);
@@ -508,7 +615,8 @@ export default async function handler(req, res) {
           role: adminPasswordCheck.admin ? "admin" : "user",
           extra: {
             ...(authData.rotated ? { rotated: true } : {}),
-            ...(authData.replacedDevice ? { replacedDevice: authData.replacedDevice } : {})
+            ...(authData.replacedDevice ? { replacedDevice: authData.replacedDevice } : {}),
+            ...promoExtra
           }
         });
       }

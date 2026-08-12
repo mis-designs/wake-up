@@ -92,7 +92,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MagicBook">
-<link rel="stylesheet" href="style.css?v=46-login-greetings">
+<link rel="stylesheet" href="style.css?v=47-promo-login">
 <link rel="stylesheet" href="homebg.css?v=3">
 <link rel="stylesheet" href="magic-dictionary.css?v=1.2.1">
 </head>
@@ -570,6 +570,9 @@ gtag('config', 'G-C5JPY9HFHD', {
     <form class="login-form" data-nosnippet onsubmit="event.preventDefault(); login();">
       <label class="sr-only" for="user">Numero di telefono</label>
       <input id="user" type="tel" placeholder="Numero di telefono" aria-label="Numero di telefono" autocomplete="tel" inputmode="tel" aria-describedby="err">
+      <label class="sr-only" for="promoCode">Promo code facoltativo</label>
+      <input id="promoCode" class="login-promo-input" type="text" placeholder="Promo code (facoltativo)" aria-label="Promo code facoltativo" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="64" aria-describedby="promoCodeHint err">
+      <small id="promoCodeHint" class="promo-code-hint">Con un codice valido ricevi 5 giorni di accesso completo.</small>
       <button class="login-submit" type="submit" disabled>Continua</button>
     </form>
     <p id="err" data-nosnippet role="status" aria-live="polite"></p>
@@ -1071,6 +1074,6 @@ gtag('config', 'G-C5JPY9HFHD', {
 
 <script src="patenteGlossaryResolver.js?v=1.0.0"></script>
 <script src="magic-dictionary.js?v=1.2.1"></script>
-<script src="script.js?v=37-login-greetings"></script>
+<script src="script.js?v=38-promo-login"></script>
 </body>
 </html>
