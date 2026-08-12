@@ -7,8 +7,10 @@ const RENEW_MESSAGE = "Ciao, vorrei rinnovare il mio accesso.";
 const WHATSAPP_GROUP_CODE = "LBL1G7nvz2B3SThJj4uRxD";
 const AUTH_API = "/api/auth";
 const ADMIN_API = "/api/admin";
+const PROMO_STATUS_API = "/api/promo-status";
 const APP_TITLE = "MagicBook";
 const EXPLANATION_FIGURES_CACHE_KEY = "magicbook_explanation_figures_v1";
+const PROMO_CAMPAIGN_DURATION_MS = 5 * 24 * 60 * 60 * 1000;
 const FREE_TRIAL_CHAPTERS = Object.freeze([1, 3]);
 const FREE_TRIAL_CHAPTER_SET = new Set(FREE_TRIAL_CHAPTERS);
 const FREE_TRIAL_DURATION_MS = 4 * 24 * 60 * 60 * 1000;
@@ -87,9 +89,9 @@ function setAppRoute(state = {}, options = {}) {
 
 function getRouteStateFromLocation() {
   const path = normalizeRoutePath();
-  if (path === "/prova-gratis") return { screen: "trialHub" };
-  const trialBookMatch = path.match(/^\/prova-gratis\/libro-(1|3)$/);
-  if (trialBookMatch) return { screen: "trialBook", chapter: Number(trialBookMatch[1]) };
+  if (path === "/prova-gratis" || /^\/prova-gratis\/libro-(1|3)$/.test(path)) {
+    return { screen: "welcome" };
+  }
   const chapterMatch = path.match(/^\/magic-book\/capitolo-(\d{1,2})$/);
   if (chapterMatch) {
     return { screen: "viewer", chapter: clampChapter(Number(chapterMatch[1])) };
@@ -512,9 +514,10 @@ window.addEventListener("load", async () => {
   const wasReset = await forceGlobalAuthResetIfNeeded();
 
   setupLoginUI();
+  setupPromoLandingUI();
   setupProfileUI();
   setupAdminUI();
-  setupTrialMarketing();
+  void setupPromoCampaign();
 
   if (wasReset) {
     const publicRoute = getRouteStateFromLocation();
@@ -758,6 +761,10 @@ function completeLogin(phone, deviceId, data) {
   if (err) err.textContent = "";
   const promoCodeInput = document.getElementById("promoCode");
   if (promoCodeInput) promoCodeInput.value = "";
+  const promoLandingCodeInput = document.getElementById("promoLandingCode");
+  if (promoLandingCodeInput) promoLandingCodeInput.value = "";
+  const promoLandingError = document.getElementById("promoLandingError");
+  if (promoLandingError) promoLandingError.textContent = "";
   pendingOtpLogin = null;
   hideAdminPasswordUI();
   hideOtpUI();
@@ -790,29 +797,38 @@ function showPromoLoginToast(message) {
 /***********************
  * LOGIN
  ***********************/
-async function login() {
-  const phoneInput = document.getElementById("user");
-  const promoCodeInput = document.getElementById("promoCode");
+async function login(options = {}) {
+  const fromPromoCard = options.source === "promo-card";
+  const phoneInput = document.getElementById(fromPromoCard ? "promoLandingPhone" : "user");
+  const promoCodeInput = document.getElementById(fromPromoCard ? "promoLandingCode" : "promoCode");
   const adminPasswordInput = document.getElementById("adminPassword");
-  const err = document.getElementById("err");
-  const loginButton = document.querySelector("#login .login-submit");
+  const err = document.getElementById(fromPromoCard ? "promoLandingError" : "err");
+  const loginButton = document.querySelector(fromPromoCard ? ".promo-access-submit" : "#login .login-submit");
+  const loginButtonLabel = loginButton?.querySelector("span") || loginButton;
 
   const phone = normalizePhone(phoneInput?.value);
   const promoCode = String(promoCodeInput?.value || "").trim();
 
   if (!isValidPhoneNumber(phoneInput?.value)) {
     if (err) err.textContent = "Inserisci un numero di telefono valido";
-    updateLoginButtonState();
+    if (fromPromoCard) updatePromoLandingButtonState();
+    else updateLoginButtonState();
+    return;
+  }
+
+  if (fromPromoCard && promoCode.length < 6) {
+    if (err) err.textContent = "Inserisci il Promo Code.";
+    updatePromoLandingButtonState();
     return;
   }
 
   const deviceId = await getRobustDeviceId();
-  const originalText = loginButton?.dataset.defaultText || loginButton?.textContent || "Continua";
+  const originalText = loginButton?.dataset.defaultText || loginButtonLabel?.textContent || "Continua";
 
   if (loginButton) {
     loginButton.disabled = true;
     loginButton.classList.add("is-loading");
-    loginButton.textContent = "Verifica...";
+    if (loginButtonLabel) loginButtonLabel.textContent = "Verifica...";
   }
 
   if (err) err.textContent = "";
@@ -828,6 +844,13 @@ async function login() {
 
     if (!data?.success) {
       if ((data?.error || data?.status) === "admin_password_required") {
+        if (fromPromoCard) {
+          const mainPhoneInput = document.getElementById("user");
+          const mainPromoInput = document.getElementById("promoCode");
+          if (mainPhoneInput) mainPhoneInput.value = phoneInput?.value || "";
+          if (mainPromoInput) mainPromoInput.value = promoCode;
+          showLoginScreen("Inserisci la password amministratore.");
+        }
         showAdminPasswordUI();
         if (err) err.textContent = "Inserisci la password amministratore.";
         updateLoginButtonState();
@@ -863,9 +886,10 @@ async function login() {
   } finally {
     if (loginButton) {
       loginButton.classList.remove("is-loading");
-      loginButton.textContent = originalText;
+      if (loginButtonLabel) loginButtonLabel.textContent = originalText;
     }
     updateLoginButtonState();
+    updatePromoLandingButtonState();
   }
 }
 
@@ -1354,6 +1378,121 @@ function showLandingScreen(options = {}) {
   setLoggedOutChrome();
   currentScreen = "welcome";
   setAppRoute({ screen: "welcome" }, { replace: options.replace === true });
+}
+
+let promoCampaignTimer = null;
+let promoCampaignDeadline = 0;
+let promoCampaignActive = null;
+
+function updatePromoLandingButtonState() {
+  const phoneInput = document.getElementById("promoLandingPhone");
+  const codeInput = document.getElementById("promoLandingCode");
+  const button = document.querySelector(".promo-access-submit");
+  if (!button) return;
+
+  const isLoading = button.classList.contains("is-loading");
+  const validPhone = isValidPhoneNumber(phoneInput?.value);
+  const validCode = String(codeInput?.value || "").trim().length >= 6;
+  button.disabled = isLoading || promoCampaignActive === false || !validPhone || !validCode;
+}
+
+function setupPromoLandingUI() {
+  const phoneInput = document.getElementById("promoLandingPhone");
+  const codeInput = document.getElementById("promoLandingCode");
+  const button = document.querySelector(".promo-access-submit");
+  const error = document.getElementById("promoLandingError");
+
+  if (button && !button.dataset.defaultText) {
+    button.dataset.defaultText = button.querySelector("span")?.textContent || "Entra con Promo Code";
+  }
+
+  phoneInput?.addEventListener("input", () => {
+    if (error) error.textContent = "";
+    updatePromoLandingButtonState();
+  });
+
+  codeInput?.addEventListener("input", () => {
+    codeInput.value = codeInput.value.toUpperCase().replace(/\s+/g, "");
+    if (error) error.textContent = "";
+    updatePromoLandingButtonState();
+  });
+
+  updatePromoLandingButtonState();
+}
+
+function loginFromPromoCard() {
+  return login({ source: "promo-card" });
+}
+
+function setPromoCampaignState(active, label) {
+  promoCampaignActive = active;
+  document.body.classList.toggle("promo-campaign-active", active === true);
+  document.body.classList.toggle("promo-campaign-ended", active === false);
+  document.querySelectorAll("[data-promo-state]").forEach(element => {
+    element.textContent = label;
+  });
+  updatePromoLandingButtonState();
+}
+
+function renderPromoCampaignCountdown() {
+  if (!promoCampaignDeadline) return;
+  const remaining = Math.max(0, promoCampaignDeadline - Date.now());
+  const days = Math.floor(remaining / 86400000);
+  const hours = Math.floor((remaining % 86400000) / 3600000);
+  const minutes = Math.floor((remaining % 3600000) / 60000);
+  const seconds = Math.floor((remaining % 60000) / 1000);
+  const values = { days, hours, minutes, seconds };
+
+  Object.entries(values).forEach(([unit, value]) => {
+    document.querySelectorAll(`[data-promo-${unit}]`).forEach(element => {
+      element.textContent = String(value).padStart(2, "0");
+    });
+  });
+
+  const label = `${days} giorni, ${hours} ore, ${minutes} minuti e ${seconds} secondi`;
+  document.querySelectorAll("[data-promo-countdown]").forEach(element => {
+    element.setAttribute("aria-label", `Il Promo Code cambia tra ${label}`);
+  });
+  const progress = Math.max(0, Math.min(100, remaining / PROMO_CAMPAIGN_DURATION_MS * 100));
+  document.querySelectorAll("[data-promo-progress]").forEach(element => {
+    element.style.setProperty("--promo-progress", `${progress.toFixed(4)}%`);
+  });
+
+  if (remaining <= 0) {
+    if (promoCampaignTimer) clearInterval(promoCampaignTimer);
+    promoCampaignTimer = null;
+    setPromoCampaignState(false, "Codice scaduto");
+  }
+}
+
+async function setupPromoCampaign() {
+  if (promoCampaignTimer) clearInterval(promoCampaignTimer);
+  promoCampaignTimer = null;
+  promoCampaignDeadline = 0;
+  setPromoCampaignState(null, "Sincronizzazione…");
+
+  try {
+    const response = await fetch(PROMO_STATUS_API, {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+      cache: "no-store"
+    });
+    const data = await response.json().catch(() => null);
+    const expiresAt = Date.parse(String(data?.expiresAt || ""));
+    if (!response.ok || !data?.active || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+      setPromoCampaignState(false, response.status === 403 ? "Dominio non autorizzato" : "Nuovo codice in arrivo");
+      return;
+    }
+
+    promoCampaignDeadline = expiresAt;
+    setPromoCampaignState(true, "Codice disponibile");
+    renderPromoCampaignCountdown();
+    promoCampaignTimer = setInterval(renderPromoCampaignCountdown, 1000);
+  } catch {
+    // The authentication endpoint remains authoritative if the public status
+    // check is temporarily unreachable.
+    setPromoCampaignState(null, "Verifica online");
+  }
 }
 
 const TRIAL_COUNTDOWN_KEY = "trial_offer_ends_at_v3";
@@ -5008,7 +5147,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-      .register("/service-worker.js?v=37-promo-login", { updateViaCache: "none" })
+      .register("/service-worker.js?v=38-promo-campaign", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });

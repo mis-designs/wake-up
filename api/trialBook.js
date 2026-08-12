@@ -1,4 +1,4 @@
-import { GUEST_TRIAL_CHAPTERS, verifyGuestTrialToken } from "./trialAccess.js";
+import { GUEST_TRIAL_CHAPTERS, GUEST_TRIAL_ENABLED, verifyGuestTrialToken } from "./trialAccess.js";
 import { fetchUpstream, publicApiError } from "./upstream-fetch.mjs";
 
 const BASE_URL = process.env.R2_BASE_URL;
@@ -14,6 +14,7 @@ export function isAllowedTrialBookRequest(chapter, page) {
 }
 
 export default async function handler(req, res) {
+  if (!GUEST_TRIAL_ENABLED) return res.status(410).json({ error: "guest_trial_disabled" });
   if (req.method !== "GET") return res.status(405).json({ error: "method_not_allowed" });
   if (!BASE_URL) return res.status(500).json({ error: "missing_server_config" });
   const chapter = String(req.query?.chapter || "").trim();

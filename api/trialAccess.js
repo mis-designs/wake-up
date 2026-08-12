@@ -1,6 +1,7 @@
 import crypto from "crypto";
 
 const SESSION_SECRET = process.env.SESSION_SECRET;
+export const GUEST_TRIAL_ENABLED = false;
 export const GUEST_TRIAL_DURATION_MS = 4 * 24 * 60 * 60 * 1000;
 export const GUEST_TRIAL_CHAPTERS = Object.freeze([1, 3]);
 
@@ -16,6 +17,7 @@ export function createGuestTrialToken(trialId, secret = SESSION_SECRET) {
 }
 
 export function verifyGuestTrialToken(token, trialId, secret = SESSION_SECRET) {
+  if (!GUEST_TRIAL_ENABLED) return null;
   if (!secret || !token || !trialId) return null;
   const parts = String(token).split(".");
   if (parts.length !== 2) return null;
@@ -34,6 +36,7 @@ export function verifyGuestTrialToken(token, trialId, secret = SESSION_SECRET) {
 
 export default function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
+  if (!GUEST_TRIAL_ENABLED) return res.status(410).json({ error: "guest_trial_disabled" });
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "method_not_allowed" });

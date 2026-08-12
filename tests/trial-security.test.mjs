@@ -2,14 +2,19 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { hasOnlyIssuedTrialQuestions, isAllowedTrialChapter, isAllowedTrialService } from "../api/trial.js";
+import {
+  createGuestTrialToken,
+  GUEST_TRIAL_ENABLED,
+  verifyGuestTrialToken
+} from "../api/trialAccess.js";
 
-test("free trial is restricted to chapters 1 and 3", () => {
+test("legacy trial helpers remain restricted to chapters 1 and 3", () => {
   assert.equal(isAllowedTrialChapter(1), true);
   assert.equal(isAllowedTrialChapter("3"), true);
   for (const chapter of ["2", "4", "5", "0", "1,3", "../../1"]) assert.equal(isAllowedTrialChapter(chapter), false);
 });
 
-test("free trial exposes only the required audio and translation services", () => {
+test("legacy trial services retain their narrow allowlist", () => {
   assert.equal(isAllowedTrialService("getItalianAudio"), true);
   assert.equal(isAllowedTrialService("getBengaliAudio"), true);
   assert.equal(isAllowedTrialService("getTTS"), true);
@@ -18,73 +23,49 @@ test("free trial exposes only the required audio and translation services", () =
   }
 });
 
-test("free trial grading accepts only IDs issued in its signed quiz", () => {
+test("legacy grading accepts only IDs issued in its signed quiz", () => {
   const ids = ["q2-a", "q2-b"];
   assert.equal(hasOnlyIssuedTrialQuestions([{ id: "q2-a", answer: 1 }, { id: "q2-b", answer: null }], ids), true);
   assert.equal(hasOnlyIssuedTrialQuestions([{ id: "private-question", answer: 1 }], ids), false);
   assert.equal(hasOnlyIssuedTrialQuestions([{ id: "q2-a", answer: 7 }], ids), false);
 });
 
-test("every browser trial surface uses only chapters 1 and 3", () => {
-  const main = readFileSync(new URL("../script.js", import.meta.url), "utf8");
-  const quiz = readFileSync(new URL("../quiz.js", import.meta.url), "utf8");
-  const study = readFileSync(new URL("../study-quiz.js", import.meta.url), "utf8");
+test("the public landing replaces the guest trial with promo-code login", () => {
   const page = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-
-  assert.match(main, /FREE_TRIAL_CHAPTERS\s*=\s*Object\.freeze\(\[1, 3\]\)/);
-  assert.match(quiz, /TRIAL_ALLOWED_CHAPTERS\s*=\s*new Set\(\["1", "3"\]\)/);
-  assert.match(study, /TRIAL_ALLOWED_CHAPTERS\s*=\s*new Set\(\[1, 3\]\)/);
-  assert.match(page, /I capitoli 1 e 3 sono sbloccati/);
-  assert.doesNotMatch(main, /\[2, 4\]/);
-  assert.doesNotMatch(quiz, /\["2", "4"\]/);
-});
-
-test("trial promotion starts in Bangla and alternates safely every ten seconds", () => {
   const main = readFileSync(new URL("../script.js", import.meta.url), "utf8");
-  const page = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../style.css", import.meta.url), "utf8");
+  const landing = page.match(/<main class="public-landing[\s\S]*?<\/main>/)?.[0] || "";
 
-  assert.match(page, /id="trialPromoCopy" lang="bn"/);
-  assert.match(page, /href="https:\/\/banglawebfonts\.pages\.dev\/css\/ekush\.css" rel="stylesheet"/);
-  assert.match(page, /৪ দিন বিনামূল্যে/);
-  assert.match(page, /ম্যাজিক বই/);
-  assert.doesNotMatch(page, /data-trial-copy="subtitle"/);
-  const banglaCopy = page.match(/<span class="trial-card-copy is-bangla"[\s\S]*?<\/span>/)?.[0] || "";
-  assert.doesNotMatch(banglaCopy.replace(/<[^>]+>/g, ""), /[A-Za-z]/);
-  assert.match(main, /setInterval\(\(\) => \{[\s\S]*?\}, 10000\)/);
-  assert.match(main, /replaceChildren\(copy\.kicker\)/);
-  assert.doesNotMatch(main, /trialPromoCopy[\s\S]{0,800}innerHTML/);
-  assert.match(styles, /font-family:"Ekush",serif/);
-  assert.match(main, /classList\.add\("is-copy-leaving"\)[\s\S]*?classList\.add\("is-copy-entering"\)/);
-  assert.match(styles, /is-copy-leaving[^{]*\{[^}]*filter:blur\(5px\)/);
-  assert.match(styles, /is-copy-entering[^{]*\{[^}]*translateY\(10px\)/);
-  assert.match(page, /class="trial-countdown" data-trial-digital role="timer"/);
-  assert.doesNotMatch(page, /trial-countdown-heading/);
-  assert.match(page, /data-trial-hours>96<\/b>/);
-  assert.match(page, /data-trial-minutes>00<\/b>/);
-  assert.match(page, /data-trial-seconds>00<\/b>/);
-  assert.doesNotMatch(page, /trial-countdown-ring/);
-  assert.match(main, /remaining \/ FREE_TRIAL_DURATION_MS \* 100/);
-  assert.match(main, /setProperty\("--trial-progress", `\$\{progress\.toFixed\(4\)\}%`\)/);
-  assert.match(page, /startGuestTrial\(\{ openChapter: 1 \}\)/);
-  assert.match(page, /startGuestTrial\(\{ openChapter: 3 \}\)/);
-  assert.doesNotMatch(page, /startGuestTrial\(\{ openChapter: (?:2|4) \}\)/);
-  assert.match(main, /querySelectorAll\("\[data-trial-hours\]"\)/);
-  assert.match(styles, /\.trial-countdown-units/);
-  assert.match(styles, /@keyframes trialProgressSweep/);
-  assert.match(styles, /@keyframes trialPromoGiftSwing/);
-  assert.match(styles, /translateX\(-6px\)[\s\S]*translateX\(6px\)/);
-  assert.match(styles, /prefers-reduced-motion:reduce[\s\S]*trial-promo-gift/);
+  assert.match(landing, /class="promo-access-card"/);
+  assert.match(landing, /Login con Promo Code/);
+  assert.match(landing, /Prendi il Promo Code dalle nostre pagine e dai gruppi WhatsApp!/);
+  assert.match(landing, /id="promoLandingPhone"[\s\S]*?id="promoLandingCode"/);
+  assert.match(landing, /data-promo-days[\s\S]*?data-promo-hours[\s\S]*?data-promo-minutes[\s\S]*?data-promo-seconds/);
+  assert.match(landing, /facebook\.com\/TMMBanglaPatente/);
+  assert.match(landing, /chat\.whatsapp\.com\/LBL1G7nvz2B3SThJj4uRxD/);
+  assert.doesNotMatch(landing, /class="trial-card"|startGuestTrial/);
+  assert.match(main, /PROMO_STATUS_API = "\/api\/promo-status"/);
+  assert.match(main, /function setupPromoCampaign/);
+  assert.match(main, /remaining \/ PROMO_CAMPAIGN_DURATION_MS \* 100/);
+  assert.match(styles, /PROMO CODE ACCESS/);
+  assert.match(styles, /--promo-teal: #0A8270/);
+  assert.match(styles, /--promo-lime: #7CFF6B/);
+  assert.match(styles, /prefers-reduced-motion: reduce[\s\S]*?promo-access-card/);
 });
 
-test("trial study mode and locked chapters stay on the isolated trial path", () => {
-  const api = readFileSync(new URL("../api/trial.js", import.meta.url), "utf8");
+test("the former guest trial cannot issue or consume access", () => {
+  const secret = "test-secret";
+  const trialId = "trial_device_123456789";
+  const issued = createGuestTrialToken(trialId, secret);
+  const accessApi = readFileSync(new URL("../api/trialAccess.js", import.meta.url), "utf8");
+  const quizApi = readFileSync(new URL("../api/trial.js", import.meta.url), "utf8");
+  const bookApi = readFileSync(new URL("../api/trialBook.js", import.meta.url), "utf8");
   const main = readFileSync(new URL("../script.js", import.meta.url), "utf8");
-  const study = readFileSync(new URL("../study-quiz.js", import.meta.url), "utf8");
 
-  assert.match(api, /action === "getQuiz" \|\| action === "getStudyQuiz"/);
-  assert.match(api, /Math\.min\(guest\.exp, Date\.now\(\) \+ TRIAL_TOKEN_TTL_MS\)/);
-  assert.match(main, /\/studia-quiz\/prova-gratis/);
-  assert.match(study, /trialOffer=1&feature=/);
-  assert.match(study, /guestKey: session\.guestKey/);
+  assert.equal(GUEST_TRIAL_ENABLED, false);
+  assert.equal(verifyGuestTrialToken(issued.token, trialId, secret), null);
+  assert.match(accessApi, /if \(!GUEST_TRIAL_ENABLED\) return res\.status\(410\)/);
+  assert.match(quizApi, /if \(!GUEST_TRIAL_ENABLED\) return res\.status\(410\)/);
+  assert.match(bookApi, /if \(!GUEST_TRIAL_ENABLED\) return res\.status\(410\)/);
+  assert.match(main, /path === "\/prova-gratis"[\s\S]*?return \{ screen: "welcome" \}/);
 });

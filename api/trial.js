@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import {
+  GUEST_TRIAL_ENABLED,
   GUEST_TRIAL_CHAPTERS,
   GUEST_TRIAL_DURATION_MS,
   verifyGuestTrialToken
@@ -93,6 +94,7 @@ function getRows(data) {
 }
 
 export default async function handler(req, res) {
+  if (!GUEST_TRIAL_ENABLED) return res.status(410).json({ error: "guest_trial_disabled" });
   if (!QUIZ_GAS_URL || !QUIZ_PROXY_SECRET || !SESSION_SECRET) return res.status(500).json({ error: "missing_server_config" });
   res.setHeader("Cache-Control", "no-store");
   let body;

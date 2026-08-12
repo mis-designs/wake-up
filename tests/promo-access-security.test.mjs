@@ -8,10 +8,12 @@ import {
   normalizePromoCode,
   validatePromoCode
 } from "../api/promo-code.js";
+import { getPublicPromoStatus } from "../api/promo-status.js";
 
 const authSource = readFileSync(new URL("../api/auth.js", import.meta.url), "utf8");
 const gasSource = readFileSync(new URL("../google-apps-script/promo-access.gs", import.meta.url), "utf8");
 const pageSource = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const promoStatusSource = readFileSync(new URL("../api/promo-status.js", import.meta.url), "utf8");
 
 test("promo codes are normalized and checked with a server-controlled expiry", () => {
   const now = Date.parse("2026-08-12T10:00:00.000Z");
@@ -79,6 +81,30 @@ test("production promo redemption accepts only configured canonical hosts", () =
   assert.equal(isAllowedPromoHost("localhost:3000", "", false), true);
 });
 
+test("public promo status exposes only availability and server expiry", () => {
+  const now = Date.parse("2026-08-12T10:00:00.000Z");
+  const status = getPublicPromoStatus({
+    configuredCode: "SECRET88",
+    expiresAt: "2026-08-17T09:59:59.000Z",
+    now
+  });
+  assert.deepEqual(status, {
+    active: true,
+    expiresAt: "2026-08-17T09:59:59.000Z",
+    grantDays: 5
+  });
+  assert.equal(JSON.stringify(status).includes("SECRET88"), false);
+  assert.equal(getPublicPromoStatus({
+    configuredCode: "SECRET88",
+    expiresAt: "2026-08-12T09:59:59.000Z",
+    now
+  }).active, false);
+  assert.match(promoStatusSource, /isAllowedPromoHost/);
+  assert.match(promoStatusSource, /Cache-Control", "no-store/);
+  assert.match(promoStatusSource, /json\(getPublicPromoStatus\(/);
+  assert.doesNotMatch(promoStatusSource, /\bpromoCode\s*:/);
+});
+
 test("GAS owns the five-day grant, thirty-day cap and atomic write", () => {
   assert.match(gasSource, /PROMO_GRANT_DAYS_ = 5/);
   assert.match(gasSource, /PROMO_MAX_DAYS_ = 30/);
@@ -97,4 +123,10 @@ test("login presents phone first and optional promo code second", () => {
   assert.ok(phoneIndex > 0);
   assert.ok(promoIndex > phoneIndex);
   assert.match(pageSource, /Con un codice valido ricevi 5 giorni di accesso completo/);
+});
+
+test("landing promo login requires phone and promo code without exposing environment values", () => {
+  assert.ok(pageSource.indexOf('id="promoLandingCode"') > pageSource.indexOf('id="promoLandingPhone"'));
+  assert.match(pageSource, /loginFromPromoCard\(\)/);
+  assert.doesNotMatch(pageSource, /PROMO_CODE_5_DAYS|PROMO_CODE_5_DAYS_EXPIRES_AT/);
 });
