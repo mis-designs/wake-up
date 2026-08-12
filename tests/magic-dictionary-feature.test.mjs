@@ -153,12 +153,12 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(index, /premium-new-badge home-dictionary-new-badge/u);
   assert.doesNotMatch(index, /home-dictionary-mark/u);
   assert.match(index, /openDictionaryFromMenu\(\)/u);
-  assert.match(index, /magic-dictionary\.js\?v=1\.2\.2/u);
+  assert.match(index, /magic-dictionary\.js\?v=1\.2\.3/u);
   assert.match(script, /state\.screen === "dictionary"/u);
   assert.match(script, /MagicDictionaryFeature\?\.onAuthenticated/u);
-  assert.match(quiz, /magic-dictionary\.js\?v=1\.2\.2/u);
-  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.2\.2/u);
-  assert.match(worker, /magicbook-pwa-v84-home-open-hover/u);
+  assert.match(quiz, /magic-dictionary\.js\?v=1\.2\.3/u);
+  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.2\.3/u);
+  assert.match(worker, /magicbook-pwa-v86-private-book/u);
   assert.match(worker, /magic-dictionary\.css\?v=1\.2\.2/u);
   assert.ok(vercel.rewrites.some(route => route.source === "/dizionario" && route.destination === "/"));
   assert.match(redirects, /^\/dizionario \/index\.html 200$/mu);
@@ -174,8 +174,26 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(source, /gate\.className = "magic-word-gate hidden notranslate"/u);
   assert.match(source, /gate\.lang = "it"/u);
   assert.match(source, /gate\.setAttribute\("translate", "no"\)/u);
+  assert.match(source, /documentElement\.lang = "it"/u);
+  assert.match(source, /documentElement\.setAttribute\("translate", "no"\)/u);
+  assert.match(source, /documentElement\.classList\.add\("notranslate"\)/u);
   assert.match(source, /dictionary\.className = "magic-dictionary-screen hidden notranslate"/u);
   assert.match(source, /dictionary\.lang = "it"/u);
   assert.match(source, /dictionary\.setAttribute\("translate", "no"\)/u);
   assert.match(source, /Sì, disattiva/u);
+});
+
+test("the word exercise remains Italian regardless of the browser language", () => {
+  for (const page of ["index.html", "quiz.html", "study-quiz.html"]) {
+    const html = fs.readFileSync(path.join(root, page), "utf8");
+    assert.match(html, /<html lang="it" translate="no" class="notranslate">/u);
+    assert.match(html, /<meta name="google" content="notranslate">/u);
+  }
+
+  assert.match(source, /5 PAROLE OGNI 12 ORE/u);
+  assert.match(source, /Qual è il significato corretto\?/u);
+  assert.match(source, /Non voglio imparare/u);
+  assert.match(source, /class="magic-word-prompt" lang="it"/u);
+  assert.match(source, /data-word-id="\$\{escapeHtml\(option\.id\)\}" lang="bn"/u);
+  assert.doesNotMatch(source, /navigator\.(?:language|languages)/u);
 });

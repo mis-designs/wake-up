@@ -1,7 +1,13 @@
 import crypto from "crypto";
 import { fetchUpstream, publicApiError } from "./upstream-fetch.mjs";
+import {
+  isMagicBookStorageConfigured,
+  isMissingMagicBookObject,
+  readMagicBookObject,
+  setPrivateBookResponseHeaders
+} from "./magicbook-storage.mjs";
+import { watermarkMagicBookPage } from "./book-watermark.mjs";
 
-const BASE_URL = process.env.R2_BASE_URL;
 const GOOGLE_SCRIPT_URL = process.env.GAS_ACCESS_URL;
 const TOKEN = process.env.GAS_SECRET;
 const SESSION_SECRET = process.env.SESSION_SECRET;
@@ -10,7 +16,9 @@ const ADMIN_PHONE_NUMBERS = (process.env.ADMIN_PHONE_NUMBERS || "")
   .map(normalizePhone)
   .filter(Boolean);
 const SUPPORTED_BOOKS = new Set(["magic"]);
+const MAX_MAGIC_BOOK_CHAPTER = 25;
 const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
+const MAX_REQUEST_BODY_BYTES = 16 * 1024;
 
 function normalizePhone(input) {
   let phone = String(input || "").trim();
@@ -152,7 +160,9 @@ function createAccessToken(phone, deviceId, role = "user") {
 function verifyAccessToken(token, phone, deviceId) {
   if (!token || !phone || !deviceId) return { ok: false, error: "unauthorized" };
 
-  const parts = String(token).split(".");
+  const serializedToken = String(token);
+  if (serializedToken.length > 4096) return { ok: false, error: "unauthorized" };
+  const parts = serializedToken.split(".");
   if (parts.length !== 2) return { ok: false, error: "unauthorized" };
 
   const [encodedPayload, signature] = parts;
@@ -182,20 +192,41 @@ function verifyAccessToken(token, phone, deviceId) {
   return { ok: true, signatureValid: true, payload };
 }
 
+function getBearerToken(req) {
+  const authorization = String(req.headers?.authorization || "").trim();
+  const match = authorization.match(/^Bearer\s+([^\s]+)$/i);
+  return match ? match[1] : "";
+}
+
 export default async function handler(req, res) {
-  res.setHeader("Cache-Control", "no-store");
+  setPrivateBookResponseHeaders(res);
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "method_not_allowed" });
   }
 
-  if (!BASE_URL || !GOOGLE_SCRIPT_URL || !TOKEN || !SESSION_SECRET) {
+  if (!isMagicBookStorageConfigured() || !GOOGLE_SCRIPT_URL || !TOKEN || !SESSION_SECRET) {
     return res.status(500).json({ error: "missing_server_config" });
   }
 
   try {
-    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
-    const { action, book, type, chapter, page, registerDevice, accessToken } = body;
+    const declaredLength = Number(req.headers?.["content-length"] || 0);
+    if (declaredLength > MAX_REQUEST_BODY_BYTES) {
+      return res.status(413).json({ error: "request_too_large" });
+    }
+
+    let body;
+    try {
+      body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+    } catch {
+      return res.status(400).json({ error: "invalid_json" });
+    }
+
+    if (Buffer.byteLength(JSON.stringify(body)) > MAX_REQUEST_BODY_BYTES) {
+      return res.status(413).json({ error: "request_too_large" });
+    }
+    const { action, book, type, chapter, page, registerDevice } = body;
+    const accessToken = getBearerToken(req);
     const phone = normalizePhone(body.phone);
     const deviceId = String(body.deviceId || "").trim();
     const pageNumber = Number(page);
@@ -238,11 +269,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "invalid_page" });
     }
 
-    if (type === "chapter" && (!Number.isInteger(chapterNumber) || chapterNumber < 1 || chapterNumber > 100)) {
+    if (type === "chapter" && (!Number.isInteger(chapterNumber) || chapterNumber < 1 || chapterNumber > MAX_MAGIC_BOOK_CHAPTER)) {
       return res.status(400).json({ error: "invalid_chapter" });
     }
 
-    if (!phone || !deviceId) {
+    if (!/^[0-9]{6,15}$/.test(phone) || !/^[A-Za-z0-9_-]{8,128}$/.test(deviceId)) {
       return res.status(401).json({ error: "unauthorized" });
     }
 
@@ -261,23 +292,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "invalid_type" });
     }
 
-    const url = new URL(path, `${BASE_URL}/`).toString();
-
-    const response = await fetchUpstream(url, {}, { service: "book_storage", timeoutMs: 12_000 });
-
-    if (!response.ok) {
-      return res.status(404).json({ error: "not_found" });
-    }
-
-    const buffer = await response.arrayBuffer();
-
-    if (!buffer || buffer.byteLength === 0) {
-      return res.status(500).json({ error: "empty_file" });
+    let object;
+    try {
+      object = await readMagicBookObject(path);
+    } catch (error) {
+      if (isMissingMagicBookObject(error)) return res.status(404).json({ error: "not_found" });
+      throw error;
     }
 
     res.setHeader("Content-Type", "image/jpeg");
-    res.setHeader("Cache-Control", "no-store");
-    return res.send(Buffer.from(buffer));
+    return res.send(await watermarkMagicBookPage(object.buffer));
   } catch (err) {
     const { statusCode, error: publicError } = publicApiError(err);
     if (statusCode === 503) res.setHeader("Retry-After", "5");

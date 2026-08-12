@@ -31,6 +31,7 @@ test("local credentials and private keys are excluded from Git", () => {
     ".agents/",
     ".codex/",
     ".env.*",
+    ".npm-cache*/",
     "*.pem",
     "*.key",
     "*.p12",
@@ -49,6 +50,7 @@ test("development files and Apps Script sources are excluded from Vercel", () =>
   for (const pattern of [
     ".codex/",
     ".env.*",
+    ".npm-cache*/",
     "tests/",
     "scripts/",
     "skills/",
@@ -62,9 +64,9 @@ test("development files and Apps Script sources are excluded from Vercel", () =>
   }
 });
 
-test("assistant settings are excluded from the local recovery backup", () => {
+test("assistant settings and dependency caches are excluded from the local recovery backup", () => {
   const backupScript = read("scripts/update-local-backup.ps1");
-  for (const directory of [".agents", ".claude", ".codex"]) {
+  for (const directory of [".agents", ".claude", ".codex", ".npm-cache", ".npm-cache-temp"]) {
     assert.ok(backupScript.includes(`$projectRoot \"${directory}\"`), `backup must exclude ${directory}`);
   }
 });
@@ -95,6 +97,7 @@ test("server credential names never enter browser-delivered source files", () =>
     "TWILIO_AUTH_TOKEN",
     "QUIZ_PROXY_SECRET",
     "R2_SECRET_ACCESS_KEY",
+    "BOOK_R2_SECRET_ACCESS_KEY",
     "DATABASE_URL",
     "PROMO_CODE_5_DAYS",
     "PROMO_CODE_5_DAYS_EXPIRES_AT",

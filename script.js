@@ -698,14 +698,17 @@ async function validateRestoredSession(phone, deviceId) {
 }
 
 async function validateLoginAccess(phone, deviceId, options = {}) {
+  const accessToken = getCurrentAccessToken();
   const response = await fetch("/api/getPages", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+    },
     body: JSON.stringify({
       action: "validate",
       phone,
       deviceId,
-      accessToken: getCurrentAccessToken(),
       registerDevice: options.registerDevice === true
     })
   });
@@ -3572,37 +3575,6 @@ let magicBookViewerRequestId = 0;
 let magicBookScrollHandlerInstalled = false;
 let magicBookLoadObserver = null;
 
-function getMagicBookPageWatermarkText() {
-  return "TMM Bangla Patente";
-}
-
-function drawMagicBookPageWatermark(context, canvas) {
-  if (!context || !canvas?.width || !canvas?.height) return;
-
-  const watermark = getMagicBookPageWatermarkText();
-  const diagonal = Math.hypot(canvas.width, canvas.height);
-  const fontSize = Math.max(18, Math.min(42, Math.floor(canvas.width * 0.032)));
-  const rowStep = Math.max(120, fontSize * 5);
-  const columnStep = rowStep * 2.6;
-
-  context.save();
-  context.globalAlpha = 0.1;
-  context.fillStyle = "#102033";
-  context.font = `700 ${fontSize}px Inter, Arial, sans-serif`;
-  context.textAlign = "center";
-  context.textBaseline = "middle";
-  context.translate(canvas.width / 2, canvas.height / 2);
-  context.rotate(-Math.PI / 7);
-
-  for (let y = -diagonal; y <= diagonal; y += rowStep) {
-    for (let x = -diagonal; x <= diagonal; x += columnStep) {
-      context.fillText(watermark, x, y);
-    }
-  }
-
-  context.restore();
-}
-
 function buildViewerLoadingFigureUrl(figure) {
   const params = new URLSearchParams({
     kind: "figure",
@@ -3652,8 +3624,17 @@ async function fetchMagicBookPage({ type, chapter, page }) {
   if (isTrialBookViewer) {
     if (!isFreeTrialChapter(chapter) || type !== "chapter") return null;
     const guest = getTrialGuestCredentials();
-    const params = new URLSearchParams({ chapter: String(Number(chapter)), page: String(Number(page)), trialId: guest.trialId, guestKey: guest.guestKey });
-    const response = await fetch(`/api/trialBook?${params.toString()}`);
+    const response = await fetch("/api/trialBook", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      body: JSON.stringify({
+        chapter: String(Number(chapter)),
+        page: String(Number(page)),
+        trialId: guest.trialId,
+        guestKey: guest.guestKey
+      })
+    });
     if (response.status === 404) return null;
     if (!response.ok || !(response.headers.get("Content-Type") || "").toLowerCase().includes("image/jpeg")) return null;
     const blob = await response.blob();
@@ -3664,8 +3645,7 @@ async function fetchMagicBookPage({ type, chapter, page }) {
     type,
     page,
     phone: getCurrentSessionPhone(),
-    deviceId: getCurrentSessionDeviceId(),
-    accessToken: getCurrentAccessToken()
+    deviceId: getCurrentSessionDeviceId()
   };
 
   if (type === "chapter") body.chapter = chapter;
@@ -3676,8 +3656,10 @@ async function fetchMagicBookPage({ type, chapter, page }) {
     response = await fetch(MAGIC_BOOK_API, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${getCurrentAccessToken()}`
       },
+      cache: "no-store",
       body: JSON.stringify(body)
     });
   } catch (err) {
@@ -3706,7 +3688,9 @@ async function fetchMagicBookPage({ type, chapter, page }) {
       console.error("Failed to load page", {
         status: response.status,
         endpoint: MAGIC_BOOK_API,
-        request: body
+        type,
+        chapter,
+        page
       });
     }
     return null;
@@ -3716,7 +3700,9 @@ async function fetchMagicBookPage({ type, chapter, page }) {
     console.error("Failed to load page", {
       status: response.status,
       endpoint: MAGIC_BOOK_API,
-      request: body
+      type,
+      chapter,
+      page
     });
     return null;
   }
@@ -3891,7 +3877,6 @@ async function createMagicBookPage(pageBlob) {
 
   try {
     context.drawImage(decoded.source, 0, 0, canvas.width, canvas.height);
-    drawMagicBookPageWatermark(context, canvas);
   } finally {
     decoded.source.close?.();
   }

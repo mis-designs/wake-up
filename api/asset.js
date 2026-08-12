@@ -1,6 +1,10 @@
 import { normalizeExplanationFigureKey } from "./quiz-explanation-availability.mjs";
-
-const BASE_URL = process.env.R2_BASE_URL;
+import {
+  headMagicBookObject,
+  isMagicBookStorageConfigured,
+  isMissingMagicBookObject,
+  readMagicBookObject
+} from "./magicbook-storage.mjs";
 
 const PUBLIC_ASSETS = {
   mg_logo: {
@@ -102,7 +106,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "method_not_allowed" });
   }
 
-  if (!BASE_URL) {
+  if (!isMagicBookStorageConfigured()) {
     return res.status(500).json({ error: "missing_server_config" });
   }
 
@@ -115,38 +119,33 @@ export default async function handler(req, res) {
 
   try {
     const candidates = Array.isArray(asset) ? asset : [asset];
-    let response = null;
     let selectedAsset = null;
+    let selectedObject = null;
 
     for (const candidate of candidates) {
-      const url = new URL(candidate.path, `${BASE_URL}/`).toString();
-      let candidateResponse = await fetch(url, { method: req.method });
-      if (req.method === "HEAD" && candidateResponse.status === 405) {
-        candidateResponse = await fetch(url);
-      }
-      if (candidateResponse.ok) {
-        response = candidateResponse;
+      try {
+        selectedObject = req.method === "HEAD"
+          ? await headMagicBookObject(candidate.path)
+          : await readMagicBookObject(candidate.path);
         selectedAsset = candidate;
         break;
+      } catch (error) {
+        if (!isMissingMagicBookObject(error)) throw error;
       }
     }
 
-    if (!response || !selectedAsset) return res.status(404).json({ error: "not_found" });
+    if (!selectedObject || !selectedAsset) return res.status(404).json({ error: "not_found" });
 
     if (req.method === "HEAD") {
       res.setHeader("Cache-Control", "public, max-age=300, s-maxage=3600");
       return res.status(204).end();
     }
 
-    const buffer = await response.arrayBuffer();
-
-    if (!buffer || buffer.byteLength === 0) {
-      return res.status(500).json({ error: "empty_file" });
-    }
-
     res.setHeader("Content-Type", selectedAsset.contentType);
     res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=604800");
-    return res.send(Buffer.from(buffer));
+    res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+    res.setHeader("X-Robots-Tag", "noindex, noimageindex");
+    return res.send(selectedObject.buffer);
   } catch (err) {
     return res.status(500).json({ error: "server_error" });
   }

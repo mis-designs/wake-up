@@ -11,6 +11,7 @@ skills/
 database/
 google-apps-script/
 node_modules/
+.npm-cache*/
 
 # Local configuration and credentials
 .env

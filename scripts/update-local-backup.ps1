@@ -23,6 +23,8 @@ New-Item -ItemType Directory -Path $currentSnapshot -Force | Out-Null
 $excludedDirectories = @(
   (Join-Path $projectRoot ".git"),
   (Join-Path $projectRoot "node_modules"),
+  (Join-Path $projectRoot ".npm-cache"),
+  (Join-Path $projectRoot ".npm-cache-temp"),
   (Join-Path $projectRoot ".vercel"),
   (Join-Path $projectRoot "coverage"),
   (Join-Path $projectRoot "dist"),

@@ -1,8 +1,15 @@
 import { GUEST_TRIAL_CHAPTERS, GUEST_TRIAL_ENABLED, verifyGuestTrialToken } from "./trialAccess.js";
-import { fetchUpstream, publicApiError } from "./upstream-fetch.mjs";
+import { publicApiError } from "./upstream-fetch.mjs";
+import {
+  isMagicBookStorageConfigured,
+  isMissingMagicBookObject,
+  readMagicBookObject,
+  setPrivateBookResponseHeaders
+} from "./magicbook-storage.mjs";
+import { watermarkMagicBookPage } from "./book-watermark.mjs";
 
-const BASE_URL = process.env.R2_BASE_URL;
 export const TRIAL_BOOK_CHAPTERS = new Set(GUEST_TRIAL_CHAPTERS.map(String));
+const MAX_REQUEST_BODY_BYTES = 8 * 1024;
 
 export function isAllowedTrialBookRequest(chapter, page) {
   const normalizedChapter = String(chapter || "").trim();
@@ -14,30 +21,40 @@ export function isAllowedTrialBookRequest(chapter, page) {
 }
 
 export default async function handler(req, res) {
+  setPrivateBookResponseHeaders(res);
   if (!GUEST_TRIAL_ENABLED) return res.status(410).json({ error: "guest_trial_disabled" });
-  if (req.method !== "GET") return res.status(405).json({ error: "method_not_allowed" });
-  if (!BASE_URL) return res.status(500).json({ error: "missing_server_config" });
-  const chapter = String(req.query?.chapter || "").trim();
-  const page = Number(req.query?.page);
-  const trialId = String(req.query?.trialId || "");
-  const guest = verifyGuestTrialToken(req.query?.guestKey, trialId);
+  if (req.method !== "POST") return res.status(405).json({ error: "method_not_allowed" });
+  if (!isMagicBookStorageConfigured()) return res.status(500).json({ error: "missing_server_config" });
+  const declaredLength = Number(req.headers?.["content-length"] || 0);
+  if (declaredLength > MAX_REQUEST_BODY_BYTES) return res.status(413).json({ error: "request_too_large" });
+  let body;
+  try {
+    body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+  } catch {
+    return res.status(400).json({ error: "invalid_json" });
+  }
+  if (Buffer.byteLength(JSON.stringify(body)) > MAX_REQUEST_BODY_BYTES) {
+    return res.status(413).json({ error: "request_too_large" });
+  }
+  const chapter = String(body.chapter || "").trim();
+  const page = Number(body.page);
+  const trialId = String(body.trialId || "");
+  const guest = verifyGuestTrialToken(body.guestKey, trialId);
   if (!guest || !guest.chapters.includes(Number(chapter))) return res.status(401).json({ error: "invalid_guest_key" });
   if (!isAllowedTrialBookRequest(chapter, page)) return res.status(403).json({ error: "trial_book_forbidden" });
 
   try {
     const pageNumber = String(page).padStart(4, "0");
     const path = `books/magic-book/cap${chapter}/magic book-${chapter}_page-${pageNumber}.jpg`;
-    const response = await fetchUpstream(
-      new URL(path, `${BASE_URL}/`).toString(),
-      {},
-      { service: "trial_book_storage", timeoutMs: 12_000 }
-    );
-    if (!response.ok) return res.status(404).json({ error: "not_found" });
-    const buffer = await response.arrayBuffer();
-    if (!buffer.byteLength) return res.status(500).json({ error: "empty_file" });
+    let object;
+    try {
+      object = await readMagicBookObject(path);
+    } catch (error) {
+      if (isMissingMagicBookObject(error)) return res.status(404).json({ error: "not_found" });
+      throw error;
+    }
     res.setHeader("Content-Type", "image/jpeg");
-    res.setHeader("Cache-Control", "no-store");
-    return res.send(Buffer.from(buffer));
+    return res.send(await watermarkMagicBookPage(object.buffer));
   } catch (error) {
     const { statusCode, error: publicError } = publicApiError(error);
     if (statusCode === 503) res.setHeader("Retry-After", "5");

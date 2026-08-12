@@ -1,32 +1,45 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import sharp from "sharp";
+import {
+  BOOK_WATERMARK_TEXT,
+  watermarkMagicBookPage
+} from "../api/book-watermark.mjs";
 
 const script = readFileSync(new URL("../script.js", import.meta.url), "utf8");
+const bookApi = readFileSync(new URL("../api/getPages.js", import.meta.url), "utf8");
+const trialBookApi = readFileSync(new URL("../api/trialBook.js", import.meta.url), "utf8");
 const index = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
 
-test("every decoded Magic Book page receives the branded diagonal watermark", () => {
-  assert.match(
-    script,
-    /function getMagicBookPageWatermarkText\(\)\s*\{\s*return "TMM Bangla Patente";\s*\}/u
-  );
-  assert.match(script, /function drawMagicBookPageWatermark\(context, canvas\)/u);
-  assert.match(script, /context\.globalAlpha\s*=\s*0\.1/u);
-  assert.match(script, /context\.rotate\(-Math\.PI\s*\/\s*7\)/u);
-  assert.match(
-    script,
-    /context\.drawImage\(decoded\.source[\s\S]*?drawMagicBookPageWatermark\(context, canvas\)/u
-  );
-  assert.equal(
-    (script.match(/drawMagicBookPageWatermark\(context, canvas\)/gu) || []).length,
-    2,
-    "the watermark must exist only in its renderer and the Magic Book page canvas"
-  );
+test("every MagicBook image is watermarked by the backend before delivery", async () => {
+  assert.equal(BOOK_WATERMARK_TEXT, "TMM Bangla Patente");
+  const watermarkSource = readFileSync(new URL("../api/book-watermark.mjs", import.meta.url), "utf8");
+  assert.match(watermarkSource, /BOOK_WATERMARK_TEXT = "TMM Bangla Patente"/u);
+  assert.match(watermarkSource, /BOOK_WATERMARK_TILE/u);
+  assert.doesNotMatch(watermarkSource, /UTENTE|phone|device|accessToken/iu);
+
+  const input = await sharp({
+    create: { width: 320, height: 480, channels: 3, background: "#ffffff" }
+  }).jpeg().toBuffer();
+  const output = await watermarkMagicBookPage(input);
+  const metadata = await sharp(output).metadata();
+  assert.equal(metadata.format, "jpeg");
+  assert.equal(metadata.width, 320);
+  assert.equal(metadata.height, 480);
+
+  assert.match(bookApi, /watermarkMagicBookPage\(object\.buffer\)/u);
+  assert.match(trialBookApi, /watermarkMagicBookPage\(object\.buffer\)/u);
 });
 
-test("the PWA requests and caches the watermark-aware reader build", () => {
-  assert.match(index, /script\.js\?v=44-reader-watermark/u);
-  assert.match(worker, /magicbook-pwa-v84-home-open-hover/u);
-  assert.match(worker, /script\.js\?v=44-reader-watermark/u);
+test("the watermark exists only inside book images and not as a page overlay", () => {
+  assert.doesNotMatch(script, /drawMagicBookPageWatermark|getMagicBookPageWatermarkText/u);
+  assert.doesNotMatch(readFileSync(new URL("../screen-protection.js", import.meta.url), "utf8"), /watermark|TMM MAGICBOOK/u);
+});
+
+test("the PWA requests the private-book reader build", () => {
+  assert.match(index, /script\.js\?v=45-private-book/u);
+  assert.match(worker, /magicbook-pwa-v86-private-book/u);
+  assert.match(worker, /script\.js\?v=45-private-book/u);
 });

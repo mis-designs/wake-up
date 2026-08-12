@@ -84,6 +84,7 @@
   window.addEventListener("popstate", refreshProtection, true);
   window.addEventListener("hashchange", refreshProtection, true);
   window.addEventListener("pageshow", refreshProtection, true);
+  window.addEventListener("beforeprint", refreshProtection, true);
 
   if (typeof MutationObserver === "function" && document.body) {
     new MutationObserver(refreshProtection).observe(document.body, {

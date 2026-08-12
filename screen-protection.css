@@ -21,11 +21,17 @@ html[data-screen-protected="true"] [data-screen-protection-allow] * {
 }
 
 @media print {
-  html[data-screen-protected="true"] body > * {
+  html[data-screen-protected="true"] body > *,
+  body.app-mode > *,
+  body.admin-mode > *,
+  body[data-screen-protection="always"] > * {
     display: none !important;
   }
 
-  html[data-screen-protected="true"] body {
+  html[data-screen-protected="true"] body,
+  body.app-mode,
+  body.admin-mode,
+  body[data-screen-protection="always"] {
     display: flex !important;
     min-height: 100vh !important;
     margin: 0 !important;
@@ -35,7 +41,10 @@ html[data-screen-protected="true"] [data-screen-protection-allow] * {
     background: #071614 !important;
   }
 
-  html[data-screen-protected="true"] body::before {
+  html[data-screen-protected="true"] body::before,
+  body.app-mode::before,
+  body.admin-mode::before,
+  body[data-screen-protection="always"]::before {
     display: block !important;
     max-width: 34rem;
     padding: 3rem;

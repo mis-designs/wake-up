@@ -1,14 +1,14 @@
-const CACHE_NAME = "magicbook-pwa-v84-home-open-hover";
+const CACHE_NAME = "magicbook-pwa-v86-private-book";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
   "/style.css?v=49-home-open-hover",
   "/magic-dictionary.css?v=1.2.2",
-  "/screen-protection.css?v=1.0.0",
+  "/screen-protection.css?v=1.1.0",
   "/homebg.css?v=3",
   "/mystyle.css?v=26",
-  "/script.js?v=44-reader-watermark",
+  "/script.js?v=45-private-book",
   "/study-quiz.html",
   "/study-quiz.css?v=11-trial-chapters-1-3",
   "/study-quiz.js?v=13-automatic-translation-backup",
@@ -19,8 +19,8 @@ const STATIC_ASSETS = [
   "/patenteGlossaryResolver.js?v=1.0.0",
   "/patenteContextResolverV3.js?v=3.0.1-keywords-fix",
   "/quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity",
-  "/magic-dictionary.js?v=1.2.2",
-  "/screen-protection.js?v=1.1.0",
+  "/magic-dictionary.js?v=1.2.3",
+  "/screen-protection.js?v=1.2.0",
   "/data/patente/quiz-help-runtime-v2.json",
   "/manifest.webmanifest?v=16",
   "/icons/mg_logo.png",

@@ -7,7 +7,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function createMagicDictionary(root) {
   "use strict";
 
-  const VERSION = "1.2.2";
+  const VERSION = "1.2.3";
   const MANIFEST_URL = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const FALLBACK_URL = "/data/patente/quiz-help-runtime-v2.json";
   const STORAGE_PREFIX = "magicbook.wordLearning.v1";
@@ -422,7 +422,18 @@
   }
 
   function ensureElements() {
-    if (!root.document || root.document.getElementById("magicWordGate")) return;
+    if (!root.document) return;
+
+    // MagicBook controls its Italian/Bangla teaching copy. Do not let the
+    // browser replace the Italian prompt according to the device language.
+    const documentElement = root.document.documentElement;
+    if (documentElement) {
+      documentElement.lang = "it";
+      documentElement.setAttribute("translate", "no");
+      documentElement.classList.add("notranslate");
+    }
+
+    if (root.document.getElementById("magicWordGate")) return;
 
     const gate = root.document.createElement("div");
     gate.id = "magicWordGate";

@@ -12,8 +12,8 @@ const staticHeaders = read("_headers");
 test("all private application surfaces load the shared protection layer", () => {
   for (const page of ["index.html", "quiz.html", "study-quiz.html", "aggiungi-spiegazioni.html"]) {
     const html = read(page);
-    assert.match(html, /screen-protection\.css\?v=1\.0\.0/u, `${page} must load the print guard`);
-    assert.match(html, /screen-protection\.js\?v=1\.1\.0/u, `${page} must load the silent runtime guard`);
+    assert.match(html, /screen-protection\.css\?v=1\.1\.0/u, `${page} must load the print guard`);
+    assert.match(html, /screen-protection\.js\?v=1\.2\.0/u, `${page} must load the silent runtime guard`);
   }
 
   for (const page of ["quiz.html", "study-quiz.html", "aggiungi-spiegazioni.html"]) {
@@ -54,7 +54,6 @@ test("the late content-protected popup and visibility shield are completely abse
     "visibilitychange",
     "pagehide",
     "freeze",
-    "beforeprint",
     "conceal",
     "reveal",
     "shieldMessage",
@@ -69,8 +68,11 @@ test("silent browser controls remain enabled without showing a popup", () => {
   assert.match(source, /PrintScreen/u);
   assert.match(source, /event\.metaKey && event\.shiftKey/u);
   assert.match(source, /\["copy", "cut", "dragstart", "contextmenu", "selectstart"\]/u);
+  assert.match(source, /addEventListener\("beforeprint", refreshProtection/u);
   assert.match(css, /@media print/u);
   assert.match(css, /body > \*/u);
+  assert.match(css, /body\.app-mode > \*/u);
+  assert.match(css, /body\[data-screen-protection="always"\] > \*/u);
 });
 
 test("editable fields remain usable on protected admin and search interfaces", () => {
@@ -83,7 +85,7 @@ test("screen sharing is denied by production headers and assets are cache-versio
   const permissionsPolicy = globalHeaders.find(header => header.key === "Permissions-Policy")?.value || "";
   assert.match(permissionsPolicy, /display-capture=\(\)/u);
   assert.match(staticHeaders, /display-capture=\(\)/u);
-  assert.match(worker, /magicbook-pwa-v84-home-open-hover/u);
-  assert.match(worker, /screen-protection\.css\?v=1\.0\.0/u);
-  assert.match(worker, /screen-protection\.js\?v=1\.1\.0/u);
+  assert.match(worker, /magicbook-pwa-v86-private-book/u);
+  assert.match(worker, /screen-protection\.css\?v=1\.1\.0/u);
+  assert.match(worker, /screen-protection\.js\?v=1\.2\.0/u);
 });
