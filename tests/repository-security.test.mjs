@@ -28,6 +28,8 @@ function productionSourceFiles(directory = ROOT) {
 test("local credentials and private keys are excluded from Git", () => {
   const gitignore = read(".gitignore");
   for (const pattern of [
+    ".agents/",
+    ".codex/",
     ".env.*",
     "*.pem",
     "*.key",
@@ -45,6 +47,7 @@ test("local credentials and private keys are excluded from Git", () => {
 test("development files and Apps Script sources are excluded from Vercel", () => {
   const vercelignore = read(".vercelignore");
   for (const pattern of [
+    ".codex/",
     ".env.*",
     "tests/",
     "scripts/",
@@ -56,6 +59,13 @@ test("development files and Apps Script sources are excluded from Vercel", () =>
     "*.key"
   ]) {
     assert.ok(vercelignore.includes(pattern), `.vercelignore must contain ${pattern}`);
+  }
+});
+
+test("assistant settings are excluded from the local recovery backup", () => {
+  const backupScript = read("scripts/update-local-backup.ps1");
+  for (const directory of [".agents", ".claude", ".codex"]) {
+    assert.ok(backupScript.includes(`$projectRoot \"${directory}\"`), `backup must exclude ${directory}`);
   }
 });
 

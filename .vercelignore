@@ -1,5 +1,6 @@
 # Development-only files must never enter the production deployment bundle.
 .agents/
+.codex/
 .claude/
 .vscode/
 .idea/

@@ -1,5 +1,7 @@
 # Local editor and assistant settings
 .claude/
+.agents/
+.codex/
 .vscode/
 .idea/
 

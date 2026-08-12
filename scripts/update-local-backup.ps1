@@ -27,7 +27,8 @@ $excludedDirectories = @(
   (Join-Path $projectRoot "coverage"),
   (Join-Path $projectRoot "dist"),
   (Join-Path $projectRoot ".claude"),
-  (Join-Path $projectRoot ".agents")
+  (Join-Path $projectRoot ".agents"),
+  (Join-Path $projectRoot ".codex")
 )
 
 $excludedFiles = @(
