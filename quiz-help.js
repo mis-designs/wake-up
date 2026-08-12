@@ -34,7 +34,7 @@
 
   const HELP_MANIFEST_SOURCE = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const LOCAL_HELP_SOURCE = "/data/patente/quiz-help-runtime-v2.json";
-  const REMOTE_HELP_TIMEOUT_MS = 10000;
+  const REMOTE_HELP_TIMEOUT_MS = 1800;
   const questionArea = document.querySelector(".question-area");
   const questionText = document.getElementById("question");
   const clickHint = document.querySelector(".quiz-click-hint");
@@ -318,7 +318,9 @@
   async function loadOnDemandTranslation(question) {
     if (typeof fetchBengaliAudio !== "function") return "";
     const cacheKey = `${String(question?.id || current)}_bn`;
-    const data = await fetchBengaliAudio(String(question?.question || ""), cacheKey, question?.id);
+    // fetchBengaliAudio needs the complete catalog row so the protected API
+    // receives both the exact Italian text and its signed question ID.
+    const data = await fetchBengaliAudio(question, cacheKey, { requireAudio: false });
     return usableBanglaTranslation(data?.translation);
   }
 

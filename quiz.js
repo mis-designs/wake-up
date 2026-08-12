@@ -1289,7 +1289,7 @@ function speakItalian() {
 // Uses the shared verified Bengali text when it exists. Only missing entries
 // use the automatic Italian-to-Bengali translation provided by the API.
 // Returns { audio: base64_mp3, translation: bengaliText }.
-async function fetchBengaliAudio(question, cacheKey) {
+async function fetchBengaliAudio(question, cacheKey, options = {}) {
   if (bengaliAudioCache[cacheKey]) return bengaliAudioCache[cacheKey];
 
   const controller = new AbortController();
@@ -1322,8 +1322,8 @@ async function fetchBengaliAudio(question, cacheKey) {
     const data = curatedTranslation
       ? { ...res, translation: curatedTranslation, translationSource: "runtime_v3" }
       : res;
-    if (!data.audio) throw new Error(data.error || "no audio in response");
-    bengaliAudioCache[cacheKey] = data;
+    if (!data.audio && options.requireAudio !== false) throw new Error(data.error || "no audio in response");
+    if (data.audio) bengaliAudioCache[cacheKey] = data;
     return data;
   } catch (err) {
     clearTimeout(timeoutId);

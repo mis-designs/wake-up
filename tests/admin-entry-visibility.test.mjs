@@ -29,5 +29,5 @@ test("leaving the admin panel restores the entry and ships the new script versio
   assert.match(hideAll, /adminPanel[\s\S]*?classList\.add\("hidden"\)[\s\S]*?updateAdminEntryVisibility\(\)/);
   assert.match(htmlSource, /script\.js\?v=39-promo-campaign/);
   assert.match(workerSource, /script\.js\?v=39-promo-campaign/);
-  assert.match(workerSource, /CACHE_NAME = "magicbook-pwa-v72-promo-campaign"/);
+  assert.match(workerSource, /CACHE_NAME = "magicbook-pwa-v73-translation-fix"/);
 });

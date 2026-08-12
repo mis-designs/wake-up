@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v72-promo-campaign";
+const CACHE_NAME = "magicbook-pwa-v73-translation-fix";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -14,7 +14,7 @@ const STATIC_ASSETS = [
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=57-trial-chapters-1-3",
   "/quiz-help.css?v=20260714-magic-help-v4",
-  "/quiz-help.js?v=20260810-server-bangla-tts",
+  "/quiz-help.js?v=20260812-translation-fix",
   "/patenteGlossaryResolver.js?v=1.0.0",
   "/patenteContextResolverV3.js?v=3.0.1-keywords-fix",
   "/quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity",

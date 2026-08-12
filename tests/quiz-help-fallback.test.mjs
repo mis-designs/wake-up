@@ -19,7 +19,7 @@ test("the local runtime keeps contextual Bengali separate from the question tran
 
 test("a missing catalog translation is requested only after opening quiz help", () => {
   assert.match(source, /async function loadOnDemandTranslation\(question\)/);
-  assert.match(source, /fetchBengaliAudio\(String\(question\?\.question \|\| ""\), cacheKey, question\?\.id\)/);
+  assert.match(source, /fetchBengaliAudio\(question, cacheKey, \{ requireAudio: false \}\)/);
   assert.match(source, /if \(!verifiedTranslation\)/);
 });
 
