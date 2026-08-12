@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v82-screen-protection";
+const CACHE_NAME = "magicbook-pwa-v83-book-only-watermark";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -20,7 +20,7 @@ const STATIC_ASSETS = [
   "/patenteContextResolverV3.js?v=3.0.1-keywords-fix",
   "/quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity",
   "/magic-dictionary.js?v=1.2.2",
-  "/screen-protection.js?v=1.0.0",
+  "/screen-protection.js?v=1.1.0",
   "/data/patente/quiz-help-runtime-v2.json",
   "/manifest.webmanifest?v=16",
   "/icons/mg_logo.png",

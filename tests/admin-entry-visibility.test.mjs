@@ -29,5 +29,5 @@ test("leaving the admin panel restores the entry and ships the new script versio
   assert.match(hideAll, /adminPanel[\s\S]*?classList\.add\("hidden"\)[\s\S]*?updateAdminEntryVisibility\(\)/);
   assert.match(htmlSource, /script\.js\?v=44-reader-watermark/);
   assert.match(workerSource, /script\.js\?v=44-reader-watermark/);
-  assert.match(workerSource, /CACHE_NAME = "magicbook-pwa-v82-screen-protection"/);
+  assert.match(workerSource, /CACHE_NAME = "magicbook-pwa-v83-book-only-watermark"/);
 });
