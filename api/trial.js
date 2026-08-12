@@ -18,6 +18,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET;
 export const TRIAL_CHAPTERS = new Set(GUEST_TRIAL_CHAPTERS.map(String));
 const TRIAL_TOKEN_TTL_MS = GUEST_TRIAL_DURATION_MS;
 const TRIAL_SERVICE_ACTIONS = new Set(["getItalianAudio", "getBengaliAudio", "getTTS"]);
+const BENGALI_TEXT_PATTERN = /[\u0980-\u09ff]/u;
 
 export function isAllowedTrialChapter(value) {
   return TRIAL_CHAPTERS.has(String(value || "").trim());
@@ -153,12 +154,15 @@ export default async function handler(req, res) {
       if (!isAllowedTrialChapter(payload.chapter) || !text || text.length > 500 || !payload.textHashes?.includes(textHash(text))) {
         return res.status(403).json({ error: "trial_content_forbidden" });
       }
+      if (action === "getBengaliAudio" && !payload.ids?.includes(questionId)) {
+        return res.status(403).json({ error: "trial_content_forbidden" });
+      }
+      if (action === "getTTS" && !BENGALI_TEXT_PATTERN.test(text)) {
+        return res.status(400).json({ error: "invalid_bengali_text" });
+      }
       const curatedTranslation = action === "getBengaliAudio"
         ? getCuratedQuizTranslation({ id: questionId, question: text })
         : "";
-      if (action === "getBengaliAudio" && !curatedTranslation) {
-        return res.status(404).json({ error: "translation_not_synced" });
-      }
       const data = await callQuizBackend(curatedTranslation ? "getTTS" : action, {
         text: curatedTranslation || text
       });
@@ -166,6 +170,9 @@ export default async function handler(req, res) {
         ...data,
         translation: curatedTranslation,
         translationSource: "curated"
+      } : action === "getBengaliAudio" ? {
+        ...data,
+        translationSource: "automatic"
       } : data);
     }
 

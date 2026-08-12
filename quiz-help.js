@@ -347,9 +347,23 @@
       || question.questionBD
       || ""
     );
+    let automaticBackup = false;
+    if (!verifiedTranslation && typeof fetchBengaliAudio === "function") {
+      translationStatus.textContent = "Creo la traduzione automatica di backup…";
+      try {
+        const cacheKey = `${String(question?.id || current)}_bn`;
+        const translated = await fetchBengaliAudio(question, cacheKey, { requireAudio: false });
+        verifiedTranslation = usableBanglaTranslation(translated?.translation);
+        automaticBackup = verifiedTranslation && translated?.translationSource === "automatic";
+      } catch (_) {
+        verifiedTranslation = "";
+      }
+    }
     if (ownRequest !== requestId) return;
     translationText.textContent = verifiedTranslation;
-    translationStatus.textContent = verifiedTranslation ? "" : "Traduzione TMM Books non ancora sincronizzata.";
+    translationStatus.textContent = verifiedTranslation
+      ? (automaticBackup ? "Traduzione automatica di backup." : "")
+      : "Traduzione non disponibile al momento.";
     renderContext(help);
     renderWords(help?.words || []);
   }

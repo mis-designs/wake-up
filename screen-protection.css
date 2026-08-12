@@ -1,0 +1,48 @@
+html[data-screen-protected="true"],
+html[data-screen-protected="true"] body {
+  -webkit-touch-callout: none;
+}
+
+html[data-screen-protected="true"] body,
+html[data-screen-protected="true"] body *:not(input):not(textarea):not(select):not([contenteditable="true"]) {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html[data-screen-protected="true"] input,
+html[data-screen-protected="true"] textarea,
+html[data-screen-protected="true"] select,
+html[data-screen-protected="true"] [contenteditable="true"],
+html[data-screen-protected="true"] [contenteditable="true"] *,
+html[data-screen-protected="true"] [data-screen-protection-allow],
+html[data-screen-protected="true"] [data-screen-protection-allow] * {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+@media print {
+  html[data-screen-protected="true"] body > * {
+    display: none !important;
+  }
+
+  html[data-screen-protected="true"] body {
+    display: flex !important;
+    min-height: 100vh !important;
+    margin: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #ffffff !important;
+    background: #071614 !important;
+  }
+
+  html[data-screen-protected="true"] body::before {
+    display: block !important;
+    max-width: 34rem;
+    padding: 3rem;
+    color: #ffffff;
+    font: 800 24px/1.35 Inter, Arial, sans-serif;
+    text-align: center;
+    white-space: pre-line;
+    content: "CONTENUTO PROTETTO\A La stampa di MagicBook è disabilitata.";
+  }
+}

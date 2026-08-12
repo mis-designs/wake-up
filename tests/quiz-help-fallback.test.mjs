@@ -19,10 +19,11 @@ test("the local runtime keeps contextual Bengali separate from the question tran
   assert.doesNotMatch(source, /questionBnEasy:\s*contextBn/);
 });
 
-test("a missing synchronized translation never falls back to automatic translation", () => {
-  assert.doesNotMatch(source, /loadOnDemandTranslation|getBengaliAudio|fetchBengaliAudio/);
+test("a missing synchronized translation uses the protected automatic backup", () => {
   assert.match(source, /help\?\.questionBnStandard[\s\S]*?question\.question_bd/);
-  assert.match(source, /Traduzione TMM Books non ancora sincronizzata\./);
+  assert.match(source, /if \(!verifiedTranslation && typeof fetchBengaliAudio === "function"\)/);
+  assert.match(source, /fetchBengaliAudio\(question, cacheKey, \{ requireAudio: false \}\)/);
+  assert.match(source, /Traduzione automatica di backup\./);
 });
 
 test("clean Studia quiz routes rewrite to the clean static page", () => {

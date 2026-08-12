@@ -3572,6 +3572,37 @@ let magicBookViewerRequestId = 0;
 let magicBookScrollHandlerInstalled = false;
 let magicBookLoadObserver = null;
 
+function getMagicBookPageWatermarkText() {
+  return "TMM Bangla Patente";
+}
+
+function drawMagicBookPageWatermark(context, canvas) {
+  if (!context || !canvas?.width || !canvas?.height) return;
+
+  const watermark = getMagicBookPageWatermarkText();
+  const diagonal = Math.hypot(canvas.width, canvas.height);
+  const fontSize = Math.max(18, Math.min(42, Math.floor(canvas.width * 0.032)));
+  const rowStep = Math.max(120, fontSize * 5);
+  const columnStep = rowStep * 2.6;
+
+  context.save();
+  context.globalAlpha = 0.1;
+  context.fillStyle = "#102033";
+  context.font = `700 ${fontSize}px Inter, Arial, sans-serif`;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.translate(canvas.width / 2, canvas.height / 2);
+  context.rotate(-Math.PI / 7);
+
+  for (let y = -diagonal; y <= diagonal; y += rowStep) {
+    for (let x = -diagonal; x <= diagonal; x += columnStep) {
+      context.fillText(watermark, x, y);
+    }
+  }
+
+  context.restore();
+}
+
 function buildViewerLoadingFigureUrl(figure) {
   const params = new URLSearchParams({
     kind: "figure",
@@ -3860,6 +3891,7 @@ async function createMagicBookPage(pageBlob) {
 
   try {
     context.drawImage(decoded.source, 0, 0, canvas.width, canvas.height);
+    drawMagicBookPageWatermark(context, canvas);
   } finally {
     decoded.source.close?.();
   }
@@ -5097,37 +5129,6 @@ async function adminRunConfirm() {
     }
   }
 }
-
-/***********************
- * CONTENT PROTECTION
- ***********************/
-function isEditableTarget(target) {
-  return Boolean(target?.closest?.("input, textarea, select, [contenteditable='true']"));
-}
-
-document.addEventListener("contextmenu", e => {
-  if (!isEditableTarget(e.target)) e.preventDefault();
-});
-
-document.addEventListener("selectstart", e => {
-  if (!isEditableTarget(e.target)) e.preventDefault();
-});
-
-document.addEventListener("dragstart", e => {
-  if (!isEditableTarget(e.target)) e.preventDefault();
-});
-
-document.addEventListener("copy", e => {
-  if (!isEditableTarget(e.target)) e.preventDefault();
-});
-
-document.addEventListener("keydown", e => {
-  if (isEditableTarget(e.target)) return;
-
-  if (e.ctrlKey && ["c", "u", "s", "a"].includes(e.key.toLowerCase())) {
-    e.preventDefault();
-  }
-});
 
 /***********************
  * WHATSAPP BUTTON

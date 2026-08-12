@@ -7,9 +7,17 @@ import {
   isUsableBengaliTranslation,
   listCuratedQuizTranslations
 } from "../api/quiz-translations.mjs";
+import { isExactCatalogQuestion } from "../api/quiz.js";
 
 const targetQuestion = "La carreggiata non comprende le piste ciclabili";
 const targetTranslation = "গাড়ি চলার অংশের মধ্যে সাইকেল চলার পথ অন্তর্ভুক্ত নয়।";
+const tatsQuestion = "I rimorchi T.A.T.S. sono destinati al trasporto di attrezzature che non devono costituire oggetto di commercio, ma essere impiegate solo per il tempo libero";
+
+test("automatic translation accepts only the exact catalog question", () => {
+  assert.equal(isExactCatalogQuestion("cap1_q50", tatsQuestion), true);
+  assert.equal(isExactCatalogQuestion("cap1_q50", `${tatsQuestion} testo alterato`), false);
+  assert.equal(isExactCatalogQuestion("unknown", tatsQuestion), false);
+});
 
 test("the known carreggiata question has a precise curated Bengali translation", () => {
   assert.equal(getCuratedQuizTranslation({ id: "q00149", question: targetQuestion }), targetTranslation);
@@ -53,31 +61,33 @@ test("corrupt remote translations are rejected before the V3 runtime is used", (
   assert.match(loader, /codePoint >= 0x0980 && codePoint <= 0x09ff/);
 });
 
-test("Bengali audio uses only synchronized text and never asks for automatic translation", () => {
+test("Bengali audio prefers synchronized text and securely falls back to automatic translation", () => {
   const quizSource = readFileSync(new URL("../quiz.js", import.meta.url), "utf8");
   const studySource = readFileSync(new URL("../study-quiz.js", import.meta.url), "utf8");
   const helpSource = readFileSync(new URL("../quiz-help.js", import.meta.url), "utf8");
   const quizApi = readFileSync(new URL("../api/quiz.js", import.meta.url), "utf8");
   const trialApi = readFileSync(new URL("../api/trial.js", import.meta.url), "utf8");
   assert.match(quizSource, /fetchBengaliAudio\(q, cacheKey\)/);
-  assert.match(quizSource, /buildQuizApiUrl\("getTTS"/);
-  assert.match(quizSource, /translationSource: "tmm_books"/);
-  assert.match(quizSource, /throw new Error\("translation_not_synced"\)/);
-  assert.doesNotMatch(quizSource, /buildQuizApiUrl\("getBengaliAudio"/);
+  assert.match(quizSource, /automaticBackup = !synchronizedTranslation/);
+  assert.match(quizSource, /buildQuizApiUrl\(automaticBackup \? "getBengaliAudio" : "getTTS"/);
+  assert.match(quizSource, /automaticBackup \? "automatic" : "tmm_books"/);
   assert.match(quizSource, /questionId = String\(question\?\.id \|\| ""\)/);
   assert.match(studySource, /questionId:\s*String\(question\.id \|\| ""\)/);
   assert.match(studySource, /action:\s*"getTTS"[\s\S]*?text:\s*value/);
-  assert.doesNotMatch(studySource, /action:\s*"getBengaliAudio"/);
-  assert.doesNotMatch(helpSource, /loadOnDemandTranslation|getBengaliAudio/);
-  assert.match(quizApi, /action === "getBengaliAudio" && !curatedTranslation[\s\S]*?translation_not_synced/);
-  assert.match(trialApi, /action === "getBengaliAudio" && !curatedTranslation[\s\S]*?translation_not_synced/);
+  assert.match(studySource, /async function loadAutomaticTranslation\(question\)/);
+  assert.match(studySource, /action:\s*"getBengaliAudio"/);
+  assert.match(helpSource, /fetchBengaliAudio\(question, cacheKey, \{ requireAudio: false \}\)/);
+  assert.match(quizApi, /action === "getBengaliAudio" && !isExactCatalogQuestion\(questionId, text\)[\s\S]*?translation_content_forbidden/);
+  assert.match(quizApi, /action === "getTTS" && !BENGALI_TEXT_PATTERN\.test/);
+  assert.match(trialApi, /action === "getBengaliAudio" && !payload\.ids\?\.includes\(questionId\)/);
+  assert.match(trialApi, /action === "getTTS" && !BENGALI_TEXT_PATTERN\.test/);
   assert.match(trialApi, /quiz\.flatMap\(q => \[q\.question, q\.question_bd\]/);
   assert.match(helpSource, /buildQuizApiUrl\("getTTS", \{ text: cleanText \}\)/);
   assert.doesNotMatch(studySource, /speechSynthesis|SpeechSynthesisUtterance/);
   assert.doesNotMatch(helpSource, /speechSynthesis|SpeechSynthesisUtterance/);
 });
 
-test("study mode treats synchronized V3 translations as authoritative", () => {
+test("study mode treats synchronized V3 translations as authoritative before automatic backup", () => {
   const page = readFileSync(new URL("../study-quiz.html", import.meta.url), "utf8");
   const source = readFileSync(new URL("../study-quiz.js", import.meta.url), "utf8");
 
@@ -89,8 +99,9 @@ test("study mode treats synchronized V3 translations as authoritative", () => {
   assert.match(page, /QUIZ_HELP_RUNTIME_V3_DEFAULT_ENABLED\s*=\s*true/);
   assert.match(source, /data\.resolver\.resolve\(question\)/);
   assert.match(source, /resolved\.questionBnStandard \|\| resolved\.questionBnEasy \|\| resolved\.questionBn/);
-  assert.doesNotMatch(source, /loadOnDemandTranslation|preferredTranslation \? "getTTS" : "getBengaliAudio"/);
-  assert.match(source, /Traduzione TMM Books non ancora sincronizzata\./);
+  assert.match(source, /if \(!usableBanglaTranslation\(help\.translation\)\)[\s\S]*?loadAutomaticTranslation\(question\)/);
+  assert.match(source, /TRADUZIONE BANGLA · BACKUP AUTOMATICO/);
+  assert.doesNotMatch(source, /loadOnDemandTranslation/);
   assert.match(source, /requestIdleCallback\(prewarmHelpLibrary/);
   assert.doesNotMatch(source, /REMOTE_HELP_TIMEOUT_MS|Promise\.race/);
 });

@@ -1286,7 +1286,8 @@ function speakItalian() {
     });
 }
 
-// Uses only Bengali text synchronized from the TMM Books/All Books catalog.
+// Prefers the synchronized TMM Books/All Books text and uses the protected
+// automatic translator only when no catalog translation exists.
 // Returns { audio: base64_mp3, translation: bengaliText }.
 async function fetchBengaliAudio(question, cacheKey, options = {}) {
   if (bengaliAudioCache[cacheKey]) return bengaliAudioCache[cacheKey];
@@ -1317,22 +1318,27 @@ async function fetchBengaliAudio(question, cacheKey, options = {}) {
       })) synchronizedTranslation = catalogCandidate;
     }
 
-    if (!synchronizedTranslation) {
-      if (options.requireAudio === false) {
-        return { translation: "", translationSource: "not_synced" };
-      }
-      throw new Error("translation_not_synced");
-    }
-
+    const automaticBackup = !synchronizedTranslation;
     const res = await fetchQuizJson(
-      buildQuizApiUrl("getTTS", {
-        text: synchronizedTranslation,
+      buildQuizApiUrl(automaticBackup ? "getBengaliAudio" : "getTTS", {
+        text: automaticBackup ? String(question?.question || "") : synchronizedTranslation,
         questionId
       }),
       { signal: controller.signal }
     );
     clearTimeout(timeoutId);
-    const data = { ...res, translation: synchronizedTranslation, translationSource: "tmm_books" };
+    const translatedText = automaticBackup
+      ? String(res?.translation || "").trim()
+      : synchronizedTranslation;
+    if (![...translatedText].some(character => {
+      const codePoint = character.codePointAt(0);
+      return codePoint >= 0x0980 && codePoint <= 0x09ff;
+    })) throw new Error("translation_not_available");
+    const data = {
+      ...res,
+      translation: translatedText,
+      translationSource: automaticBackup ? "automatic" : "tmm_books"
+    };
     if (!data.audio && options.requireAudio !== false) throw new Error(data.error || "no audio in response");
     if (data.audio) bengaliAudioCache[cacheKey] = data;
     return data;
@@ -1393,9 +1399,7 @@ function playBanglaAudio() {
       if (banglaAudioId !== myId) return;
       banglaAudioBtn?.classList.remove("is-loading");
       console.error("[Bengali TTS] Failed:", err.message);
-      showAudioUnavailableToast(err.message === "translation_not_synced"
-        ? "Traduzione TMM Books non ancora sincronizzata"
-        : "Audio bangla non disponibile");
+      showAudioUnavailableToast("Audio bangla non disponibile");
     });
 }
 
@@ -2443,10 +2447,3 @@ async function finishQuiz(forceFinish = false) {
     isFinishing = false;
   }
 }
-
-/***********************
- * CONTENT PROTECTION
- ***********************/
-document.addEventListener("contextmenu", e => e.preventDefault());
-document.addEventListener("dragstart",   e => e.preventDefault());
-document.addEventListener("copy",        e => e.preventDefault());

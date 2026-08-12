@@ -64,6 +64,7 @@ const EXPLANATION_R2_SECRET_ACCESS_KEY = process.env.EXPLANATION_R2_SECRET_ACCES
 const QUIZ_AUDIO_DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_URL || process.env.NEON_DATABASE_URL;
 
 const GET_ACTIONS = new Set(["getQuiz", "getExplanationFigures", "getItalianAudio", "getBengaliAudio", "getTTS"]);
+const BENGALI_TEXT_PATTERN = /[\u0980-\u09ff]/u;
 const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
 const QUIZ_SESSION_TOKEN_TTL_MS = 30 * 60 * 1000;
 const PASSING_SCORE_RATIO = 0.9;
@@ -103,6 +104,11 @@ export function getAdminItalianQuestionText(questionId) {
   const id = String(questionId ?? "").trim();
   if (!id) return "";
   return magicBookQuestionById.get(id) || "";
+}
+
+export function isExactCatalogQuestion(questionId, questionText) {
+  const expected = magicBookQuestionById.get(String(questionId ?? "").trim()) || "";
+  return Boolean(expected && expected === String(questionText ?? "").trim());
 }
 
 function isQuizAudioConfigured() {
@@ -1387,12 +1393,16 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: quizSession.error });
       }
 
+      if (action === "getBengaliAudio" && !isExactCatalogQuestion(questionId, text)) {
+        return res.status(403).json({ error: "translation_content_forbidden" });
+      }
+      if (action === "getTTS" && !BENGALI_TEXT_PATTERN.test(String(text || ""))) {
+        return res.status(400).json({ error: "invalid_bengali_text" });
+      }
+
       const curatedTranslation = action === "getBengaliAudio"
         ? getCuratedQuizTranslation({ id: questionId, question: text })
         : "";
-      if (action === "getBengaliAudio" && !curatedTranslation) {
-        return res.status(404).json({ error: "translation_not_synced" });
-      }
       const data = await forwardGetAction({
         action: curatedTranslation ? "getTTS" : action,
         chapters,
@@ -1405,7 +1415,10 @@ export default async function handler(req, res) {
           translationSource: "curated"
         });
       }
-      return res.status(200).json(data);
+      return res.status(200).json(action === "getBengaliAudio" ? {
+        ...data,
+        translationSource: "automatic"
+      } : data);
     }
 
     if (req.method === "POST" && action === "checkQuiz") {

@@ -656,6 +656,36 @@
     };
   }
 
+  async function loadAutomaticTranslation(question) {
+    const key = `bn:${question.id || fingerprint(question)}`;
+    const cached = ttsCache.get(key);
+    if (cached?.translation && cached?.translationSource === "automatic") return cached;
+
+    const query = new URLSearchParams(TRIAL_MODE ? {
+      action: "getBengaliAudio",
+      trialId: session.deviceId,
+      trialToken: quizSessionToken,
+      questionId: String(question.id || ""),
+      text: String(question.question || "")
+    } : {
+      action: "getBengaliAudio",
+      phone: session.phone,
+      deviceId: session.deviceId,
+      questionId: String(question.id || ""),
+      text: String(question.question || "")
+    });
+    const response = await fetch(`${API}?${query}`, {
+      headers: authHeaders({ withQuizSession: true }),
+      cache: "no-store"
+    });
+    const data = await readApiResponse(response);
+    const translation = usableBanglaTranslation(data?.translation);
+    if (!translation) throw new Error("translation_not_available");
+    const translated = { ...data, translation, translationSource: "automatic" };
+    if (translated.audio) ttsCache.set(key, translated);
+    return translated;
+  }
+
   async function getQuestionHelp(question) {
     const key = String(question.id || fingerprint(question));
     const cached = helpCache.get(key);
@@ -667,6 +697,13 @@
       translationSource: question.questionTranslationSource || "catalog",
       words: []
     };
+    if (!usableBanglaTranslation(help.translation)) {
+      try {
+        const automatic = await loadAutomaticTranslation(question);
+        help.translation = automatic.translation;
+        help.translationSource = "automatic";
+      } catch (_) {}
+    }
     helpCache.set(key, help);
     return help;
   }
@@ -691,14 +728,16 @@
   function renderHelp(question, help) {
     const container = document.createElement("section");
     container.className = "study-help";
-    const translationSection = helpSection("TRADUZIONE BANGLA");
+    const translationSection = helpSection(help?.translationSource === "automatic"
+      ? "TRADUZIONE BANGLA · BACKUP AUTOMATICO"
+      : "TRADUZIONE BANGLA");
     const translation = document.createElement("p");
     translation.className = "study-translation";
     translation.lang = "bn";
     const verifiedTranslation = String(help?.translation || "").trim();
     translation.classList.toggle("is-missing", !verifiedTranslation);
     translation.dataset.translationState = verifiedTranslation ? "ready" : "missing";
-    translation.textContent = verifiedTranslation || "Traduzione TMM Books non ancora sincronizzata.";
+    translation.textContent = verifiedTranslation || "Traduzione non disponibile al momento.";
     translationSection.appendChild(translation);
     container.appendChild(translationSection);
 
@@ -923,42 +962,56 @@
       if (!data) {
         let preferredTranslation = "";
         let preferredTranslationSource = "";
+        let automaticBackup = false;
         if (language === "bn") {
           const help = await getQuestionHelp(question);
           preferredTranslation = usableBanglaTranslation(help?.translation);
           preferredTranslationSource = String(help?.translationSource || "runtime_v3");
-          if (TRIAL_MODE) {
-            preferredTranslation = usableBanglaTranslation(question.question_bd || question.questionBD);
+          const trialCatalogTranslation = TRIAL_MODE
+            ? usableBanglaTranslation(question.question_bd || question.questionBD)
+            : "";
+          if (trialCatalogTranslation) {
+            preferredTranslation = trialCatalogTranslation;
             preferredTranslationSource = String(question.questionTranslationSource || "catalog");
           }
-          if (!preferredTranslation) throw new Error("translation_not_synced");
+          automaticBackup = preferredTranslationSource === "automatic";
+          data = ttsCache.get(key);
+          if (!preferredTranslation) throw new Error("translation_not_available");
         }
-        const query = new URLSearchParams(TRIAL_MODE ? {
-          action: language === "bn" ? "getTTS" : "getItalianAudio",
-          trialId: session.deviceId,
-          trialToken: quizSessionToken,
-          questionId: String(question.id || ""),
-          text: preferredTranslation || String(question.question || "")
-        } : {
-          action: language === "bn" ? "getTTS" : "getItalianAudio",
-          phone: session.phone,
-          deviceId: session.deviceId,
-          questionId: String(question.id || ""),
-          text: preferredTranslation || String(question.question || "")
-        });
-        const response = await fetch(`${API}?${query}`, {
-          headers: authHeaders({ withQuizSession: true })
-        });
-        data = await readApiResponse(response);
-        if (!data.audio) throw new Error("audio_not_available");
-        if (preferredTranslation) {
-          data = {
-            ...data,
-            translation: preferredTranslation,
-            translationSource: preferredTranslationSource
-          };
+        if (!data) {
+          const action = language === "bn"
+            ? (automaticBackup ? "getBengaliAudio" : "getTTS")
+            : "getItalianAudio";
+          const requestText = automaticBackup
+            ? String(question.question || "")
+            : (preferredTranslation || String(question.question || ""));
+          const query = new URLSearchParams(TRIAL_MODE ? {
+            action,
+            trialId: session.deviceId,
+            trialToken: quizSessionToken,
+            questionId: String(question.id || ""),
+            text: requestText
+          } : {
+            action,
+            phone: session.phone,
+            deviceId: session.deviceId,
+            questionId: String(question.id || ""),
+            text: requestText
+          });
+          const response = await fetch(`${API}?${query}`, {
+            headers: authHeaders({ withQuizSession: true })
+          });
+          data = await readApiResponse(response);
+          if (!data.audio) throw new Error("audio_not_available");
+          if (preferredTranslation && !automaticBackup) {
+            data = {
+              ...data,
+              translation: preferredTranslation,
+              translationSource: preferredTranslationSource
+            };
+          }
+          ttsCache.set(key, data);
         }
-        ttsCache.set(key, data);
       }
       const safeTranslation = language === "bn" ? usableBanglaTranslation(data.translation) : "";
       if (safeTranslation) {
@@ -971,9 +1024,9 @@
       }
       await startAudio(base64AudioUrl(data.audio), button, key);
     } catch (error) {
-      const missingTranslation = error?.message === "translation_not_synced";
+      const missingTranslation = error?.message === "translation_not_available";
       showToast(language === "bn"
-        ? (missingTranslation ? "Traduzione TMM Books non ancora sincronizzata." : "Audio bangla non disponibile.")
+        ? (missingTranslation ? "Traduzione non disponibile al momento." : "Audio bangla non disponibile.")
         : "Audio italiano non disponibile.");
     } finally {
       button.disabled = false;

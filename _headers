@@ -26,6 +26,6 @@
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), geolocation=(), microphone=(self), payment=(), usb=()
+  Permissions-Policy: camera=(), display-capture=(), geolocation=(), microphone=(self), payment=(), usb=()
   Cross-Origin-Opener-Policy: same-origin
   X-DNS-Prefetch-Control: off
