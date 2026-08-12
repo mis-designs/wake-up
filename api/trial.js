@@ -131,7 +131,9 @@ export default async function handler(req, res) {
         trialId,
         chapter,
         ids: quiz.map(q => String(q.id)),
-        textHashes: quiz.map(q => textHash(q.question)),
+        textHashes: [...new Set(quiz.flatMap(q => [q.question, q.question_bd]
+          .filter(Boolean)
+          .map(textHash)))],
         exp: expiresAt
       });
       return res.status(200).json({
@@ -154,9 +156,12 @@ export default async function handler(req, res) {
       const curatedTranslation = action === "getBengaliAudio"
         ? getCuratedQuizTranslation({ id: questionId, question: text })
         : "";
-      const data = curatedTranslation
-        ? await callQuizBackend("getTTS", { text: curatedTranslation })
-        : await callQuizBackend(action, { text });
+      if (action === "getBengaliAudio" && !curatedTranslation) {
+        return res.status(404).json({ error: "translation_not_synced" });
+      }
+      const data = await callQuizBackend(curatedTranslation ? "getTTS" : action, {
+        text: curatedTranslation || text
+      });
       return res.status(200).json(curatedTranslation ? {
         ...data,
         translation: curatedTranslation,

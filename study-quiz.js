@@ -8,7 +8,6 @@
   const TRIAL_POLICY_VERSION = "chapters-1-3-v1";
   const HELP_MANIFEST_SOURCE = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const LOCAL_HELP_SOURCE = "/data/patente/quiz-help-runtime-v2.json";
-  const REMOTE_HELP_TIMEOUT_MS = 10000;
   const STUDY_HISTORY_KEY = "magicph-study-history-v1";
   const STUDY_RETURN_DELAY_MS = 5 * 60 * 1000;
   const STUDY_INTRO_QUESTION = "আজকে কোন অধ্যায়টি পড়তে চাচ্ছেন ?";
@@ -565,10 +564,7 @@
         if (!window.QuizHelpRuntimeV3?.load) throw new Error("study_help_runtime_v3_missing");
         return window.QuizHelpRuntimeV3.load();
       });
-      const remoteDeadline = new Promise((_, reject) => {
-        window.setTimeout(() => reject(new Error("study_help_runtime_v3_timeout")), REMOTE_HELP_TIMEOUT_MS);
-      });
-      helpPromise = Promise.race([remote, remoteDeadline])
+      helpPromise = remote
         .catch(() => fetch(LOCAL_HELP_SOURCE, { cache: "force-cache" })
           .then(response => {
             if (!response.ok) throw new Error(`study_help_local_${response.status}`);
@@ -580,6 +576,13 @@
         });
     }
     return helpPromise;
+  }
+
+  const prewarmHelpLibrary = () => loadHelpLibrary().catch(() => {});
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(prewarmHelpLibrary, { timeout: 1500 });
+  } else {
+    window.setTimeout(prewarmHelpLibrary, 500);
   }
 
   function displayForm(question, canonical, aliases = []) {
@@ -603,7 +606,7 @@
       const resolved = data.resolver.resolve(question);
       if (!resolved) return null;
       const translation = usableBanglaTranslation(
-        resolved.questionBnEasy || resolved.questionBnStandard || resolved.questionBn
+        resolved.questionBnStandard || resolved.questionBnEasy || resolved.questionBn
       );
       return {
         ...resolved,
@@ -695,7 +698,7 @@
     const verifiedTranslation = String(help?.translation || "").trim();
     translation.classList.toggle("is-missing", !verifiedTranslation);
     translation.dataset.translationState = verifiedTranslation ? "ready" : "missing";
-    translation.textContent = verifiedTranslation || "Traduzione non disponibile.";
+    translation.textContent = verifiedTranslation || "Traduzione TMM Books non ancora sincronizzata.";
     translationSection.appendChild(translation);
     container.appendChild(translationSection);
 
@@ -775,15 +778,6 @@
       const key = String(question.id || fingerprint(question));
       let help = helpCache.get(key);
       if (!help) help = await getQuestionHelp(question);
-      if (!String(help.translation || "").trim()) {
-        try {
-          const translated = await loadOnDemandTranslation(question);
-          if (translated.translation) {
-            help.translation = translated.translation;
-            help.translationSource = translated.translationSource;
-          }
-        } catch (_) {}
-      }
       helpCache.set(key, help);
       skeleton.replaceWith(renderHelp(question, help));
     } catch (_) {
@@ -793,38 +787,6 @@
         words: []
       }));
     }
-  }
-
-  async function loadOnDemandTranslation(question) {
-    const key = `bn:${question.id || fingerprint(question)}`;
-    const cached = ttsCache.get(key);
-    if (cached?.translation) return {
-      translation: usableBanglaTranslation(cached.translation),
-      translationSource: String(cached.translationSource || "automatic")
-    };
-    const query = new URLSearchParams(TRIAL_MODE ? {
-      action: "getBengaliAudio",
-      trialId: session.deviceId,
-      trialToken: quizSessionToken,
-      questionId: String(question.id || ""),
-      text: String(question.question || "")
-    } : {
-      action: "getBengaliAudio",
-      phone: session.phone,
-      deviceId: session.deviceId,
-      questionId: String(question.id || ""),
-      text: String(question.question || "")
-    });
-    const response = await fetch(`${API}?${query}`, {
-      headers: authHeaders({ withQuizSession: true }),
-      cache: "force-cache"
-    });
-    const data = await readApiResponse(response);
-    if (data?.audio) ttsCache.set(key, data);
-    return {
-      translation: usableBanglaTranslation(data?.translation),
-      translationSource: String(data?.translationSource || "automatic")
-    };
   }
 
   function explanationDuration(playback) {
@@ -961,21 +923,24 @@
       if (!data) {
         let preferredTranslation = "";
         let preferredTranslationSource = "";
-        if (language === "bn" && !TRIAL_MODE) {
+        if (language === "bn") {
           const help = await getQuestionHelp(question);
           preferredTranslation = usableBanglaTranslation(help?.translation);
           preferredTranslationSource = String(help?.translationSource || "runtime_v3");
+          if (TRIAL_MODE) {
+            preferredTranslation = usableBanglaTranslation(question.question_bd || question.questionBD);
+            preferredTranslationSource = String(question.questionTranslationSource || "catalog");
+          }
+          if (!preferredTranslation) throw new Error("translation_not_synced");
         }
         const query = new URLSearchParams(TRIAL_MODE ? {
-          action: language === "bn" ? "getBengaliAudio" : "getItalianAudio",
+          action: language === "bn" ? "getTTS" : "getItalianAudio",
           trialId: session.deviceId,
           trialToken: quizSessionToken,
           questionId: String(question.id || ""),
-          text: String(question.question || "")
+          text: preferredTranslation || String(question.question || "")
         } : {
-          action: language === "bn"
-            ? (preferredTranslation ? "getTTS" : "getBengaliAudio")
-            : "getItalianAudio",
+          action: language === "bn" ? "getTTS" : "getItalianAudio",
           phone: session.phone,
           deviceId: session.deviceId,
           questionId: String(question.id || ""),
@@ -1005,8 +970,11 @@
         }
       }
       await startAudio(base64AudioUrl(data.audio), button, key);
-    } catch (_) {
-      showToast(language === "bn" ? "Audio bangla non disponibile." : "Audio italiano non disponibile.");
+    } catch (error) {
+      const missingTranslation = error?.message === "translation_not_synced";
+      showToast(language === "bn"
+        ? (missingTranslation ? "Traduzione TMM Books non ancora sincronizzata." : "Audio bangla non disponibile.")
+        : "Audio italiano non disponibile.");
     } finally {
       button.disabled = false;
       button.classList.remove("is-loading");

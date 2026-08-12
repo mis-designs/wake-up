@@ -34,7 +34,6 @@
 
   const HELP_MANIFEST_SOURCE = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const LOCAL_HELP_SOURCE = "/data/patente/quiz-help-runtime-v2.json";
-  const REMOTE_HELP_TIMEOUT_MS = 1800;
   const questionArea = document.querySelector(".question-area");
   const questionText = document.getElementById("question");
   const clickHint = document.querySelector(".quiz-click-hint");
@@ -103,10 +102,7 @@
         if (!window.QuizHelpRuntimeV3?.load) throw new Error("quiz_help_runtime_v3_missing");
         return window.QuizHelpRuntimeV3.load();
       });
-      const remoteDeadline = new Promise((_, reject) => {
-        window.setTimeout(() => reject(new Error("quiz_help_runtime_v3_timeout")), REMOTE_HELP_TIMEOUT_MS);
-      });
-      libraryPromise = Promise.race([remote, remoteDeadline])
+      libraryPromise = remote
         .catch(() => fetch(LOCAL_HELP_SOURCE, { cache: "force-cache" })
           .then(response => {
             if (!response.ok) throw new Error(`quiz_help_local_${response.status}`);
@@ -118,6 +114,15 @@
         });
     }
     return libraryPromise;
+  }
+
+  // Start downloading the synchronized TMM Books catalog before the user opens
+  // the panel. The content-hashed runtime remains safely cached by the browser.
+  const prewarmLibrary = () => loadLibrary().catch(() => {});
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(prewarmLibrary, { timeout: 1500 });
+  } else {
+    window.setTimeout(prewarmLibrary, 500);
   }
 
   function displayForm(question, canonical, aliases = []) {
@@ -141,7 +146,7 @@
       const resolved = data.resolver.resolve(question);
       if (!resolved) return null;
       const questionBn = usableBanglaTranslation(
-        resolved.questionBnEasy || resolved.questionBnStandard || resolved.questionBn
+        resolved.questionBnStandard || resolved.questionBnEasy || resolved.questionBn
       );
       return {
         ...resolved,
@@ -315,21 +320,12 @@
     });
   }
 
-  async function loadOnDemandTranslation(question) {
-    if (typeof fetchBengaliAudio !== "function") return "";
-    const cacheKey = `${String(question?.id || current)}_bn`;
-    // fetchBengaliAudio needs the complete catalog row so the protected API
-    // receives both the exact Italian text and its signed question ID.
-    const data = await fetchBengaliAudio(question, cacheKey, { requireAudio: false });
-    return usableBanglaTranslation(data?.translation);
-  }
-
   async function render() {
     const question = currentQuestion();
     if (!question?.question) return;
     const ownRequest = ++requestId;
     translationText.textContent = "";
-    translationStatus.textContent = "Traduzione in corso…";
+    translationStatus.textContent = "Carico le traduzioni TMM Books…";
     renderContext(null);
     wordsList.innerHTML = '<span class="quiz-help-skeleton"></span><span class="quiz-help-skeleton"></span><span class="quiz-help-skeleton"></span>';
 
@@ -344,22 +340,16 @@
     }
 
     let verifiedTranslation = usableBanglaTranslation(
-      help?.questionBnEasy
+      help?.questionBnStandard
+      || help?.questionBnEasy
       || help?.questionBn
       || question.question_bd
       || question.questionBD
       || ""
     );
-    if (!verifiedTranslation) {
-      try {
-        verifiedTranslation = await loadOnDemandTranslation(question);
-      } catch (_) {
-        verifiedTranslation = "";
-      }
-    }
     if (ownRequest !== requestId) return;
     translationText.textContent = verifiedTranslation;
-    translationStatus.textContent = verifiedTranslation ? "" : "Traduzione non disponibile.";
+    translationStatus.textContent = verifiedTranslation ? "" : "Traduzione TMM Books non ancora sincronizzata.";
     renderContext(help);
     renderWords(help?.words || []);
   }

@@ -7,7 +7,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function createMagicDictionary(root) {
   "use strict";
 
-  const VERSION = "1.2.1";
+  const VERSION = "1.2.2";
   const MANIFEST_URL = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const FALLBACK_URL = "/data/patente/quiz-help-runtime-v2.json";
   const STORAGE_PREFIX = "magicbook.wordLearning.v1";
@@ -426,7 +426,9 @@
 
     const gate = root.document.createElement("div");
     gate.id = "magicWordGate";
-    gate.className = "magic-word-gate hidden";
+    gate.className = "magic-word-gate hidden notranslate";
+    gate.lang = "it";
+    gate.setAttribute("translate", "no");
     gate.setAttribute("role", "dialog");
     gate.setAttribute("aria-modal", "true");
     gate.setAttribute("aria-labelledby", "magicWordGateTitle");
@@ -438,7 +440,9 @@
 
     const dictionary = root.document.createElement("section");
     dictionary.id = "magicDictionaryScreen";
-    dictionary.className = "magic-dictionary-screen hidden";
+    dictionary.className = "magic-dictionary-screen hidden notranslate";
+    dictionary.lang = "it";
+    dictionary.setAttribute("translate", "no");
     dictionary.setAttribute("aria-labelledby", "magicDictionaryTitle");
     dictionary.innerHTML = `
       <header class="magic-dictionary-header">

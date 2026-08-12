@@ -1390,9 +1390,14 @@ export default async function handler(req, res) {
       const curatedTranslation = action === "getBengaliAudio"
         ? getCuratedQuizTranslation({ id: questionId, question: text })
         : "";
-      const data = curatedTranslation
-        ? await forwardGetAction({ action: "getTTS", chapters, text: curatedTranslation })
-        : await forwardGetAction({ action, chapters, text });
+      if (action === "getBengaliAudio" && !curatedTranslation) {
+        return res.status(404).json({ error: "translation_not_synced" });
+      }
+      const data = await forwardGetAction({
+        action: curatedTranslation ? "getTTS" : action,
+        chapters,
+        text: curatedTranslation || text
+      });
       if (curatedTranslation) {
         return res.status(200).json({
           ...data,
