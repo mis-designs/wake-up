@@ -1287,6 +1287,7 @@ function getLoginErrorMessage(error) {
   if (error === "promo_expired") return "Questo promo code è scaduto. Richiedi il nuovo codice.";
   if (error === "promo_unavailable") return "La promozione non è disponibile in questo momento.";
   if (error === "promo_code_reused") return "Hai già utilizzato questo promo code. Attendi il nuovo codice.";
+  if (error === "promo_campaign_full") return "It's too late, follow our page to know for the next promo code, thanks.";
   if (error === "promo_limit_reached") return "Hai già utilizzato 30 giorni promozionali. Scegli il tuo pacchetto.";
   if (error === "promo_backend_not_ready") return "La promozione è in configurazione. Riprova più tardi.";
   if (error === "promo_host_forbidden") return "Promozione disponibile soltanto sul sito ufficiale.";

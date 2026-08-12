@@ -42,6 +42,7 @@ const PUBLIC_PROMO_REDEMPTION_ERRORS = new Set([
   "device_reset_required",
   "promo_code_reused",
   "promo_expired",
+  "promo_campaign_full",
   "promo_limit_reached",
   "request_expired",
   "request_replayed"

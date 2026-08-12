@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v86-private-book";
+const CACHE_NAME = "magicbook-pwa-v87-promo-user-cap";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -8,7 +8,7 @@ const STATIC_ASSETS = [
   "/screen-protection.css?v=1.1.0",
   "/homebg.css?v=3",
   "/mystyle.css?v=26",
-  "/script.js?v=45-private-book",
+  "/script.js?v=46-promo-user-cap",
   "/study-quiz.html",
   "/study-quiz.css?v=11-trial-chapters-1-3",
   "/study-quiz.js?v=13-automatic-translation-backup",

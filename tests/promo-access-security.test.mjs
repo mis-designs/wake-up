@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import vm from "node:vm";
 import {
   createPromoCodeId,
   createPromoRedeemProof,
@@ -122,6 +123,47 @@ test("GAS owns the five-day grant, thirty-day cap and atomic write", () => {
   assert.match(gasSource, /computeHmacSha256Signature/);
   assert.match(gasSource, /PropertiesService\.getScriptProperties\(\)\.getProperty\('GAS_SECRET'\)/);
   assert.match(gasSource, /promoDaysUsed >= PROMO_MAX_DAYS_/);
+});
+
+test("GAS atomically caps the campaign at 1,500 distinct promo users", () => {
+  assert.match(gasSource, /PROMO_MAX_UNIQUE_USERS_ = 1500/);
+  assert.match(gasSource, /promoCountUniqueUsers_\(usersSheet, columns\) >= PROMO_MAX_UNIQUE_USERS_/);
+  assert.match(gasSource, /error: 'promo_campaign_full'/);
+  assert.match(gasSource, /LockService\.getScriptLock\(\)[\s\S]*?promoCountUniqueUsers_\(usersSheet, columns\)/);
+  assert.match(gasSource, /uniquePhones\[phone\] = true/);
+  assert.match(authSource, /PUBLIC_PROMO_REDEMPTION_ERRORS[\s\S]*?"promo_campaign_full"/);
+  assert.match(scriptSource, /promo_campaign_full[\s\S]*?It's too late, follow our page to know for the next promo code, thanks\./);
+  assert.doesNotMatch(scriptSource, /PROMO_MAX_UNIQUE_USERS_/);
+});
+
+test("the campaign counter counts distinct promo phones and ignores normal users", () => {
+  const context = vm.createContext({ console });
+  vm.runInContext(gasSource, context);
+  const columns = {
+    phone: 1,
+    promoDaysUsed: 2,
+    promoRedemptions: 3,
+    lastPromoCodeId: 4,
+    promoUsedCodeIds: 5,
+    accessSource: 6
+  };
+  const rows = [
+    ["3331112222", 5, 1, "", "", "promo"],
+    ["393331112222", 0, 0, "", "", "promo"],
+    ["3339998888", 0, 0, "", "", "paid"],
+    ["3345556677", 0, 0, "code-id", "", ""]
+  ];
+  const sheet = {
+    getLastRow: () => rows.length + 1,
+    getRange: (row, column, rowCount, columnCount) => ({
+      getValues: () => rows
+        .slice(row - 2, row - 2 + rowCount)
+        .map(values => values.slice(column - 1, column - 1 + columnCount))
+    })
+  };
+
+  assert.equal(context.PROMO_MAX_UNIQUE_USERS_, 1500);
+  assert.equal(context.promoCountUniqueUsers_(sheet, columns), 2);
 });
 
 test("transient promo contention is retried without retrying business denials", () => {

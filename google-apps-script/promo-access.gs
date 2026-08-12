@@ -14,6 +14,7 @@
 
 var PROMO_GRANT_DAYS_ = 5;
 var PROMO_MAX_DAYS_ = 30;
+var PROMO_MAX_UNIQUE_USERS_ = 1500;
 var PROMO_REQUEST_MAX_AGE_MS_ = 2 * 60 * 1000;
 var PROMO_CODE_MAX_FUTURE_MS_ = (5 * 24 * 60 * 60 * 1000) + (10 * 60 * 1000);
 var PROMO_REDEMPTIONS_SHEET_ = 'PromoRedemptions';
@@ -84,6 +85,21 @@ function promoRedeem_(payload) {
     var promoDaysUsed = Math.max(storedPromoDays, history.daysUsed);
     if (promoDaysUsed >= PROMO_MAX_DAYS_) {
       return { success: false, error: 'promo_limit_reached', promoDaysUsed: PROMO_MAX_DAYS_ };
+    }
+
+    // The campaign cap applies to distinct phone numbers, not redemptions.
+    // Existing promo users may still redeem a later code, but a new promo
+    // user is admitted only while fewer than 1,500 unique users exist. This
+    // runs inside the script lock, so concurrent requests cannot pass the cap.
+    var isExistingPromoUser = promoRowHasPromoHistory_(rowValues, columns)
+      || history.daysUsed > 0;
+    if (!isExistingPromoUser
+        && promoCountUniqueUsers_(usersSheet, columns) >= PROMO_MAX_UNIQUE_USERS_) {
+      return {
+        success: false,
+        error: 'promo_campaign_full',
+        promoUserLimit: PROMO_MAX_UNIQUE_USERS_
+      };
     }
 
     if (!rowNumber) {
@@ -260,6 +276,46 @@ function promoFindUserRow_(sheet, phoneColumn, phone) {
     if (promoNormalizePhone_(values[index][0]) === phone) return index + 2;
   }
   return 0;
+}
+
+function promoRowHasPromoHistory_(rowValues, columns) {
+  return (Number(rowValues[columns.promoDaysUsed - 1]) || 0) > 0
+    || (Number(rowValues[columns.promoRedemptions - 1]) || 0) > 0
+    || Boolean(String(rowValues[columns.lastPromoCodeId - 1] || '').trim())
+    || Boolean(String(rowValues[columns.promoUsedCodeIds - 1] || '').trim())
+    || String(rowValues[columns.accessSource - 1] || '').trim().toLowerCase() === 'promo';
+}
+
+function promoCountUniqueUsers_(sheet, columns) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+
+  var relevantColumns = [
+    columns.phone,
+    columns.promoDaysUsed,
+    columns.promoRedemptions,
+    columns.lastPromoCodeId,
+    columns.promoUsedCodeIds,
+    columns.accessSource
+  ];
+  var firstColumn = Math.min.apply(null, relevantColumns);
+  var lastColumn = Math.max.apply(null, relevantColumns);
+  var values = sheet
+    .getRange(2, firstColumn, lastRow - 1, lastColumn - firstColumn + 1)
+    .getValues();
+  var uniquePhones = {};
+
+  values.forEach(function (compactRow) {
+    var rowValues = [];
+    relevantColumns.forEach(function (column) {
+      rowValues[column - 1] = compactRow[column - firstColumn];
+    });
+    if (!promoRowHasPromoHistory_(rowValues, columns)) return;
+    var phone = promoNormalizePhone_(rowValues[columns.phone - 1]);
+    if (/^\d{6,15}$/.test(phone)) uniquePhones[phone] = true;
+  });
+
+  return Object.keys(uniquePhones).length;
 }
 
 function promoAuthorizeDeviceValues_(device1Value, device2Value, deviceId) {
