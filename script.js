@@ -745,6 +745,46 @@ async function requestAuthAction(payload) {
   return data || { success: false, error: "server_error" };
 }
 
+const PROMO_LOGIN_RETRYABLE_ERRORS = new Set([
+  "auth_backend_error",
+  "busy",
+  "server_error",
+  "service_unavailable",
+  "temporary_error"
+]);
+
+function waitForPromoRetry(delayMs) {
+  return new Promise(resolve => setTimeout(resolve, delayMs));
+}
+
+async function requestPromoLoginWithRetry(payload, onRetry) {
+  const delays = [650, 1300];
+  let lastData = null;
+  let lastNetworkError = null;
+
+  for (let attempt = 0; attempt <= delays.length; attempt += 1) {
+    try {
+      lastData = await requestAuthAction(payload);
+      lastNetworkError = null;
+    } catch (error) {
+      lastNetworkError = error;
+      lastData = { success: false, error: "service_unavailable" };
+    }
+
+    const errorCode = String(lastData?.error || lastData?.status || "").trim();
+    const shouldRetry = !lastData?.success
+      && attempt < delays.length
+      && PROMO_LOGIN_RETRYABLE_ERRORS.has(errorCode);
+    if (!shouldRetry) break;
+
+    if (typeof onRetry === "function") onRetry(attempt + 1);
+    await waitForPromoRetry(delays[attempt]);
+  }
+
+  if (lastNetworkError && !lastData) throw lastNetworkError;
+  return lastData || { success: false, error: "service_unavailable" };
+}
+
 function completeLogin(phone, deviceId, data) {
   persistSession(phone, {
     deviceId,
@@ -834,13 +874,18 @@ async function login(options = {}) {
   if (err) err.textContent = "";
 
   try {
-    const data = await requestAuthAction({
+    const authPayload = {
       action: "login",
       phone,
       deviceId,
       promoCode: promoCode || undefined,
       adminPassword: adminPasswordRequired ? String(adminPasswordInput?.value || "") : undefined
-    });
+    };
+    const data = fromPromoCard
+      ? await requestPromoLoginWithRetry(authPayload, () => {
+          if (loginButtonLabel) loginButtonLabel.textContent = "Riprovo...";
+        })
+      : await requestAuthAction(authPayload);
 
     if (!data?.success) {
       if ((data?.error || data?.status) === "admin_password_required") {
@@ -1246,6 +1291,7 @@ function getLoginErrorMessage(error) {
   if (error === "promo_host_forbidden") return "Promozione disponibile soltanto sul sito ufficiale.";
   if (error === "request_expired" || error === "request_replayed") return "Richiesta promozionale scaduta. Riprova.";
   if (error === "promo_users_sheet_missing" || error === "promo_user_columns_missing") return "Promozione temporaneamente non disponibile.";
+  if (["service_unavailable", "auth_backend_error", "bad_action", "unauthorized", "invalid_request"].includes(error)) return "Servizio promozionale momentaneamente non disponibile. Riprova tra poco.";
   if (error === "expired") return "Accesso scaduto. Contatta il supporto per rinnovare.";
   if (error === "not_found") return "Numero non autorizzato.";
   if (error === "device_replaced") return "Questo dispositivo non è più autorizzato perché l’accesso è stato spostato su un altro dispositivo.";

@@ -13,6 +13,7 @@ import { getPublicPromoStatus } from "../api/promo-status.js";
 const authSource = readFileSync(new URL("../api/auth.js", import.meta.url), "utf8");
 const gasSource = readFileSync(new URL("../google-apps-script/promo-access.gs", import.meta.url), "utf8");
 const pageSource = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const scriptSource = readFileSync(new URL("../script.js", import.meta.url), "utf8");
 const promoStatusSource = readFileSync(new URL("../api/promo-status.js", import.meta.url), "utf8");
 
 test("promo codes are normalized and checked with a server-controlled expiry", () => {
@@ -108,13 +109,32 @@ test("public promo status exposes only availability and server expiry", () => {
 test("GAS owns the five-day grant, thirty-day cap and atomic write", () => {
   assert.match(gasSource, /PROMO_GRANT_DAYS_ = 5/);
   assert.match(gasSource, /PROMO_MAX_DAYS_ = 30/);
+  assert.match(gasSource, /configuredUsersSheetName \|\| existingUsersSheetName \|\| 'Sheet1'/);
   assert.match(gasSource, /LockService\.getScriptLock\(\)/);
+  assert.match(gasSource, /tryLock\(2500\)/);
   assert.match(gasSource, /existingExpiry[\s\S]*?error: 'active_access'[\s\S]*?newExpiry/);
   assert.match(gasSource, /history\.usedCodeIds\[promoCodeId\]/);
   assert.match(gasSource, /CacheService\.getScriptCache\(\)/);
   assert.match(gasSource, /computeHmacSha256Signature/);
   assert.match(gasSource, /PropertiesService\.getScriptProperties\(\)\.getProperty\('GAS_SECRET'\)/);
   assert.match(gasSource, /promoDaysUsed >= PROMO_MAX_DAYS_/);
+});
+
+test("transient promo contention is retried without retrying business denials", () => {
+  assert.match(scriptSource, /PROMO_LOGIN_RETRYABLE_ERRORS/);
+  assert.match(scriptSource, /"busy"/);
+  assert.match(scriptSource, /"service_unavailable"/);
+  assert.match(scriptSource, /const delays = \[650, 1300\]/);
+  assert.match(scriptSource, /requestPromoLoginWithRetry\(authPayload/);
+  assert.doesNotMatch(scriptSource, /PROMO_LOGIN_RETRYABLE_ERRORS[\s\S]{0,300}"promo_code_reused"/);
+});
+
+test("promo backend setup failures are normalized without leaking internal errors", () => {
+  assert.match(authSource, /PROMO_BACKEND_SETUP_ERRORS/);
+  assert.match(authSource, /"bad_action"/);
+  assert.match(authSource, /"unauthorized"/);
+  assert.match(authSource, /return "promo_backend_not_ready"/);
+  assert.match(scriptSource, /Servizio promozionale momentaneamente non disponibile/);
 });
 
 test("login presents phone first and optional promo code second", () => {

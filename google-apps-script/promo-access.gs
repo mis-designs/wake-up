@@ -8,7 +8,8 @@
  *
  * Required Script Properties:
  *   GAS_SECRET               same value used by the Vercel backend
- *   ACCESS_USERS_SHEET_NAME  optional, defaults to Users
+ *   ACCESS_USERS_SHEET_NAME  optional, defaults to the existing SHEET_NAME
+ *                            constant or Sheet1
  */
 
 var PROMO_GRANT_DAYS_ = 5;
@@ -25,14 +26,18 @@ function promoJsonOutput_(data) {
 
 function promoRedeem_(payload) {
   var lock = LockService.getScriptLock();
-  if (!lock.tryLock(10000)) return { success: false, error: 'busy' };
+  // Fail fast under concurrent redemptions. The browser retries this bounded
+  // response with the same signed flow, while the lock keeps the write atomic.
+  if (!lock.tryLock(2500)) return { success: false, error: 'busy' };
 
   try {
     var proof = promoVerifyRequest_(payload);
     if (!proof.ok) return { success: false, error: proof.error };
 
     var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    var usersSheetName = PropertiesService.getScriptProperties().getProperty('ACCESS_USERS_SHEET_NAME') || 'Users';
+    var configuredUsersSheetName = PropertiesService.getScriptProperties().getProperty('ACCESS_USERS_SHEET_NAME') || '';
+    var existingUsersSheetName = typeof SHEET_NAME !== 'undefined' ? String(SHEET_NAME || '').trim() : '';
+    var usersSheetName = String(configuredUsersSheetName || existingUsersSheetName || 'Sheet1').trim();
     var usersSheet = spreadsheet.getSheetByName(usersSheetName);
     if (!usersSheet) return { success: false, error: 'promo_users_sheet_missing' };
 

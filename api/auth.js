@@ -36,6 +36,37 @@ const PROMO_MAX_FAILURES_PER_PHONE = 5;
 const promoIpFailures = new Map();
 const promoPhoneFailures = new Map();
 
+const PUBLIC_PROMO_REDEMPTION_ERRORS = new Set([
+  "active_access",
+  "busy",
+  "device_reset_required",
+  "promo_code_reused",
+  "promo_expired",
+  "promo_limit_reached",
+  "request_expired",
+  "request_replayed"
+]);
+
+const PROMO_BACKEND_SETUP_ERRORS = new Set([
+  "auth_backend_error",
+  "bad_action",
+  "invalid_action",
+  "invalid_request",
+  "promo_user_columns_missing",
+  "promo_users_sheet_missing",
+  "sheet_missing",
+  "unauthorized",
+  "unknown_action",
+  "unknown_admin_action"
+]);
+
+function getPublicPromoRedemptionError(error) {
+  const normalized = String(error || "").trim().toLowerCase();
+  if (PROMO_BACKEND_SETUP_ERRORS.has(normalized)) return "promo_backend_not_ready";
+  if (PUBLIC_PROMO_REDEMPTION_ERRORS.has(normalized)) return normalized;
+  return "temporary_error";
+}
+
 function getClientIp(req) {
   return String(req.headers?.["x-forwarded-for"] || req.socket?.remoteAddress || "unknown")
     .split(",")[0]
@@ -591,10 +622,11 @@ export default async function handler(req, res) {
           authData = await callAccessBackend("login", phone, deviceId, { registerDevice: true });
           promoExtra = { promoNotice: "access_already_active" };
         } else {
-          const publicPromoError = promoError === "invalid_action"
-            ? "promo_backend_not_ready"
-            : promoError;
-          return res.status(publicPromoError === "promo_backend_not_ready" ? 503 : 200).json({
+          const publicPromoError = getPublicPromoRedemptionError(promoError);
+          const statusCode = ["promo_backend_not_ready", "temporary_error", "busy"].includes(publicPromoError)
+            ? 503
+            : 200;
+          return res.status(statusCode).json({
             success: false,
             error: publicPromoError
           });

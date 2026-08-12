@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v73-translation-fix";
+const CACHE_NAME = "magicbook-pwa-v75-promo-safe-retry";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -7,7 +7,7 @@ const STATIC_ASSETS = [
   "/magic-dictionary.css?v=1.2.1",
   "/homebg.css?v=3",
   "/mystyle.css?v=26",
-  "/script.js?v=39-promo-campaign",
+  "/script.js?v=41-promo-safe-retry",
   "/study-quiz.html",
   "/study-quiz.css?v=11-trial-chapters-1-3",
   "/study-quiz.js?v=11-trial-chapters-1-3",
