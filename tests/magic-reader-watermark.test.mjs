@@ -27,6 +27,6 @@ test("every decoded Magic Book page receives the branded diagonal watermark", ()
 
 test("the PWA requests and caches the watermark-aware reader build", () => {
   assert.match(index, /script\.js\?v=44-reader-watermark/u);
-  assert.match(worker, /magicbook-pwa-v83-book-only-watermark/u);
+  assert.match(worker, /magicbook-pwa-v84-home-open-hover/u);
   assert.match(worker, /script\.js\?v=44-reader-watermark/u);
 });

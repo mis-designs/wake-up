@@ -83,7 +83,7 @@ test("screen sharing is denied by production headers and assets are cache-versio
   const permissionsPolicy = globalHeaders.find(header => header.key === "Permissions-Policy")?.value || "";
   assert.match(permissionsPolicy, /display-capture=\(\)/u);
   assert.match(staticHeaders, /display-capture=\(\)/u);
-  assert.match(worker, /magicbook-pwa-v83-book-only-watermark/u);
+  assert.match(worker, /magicbook-pwa-v84-home-open-hover/u);
   assert.match(worker, /screen-protection\.css\?v=1\.0\.0/u);
   assert.match(worker, /screen-protection\.js\?v=1\.1\.0/u);
 });

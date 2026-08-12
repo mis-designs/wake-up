@@ -3435,11 +3435,68 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     margin: 0;
     border-radius: 22px;
     box-shadow: 0 14px 28px rgba(37, 41, 67, 0.22);
+    transition: filter 220ms ease, transform 220ms ease;
 }
 
-#home .home-start-btn:hover {
+#home .home-start-open-label {
+    position: absolute;
+    z-index: 4;
+    left: 50%;
+    top: 50%;
+    display: inline-grid;
+    min-width: 74px;
+    min-height: 34px;
+    place-items: center;
+    padding: 7px 16px 6px;
+    border: 1px solid rgba(255, 255, 255, 0.78);
+    border-radius: 999px;
+    color: #ffffff;
+    background: rgba(12, 20, 43, 0.62);
+    box-shadow:
+        0 10px 24px rgba(5, 8, 24, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    font: 900 13px/1 "Rubik", "Inter", sans-serif;
+    letter-spacing: 0.18em;
+    text-indent: 0.18em;
+    text-shadow:
+        0 3px 8px rgba(0, 0, 0, 0.95),
+        0 0 18px rgba(121, 255, 237, 0.75);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -38%) scale(0.82);
+    transition: opacity 200ms ease, transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#home .home-start-btn:hover,
+#home .home-start-btn:focus-visible {
     transform: translateY(-2px) scale(1.02);
     box-shadow: none;
+    animation-play-state: paused;
+}
+
+#home .home-start-btn:hover img,
+#home .home-start-btn:focus-visible img {
+    filter: brightness(0.72) saturate(1.08);
+    transform: scale(1.015);
+}
+
+#home .home-start-btn:hover .home-start-open-label,
+#home .home-start-btn:focus-visible .home-start-open-label {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+@media (hover: none), (pointer: coarse) {
+    #home .home-start-open-label {
+        top: auto;
+        bottom: 10px;
+        min-width: 66px;
+        min-height: 30px;
+        padding: 6px 13px 5px;
+        font-size: 11px;
+        opacity: 0.94;
+        transform: translateX(-50%) scale(1);
+    }
 }
 
 #home .home-start-btn:active {
@@ -3473,6 +3530,14 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     background: #ffffff;
     padding-top: calc(env(safe-area-inset-top, 0px) + 56px);
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 56px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #home .home-start-btn,
+    #home .home-start-btn::before,
+    #home .home-start-btn::after {
+        animation: none;
+    }
 }
 
 #login,

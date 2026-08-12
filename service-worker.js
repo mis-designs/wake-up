@@ -1,9 +1,9 @@
-const CACHE_NAME = "magicbook-pwa-v83-book-only-watermark";
+const CACHE_NAME = "magicbook-pwa-v84-home-open-hover";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
-  "/style.css?v=48-promo-campaign",
+  "/style.css?v=49-home-open-hover",
   "/magic-dictionary.css?v=1.2.2",
   "/screen-protection.css?v=1.0.0",
   "/homebg.css?v=3",
