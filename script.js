@@ -758,30 +758,28 @@ function waitForPromoRetry(delayMs) {
 }
 
 async function requestPromoLoginWithRetry(payload, onRetry) {
-  const delays = [650, 1300];
+  const delays = [450, 850, 1500, 2400, 3600];
   let lastData = null;
-  let lastNetworkError = null;
 
   for (let attempt = 0; attempt <= delays.length; attempt += 1) {
     try {
       lastData = await requestAuthAction(payload);
-      lastNetworkError = null;
-    } catch (error) {
-      lastNetworkError = error;
+    } catch {
       lastData = { success: false, error: "service_unavailable" };
     }
 
     const errorCode = String(lastData?.error || lastData?.status || "").trim();
     const shouldRetry = !lastData?.success
       && attempt < delays.length
-      && PROMO_LOGIN_RETRYABLE_ERRORS.has(errorCode);
+      && (lastData?.retryable === true || PROMO_LOGIN_RETRYABLE_ERRORS.has(errorCode));
     if (!shouldRetry) break;
 
     if (typeof onRetry === "function") onRetry(attempt + 1);
-    await waitForPromoRetry(delays[attempt]);
+    const serverDelay = Math.max(250, Math.min(5000, Number(lastData?.retryAfterMs) || delays[attempt]));
+    const jitter = Math.floor(Math.random() * 450);
+    await waitForPromoRetry(serverDelay + jitter);
   }
 
-  if (lastNetworkError && !lastData) throw lastNetworkError;
   return lastData || { success: false, error: "service_unavailable" };
 }
 
@@ -883,7 +881,7 @@ async function login(options = {}) {
     };
     const data = fromPromoCard
       ? await requestPromoLoginWithRetry(authPayload, () => {
-          if (loginButtonLabel) loginButtonLabel.textContent = "Riprovo...";
+          if (loginButtonLabel) loginButtonLabel.textContent = "Attivazione...";
         })
       : await requestAuthAction(authPayload);
 
@@ -4461,35 +4459,67 @@ function getAdminErrorMessage(error) {
   if (error === "bad_phone" || error === "bad_new_phone") return "Numero di telefono non valido.";
   if (error === "bad_expiry") return "Data di scadenza non valida.";
   if (error === "missing_server_config") return "Configurazione admin mancante sul server.";
+  if (["admin_backend_error", "busy", "rate_limited", "server_error", "service_unavailable", "temporary_error"].includes(error)) {
+    return "Il servizio utenti è momentaneamente occupato. Riprova tra pochi secondi.";
+  }
+  if (error === "bad_action" || error === "unknown_admin_action") return "Il pannello Admin deve essere aggiornato.";
   return "Operazione non riuscita. Riprova.";
 }
 
-async function adminRequest(action, fields = {}, retry = true) {
+const ADMIN_READ_RETRYABLE_ERRORS = new Set([
+  "admin_backend_error",
+  "busy",
+  "rate_limited",
+  "server_error",
+  "service_unavailable",
+  "temporary_error"
+]);
+
+function waitForAdminRetry(delayMs) {
+  return new Promise(resolve => setTimeout(resolve, delayMs));
+}
+
+async function adminRequest(action, fields = {}, retryToken = true, transientAttempt = 0) {
   if (!isCurrentSessionAdmin()) throw new Error("admin_required");
 
   const hasToken = await ensureAccessToken({ force: !isAccessTokenUsable() });
   if (!hasToken && !getCurrentAccessToken()) throw new Error("unauthorized");
 
-  const response = await fetch(ADMIN_API, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action,
-      sessionPhone: getCurrentSessionPhone(),
-      deviceId: getCurrentSessionDeviceId(),
-      accessToken: getCurrentAccessToken(),
-      ...fields
-    })
-  });
+  const readOnlyAction = action === "list" || action === "search";
+  let response;
+  try {
+    response = await fetch(ADMIN_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action,
+        sessionPhone: getCurrentSessionPhone(),
+        deviceId: getCurrentSessionDeviceId(),
+        accessToken: getCurrentAccessToken(),
+        ...fields
+      })
+    });
+  } catch {
+    if (readOnlyAction && transientAttempt < 2) {
+      await waitForAdminRetry(transientAttempt === 0 ? 700 : 1400);
+      return adminRequest(action, fields, retryToken, transientAttempt + 1);
+    }
+    throw new Error("service_unavailable");
+  }
 
   const data = await response.json().catch(() => null);
-  if ((response.status === 401 || response.status === 403) && retry && data?.error === "token_expired") {
+  if ((response.status === 401 || response.status === 403) && retryToken && data?.error === "token_expired") {
     await ensureAccessToken({ force: true });
-    return adminRequest(action, fields, false);
+    return adminRequest(action, fields, false, transientAttempt);
   }
 
   if (!response.ok || !data?.success) {
-    throw new Error(data?.error || "admin_error");
+    const errorCode = String(data?.error || "admin_backend_error").trim();
+    if (readOnlyAction && transientAttempt < 2 && ADMIN_READ_RETRYABLE_ERRORS.has(errorCode)) {
+      await waitForAdminRetry(transientAttempt === 0 ? 700 : 1400);
+      return adminRequest(action, fields, retryToken, transientAttempt + 1);
+    }
+    throw new Error(errorCode);
   }
 
   return data;

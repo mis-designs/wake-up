@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { getSessionRole } from "../api/getPages.js";
 import { verifyAdminToken } from "../api/admin.js";
+
+const clientSource = readFileSync(new URL("../script.js", import.meta.url), "utf8");
 
 function signAdminToken({ phone, deviceId, role = "admin", exp = Date.now() + 60_000 }, secret) {
   const payload = { phone, deviceId, role, purpose: "access", exp };
@@ -82,4 +85,11 @@ test("admin renewal fails closed when the proof, phone binding or allow-list doe
     ...signedAdmin,
     payload: { phone, role: "user" }
   }, [phone]), "user");
+});
+
+test("admin recovery retries only read-only operations", () => {
+  assert.match(clientSource, /const readOnlyAction = action === "list" \|\| action === "search"/);
+  assert.match(clientSource, /ADMIN_READ_RETRYABLE_ERRORS/);
+  assert.match(clientSource, /transientAttempt < 2/);
+  assert.doesNotMatch(clientSource, /readOnlyAction = [^\n]*(?:create|renew|delete)/);
 });

@@ -25,22 +25,27 @@ function promoJsonOutput_(data) {
 }
 
 function promoRedeem_(payload) {
+  // Reject malformed, expired or forged requests before entering the global
+  // write section. Under load this keeps cryptography and replay checks from
+  // blocking other users that are ready to be committed.
+  var proof = promoVerifyRequest_(payload);
+  if (!proof.ok) return { success: false, error: proof.error };
+
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var configuredUsersSheetName = PropertiesService.getScriptProperties().getProperty('ACCESS_USERS_SHEET_NAME') || '';
+  var existingUsersSheetName = typeof SHEET_NAME !== 'undefined' ? String(SHEET_NAME || '').trim() : '';
+  var usersSheetName = String(configuredUsersSheetName || existingUsersSheetName || 'Sheet1').trim();
+  var usersSheet = spreadsheet.getSheetByName(usersSheetName);
+  if (!usersSheet) return { success: false, error: 'promo_users_sheet_missing' };
+
   var lock = LockService.getScriptLock();
-  // Fail fast under concurrent redemptions. The browser retries this bounded
-  // response with the same signed flow, while the lock keeps the write atomic.
-  if (!lock.tryLock(2500)) return { success: false, error: 'busy' };
+  if (!lock.tryLock(1200)) return { success: false, error: 'busy', retryAfterMs: 700 };
+
+  var redemptionSheet = null;
+  var auditRow = null;
+  var successResult = null;
 
   try {
-    var proof = promoVerifyRequest_(payload);
-    if (!proof.ok) return { success: false, error: proof.error };
-
-    var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    var configuredUsersSheetName = PropertiesService.getScriptProperties().getProperty('ACCESS_USERS_SHEET_NAME') || '';
-    var existingUsersSheetName = typeof SHEET_NAME !== 'undefined' ? String(SHEET_NAME || '').trim() : '';
-    var usersSheetName = String(configuredUsersSheetName || existingUsersSheetName || 'Sheet1').trim();
-    var usersSheet = spreadsheet.getSheetByName(usersSheetName);
-    if (!usersSheet) return { success: false, error: 'promo_users_sheet_missing' };
-
     var columns = promoEnsureUserColumns_(usersSheet);
     if (!columns.phone || !columns.expiry) {
       return { success: false, error: 'promo_user_columns_missing' };
@@ -51,22 +56,31 @@ function promoRedeem_(payload) {
     var promoCodeId = String(payload.promoCodeId || '').trim().toLowerCase();
     var now = new Date();
     var rowNumber = promoFindUserRow_(usersSheet, columns.phone, phone);
-    var existingExpiry = rowNumber ? promoReadDate_(usersSheet.getRange(rowNumber, columns.expiry).getValue()) : null;
+    var lastColumn = Math.max.apply(null, Object.keys(columns).map(function (key) {
+      return Number(columns[key]) || 0;
+    }));
+    var rowValues = rowNumber
+      ? usersSheet.getRange(rowNumber, 1, 1, lastColumn).getValues()[0]
+      : new Array(lastColumn).fill('');
+    var existingExpiry = promoReadDate_(rowValues[columns.expiry - 1]);
 
     // Never shorten, replace or extend an access that is still valid.
     if (existingExpiry && existingExpiry.getTime() > now.getTime()) {
       return { success: false, error: 'active_access', expiry: existingExpiry.toISOString() };
     }
 
-    var redemptionSheet = promoGetRedemptionSheet_(spreadsheet);
-    var history = promoReadHistory_(redemptionSheet, phone);
+    redemptionSheet = promoGetRedemptionSheet_(spreadsheet);
+    var storedCodeIds = promoParseCodeIds_(rowValues[columns.promoUsedCodeIds - 1]);
+    var history = storedCodeIds.length
+      ? { daysUsed: 0, usedCodeIds: promoCodeIdMap_(storedCodeIds) }
+      : promoReadHistory_(redemptionSheet, phone);
+    var lastPromoCodeId = String(rowValues[columns.lastPromoCodeId - 1] || '').trim().toLowerCase();
+    if (lastPromoCodeId) history.usedCodeIds[lastPromoCodeId] = true;
     if (history.usedCodeIds[promoCodeId]) {
       return { success: false, error: 'promo_code_reused' };
     }
 
-    var storedPromoDays = rowNumber
-      ? Number(usersSheet.getRange(rowNumber, columns.promoDaysUsed).getValue()) || 0
-      : 0;
+    var storedPromoDays = Number(rowValues[columns.promoDaysUsed - 1]) || 0;
     var promoDaysUsed = Math.max(storedPromoDays, history.daysUsed);
     if (promoDaysUsed >= PROMO_MAX_DAYS_) {
       return { success: false, error: 'promo_limit_reached', promoDaysUsed: PROMO_MAX_DAYS_ };
@@ -74,23 +88,39 @@ function promoRedeem_(payload) {
 
     if (!rowNumber) {
       rowNumber = Math.max(2, usersSheet.getLastRow() + 1);
-      usersSheet.getRange(rowNumber, columns.phone).setValue(phone);
     }
 
-    var deviceResult = promoAuthorizeDevice_(usersSheet, rowNumber, columns, deviceId);
+    var deviceResult = promoAuthorizeDeviceValues_(
+      rowValues[columns.device1 - 1],
+      rowValues[columns.device2 - 1],
+      deviceId
+    );
     if (!deviceResult.ok) return { success: false, error: deviceResult.error };
 
     var newExpiry = new Date(now.getTime() + PROMO_GRANT_DAYS_ * 24 * 60 * 60 * 1000);
     var newPromoDaysUsed = Math.min(PROMO_MAX_DAYS_, promoDaysUsed + PROMO_GRANT_DAYS_);
     var newPromoRedemptions = Math.floor(newPromoDaysUsed / PROMO_GRANT_DAYS_);
+    var usedCodeIds = Object.keys(history.usedCodeIds).filter(function (codeId) {
+      return /^[a-f0-9]{64}$/.test(codeId);
+    });
+    usedCodeIds.push(promoCodeId);
+    usedCodeIds = usedCodeIds.slice(-6);
 
-    usersSheet.getRange(rowNumber, columns.expiry).setValue(newExpiry);
-    usersSheet.getRange(rowNumber, columns.promoDaysUsed).setValue(newPromoDaysUsed);
-    usersSheet.getRange(rowNumber, columns.promoRedemptions).setValue(newPromoRedemptions);
-    usersSheet.getRange(rowNumber, columns.lastPromoCodeId).setValue(promoCodeId);
-    usersSheet.getRange(rowNumber, columns.accessSource).setValue('promo');
+    rowValues[columns.phone - 1] = phone;
+    rowValues[columns.device1 - 1] = deviceResult.device1;
+    rowValues[columns.device2 - 1] = deviceResult.device2;
+    rowValues[columns.expiry - 1] = newExpiry;
+    if (columns.registration && !rowValues[columns.registration - 1]) {
+      rowValues[columns.registration - 1] = now;
+    }
+    rowValues[columns.promoDaysUsed - 1] = newPromoDaysUsed;
+    rowValues[columns.promoRedemptions - 1] = newPromoRedemptions;
+    rowValues[columns.lastPromoCodeId - 1] = promoCodeId;
+    rowValues[columns.promoUsedCodeIds - 1] = usedCodeIds.join(',');
+    rowValues[columns.accessSource - 1] = 'promo';
+    usersSheet.getRange(rowNumber, 1, 1, lastColumn).setValues([rowValues]);
 
-    redemptionSheet.appendRow([
+    auditRow = [
       now,
       phone,
       promoCodeId,
@@ -98,10 +128,9 @@ function promoRedeem_(payload) {
       newExpiry,
       promoDeviceHash_(deviceId),
       'granted'
-    ]);
-    SpreadsheetApp.flush();
+    ];
 
-    return {
+    successResult = {
       success: true,
       status: 'success',
       phone: phone,
@@ -116,6 +145,17 @@ function promoRedeem_(payload) {
   } finally {
     lock.releaseLock();
   }
+
+  // The durable access state above is authoritative. Keep the append-only
+  // audit outside the critical section so it never delays another activation.
+  if (auditRow && redemptionSheet) {
+    try {
+      redemptionSheet.appendRow(auditRow);
+    } catch (auditError) {
+      console.error('[promo_redeem_audit]', auditError && auditError.stack ? auditError.stack : auditError);
+    }
+  }
+  return successResult || { success: false, error: 'server_error' };
 }
 
 function promoVerifyRequest_(payload) {
@@ -175,6 +215,7 @@ function promoEnsureUserColumns_(sheet) {
   var columns = {
     phone: promoFindColumn_(map, ['phone', 'telefono', 'numero', 'phonenumber']),
     expiry: promoFindColumn_(map, ['expiry', 'scadenza', 'expiresat']),
+    registration: promoFindColumn_(map, ['registrationdate', 'registrazione', 'createdat']),
     device1: promoFindColumn_(map, ['device1', 'dispositivo1']),
     device2: promoFindColumn_(map, ['device2', 'dispositivo2'])
   };
@@ -185,6 +226,7 @@ function promoEnsureUserColumns_(sheet) {
   columns.promoDaysUsed = promoFindColumn_(map, ['promodaysused']) || promoAppendColumn_(sheet, map, 'promoDaysUsed');
   columns.promoRedemptions = promoFindColumn_(map, ['promoredemptions']) || promoAppendColumn_(sheet, map, 'promoRedemptions');
   columns.lastPromoCodeId = promoFindColumn_(map, ['lastpromocodeid']) || promoAppendColumn_(sheet, map, 'lastPromoCodeId');
+  columns.promoUsedCodeIds = promoFindColumn_(map, ['promousedcodeids']) || promoAppendColumn_(sheet, map, 'promoUsedCodeIds');
   columns.accessSource = promoFindColumn_(map, ['accesssource']) || promoAppendColumn_(sheet, map, 'accessSource');
   return columns;
 }
@@ -210,24 +252,25 @@ function promoHeaderKey_(value) {
 function promoFindUserRow_(sheet, phoneColumn, phone) {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return 0;
-  var values = sheet.getRange(2, phoneColumn, lastRow - 1, 1).getDisplayValues();
+  var phoneRange = sheet.getRange(2, phoneColumn, lastRow - 1, 1);
+  var exactMatch = phoneRange.createTextFinder(phone).matchEntireCell(true).findNext();
+  if (exactMatch) return exactMatch.getRow();
+  var values = phoneRange.getDisplayValues();
   for (var index = 0; index < values.length; index += 1) {
     if (promoNormalizePhone_(values[index][0]) === phone) return index + 2;
   }
   return 0;
 }
 
-function promoAuthorizeDevice_(sheet, row, columns, deviceId) {
-  var device1 = String(sheet.getRange(row, columns.device1).getValue() || '').trim();
-  var device2 = String(sheet.getRange(row, columns.device2).getValue() || '').trim();
-  if (device1 === deviceId || device2 === deviceId) return { ok: true };
+function promoAuthorizeDeviceValues_(device1Value, device2Value, deviceId) {
+  var device1 = String(device1Value || '').trim();
+  var device2 = String(device2Value || '').trim();
+  if (device1 === deviceId || device2 === deviceId) return { ok: true, device1: device1, device2: device2 };
   if (!device1) {
-    sheet.getRange(row, columns.device1).setValue(deviceId);
-    return { ok: true };
+    return { ok: true, device1: deviceId, device2: device2 };
   }
   if (!device2) {
-    sheet.getRange(row, columns.device2).setValue(deviceId);
-    return { ok: true };
+    return { ok: true, device1: device1, device2: deviceId };
   }
   return { ok: false, error: 'device_reset_required' };
 }
@@ -246,9 +289,13 @@ function promoReadHistory_(sheet, phone) {
   var result = { daysUsed: 0, usedCodeIds: {} };
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return result;
-  var rows = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
-  rows.forEach(function (row) {
-    if (promoNormalizePhone_(row[1]) !== phone || String(row[6] || '') !== 'granted') return;
+  var matches = sheet.getRange(2, 2, lastRow - 1, 1)
+    .createTextFinder(phone)
+    .matchEntireCell(true)
+    .findAll();
+  matches.forEach(function (match) {
+    var row = sheet.getRange(match.getRow(), 1, 1, 7).getValues()[0];
+    if (String(row[6] || '') !== 'granted') return;
     var codeId = String(row[2] || '').trim().toLowerCase();
     var days = Number(row[3]) || 0;
     if (codeId) result.usedCodeIds[codeId] = true;
@@ -256,6 +303,20 @@ function promoReadHistory_(sheet, phone) {
   });
   result.daysUsed = Math.min(PROMO_MAX_DAYS_, result.daysUsed);
   return result;
+}
+
+function promoParseCodeIds_(value) {
+  return String(value || '')
+    .split(',')
+    .map(function (codeId) { return String(codeId || '').trim().toLowerCase(); })
+    .filter(function (codeId) { return /^[a-f0-9]{64}$/.test(codeId); })
+    .slice(-6);
+}
+
+function promoCodeIdMap_(codeIds) {
+  var map = {};
+  (codeIds || []).forEach(function (codeId) { map[codeId] = true; });
+  return map;
 }
 
 function promoReadDate_(value) {

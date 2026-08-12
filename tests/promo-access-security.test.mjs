@@ -72,7 +72,7 @@ test("promo identifiers and GAS writes are signed without forwarding the raw cod
     nonce: "nonce_test_123456789"
   });
   assert.notEqual(changedExpiryProof.promoSignature, proof.promoSignature);
-  assert.match(authSource, /const proof = createPromoRedeemProof\([\s\S]*?callAccessBackend\("promo_redeem"[\s\S]*?promoCodeId[\s\S]*?\.\.\.proof/);
+  assert.match(authSource, /const proof = createPromoRedeemProof\([\s\S]*?callPromoAccessBackend\("promo_redeem"[\s\S]*?promoCodeId[\s\S]*?\.\.\.proof/);
   assert.doesNotMatch(authSource, /callAccessBackend\("promo_redeem"[\s\S]{0,500}?submittedPromoCode/);
 });
 
@@ -111,9 +111,13 @@ test("GAS owns the five-day grant, thirty-day cap and atomic write", () => {
   assert.match(gasSource, /PROMO_MAX_DAYS_ = 30/);
   assert.match(gasSource, /configuredUsersSheetName \|\| existingUsersSheetName \|\| 'Sheet1'/);
   assert.match(gasSource, /LockService\.getScriptLock\(\)/);
-  assert.match(gasSource, /tryLock\(2500\)/);
+  assert.match(gasSource, /promoVerifyRequest_\(payload\)[\s\S]*?LockService\.getScriptLock\(\)/);
+  assert.match(gasSource, /tryLock\(1200\)/);
   assert.match(gasSource, /existingExpiry[\s\S]*?error: 'active_access'[\s\S]*?newExpiry/);
   assert.match(gasSource, /history\.usedCodeIds\[promoCodeId\]/);
+  assert.match(gasSource, /promoUsedCodeIds/);
+  assert.match(gasSource, /setValues\(\[rowValues\]\)/);
+  assert.doesNotMatch(gasSource, /SpreadsheetApp\.flush\(\)/);
   assert.match(gasSource, /CacheService\.getScriptCache\(\)/);
   assert.match(gasSource, /computeHmacSha256Signature/);
   assert.match(gasSource, /PropertiesService\.getScriptProperties\(\)\.getProperty\('GAS_SECRET'\)/);
@@ -124,9 +128,17 @@ test("transient promo contention is retried without retrying business denials", 
   assert.match(scriptSource, /PROMO_LOGIN_RETRYABLE_ERRORS/);
   assert.match(scriptSource, /"busy"/);
   assert.match(scriptSource, /"service_unavailable"/);
-  assert.match(scriptSource, /const delays = \[650, 1300\]/);
+  assert.match(scriptSource, /const delays = \[450, 850, 1500, 2400, 3600\]/);
+  assert.match(scriptSource, /Math\.random\(\) \* 450/);
   assert.match(scriptSource, /requestPromoLoginWithRetry\(authPayload/);
   assert.doesNotMatch(scriptSource, /PROMO_LOGIN_RETRYABLE_ERRORS[\s\S]{0,300}"promo_code_reused"/);
+});
+
+test("expected promo backpressure stays out of Vercel 5xx metrics", () => {
+  assert.match(authSource, /callPromoAccessBackend/);
+  assert.match(authSource, /retryAfterMs: 900/);
+  assert.match(authSource, /return res\.status\(200\)\.json\(\{[\s\S]*?retryable/);
+  assert.doesNotMatch(authSource, /promoValidation\.error === "promo_unavailable" \? 503/);
 });
 
 test("promo backend setup failures are normalized without leaking internal errors", () => {

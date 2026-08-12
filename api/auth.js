@@ -172,7 +172,7 @@ function recordPromoFailure(ipKey, phone) {
 }
 
 function shouldCountUserLoginFailure(error) {
-  return !["busy", "temporary_error", "server_error", "auth_backend_error"].includes(error);
+  return !["busy", "temporary_error", "server_error", "service_unavailable", "auth_backend_error"].includes(error);
 }
 
 function hasCoreConfig() {
@@ -329,6 +329,23 @@ async function callAccessBackend(action, phone, deviceId, extra = {}) {
   const data = await readJsonResponse(response);
   if (!response.ok && !data) return { success: false, error: "auth_backend_error" };
   return data || { success: false, error: "auth_backend_error" };
+}
+
+async function callPromoAccessBackend(action, phone, deviceId, extra = {}) {
+  try {
+    return await callAccessBackend(action, phone, deviceId, extra);
+  } catch (error) {
+    const { statusCode } = publicApiError(error);
+    if (statusCode === 503) {
+      return {
+        success: false,
+        error: "service_unavailable",
+        retryable: true,
+        retryAfterMs: 900
+      };
+    }
+    throw error;
+  }
 }
 
 function getTwilioAuthHeader() {
@@ -589,7 +606,7 @@ export default async function handler(req, res) {
         });
         if (!promoValidation.ok) {
           if (promoValidation.error === "promo_invalid") recordPromoFailure(promoLimit.ipKey, phone);
-          return res.status(promoValidation.error === "promo_unavailable" ? 503 : 200).json({
+          return res.status(200).json({
             success: false,
             error: promoValidation.error
           });
@@ -603,7 +620,7 @@ export default async function handler(req, res) {
           promoValidUntil: promoValidation.expiresAt,
           secret: GAS_SECRET
         });
-        const promoData = await callAccessBackend("promo_redeem", phone, deviceId, {
+        const promoData = await callPromoAccessBackend("promo_redeem", phone, deviceId, {
           promoCodeId,
           promoValidUntil: promoValidation.expiresAt,
           ...proof
@@ -619,16 +636,15 @@ export default async function handler(req, res) {
             promoRedemptions: Math.min(6, Number(promoData.promoRedemptions) || 0)
           };
         } else if (promoError === "active_access") {
-          authData = await callAccessBackend("login", phone, deviceId, { registerDevice: true });
+          authData = await callPromoAccessBackend("login", phone, deviceId, { registerDevice: true });
           promoExtra = { promoNotice: "access_already_active" };
         } else {
           const publicPromoError = getPublicPromoRedemptionError(promoError);
-          const statusCode = ["promo_backend_not_ready", "temporary_error", "busy"].includes(publicPromoError)
-            ? 503
-            : 200;
-          return res.status(statusCode).json({
+          const retryable = ["temporary_error", "busy"].includes(publicPromoError);
+          return res.status(200).json({
             success: false,
-            error: publicPromoError
+            error: publicPromoError,
+            ...(retryable ? { retryable: true, retryAfterMs: Number(promoData?.retryAfterMs) || 900 } : {})
           });
         }
       } else {
