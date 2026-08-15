@@ -99,13 +99,10 @@ test("the study intro uses Hadi Rounded and recalls the last chapter after five 
   assert.match(policy, /font-src[^;]*https:\/\/banglawebfonts\.pages\.dev/u);
 });
 
-test("the chapter hero presents the supplied 25-goal artwork as a square editorial card", () => {
+test("the chapter hero uses the supplied section cover across the whole card", () => {
   const page = readFileSync(new URL("../study-quiz.html", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../study-quiz.css", import.meta.url), "utf8");
-  assert.match(page, /src="icons\/24goal\.png"[^>]*fetchpriority="high"/);
-  assert.doesNotMatch(page, /study-intro-mark[^>]*><strong>25<\/strong>/);
-  assert.match(styles, /\.study-intro-mark\s*\{[^}]*aspect-ratio:\s*1[^}]*border-radius:\s*30px/s);
-  assert.match(styles, /\.study-intro-mark::before/);
-  assert.match(styles, /\.study-intro-mark::after/);
-  assert.match(styles, /\.study-intro-mark img\s*\{[^}]*object-fit:\s*cover/s);
+  assert.doesNotMatch(page, /study-intro-mark/u);
+  assert.match(styles, /\.study-intro\s*\{[^}]*aspect-ratio:\s*1672\s*\/\s*941[^}]*background-image:\s*url\("\/assets\/images\/study_quiz_section_cover\.png"\)[^}]*background-size:\s*cover/s);
+  assert.match(styles, /@media \(max-width: 430px\)[\s\S]*?\.study-intro\s*\{[^}]*padding:\s*16px[^}]*border-radius:\s*19px/s);
 });

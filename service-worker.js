@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v89-study-hero-full";
+const CACHE_NAME = "magicbook-pwa-v90-study-section-cover";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -10,7 +10,7 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=26",
   "/script.js?v=46-promo-user-cap",
   "/study-quiz.html",
-  "/study-quiz.css?v=12-full-hero-artwork",
+  "/study-quiz.css?v=13-section-cover",
   "/study-quiz.js?v=13-automatic-translation-backup",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=59-automatic-translation-backup",
@@ -24,7 +24,8 @@ const STATIC_ASSETS = [
   "/data/patente/quiz-help-runtime-v2.json",
   "/manifest.webmanifest?v=16",
   "/icons/mg_logo.png",
-  "/icons/intro01.jpg?v=20260701"
+  "/icons/intro01.jpg?v=20260701",
+  "/assets/images/study_quiz_section_cover.png"
 ];
 
 self.addEventListener("install", event => {
