@@ -7,7 +7,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function createMagicDictionary(root) {
   "use strict";
 
-  const VERSION = "1.2.3";
+  const VERSION = "1.2.4";
   const MANIFEST_URL = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const FALLBACK_URL = "/data/patente/quiz-help-runtime-v2.json";
   const STORAGE_PREFIX = "magicbook.wordLearning.v1";
@@ -17,6 +17,7 @@
   const HISTORY_LIMIT = CATALOG_LIMIT;
   const RECENT_REPEAT_GUARD = 50;
   const PAGE_SIZE = 60;
+  const WORD_ARRIVAL_SPEECH_DELAY_MS = 90;
   const BASE_ENTRY_PATTERN = /^(?:w|gw)_/u;
   const AI_ENTRY_PATTERN = /^ai_kw_/u;
   const BENGALI_PATTERN = /[\u0980-\u09ff]/u;
@@ -42,7 +43,61 @@
   let dictionaryVisibleCount = PAGE_SIZE;
   let dictionaryReturnScreen = "chapters";
   let inertTargets = [];
+  let italianSpeechRequestId = 0;
+  let italianSpeechTimer = 0;
   const memoryStorage = new Map();
+
+  function italianSpeechVoice(synthesis) {
+    const voices = typeof synthesis?.getVoices === "function" ? synthesis.getVoices() : [];
+    if (!Array.isArray(voices)) return null;
+    return voices.find(voice => String(voice?.lang || "").toLocaleLowerCase("it-IT") === "it-it")
+      || voices.find(voice => String(voice?.lang || "").toLocaleLowerCase("it-IT").startsWith("it"))
+      || null;
+  }
+
+  function stopItalianSpeech() {
+    italianSpeechRequestId += 1;
+    if (italianSpeechTimer) {
+      root.clearTimeout?.(italianSpeechTimer);
+      italianSpeechTimer = 0;
+    }
+    try {
+      root.speechSynthesis?.cancel?.();
+    } catch {
+      // Unsupported or unavailable speech must never interrupt the exercise.
+    }
+  }
+
+  function speakItalian(value, options = {}) {
+    const text = String(value || "").trim();
+    const synthesis = root.speechSynthesis;
+    const Utterance = root.SpeechSynthesisUtterance;
+    stopItalianSpeech();
+    if (!text || !synthesis || typeof synthesis.speak !== "function" || typeof Utterance !== "function") return false;
+
+    const requestId = italianSpeechRequestId;
+    const speak = () => {
+      italianSpeechTimer = 0;
+      if (requestId !== italianSpeechRequestId) return;
+      try {
+        const utterance = new Utterance(text);
+        utterance.lang = "it-IT";
+        utterance.rate = 0.92;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        const voice = italianSpeechVoice(synthesis);
+        if (voice) utterance.voice = voice;
+        synthesis.speak(utterance);
+      } catch {
+        // The visual exercise remains fully usable if device TTS is unavailable.
+      }
+    };
+
+    const delayMs = Math.max(0, Number(options.delayMs) || 0);
+    if (delayMs && typeof root.setTimeout === "function") italianSpeechTimer = root.setTimeout(speak, delayMs);
+    else speak();
+    return true;
+  }
 
   function normalizeItalian(value = "") {
     return String(value)
@@ -530,6 +585,7 @@
     const wasOpen = !gate.classList.contains("hidden");
     gate.classList.toggle("hidden", !open);
     root.document.body?.classList.toggle("magic-word-gate-open", open);
+    if (!open) stopItalianSpeech();
 
     if (open && !wasOpen) {
       inertTargets = [...root.document.body.children].filter(element => element !== gate && !element.inert);
@@ -547,6 +603,7 @@
   function renderGateLoading() {
     const content = gateContent();
     if (!content) return;
+    stopItalianSpeech();
     root.document.getElementById("magicWordGateMeter").style.width = "0%";
     content.innerHTML = `
       <span class="magic-word-kicker">IL TUO RIPASSO</span>
@@ -558,6 +615,7 @@
   function renderGateError() {
     const content = gateContent();
     if (!content) return;
+    stopItalianSpeech();
     content.innerHTML = `
       <span class="magic-word-kicker">CONNESSIONE</span>
       <div class="magic-word-symbol">↻</div>
@@ -607,6 +665,7 @@
     root.document.getElementById("magicWordOptOut")?.addEventListener("click", renderOptOutConfirmation);
     root.document.getElementById("magicWordManualClose")?.addEventListener("click", closeManualPractice);
     content.querySelector("[data-word-id]")?.focus();
+    speakItalian(word.it, { delayMs: WORD_ARRIVAL_SPEECH_DELAY_MS });
   }
 
   function closeManualPractice() {
@@ -626,10 +685,13 @@
       button.classList.add("is-wrong");
       button.disabled = true;
       if (feedback) feedback.textContent = "Non ancora. Riprova: puoi farcela.";
+      const selectedWord = findWord(selectedId);
+      if (selectedWord?.it) speakItalian(selectedWord.it);
       return;
     }
 
     answerLocked = true;
+    stopItalianSpeech();
     button.classList.add("is-correct");
     root.document.querySelectorAll(".magic-word-options button").forEach(option => { option.disabled = true; });
     if (feedback) feedback.textContent = "Corretto!";
@@ -662,6 +724,7 @@
   }
 
   function finishGateSession() {
+    stopItalianSpeech();
     const manualSession = activeQuiz?.manual === true;
     const preference = readPreference();
     const completedIds = [...(activeQuiz?.wordIds || [])];
@@ -711,6 +774,7 @@
   function renderOptOutConfirmation() {
     const content = gateContent();
     if (!content) return;
+    stopItalianSpeech();
     content.innerHTML = `
       <span class="magic-word-kicker">PRIMA DI DISATTIVARE</span>
       <div class="magic-word-symbol">?</div>
@@ -1011,6 +1075,8 @@
       dictionaryLearningStats,
       normalizeHistory,
       normalizeItalian,
+      speakItalian,
+      stopItalianSpeech,
       selectFreshWords,
       seededRandom,
       shuffled

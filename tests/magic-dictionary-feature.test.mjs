@@ -153,12 +153,13 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(index, /premium-new-badge home-dictionary-new-badge/u);
   assert.doesNotMatch(index, /home-dictionary-mark/u);
   assert.match(index, /openDictionaryFromMenu\(\)/u);
-  assert.match(index, /magic-dictionary\.js\?v=1\.2\.3/u);
+  assert.match(index, /magic-dictionary\.js\?v=1\.2\.4/u);
+  assert.match(quiz, /magic-dictionary\.js\?v=1\.2\.4/u);
+  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.2\.4/u);
   assert.match(script, /state\.screen === "dictionary"/u);
   assert.match(script, /MagicDictionaryFeature\?\.onAuthenticated/u);
-  assert.match(quiz, /magic-dictionary\.js\?v=1\.2\.3/u);
-  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.2\.3/u);
-  assert.match(worker, /magicbook-pwa-v87-promo-user-cap/u);
+  assert.match(worker, /magicbook-pwa-v89-study-hero-full/u);
+  assert.match(worker, /magic-dictionary\.js\?v=1\.2\.4/u);
   assert.match(worker, /magic-dictionary\.css\?v=1\.2\.2/u);
   assert.ok(vercel.rewrites.some(route => route.source === "/dizionario" && route.destination === "/"));
   assert.match(redirects, /^\/dizionario \/index\.html 200$/mu);
@@ -196,4 +197,32 @@ test("the word exercise remains Italian regardless of the browser language", () 
   assert.match(source, /class="magic-word-prompt" lang="it"/u);
   assert.match(source, /data-word-id="\$\{escapeHtml\(option\.id\)\}" lang="bn"/u);
   assert.doesNotMatch(source, /navigator\.(?:language|languages)/u);
+});
+
+test("the word exercise speaks each Italian prompt and the Italian word behind a wrong answer", () => {
+  const events = [];
+  class MockUtterance {
+    constructor(text) {
+      this.text = text;
+    }
+  }
+  context.SpeechSynthesisUtterance = MockUtterance;
+  context.speechSynthesis = {
+    cancel: () => events.push({ type: "cancel" }),
+    getVoices: () => [
+      { lang: "en-US", name: "English" },
+      { lang: "it-IT", name: "Italiano" }
+    ],
+    speak: utterance => events.push({ type: "speak", utterance })
+  };
+
+  assert.equal(feature.__test.speakItalian("fermarsi"), true);
+  const spoken = events.find(event => event.type === "speak")?.utterance;
+  assert.equal(spoken.text, "fermarsi");
+  assert.equal(spoken.lang, "it-IT");
+  assert.equal(spoken.rate, 0.92);
+  assert.equal(spoken.voice.name, "Italiano");
+  assert.match(source, /speakItalian\(word\.it, \{ delayMs: WORD_ARRIVAL_SPEECH_DELAY_MS \}\)/u);
+  assert.match(source, /const selectedWord = findWord\(selectedId\);[\s\S]*speakItalian\(selectedWord\.it\)/u);
+  assert.match(source, /answerLocked = true;\s+stopItalianSpeech\(\);/u);
 });

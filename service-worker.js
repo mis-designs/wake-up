@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v87-promo-user-cap";
+const CACHE_NAME = "magicbook-pwa-v89-study-hero-full";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -10,7 +10,7 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=26",
   "/script.js?v=46-promo-user-cap",
   "/study-quiz.html",
-  "/study-quiz.css?v=11-trial-chapters-1-3",
+  "/study-quiz.css?v=12-full-hero-artwork",
   "/study-quiz.js?v=13-automatic-translation-backup",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=59-automatic-translation-backup",
@@ -19,7 +19,7 @@ const STATIC_ASSETS = [
   "/patenteGlossaryResolver.js?v=1.0.0",
   "/patenteContextResolverV3.js?v=3.0.1-keywords-fix",
   "/quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity",
-  "/magic-dictionary.js?v=1.2.3",
+  "/magic-dictionary.js?v=1.2.4",
   "/screen-protection.js?v=1.2.0",
   "/data/patente/quiz-help-runtime-v2.json",
   "/manifest.webmanifest?v=16",
