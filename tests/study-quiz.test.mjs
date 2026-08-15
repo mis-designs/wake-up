@@ -87,7 +87,8 @@ test("the study intro uses Hadi Rounded and recalls the last chapter after five 
   assert.match(page, /@import url\('https:\/\/banglawebfonts\.pages\.dev\/css\/hadi-rounded\.css'\)/u);
   assert.match(page, /id="study-last-chapter" class="hidden"/u);
   assert.match(styles, /body\s*\{[^}]*font-family:\s*"Hadi Rounded", sans-serif;[^}]*font-weight:\s*400;[^}]*font-style:\s*normal;/su);
-  assert.match(styles, /\.study-intro h2\s*\{[^}]*font-family:\s*"Hind Siliguri", "Noto Sans Bengali", sans-serif;[^}]*font-weight:\s*600;[^}]*font-style:\s*normal;/su);
+  assert.match(page, /family=Anek\+Bangla:wght@400;500;600/u);
+  assert.match(styles, /\.study-intro h2\s*\{[^}]*font-family:\s*"Anek Bangla", "Noto Sans Bengali", sans-serif;[^}]*font-weight:\s*500;[^}]*font-style:\s*normal;/su);
   assert.match(source, /STUDY_RETURN_DELAY_MS\s*=\s*5 \* 60 \* 1000/u);
   assert.match(source, /শেষবার আপনি পড়েছিলেন অধ্যায়/u);
   assert.match(source, /BANGLA_DIGITS\s*=\s*\["০", "১", "২", "৩", "৪", "৫"/u);

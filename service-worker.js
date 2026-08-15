@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v91-shorter-bangla-hero";
+const CACHE_NAME = "magicbook-pwa-v92-anek-bangla-hero";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -10,7 +10,7 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=26",
   "/script.js?v=46-promo-user-cap",
   "/study-quiz.html",
-  "/study-quiz.css?v=14-shorter-bangla-hero",
+  "/study-quiz.css?v=15-anek-bangla-hero",
   "/study-quiz.js?v=13-automatic-translation-backup",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=59-automatic-translation-backup",
