@@ -87,7 +87,7 @@ test("the study intro uses Hadi Rounded and recalls the last chapter after five 
   assert.match(page, /@import url\('https:\/\/banglawebfonts\.pages\.dev\/css\/hadi-rounded\.css'\)/u);
   assert.match(page, /id="study-last-chapter" class="hidden"/u);
   assert.match(styles, /body\s*\{[^}]*font-family:\s*"Hadi Rounded", sans-serif;[^}]*font-weight:\s*400;[^}]*font-style:\s*normal;/su);
-  assert.match(styles, /\.study-intro h2\s*\{[^}]*font-family:\s*"Hadi Rounded", sans-serif;[^}]*font-weight:\s*400;[^}]*font-style:\s*normal;/su);
+  assert.match(styles, /\.study-intro h2\s*\{[^}]*font-family:\s*"Hind Siliguri", "Noto Sans Bengali", sans-serif;[^}]*font-weight:\s*600;[^}]*font-style:\s*normal;/su);
   assert.match(source, /STUDY_RETURN_DELAY_MS\s*=\s*5 \* 60 \* 1000/u);
   assert.match(source, /শেষবার আপনি পড়েছিলেন অধ্যায়/u);
   assert.match(source, /BANGLA_DIGITS\s*=\s*\["০", "১", "২", "৩", "৪", "৫"/u);
@@ -103,6 +103,7 @@ test("the chapter hero uses the supplied section cover across the whole card", (
   const page = readFileSync(new URL("../study-quiz.html", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../study-quiz.css", import.meta.url), "utf8");
   assert.doesNotMatch(page, /study-intro-mark/u);
-  assert.match(styles, /\.study-intro\s*\{[^}]*aspect-ratio:\s*1672\s*\/\s*941[^}]*background-image:\s*url\("\/assets\/images\/study_quiz_section_cover\.png"\)[^}]*background-size:\s*cover/s);
+  assert.match(styles, /\.study-intro\s*\{[^}]*height:\s*clamp\(430px, 44vw, 540px\)[^}]*background-image:\s*url\("\/assets\/images\/study_quiz_section_cover\.png"\)[^}]*background-position:\s*center top[^}]*background-size:\s*cover/s);
+  assert.match(styles, /@media \(max-width: 720px\)[\s\S]*?\.study-intro\s*\{[^}]*height:\s*auto[^}]*aspect-ratio:\s*1672\s*\/\s*941[^}]*background-position:\s*center/s);
   assert.match(styles, /@media \(max-width: 430px\)[\s\S]*?\.study-intro\s*\{[^}]*padding:\s*16px[^}]*border-radius:\s*19px/s);
 });

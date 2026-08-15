@@ -35,15 +35,15 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .study-practice-link .study-system-arrow { filter: brightness(0) invert(1); }
 
 .study-main { width: min(1160px, calc(100% - 32px)); margin: 0 auto; padding: 34px 0 80px; }
-.study-intro { position: relative; isolation: isolate; display: grid; grid-template-columns: minmax(0, 1fr); align-items: end; aspect-ratio: 1672 / 941; margin-bottom: 28px; padding: clamp(26px, 4vw, 46px); overflow: hidden; border: 1px solid rgba(111, 255, 50, .32); border-radius: 30px; background-color: #18201d; background-image: url("/assets/images/study_quiz_section_cover.png"); background-position: center; background-repeat: no-repeat; background-size: cover; color: #fff; box-shadow: 0 25px 65px rgba(5, 48, 18, .26), 0 1px 0 rgba(255, 255, 255, .16) inset; }
+.study-intro { position: relative; isolation: isolate; display: grid; grid-template-columns: minmax(0, 1fr); align-items: end; height: clamp(430px, 44vw, 540px); margin-bottom: 28px; padding: clamp(26px, 4vw, 46px); overflow: hidden; border: 1px solid rgba(111, 255, 50, .32); border-radius: 30px; background-color: #18201d; background-image: url("/assets/images/study_quiz_section_cover.png"); background-position: center top; background-repeat: no-repeat; background-size: cover; color: #fff; box-shadow: 0 25px 65px rgba(5, 48, 18, .26), 0 1px 0 rgba(255, 255, 255, .16) inset; }
 .study-intro::before { content: ""; position: absolute; z-index: 0; inset: 0; background: linear-gradient(90deg, rgba(0, 12, 7, .82) 0%, rgba(0, 15, 8, .58) 34%, rgba(0, 12, 7, .12) 68%, transparent 84%), linear-gradient(0deg, rgba(0, 9, 5, .68), transparent 48%); }
 .study-intro::after { content: ""; position: absolute; z-index: 1; inset: 0; border: 1px solid rgba(255, 255, 255, .15); border-radius: inherit; box-shadow: 0 1px 0 rgba(255, 255, 255, .12) inset; pointer-events: none; }
 .study-intro > div { position: relative; z-index: 2; }
-.study-intro-copy { min-width: 0; max-width: 720px; font-family: "Hadi Rounded", "Noto Sans Bengali", "Hind Siliguri", sans-serif; }
+.study-intro-copy { min-width: 0; max-width: 720px; font-family: "Hind Siliguri", "Noto Sans Bengali", sans-serif; }
 .study-intro span, .study-reader-toolbar > div > span { color: #78ff38; font-size: .67rem; font-weight: 900; letter-spacing: .16em; }
 .study-intro > div:first-child > span { display: inline-flex; align-items: center; gap: 9px; }
 .study-intro > div:first-child > span::before { content: ""; width: 20px; height: 2px; border-radius: 9px; background: currentColor; box-shadow: 0 0 12px rgba(120, 255, 56, .72); }
-.study-intro h2 { max-width: 760px; margin: 0 0 14px; font-family: "Hadi Rounded", sans-serif; font-size: clamp(2rem, 5vw, 3.35rem); font-weight: 400; font-style: normal; line-height: 1.18; letter-spacing: 0; text-shadow: 0 3px 5px rgba(0, 0, 0, .7), 0 10px 34px rgba(0, 0, 0, .55); }
+.study-intro h2 { max-width: 760px; margin: 0 0 14px; font-family: "Hind Siliguri", "Noto Sans Bengali", sans-serif; font-size: clamp(2rem, 5vw, 3.35rem); font-weight: 600; font-style: normal; line-height: 1.14; letter-spacing: -.015em; text-shadow: 0 3px 5px rgba(0, 0, 0, .7), 0 10px 34px rgba(0, 0, 0, .55); }
 .study-intro h2 em { color: #78ff38; font-style: normal; font-weight: inherit; }
 .study-intro p { width: fit-content; max-width: 680px; margin: 0; border: 1px solid rgba(120, 255, 56, .28); border-radius: 999px; padding: 8px 13px; background: rgba(1, 24, 8, .62); color: rgba(255, 255, 255, .95); font-family: inherit; font-size: clamp(1rem, 2vw, 1.2rem); font-weight: 400; line-height: 1.45; text-shadow: 0 2px 4px rgba(0, 0, 0, .9), 0 7px 20px rgba(0, 0, 0, .72); backdrop-filter: blur(7px); }
 
@@ -155,7 +155,7 @@ body.study-trial-mode .study-header{border-bottom-color:rgba(217,155,22,.35);box
   .study-heading p { display: none; }
   .study-practice-link { display: none; }
   .study-main { width: min(100% - 22px, 620px); padding-top: 18px; }
-  .study-intro { border-radius: 23px; padding: 22px; }
+  .study-intro { width: 100%; height: auto; aspect-ratio: 1672 / 941; border-radius: 23px; padding: 22px; background-position: center; }
   .study-intro-copy { max-width: 72%; }
   .study-intro h2 { font-size: clamp(1.55rem, 6.6vw, 2.25rem); line-height: 1.08; }
   .study-intro p { font-size: clamp(.78rem, 2.6vw, 1rem); }
