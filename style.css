@@ -1915,10 +1915,11 @@ body.guest-trial-mode #qmsCapPills .qms-pill.guest-qms-free{width:43px;min-width
 body.guest-trial-mode #qmsCapPills .qms-pill.guest-qms-free::after{content:"FREE";display:block;position:absolute;transform:translateY(20px);font-size:7px;font-weight:950;letter-spacing:.08em;color:#168d7c;pointer-events:none}
 body.guest-trial-mode #qmsCapPills .qms-pill.guest-qms-free{position:relative;margin-bottom:5px}
 body.guest-trial-mode #qmsCapPills .qms-pill.guest-qms-locked{width:36px;min-width:36px;height:38px;background:#c6c8ce;color:#777b84;border-color:transparent;opacity:.72}
-body.guest-trial-mode #qmsCapPills{width:100%;min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,72px));justify-content:start;align-items:stretch;gap:10px;margin-bottom:16px;overflow:visible}
-body.guest-trial-mode #qmsCapPills .qms-pill.guest-qms-free{width:100%;min-width:0;height:52px;margin:0;padding:6px;display:flex;flex-direction:column;gap:3px}
+body.guest-trial-mode #qmsCapPills{width:100%;min-width:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));align-items:stretch;gap:8px;margin-bottom:16px;overflow:visible}
+body.guest-trial-mode #qmsCapPills .qms-pill.guest-qms-free,body.guest-trial-mode #qmsCapPills .qms-pill.guest-qms-locked{width:100%;min-width:0;height:48px;margin:0;padding:6px}
+body.guest-trial-mode #qmsCapPills .qms-pill.guest-qms-free{display:flex;flex-direction:column;gap:3px}
 body.guest-trial-mode #qmsCapPills .qms-pill.guest-qms-free::after{position:static;display:block;transform:none;font-size:7px;line-height:1}
-body.guest-trial-mode #qmsCapPills .qms-pill.guest-qms-locked{display:none}
+body.guest-trial-mode #qmsCapPills .qms-pill.guest-qms-locked{display:inline-flex}
 
 /* Coachmark refinement: the guide points at one element at a time. */
 .trial-onboarding-scrim{background:rgba(4,7,18,.48);backdrop-filter:none;z-index:0}
@@ -5615,6 +5616,7 @@ body.app-mode #whatsappBtn {
     -webkit-backdrop-filter: blur(10px);
     display: flex;
     align-items: flex-end;
+    justify-content: center;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.32s ease;
@@ -5626,7 +5628,7 @@ body.app-mode #whatsappBtn {
 }
 
 .qms-sheet {
-    width: 100%;
+    width: min(100%, 760px);
     min-width: 0;
     max-height: 94dvh;
     background: #eef0f8;
@@ -5716,7 +5718,6 @@ body.app-mode #whatsappBtn {
 .qms-card {
     width: 100%;
     min-width: 0;
-    overflow: hidden;
     background: white;
     border-radius: 22px;
     padding: 18px 16px 16px;
