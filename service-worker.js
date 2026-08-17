@@ -1,14 +1,14 @@
-const CACHE_NAME = "magicbook-pwa-v94-review-audio-button";
+const CACHE_NAME = "magicbook-pwa-v95-whats-new-popup";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
-  "/style.css?v=49-home-open-hover",
+  "/style.css?v=50-whats-new-popup",
   "/magic-dictionary.css?v=1.2.2",
   "/screen-protection.css?v=1.1.0",
   "/homebg.css?v=3",
   "/mystyle.css?v=41-review-audio-button",
-  "/script.js?v=46-promo-user-cap",
+  "/script.js?v=47-whats-new-popup",
   "/study-quiz.html",
   "/study-quiz.css?v=15-anek-bangla-hero",
   "/study-quiz.js?v=13-automatic-translation-backup",
@@ -25,6 +25,7 @@ const STATIC_ASSETS = [
   "/data/patente/quiz-help-runtime-v2.json",
   "/manifest.webmanifest?v=16",
   "/icons/mg_logo.png",
+  "/icons/ui%20mobile.svg",
   "/icons/intro01.jpg?v=20260701",
   "/assets/images/study_quiz_section_cover.png"
 ];

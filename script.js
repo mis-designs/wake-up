@@ -558,6 +558,7 @@ window.addEventListener("load", async () => {
 
   if ((session || logged === "true") && phone && deviceId) {
     openRouteState(getRouteStateFromLocation());
+    maybeShowWhatsNewPopup();
     void window.MagicDictionaryFeature?.onAuthenticated();
     checkRenewReminder();
     startAccessValidationTimer();
@@ -810,6 +811,7 @@ function completeLogin(phone, deviceId, data) {
   hideAdminPasswordUI();
   hideOtpUI();
   openRouteState(getRouteStateFromLocation());
+  maybeShowWhatsNewPopup();
   void window.MagicDictionaryFeature?.onAuthenticated();
   startAccessValidationTimer();
   void warmExplanationFiguresCache();
@@ -1367,6 +1369,7 @@ function logout(showLogin = true, reason = "revoked") {
     clearInterval(accessValidationTimer);
     accessValidationTimer = null;
   }
+  resetWhatsNewPopupForNextLogin();
   clearSessionData();
   setChapterMode(false);
   currentScreen = "login";
@@ -2530,6 +2533,121 @@ function showExpiredRenewPopup() {
 }
 
 /***********************
+ * WHAT'S NEW POPUP
+ ***********************/
+const WHATS_NEW_ARTWORK = "icons/ui%20mobile.svg";
+let whatsNewPopupShownThisVisit = false;
+let whatsNewPopupRetryTimer = null;
+
+function resetWhatsNewPopupForNextLogin() {
+  if (whatsNewPopupRetryTimer) {
+    window.clearTimeout(whatsNewPopupRetryTimer);
+    whatsNewPopupRetryTimer = null;
+  }
+  document.getElementById("whatsNewPopupOverlay")?.remove();
+  whatsNewPopupShownThisVisit = false;
+}
+
+function isWhatsNewPopupAllowed() {
+  if (whatsNewPopupShownThisVisit) return false;
+  if (trialGuestMode || !getCurrentSessionPhone()) return false;
+  if (hasVisibleBlockingPopup()) return false;
+  return true;
+}
+
+function maybeShowWhatsNewPopup() {
+  if (whatsNewPopupShownThisVisit || whatsNewPopupRetryTimer) return;
+  if (trialGuestMode || !getCurrentSessionPhone()) return;
+
+  const tryToShow = () => {
+    whatsNewPopupRetryTimer = null;
+    if (whatsNewPopupShownThisVisit || trialGuestMode || !getCurrentSessionPhone()) return;
+
+    if (!isWhatsNewPopupAllowed()) {
+      whatsNewPopupRetryTimer = window.setTimeout(tryToShow, 900);
+      return;
+    }
+
+    showWhatsNewPopup();
+  };
+
+  whatsNewPopupRetryTimer = window.setTimeout(tryToShow, 140);
+}
+
+function showWhatsNewPopup() {
+  if (!isWhatsNewPopupAllowed()) return;
+
+  whatsNewPopupShownThisVisit = true;
+  const previouslyFocused = document.activeElement;
+  const overlay = document.createElement("div");
+  overlay.id = "whatsNewPopupOverlay";
+  overlay.className = "whats-new-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "whatsNewPopupTitle");
+
+  const card = document.createElement("div");
+  card.className = "whats-new-card";
+
+  const title = document.createElement("h2");
+  title.id = "whatsNewPopupTitle";
+  title.className = "sr-only";
+  title.textContent = "Cosa c'e di nuovo";
+
+  const artwork = document.createElement("img");
+  artwork.className = "whats-new-artwork";
+  artwork.src = WHATS_NEW_ARTWORK;
+  artwork.alt = "Anteprima della nuova interfaccia mobile di MagicBook";
+
+  const closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.className = "whats-new-close";
+  closeButton.setAttribute("aria-label", "Chiudi le novita");
+  closeButton.innerHTML = "<span aria-hidden=\"true\">&times;</span>";
+
+  const understoodButton = document.createElement("button");
+  understoodButton.type = "button";
+  understoodButton.className = "whats-new-understood";
+  understoodButton.textContent = "Capito";
+
+  const closePopup = () => {
+    if (!overlay.isConnected || overlay.classList.contains("is-closing")) return;
+    overlay.classList.add("is-closing");
+    window.setTimeout(() => {
+      overlay.remove();
+      if (previouslyFocused instanceof HTMLElement && previouslyFocused.isConnected) {
+        previouslyFocused.focus({ preventScroll: true });
+      }
+      maybeShowWhatsAppGroupPopup();
+    }, 180);
+  };
+
+  closeButton.addEventListener("click", closePopup);
+  understoodButton.addEventListener("click", closePopup);
+  overlay.addEventListener("click", event => {
+    if (event.target === overlay) closePopup();
+  });
+  overlay.addEventListener("keydown", event => {
+    if (event.key === "Escape") closePopup();
+    if (event.key === "Tab") {
+      event.preventDefault();
+      const nextButton = event.shiftKey
+        ? (document.activeElement === closeButton ? understoodButton : closeButton)
+        : (document.activeElement === understoodButton ? closeButton : understoodButton);
+      nextButton.focus({ preventScroll: true });
+    }
+  });
+
+  card.appendChild(title);
+  card.appendChild(artwork);
+  card.appendChild(closeButton);
+  card.appendChild(understoodButton);
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+  window.requestAnimationFrame(() => closeButton.focus({ preventScroll: true }));
+}
+
+/***********************
  * WHATSAPP GROUP POPUP
  ***********************/
 const WHATSAPP_GROUP_CLICKED_KEY = "whatsapp_group_joined_or_clicked";
@@ -2559,6 +2677,7 @@ function hasVisibleBlockingPopup() {
 
   return Boolean(
     document.getElementById("renewPopupOverlay") ||
+    document.getElementById("whatsNewPopupOverlay") ||
     document.getElementById("whatsappGroupPopupOverlay") ||
     quizModeOverlay?.classList.contains("qms-visible") ||
     menuOverlay?.classList.contains("overlay-visible")
