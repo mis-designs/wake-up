@@ -19,7 +19,7 @@
     <link rel="manifest" href="manifest.webmanifest?v=16">
     <link rel="preload" as="font" type="font/woff2" href="https://banglawebfonts.pages.dev/fonts/un-bangla/un-bangla-regular.woff2" crossorigin="anonymous">
     <style>@import url('https://banglawebfonts.pages.dev/css/un-bangla.css');</style>
-    <link rel="stylesheet" href="mystyle.css?v=39-readable-text">
+    <link rel="stylesheet" href="mystyle.css?v=40-explain-quiz-artwork">
     <link rel="stylesheet" href="quiz-help.css?v=20260801-readable-text">
     <link rel="stylesheet" href="magic-dictionary.css?v=1.2.2">
     <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
@@ -127,10 +127,13 @@
                     </button>
                 </div>
 
-                <div id="quiz-audio-explanation" class="quiz-audio-explanation is-inactive hidden" aria-label="Spiegazione audio non ancora disponibile" aria-hidden="true" data-audio-state="inactive">
-                    <button id="quiz-audio-play" class="quiz-audio-play" type="button" aria-label="Riproduci spiegazione"></button>
-                    <input id="quiz-audio-progress" class="quiz-audio-progress" type="range" min="0" max="100" step="0.1" value="0" aria-label="Avanzamento spiegazione">
-                    <button id="quiz-audio-speed" class="quiz-audio-speed" type="button" aria-label="Velocità 1x">1×</button>
+                <div id="quiz-audio-explanation-shell" class="quiz-audio-explanation-shell hidden" aria-hidden="true">
+                    <div id="quiz-audio-explanation" class="quiz-audio-explanation is-inactive" aria-label="Spiegazione audio non ancora disponibile" aria-hidden="true" data-audio-state="inactive">
+                        <button id="quiz-audio-play" class="quiz-audio-play" type="button" aria-label="Riproduci spiegazione"></button>
+                        <input id="quiz-audio-progress" class="quiz-audio-progress" type="range" min="0" max="100" step="0.1" value="0" aria-label="Avanzamento spiegazione">
+                        <button id="quiz-audio-speed" class="quiz-audio-speed" type="button" aria-label="Velocità 1x">1×</button>
+                    </div>
+                    <img id="quiz-audio-artwork" class="quiz-audio-artwork" src="icons/explain_quiz.svg" alt="" aria-hidden="true">
                 </div>
             </div>
 
@@ -277,7 +280,7 @@
     <script src="quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity"></script>
     <script src="magic-dictionary.js?v=1.2.4"></script>
     <script src="screen-protection.js?v=1.2.0"></script>
-    <script src="quiz.js?v=59-automatic-translation-backup"></script>
+    <script src="quiz.js?v=60-explain-quiz-artwork"></script>
     <script src="quiz-help.js?v=20260812-automatic-translation-backup"></script>
 </body>
 

@@ -527,10 +527,12 @@ let explanationLoadId = 0;
 
 const italianAudioBtn = document.querySelector(".audio-btn[aria-label='Ascolta in italiano']");
 const banglaAudioBtn  = document.querySelector(".audio-btn[aria-label='Ascolta in Bengali']");
+const sharedAudioShell = document.getElementById("quiz-audio-explanation-shell");
 const sharedAudioPlayer = document.getElementById("quiz-audio-explanation");
 const sharedAudioPlay = document.getElementById("quiz-audio-play");
 const sharedAudioProgress = document.getElementById("quiz-audio-progress");
 const sharedAudioSpeed = document.getElementById("quiz-audio-speed");
+const sharedAudioArtwork = document.getElementById("quiz-audio-artwork");
 const quizAudioAdminTools = document.getElementById("quiz-audio-admin-tools");
 const quizAudioAdd = document.getElementById("quiz-audio-add");
 const quizAudioAddPlus = quizAudioAdd?.querySelector("span");
@@ -581,6 +583,17 @@ function setSharedAudioVisualState(state) {
       : "Spiegazione audio non disponibile");
 }
 
+function setSharedAudioVisibility(isVisible) {
+  sharedAudioShell?.classList.toggle("hidden", !isVisible);
+  sharedAudioShell?.setAttribute("aria-hidden", isVisible ? "false" : "true");
+  sharedAudioPlayer?.setAttribute("aria-hidden", isVisible ? "false" : "true");
+}
+
+function setSharedAudioPlaying(isPlaying) {
+  sharedAudioPlay?.classList.toggle("is-playing", isPlaying);
+  sharedAudioArtwork?.classList.toggle("is-spinning", isPlaying);
+}
+
 function setSharedAudioFailure(error, stage) {
   sharedAudioFailure = {
     code: String(error?.message || error || "quiz_audio_unknown_error"),
@@ -624,9 +637,9 @@ function resetSharedAudioPlayer() {
   revokeSharedAudioObjectUrl();
   sharedAudio.removeAttribute("src");
   sharedAudio.load();
-  sharedAudioPlayer?.classList.add("hidden");
-  sharedAudioPlayer?.setAttribute("aria-hidden", "true");
-  sharedAudioPlay?.classList.remove("is-playing", "is-loading");
+  setSharedAudioVisibility(false);
+  setSharedAudioPlaying(false);
+  sharedAudioPlay?.classList.remove("is-loading");
   sharedAudioProgress?.style.setProperty("--progress", "0%");
   if (sharedAudioProgress) sharedAudioProgress.value = "0";
   sharedAudioQuestion = "";
@@ -783,8 +796,7 @@ function applySharedAudioAvailability(data, question, requestId) {
   if (requestId !== sharedAudioRequestId) return;
   updateQuizAudioAdminTool(data.available === true);
   if (data.available) {
-    sharedAudioPlayer.classList.remove("hidden");
-    sharedAudioPlayer.setAttribute("aria-hidden", "false");
+    setSharedAudioVisibility(true);
     sharedAudioQuestion = {
       id: question.id ?? "",
       question: String(question.audioQuestion || question.question),
@@ -799,8 +811,7 @@ function applySharedAudioAvailability(data, question, requestId) {
     return;
   }
 
-  sharedAudioPlayer.classList.add("hidden");
-  sharedAudioPlayer.setAttribute("aria-hidden", "true");
+  setSharedAudioVisibility(false);
   sharedAudioFailure = {
     code: data.requiresReview ? "quiz_audio_requires_review" : "quiz_audio_not_found",
     stage: "availability",
@@ -819,7 +830,7 @@ function updateSharedAudioAvailability(question) {
     figure: question.figure ?? ""
   } : null;
   if (TRIAL_MODE || !question?.question || !sharedAudioPlayer) {
-    sharedAudioPlayer?.classList.add("hidden");
+    setSharedAudioVisibility(false);
     return;
   }
   setSharedAudioVisualState("loading");
@@ -913,9 +924,9 @@ sharedAudioProgress?.addEventListener("pointerup", () => { seekSharedAudioFromPr
 sharedAudioProgress?.addEventListener("pointercancel", () => { seekSharedAudioFromProgress(); sharedAudioSeeking = false; paintSharedAudioProgress(); });
 sharedAudioProgress?.addEventListener("touchend", () => { seekSharedAudioFromProgress(); sharedAudioSeeking = false; paintSharedAudioProgress(); }, { passive: true });
 sharedAudioSpeed?.addEventListener("click", () => { const speeds = [1, 1.25, 1.5, 2]; sharedAudioSpeedValue = speeds[(speeds.indexOf(sharedAudioSpeedValue) + 1) % speeds.length]; sharedAudio.playbackRate = sharedAudioSpeedValue; sharedAudioSpeed.textContent = `${String(sharedAudioSpeedValue).replace(".", ",")}×`; sharedAudioSpeed.setAttribute("aria-label", `Velocità ${sharedAudioSpeedValue}x`); });
-sharedAudio.addEventListener("play", () => { sharedAudioPlay?.classList.add("is-playing"); if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame); animateSharedAudioProgress(); });
-sharedAudio.addEventListener("pause", () => { sharedAudioPlay?.classList.remove("is-playing"); if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame); sharedAudioFrame = 0; });
-sharedAudio.addEventListener("ended", () => { sharedAudioPlay?.classList.remove("is-playing"); if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame); sharedAudioFrame = 0; sharedAudioSeeking = false; if (sharedAudioProgress) sharedAudioProgress.value = "0"; sharedAudioProgress?.style.setProperty("--progress", "0%"); });
+sharedAudio.addEventListener("play", () => { setSharedAudioPlaying(true); if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame); animateSharedAudioProgress(); });
+sharedAudio.addEventListener("pause", () => { setSharedAudioPlaying(false); if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame); sharedAudioFrame = 0; });
+sharedAudio.addEventListener("ended", () => { setSharedAudioPlaying(false); if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame); sharedAudioFrame = 0; sharedAudioSeeking = false; if (sharedAudioProgress) sharedAudioProgress.value = "0"; sharedAudioProgress?.style.setProperty("--progress", "0%"); });
 [
   "loadedmetadata",
   "durationchange",
@@ -1208,7 +1219,7 @@ function stopAllAudio() {
   isTtsPlaying = false;
   isBengaliPlaying = false;
   sharedAudio.pause();
-  sharedAudioPlay?.classList.remove("is-playing");
+  setSharedAudioPlaying(false);
   italianAudioBtn?.classList.remove("is-playing", "is-loading");
   banglaAudioBtn?.classList.remove("is-playing", "is-loading");
 }
@@ -2151,6 +2162,17 @@ function renderAnswerReview(items = []) {
       : `La tua risposta: ${answerLabel(item.userAnswer)} | Corretta: ${answerLabel(item.correctAnswer)}`;
 
     row.append(status, title, answersText);
+
+    if (stateClass === "is-wrong") {
+      const explainIcon = document.createElement("img");
+      explainIcon.className = "modal-review-explain-icon";
+      explainIcon.src = "icons/explain_quiz.svg";
+      explainIcon.alt = "";
+      explainIcon.setAttribute("aria-hidden", "true");
+      explainIcon.loading = "lazy";
+      explainIcon.decoding = "async";
+      row.appendChild(explainIcon);
+    }
 
     // Show question image if present
     const figVal = String(item.figure ?? "").trim().toLowerCase();
