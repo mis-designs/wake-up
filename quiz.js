@@ -551,6 +551,8 @@ const quizAudioRecordTime = document.getElementById("quiz-audio-record-time");
 const quizAudioRecordPreview = document.getElementById("quiz-audio-record-preview");
 const sharedAudio = new Audio();
 sharedAudio.preload = "metadata";
+const reviewAudio = new Audio();
+reviewAudio.preload = "metadata";
 const SHARED_AUDIO_AVAILABILITY_DELAY_MS = 350;
 const QUIZ_IMAGE_REQUEST_DELAY_MS = 140;
 let sharedAudioQuestion = "";
@@ -565,6 +567,10 @@ let sharedAudioContext = null;
 let sharedAudioFailure = null;
 let sharedAudioAvailabilityTimer = 0;
 let sharedAudioAvailabilityController = null;
+let reviewAudioButton = null;
+let reviewAudioKey = "";
+let reviewAudioObjectUrl = "";
+let reviewAudioRequestId = 0;
 let quizImageRequestTimer = 0;
 let quizImageRequestId = 0;
 const sharedAudioAvailabilityCache = new Map();
@@ -752,6 +758,111 @@ async function requestSharedAudioBlob(question) {
     durationMs: Number(response.headers.get("X-Audio-Duration-Ms")) || 0
   };
 }
+
+function reviewAudioIdentityKey(question) {
+  return [
+    String(question?.id ?? ""),
+    String(question?.audioQuestion || question?.question || ""),
+    QuizAudioIdentity.normalizeFigure(question?.audioFigure ?? question?.figure ?? "")
+  ].join("\u001f");
+}
+
+function setReviewAudioButtonState(button, state = "idle") {
+  if (!button) return;
+  const baseLabel = button.dataset.audioLabel || "Ascolta la spiegazione audio";
+  button.classList.toggle("is-loading", state === "loading");
+  button.classList.toggle("is-playing", state === "playing");
+  button.disabled = state === "loading";
+  button.setAttribute("aria-busy", state === "loading" ? "true" : "false");
+  button.setAttribute("aria-pressed", state === "playing" ? "true" : "false");
+  button.setAttribute("aria-label", state === "loading"
+    ? "Caricamento della spiegazione audio"
+    : state === "playing"
+      ? "Metti in pausa la spiegazione audio"
+      : baseLabel);
+}
+
+function revokeReviewAudioObjectUrl() {
+  if (!reviewAudioObjectUrl) return;
+  URL.revokeObjectURL(reviewAudioObjectUrl);
+  reviewAudioObjectUrl = "";
+}
+
+function resetReviewAudioPlayer() {
+  reviewAudioRequestId += 1;
+  reviewAudio.pause();
+  revokeReviewAudioObjectUrl();
+  reviewAudio.removeAttribute("src");
+  reviewAudio.load();
+  setReviewAudioButtonState(reviewAudioButton, "idle");
+  reviewAudioButton = null;
+  reviewAudioKey = "";
+}
+
+function waitForReviewAudioReady() {
+  if (reviewAudio.readyState >= HTMLMediaElement.HAVE_METADATA) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error("review_audio_metadata_timeout"));
+    }, 10000);
+    const cleanup = () => {
+      clearTimeout(timeout);
+      reviewAudio.removeEventListener("loadedmetadata", ready);
+      reviewAudio.removeEventListener("canplay", ready);
+      reviewAudio.removeEventListener("error", failed);
+    };
+    const ready = () => { cleanup(); resolve(); };
+    const failed = () => { cleanup(); reject(new Error("review_audio_media_error")); };
+    reviewAudio.addEventListener("loadedmetadata", ready);
+    reviewAudio.addEventListener("canplay", ready);
+    reviewAudio.addEventListener("error", failed);
+  });
+}
+
+async function toggleReviewAudio(button, question) {
+  const audioKey = reviewAudioIdentityKey(question);
+  if (reviewAudioButton === button && reviewAudioKey === audioKey && reviewAudio.src) {
+    try {
+      if (reviewAudio.paused) await reviewAudio.play();
+      else reviewAudio.pause();
+    } catch (_) {
+      resetReviewAudioPlayer();
+      showAudioUnavailableToast("La spiegazione audio non è disponibile per questa domanda.");
+    }
+    return;
+  }
+
+  stopAllAudio();
+  resetReviewAudioPlayer();
+  reviewAudioButton = button;
+  reviewAudioKey = audioKey;
+  const requestId = reviewAudioRequestId;
+  setReviewAudioButtonState(button, "loading");
+
+  try {
+    const result = await requestSharedAudioBlob(question);
+    if (requestId !== reviewAudioRequestId || reviewAudioButton !== button) return;
+    reviewAudioObjectUrl = URL.createObjectURL(result.blob);
+    reviewAudio.src = reviewAudioObjectUrl;
+    reviewAudio.load();
+    setReviewAudioButtonState(button, "idle");
+    await waitForReviewAudioReady();
+    if (requestId !== reviewAudioRequestId || reviewAudioButton !== button) return;
+    await reviewAudio.play();
+  } catch (_) {
+    if (requestId !== reviewAudioRequestId || reviewAudioButton !== button) return;
+    resetReviewAudioPlayer();
+    showAudioUnavailableToast("La spiegazione audio non è disponibile per questa domanda.");
+  }
+}
+
+reviewAudio.addEventListener("play", () => setReviewAudioButtonState(reviewAudioButton, "playing"));
+reviewAudio.addEventListener("pause", () => setReviewAudioButtonState(reviewAudioButton, "idle"));
+reviewAudio.addEventListener("ended", () => {
+  setReviewAudioButtonState(reviewAudioButton, "idle");
+  try { reviewAudio.currentTime = 0; } catch (_) {}
+});
 
 async function loadSharedAudioBlob(question, requestId) {
   const result = await requestSharedAudioBlob(question);
@@ -1219,6 +1330,7 @@ function stopAllAudio() {
   isTtsPlaying = false;
   isBengaliPlaying = false;
   sharedAudio.pause();
+  reviewAudio.pause();
   setSharedAudioPlaying(false);
   italianAudioBtn?.classList.remove("is-playing", "is-loading");
   banglaAudioBtn?.classList.remove("is-playing", "is-loading");
@@ -1963,6 +2075,7 @@ function openModal({
 
 function closeModal(result) {
   stopResultVideo();
+  resetReviewAudioPlayer();
   modal.classList.add("hidden");
   modal.setAttribute("aria-hidden", "true");
   document.body.classList.remove("modal-open");
@@ -2094,9 +2207,13 @@ function getServerReviewItems(result = {}) {
     }
 
     return {
+      id:            q?.id ?? item.id ?? "",
       index:         qi + 1,
       question:      q?.question || `Domanda ${qi + 1}`,
       figure:        q?.figure ?? null,
+      audioQuestion: q?.audioQuestion || q?.question || `Domanda ${qi + 1}`,
+      audioFigure:   q?.audioFigure ?? q?.figure ?? null,
+      audioIdentityToken: q?.audioIdentityToken || "",
       userAnswer,
       correctAnswer,
       isCorrect
@@ -2120,9 +2237,13 @@ function buildAnswerReview(result = {}) {
       : false;
 
     return {
+      id:            question.id ?? "",
       index:         index + 1,
       question:      question.question || `Domanda ${index + 1}`,
       figure:        question.figure ?? null,
+      audioQuestion: question.audioQuestion || question.question || `Domanda ${index + 1}`,
+      audioFigure:   question.audioFigure ?? question.figure ?? null,
+      audioIdentityToken: question.audioIdentityToken || "",
       userAnswer,
       correctAnswer,
       isCorrect
@@ -2131,6 +2252,7 @@ function buildAnswerReview(result = {}) {
 }
 
 function renderAnswerReview(items = []) {
+  resetReviewAudioPlayer();
   modalReviewList.innerHTML = "";
 
   if (!items.length) {
@@ -2163,7 +2285,14 @@ function renderAnswerReview(items = []) {
 
     row.append(status, title, answersText);
 
+    let reviewAudioControl = null;
     if (stateClass === "is-wrong") {
+      const audioButton = document.createElement("button");
+      audioButton.type = "button";
+      audioButton.className = "modal-review-audio-button";
+      audioButton.dataset.audioLabel = `Ascolta la spiegazione audio della domanda ${item.index}`;
+      setReviewAudioButtonState(audioButton, "idle");
+
       const explainIcon = document.createElement("img");
       explainIcon.className = "modal-review-explain-icon";
       explainIcon.src = "icons/explain_quiz.svg";
@@ -2171,7 +2300,12 @@ function renderAnswerReview(items = []) {
       explainIcon.setAttribute("aria-hidden", "true");
       explainIcon.loading = "lazy";
       explainIcon.decoding = "async";
-      row.appendChild(explainIcon);
+      audioButton.appendChild(explainIcon);
+      audioButton.addEventListener("click", event => {
+        event.stopPropagation();
+        toggleReviewAudio(audioButton, item);
+      });
+      reviewAudioControl = audioButton;
     }
 
     // Show question image if present
@@ -2179,12 +2313,19 @@ function renderAnswerReview(items = []) {
     const hasFig = figVal !== "" && figVal !== "0" && figVal !== "false" &&
                    figVal !== "null" && figVal !== "undefined";
     if (hasFig) {
+      row.classList.add("has-figure");
+      const figureShell = document.createElement("div");
+      figureShell.className = "modal-review-figure-shell";
       const img = document.createElement("img");
       img.className = "modal-review-img";
       img.alt = "";
       img.src = buildFigureImageUrl(item.figure);
       img.onerror = function () { this.remove(); };
-      row.appendChild(img);
+      figureShell.appendChild(img);
+      if (reviewAudioControl) figureShell.appendChild(reviewAudioControl);
+      row.appendChild(figureShell);
+    } else if (reviewAudioControl) {
+      row.appendChild(reviewAudioControl);
     }
 
     fragment.appendChild(row);

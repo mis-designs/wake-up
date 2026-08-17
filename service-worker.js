@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v93-explain-quiz-artwork";
+const CACHE_NAME = "magicbook-pwa-v94-review-audio-button";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -7,13 +7,13 @@ const STATIC_ASSETS = [
   "/magic-dictionary.css?v=1.2.2",
   "/screen-protection.css?v=1.1.0",
   "/homebg.css?v=3",
-  "/mystyle.css?v=40-explain-quiz-artwork",
+  "/mystyle.css?v=41-review-audio-button",
   "/script.js?v=46-promo-user-cap",
   "/study-quiz.html",
   "/study-quiz.css?v=15-anek-bangla-hero",
   "/study-quiz.js?v=13-automatic-translation-backup",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=60-explain-quiz-artwork",
+  "/quiz.js?v=61-review-audio-button",
   "/quiz-help.css?v=20260714-magic-help-v4",
   "/quiz-help.js?v=20260812-automatic-translation-backup",
   "/patenteGlossaryResolver.js?v=1.0.0",

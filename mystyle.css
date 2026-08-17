@@ -1049,22 +1049,63 @@ body.loading-open {
 
 .modal-review-item.is-wrong {
   border-left-color: var(--color-danger);
-  margin-right: 38px;
+}
+
+.modal-review-audio-button {
+  position: absolute;
+  top: 12px;
+  right: -9px;
+  z-index: 2;
+  width: clamp(68px, 18vw, 82px);
+  height: clamp(68px, 18vw, 82px);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.modal-review-item.is-wrong:not(.has-figure) {
+  padding-right: 82px;
+}
+
+.modal-review-figure-shell {
+  position: relative;
+  margin-top: 8px;
+}
+
+.modal-review-figure-shell .modal-review-audio-button {
+  top: 0;
+  right: -11px;
+  transform: translateY(-50%);
 }
 
 .modal-review-explain-icon {
-  position: absolute;
-  top: 50%;
-  right: -42px;
-  z-index: 1;
   display: block;
-  width: clamp(46px, 7vw, 58px);
-  height: clamp(46px, 7vw, 58px);
+  width: 100%;
+  height: 100%;
   object-fit: contain;
-  transform: translateY(-50%);
+  transform-origin: 50% 50%;
+  animation: quizAudioArtworkSpin 5s linear infinite;
+  animation-play-state: paused;
   filter: drop-shadow(0 7px 10px rgba(37, 41, 67, .16));
-  pointer-events: none;
   user-select: none;
+  pointer-events: none;
+}
+
+.modal-review-audio-button.is-playing .modal-review-explain-icon {
+  animation-play-state: running;
+}
+
+.modal-review-audio-button.is-loading .modal-review-explain-icon {
+  opacity: .65;
+}
+
+.modal-review-audio-button:focus-visible {
+  outline: 3px solid rgba(58, 78, 251, .75);
+  outline-offset: 2px;
 }
 
 .modal-review-status {
@@ -1134,6 +1175,10 @@ body.loading-open {
   margin-top: 8px;
   background: var(--color-white);
   border: 1.5px solid rgba(37, 41, 67, 0.07);
+}
+
+.modal-review-figure-shell .modal-review-img {
+  margin-top: 0;
 }
 
 .stat-card {
@@ -1748,7 +1793,8 @@ html[data-reader-size="xlarge"] #question { font-size: clamp(1.38rem, 3.9vw, 1.5
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .quiz-audio-artwork { animation: none; }
+  .quiz-audio-artwork,
+  .modal-review-explain-icon { animation: none; }
 }
 
 .explanation-btn {
