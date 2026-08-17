@@ -141,45 +141,25 @@ gtag('config', 'G-C5JPY9HFHD', {
     <div class="public-logo public-logo-dark">
       <strong>MagicBook</strong>
     </div>
-    <section class="promo-access-card" id="promoAccessCard" aria-labelledby="promoAccessTitle">
-      <span class="promo-access-glow" aria-hidden="true"></span>
-      <header class="promo-access-heading">
-        <span class="promo-access-kicker"><i aria-hidden="true"></i> ACCESSO PROMO · 5 GIORNI</span>
-        <h2 id="promoAccessTitle">Login con Promo Code</h2>
-        <p>Prendi il Promo Code dalle nostre pagine e dai gruppi WhatsApp!</p>
-      </header>
-
-      <div class="promo-access-countdown" data-promo-countdown role="timer" aria-label="Scadenza Promo Code in caricamento">
-        <div class="promo-countdown-heading">
-          <span>IL PROMO CODE CAMBIA TRA</span>
-          <b data-promo-state>Sincronizzazione…</b>
-        </div>
-        <div class="promo-countdown-units" aria-hidden="true">
-          <span><b data-promo-days>--</b><i>GIORNI</i></span>
-          <em>:</em>
-          <span><b data-promo-hours>--</b><i>ORE</i></span>
-          <em>:</em>
-          <span><b data-promo-minutes>--</b><i>MIN</i></span>
-          <em>:</em>
-          <span><b data-promo-seconds>--</b><i>SEC</i></span>
-        </div>
-        <span class="promo-countdown-progress" data-promo-progress style="--promo-progress:0%" aria-hidden="true"><i></i></span>
+    <section class="trial-card" aria-label="ম্যাজিকবুক ব্যবহার করে দেখুন">
+      <span class="trial-promo-burst" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+      <span class="trial-promo-gift" aria-hidden="true"><i class="gift-lid"></i><i class="gift-box"></i><i class="gift-ribbon"></i><i class="gift-bow gift-bow-left"></i><i class="gift-bow gift-bow-right"></i></span>
+      <span class="trial-card-copy is-bangla" id="trialPromoCopy" lang="bn"><small data-trial-copy="kicker">৭ দিন বিনামূল্যে</small><strong data-trial-copy="title">ম্যাজিক বই</strong></span>
+      <div class="trial-countdown" data-trial-digital role="timer" aria-label="168 ore, 0 minuti e 0 secondi">
+        <span class="trial-countdown-units" aria-hidden="true">
+          <span><b data-trial-hours>168</b><i>ORE</i></span><em>:</em><span><b data-trial-minutes>00</b><i>MINUTI</i></span><em>:</em><span><b data-trial-seconds>00</b><i>SECONDI</i></span>
+        </span>
+        <span class="trial-countdown-progress" data-trial-progress style="--trial-progress:100%" aria-hidden="true"><i></i></span>
       </div>
-
-      <form class="promo-access-form" data-nosnippet onsubmit="event.preventDefault(); loginFromPromoCard();">
-        <label class="sr-only" for="promoLandingPhone">Numero di telefono</label>
-        <input id="promoLandingPhone" type="tel" placeholder="Numero di telefono" aria-label="Numero di telefono" autocomplete="tel" inputmode="tel" aria-describedby="promoLandingError">
-        <label class="sr-only" for="promoLandingCode">Promo Code</label>
-        <input id="promoLandingCode" class="promo-access-code" type="text" placeholder="Inserisci il Promo Code" aria-label="Promo Code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="64" aria-describedby="promoLandingError">
-        <button class="promo-access-submit" type="submit" disabled><span>Entra con Promo Code</span><b aria-hidden="true">→</b></button>
-      </form>
-      <p class="promo-access-error" id="promoLandingError" data-nosnippet role="status" aria-live="polite"></p>
-
-      <nav class="promo-access-sources" aria-label="Dove trovare il Promo Code">
-        <span>NON HAI IL CODICE?</span>
-        <a href="https://www.facebook.com/TMMBanglaPatente/" target="_blank" rel="noopener noreferrer">Pagina Facebook</a>
-        <a href="https://chat.whatsapp.com/LBL1G7nvz2B3SThJj4uRxD" target="_blank" rel="noopener noreferrer">Gruppo WhatsApp</a>
-      </nav>
+      <div class="trial-chapter-actions" aria-label="Apri un capitolo gratuito">
+        <button class="trial-chapter-action is-chapter-one" type="button" onclick="startGuestTrial({ openChapter: 1 })" aria-label="Apri gratis il libro del capitolo 1">
+          <span class="trial-chapter-index" aria-hidden="true">01</span><span class="trial-chapter-details"><small>CAPITOLO 1</small><strong>Apri il libro</strong></span><span class="trial-chapter-status">GRATIS</span>
+        </button>
+        <button class="trial-chapter-action is-chapter-three" type="button" onclick="startGuestTrial({ openChapter: 3 })" aria-label="Apri gratis il libro del capitolo 3">
+          <span class="trial-chapter-index" aria-hidden="true">03</span><span class="trial-chapter-details"><small>CAPITOLO 3</small><strong>Apri il libro</strong></span><span class="trial-chapter-status">GRATIS</span>
+        </button>
+      </div>
+      <button class="trial-promo-cta" type="button" onclick="openTrialChapterPicker()"><span><small>LIBRO · AUDIO · QUIZ</small><strong>Scegli come iniziare</strong></span><b aria-hidden="true"></b></button>
     </section>
     <div class="landing-actions" aria-label="Scegli accesso">
       <button class="landing-choice glass-button is-highlight" type="button" onclick="showLoginScreen()" aria-label="Login">
@@ -202,10 +182,10 @@ gtag('config', 'G-C5JPY9HFHD', {
   <header class="trial-hub-header">
     <button type="button" onclick="showLandingScreen()" aria-label="Torna alla home">←</button>
     <div><small>FREE EXPERIENCE</small><h1 id="trialHubTitle">MagicBook Trial</h1></div>
-    <span class="trial-hub-timer"><b data-trial-countdown>96:00:00</b><small>ORE · MIN · SEC</small></span>
+    <span class="trial-hub-timer"><b data-trial-countdown>168:00:00</b><small>ORE · MIN · SEC</small></span>
   </header>
   <section class="trial-hub-hero">
-    <div><span>ACCESSO GRATUITO · 4 GIORNI</span><h2>Prova il metodo completo</h2><p>I capitoli 1 e 3 sono sbloccati con libro, audio e quiz.</p></div>
+    <div><span>ACCESSO GRATUITO · 7 GIORNI</span><h2>Prova il metodo completo</h2><p>I capitoli 1 e 3 sono sbloccati con libro, quiz e una selezione di audio.</p></div>
     <div class="trial-hub-progress"><b>2</b><span>capitoli aperti</span></div>
   </section>
   <section class="trial-hub-section">
@@ -215,8 +195,8 @@ gtag('config', 'G-C5JPY9HFHD', {
   <section class="trial-hub-section">
     <div class="trial-hub-section-title"><div><small>ALLENAMENTO</small><h2>Quiz ed esame</h2></div></div>
     <div class="trial-hub-tools">
-      <button class="is-open" type="button" onclick="startFreeTrial(1)"><span>✓</span><strong>Quiz Capitolo 1</strong><small>Gratis per 4 giorni</small></button>
-      <button class="is-open" type="button" onclick="startFreeTrial(3)"><span>✓</span><strong>Quiz Capitolo 3</strong><small>Gratis per 4 giorni</small></button>
+      <button class="is-open" type="button" onclick="startFreeTrial(1)"><span>✓</span><strong>Quiz Capitolo 1</strong><small>Gratis per 7 giorni</small></button>
+      <button class="is-open" type="button" onclick="startFreeTrial(3)"><span>✓</span><strong>Quiz Capitolo 3</strong><small>Gratis per 7 giorni</small></button>
       <button type="button" onclick="startTrialPreview('Exam 30')"><span>🔒</span><strong>Exam 30</strong><small>Preview 5 secondi</small></button>
       <button type="button" onclick="startTrialPreview('Exam 80')"><span>🔒</span><strong>Exam 80</strong><small>Preview 5 secondi</small></button>
       <button type="button" onclick="openTrialPaywall('Quiz Mix')"><span>🔒</span><strong>Quiz Mix</strong><small>Premium</small></button>
@@ -236,8 +216,8 @@ gtag('config', 'G-C5JPY9HFHD', {
     <h2 id="trialModalTitle">Scegli il tuo capitolo</h2>
     <p>Entra subito nel quiz. Nessun account e nessun accesso alle aree riservate.</p>
     <div class="trial-chapter-grid">
-      <article><small>PROVA GRATIS · 4 GIORNI</small><strong>Capitolo 1</strong><div><button type="button" onclick="startTrialBook(1)">Libro + audio</button><button type="button" onclick="startFreeTrial(1)">Fai il quiz →</button></div></article>
-      <article><small>PROVA GRATIS · 4 GIORNI</small><strong>Capitolo 3</strong><div><button type="button" onclick="startTrialBook(3)">Libro + audio</button><button type="button" onclick="startFreeTrial(3)">Fai il quiz →</button></div></article>
+      <article><small>PROVA GRATIS · 7 GIORNI</small><strong>Capitolo 1</strong><div><button type="button" onclick="startTrialBook(1)">Apri il libro</button><button type="button" onclick="startFreeTrial(1)">Fai il quiz →</button></div></article>
+      <article><small>PROVA GRATIS · 7 GIORNI</small><strong>Capitolo 3</strong><div><button type="button" onclick="startTrialBook(3)">Apri il libro</button><button type="button" onclick="startFreeTrial(3)">Fai il quiz →</button></div></article>
     </div>
     <div class="trial-locked-options" aria-label="Funzioni premium">
       <button type="button" onclick="openLockedTrialFeature('Quiz Mix')"><span>🔒</span> Quiz Mix</button>
@@ -592,9 +572,6 @@ gtag('config', 'G-C5JPY9HFHD', {
     <form class="login-form" data-nosnippet onsubmit="event.preventDefault(); login();">
       <label class="sr-only" for="user">Numero di telefono</label>
       <input id="user" type="tel" placeholder="Numero di telefono" aria-label="Numero di telefono" autocomplete="tel" inputmode="tel" aria-describedby="err">
-      <label class="sr-only" for="promoCode">Promo code facoltativo</label>
-      <input id="promoCode" class="login-promo-input" type="text" placeholder="Promo code (facoltativo)" aria-label="Promo code facoltativo" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="64" aria-describedby="promoCodeHint err">
-      <small id="promoCodeHint" class="promo-code-hint">Con un codice valido ricevi 5 giorni di accesso completo.</small>
       <button class="login-submit" type="submit" disabled>Continua</button>
     </form>
     <p id="err" data-nosnippet role="status" aria-live="polite"></p>
@@ -1098,6 +1075,6 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script src="patenteGlossaryResolver.js?v=1.0.0"></script>
 <script src="magic-dictionary.js?v=1.2.4"></script>
 <script src="screen-protection.js?v=1.2.0"></script>
-<script src="script.js?v=47-whats-new-popup"></script>
+<script src="script.js?v=48-free-trial-7d"></script>
 </body>
 </html>

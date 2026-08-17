@@ -79,7 +79,7 @@ test("Bengali audio prefers synchronized text and securely falls back to automat
   assert.match(helpSource, /fetchBengaliAudio\(question, cacheKey, \{ requireAudio: false \}\)/);
   assert.match(quizApi, /action === "getBengaliAudio" && !isExactCatalogQuestion\(questionId, text\)[\s\S]*?translation_content_forbidden/);
   assert.match(quizApi, /action === "getTTS" && !BENGALI_TEXT_PATTERN\.test/);
-  assert.match(trialApi, /action === "getBengaliAudio" && !payload\.ids\?\.includes\(questionId\)/);
+  assert.match(trialApi, /!payload\.audioIds\?\.includes\(questionId\)/);
   assert.match(trialApi, /action === "getTTS" && !BENGALI_TEXT_PATTERN\.test/);
   assert.match(trialApi, /quiz\.flatMap\(q => \[q\.question, q\.question_bd\]/);
   assert.match(helpSource, /buildQuizApiUrl\("getTTS", \{ text: cleanText \}\)/);

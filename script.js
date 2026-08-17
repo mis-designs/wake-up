@@ -13,8 +13,8 @@ const EXPLANATION_FIGURES_CACHE_KEY = "magicbook_explanation_figures_v1";
 const PROMO_CAMPAIGN_DURATION_MS = 5 * 24 * 60 * 60 * 1000;
 const FREE_TRIAL_CHAPTERS = Object.freeze([1, 3]);
 const FREE_TRIAL_CHAPTER_SET = new Set(FREE_TRIAL_CHAPTERS);
-const FREE_TRIAL_DURATION_MS = 4 * 24 * 60 * 60 * 1000;
-const FREE_TRIAL_POLICY_VERSION = "chapters-1-3-v1";
+const FREE_TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+const FREE_TRIAL_POLICY_VERSION = "chapters-1-3-audio-preview-v2";
 let applyingRouteFromHistory = false;
 
 function isFreeTrialChapter(chapter) {
@@ -89,9 +89,9 @@ function setAppRoute(state = {}, options = {}) {
 
 function getRouteStateFromLocation() {
   const path = normalizeRoutePath();
-  if (path === "/prova-gratis" || /^\/prova-gratis\/libro-(1|3)$/.test(path)) {
-    return { screen: "welcome" };
-  }
+  if (path === "/prova-gratis") return { screen: "trialHub" };
+  const trialBookMatch = path.match(/^\/prova-gratis\/libro-(1|3)$/);
+  if (trialBookMatch) return { screen: "trialBook", chapter: Number(trialBookMatch[1]) };
   const chapterMatch = path.match(/^\/magic-book\/capitolo-(\d{1,2})$/);
   if (chapterMatch) {
     return { screen: "viewer", chapter: clampChapter(Number(chapterMatch[1])) };
@@ -514,10 +514,9 @@ window.addEventListener("load", async () => {
   const wasReset = await forceGlobalAuthResetIfNeeded();
 
   setupLoginUI();
-  setupPromoLandingUI();
   setupProfileUI();
   setupAdminUI();
-  void setupPromoCampaign();
+  setupTrialMarketing();
 
   if (wasReset) {
     const publicRoute = getRouteStateFromLocation();
@@ -1546,7 +1545,7 @@ async function setupPromoCampaign() {
   }
 }
 
-const TRIAL_COUNTDOWN_KEY = "trial_offer_ends_at_v3";
+const TRIAL_COUNTDOWN_KEY = "trial_offer_ends_at_v4";
 let trialCountdownTimer = null;
 let trialPromoCopyTimer = null;
 let trialPromoCopySwapTimer = null;
@@ -1554,14 +1553,14 @@ let trialPromoCopySwapTimer = null;
 const TRIAL_PROMO_COPY = Object.freeze([
   Object.freeze({
     lang: "bn",
-    label: "৪ দিন বিনামূল্যে ম্যাজিক বই",
-    kicker: "৪ দিন বিনামূল্যে",
+    label: "৭ দিন বিনামূল্যে ম্যাজিক বই",
+    kicker: "৭ দিন বিনামূল্যে",
     title: "ম্যাজিক বই"
   }),
   Object.freeze({
     lang: "it",
     label: "Prova MagicBook gratis",
-    kicker: "4 GIORNI GRATIS",
+    kicker: "7 GIORNI GRATIS",
     title: "MagicBook"
   })
 ]);
@@ -1664,8 +1663,8 @@ function setupTrialMarketing(serverExpiresAt = 0) {
 }
 
 let trialGuestMode = false;
-const TRIAL_ONBOARDING_KEY = "magicbook_trial_onboarding_seen";
-const TRIAL_ONBOARDING_SKIP_KEY = "magicbook_trial_onboarding_skipped";
+const TRIAL_ONBOARDING_KEY = "magicbook_trial_onboarding_seen_v2";
+const TRIAL_ONBOARDING_SKIP_KEY = "magicbook_trial_onboarding_skipped_v2";
 let trialOnboardingStep = 0;
 
 function trialOnboardingStorageHas(key) {
@@ -1729,8 +1728,8 @@ function renderTrialOnboardingStep() {
   const text = document.getElementById("trialOnboardingText");
   const guide = document.getElementById("trialOnboarding");
   const content = [
-    ["Inizia dai capitoli gratuiti", "Il capitolo 1 è aperto: il badge verde FREE indica che libro, audio e quiz sono disponibili.", ".chapter-card[data-chapter='1']"],
-    ["Anche il capitolo 3 è gratuito", "Puoi studiare e fare il quiz anche dal capitolo 3. Tutti gli altri capitoli restano protetti.", ".chapter-card[data-chapter='3']"],
+    ["Inizia dai capitoli gratuiti", "Il capitolo 1 è aperto: libro e quiz sono disponibili, insieme a una selezione di audio demo.", ".chapter-card[data-chapter='1']"],
+    ["Anche il capitolo 3 è gratuito", "Puoi studiare e fare il quiz anche dal capitolo 3, con alcuni audio aperti e altri Premium.", ".chapter-card[data-chapter='3']"],
     ["Scegli la modalità Quiz", "Apri Quiz per vedere subito quali capitoli puoi usare: 01 e 03 sono verdi, gli altri sono grigi e bloccati.", "#quizButton"],
     ["Hai 2 prove Mix Quiz 786", `Il Mix Quiz 786 include ${Math.max(0, 2 - getTrialMixAttempts())} prove dimostrative. Il limite è indicato prima di iniziare.`, "#qmsCardMix"]
   ][trialOnboardingStep];
@@ -1773,17 +1772,44 @@ function neverShowTrialOnboarding() {
 
 function getTrialGuestCredentials() {
   try {
-    const policyVersion = sessionStorage.getItem("magicbook_trial_guest_policy") || "";
+    const read = key => localStorage.getItem(key) || sessionStorage.getItem(key) || "";
+    const policyVersion = read("magicbook_trial_guest_policy");
     const policyMatches = policyVersion === FREE_TRIAL_POLICY_VERSION;
-    return {
-      trialId: sessionStorage.getItem("magicbook_trial_id") || "",
-      guestKey: policyMatches ? sessionStorage.getItem("magicbook_trial_guest_key") || "" : "",
-      expiresAt: policyMatches ? Number(sessionStorage.getItem("magicbook_trial_guest_expires") || 0) : 0,
+    const credentials = {
+      trialId: read("magicbook_trial_id"),
+      guestKey: policyMatches ? read("magicbook_trial_guest_key") : "",
+      expiresAt: policyMatches ? Number(read("magicbook_trial_guest_expires") || 0) : 0,
       policyVersion
     };
+    if (credentials.guestKey) {
+      sessionStorage.setItem("magicbook_trial_id", credentials.trialId);
+      sessionStorage.setItem("magicbook_trial_guest_key", credentials.guestKey);
+      sessionStorage.setItem("magicbook_trial_guest_expires", String(credentials.expiresAt));
+      sessionStorage.setItem("magicbook_trial_guest_policy", credentials.policyVersion);
+    }
+    return credentials;
   } catch { return { trialId: "", guestKey: "", expiresAt: 0, policyVersion: "" }; }
 }
+
+function saveTrialGuestCredentials(credentials) {
+  const values = {
+    magicbook_trial_id: credentials.trialId,
+    magicbook_trial_guest_key: credentials.guestKey,
+    magicbook_trial_guest_expires: String(credentials.expiresAt),
+    magicbook_trial_guest_policy: FREE_TRIAL_POLICY_VERSION
+  };
+  Object.entries(values).forEach(([key, value]) => {
+    localStorage.setItem(key, value);
+    sessionStorage.setItem(key, value);
+  });
+}
+
 async function startGuestTrial(options = {}) {
+  const campaignEndsAt = Number(Storage.get(TRIAL_COUNTDOWN_KEY) || 0);
+  if (campaignEndsAt > 0 && campaignEndsAt <= Date.now()) {
+    openTrialPaywall("La prova gratuita di 7 giorni");
+    return false;
+  }
   let credentials = getTrialGuestCredentials();
   let trialId = credentials.trialId;
   if (!/^[a-zA-Z0-9_-]{16,80}$/.test(trialId)) trialId = `trial_${createDeviceId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
@@ -1794,13 +1820,10 @@ async function startGuestTrial(options = {}) {
       await showMessage("Prova gratuita", "Impossibile avviare la prova. Riprova tra poco.");
       return;
     }
-    sessionStorage.setItem("magicbook_trial_id", trialId);
-    sessionStorage.setItem("magicbook_trial_guest_key", data.guestKey);
-    sessionStorage.setItem("magicbook_trial_guest_expires", String(data.expiresAt));
-    sessionStorage.setItem("magicbook_trial_guest_policy", FREE_TRIAL_POLICY_VERSION);
     credentials = { trialId, guestKey: data.guestKey, expiresAt: Number(data.expiresAt), policyVersion: FREE_TRIAL_POLICY_VERSION };
+    saveTrialGuestCredentials(credentials);
   }
-  setupTrialMarketing(credentials.expiresAt);
+  setupTrialMarketing(Math.min(credentials.expiresAt, campaignEndsAt || credentials.expiresAt));
   trialGuestMode = true;
   selectedChapter = isFreeTrialChapter(selectedChapter) ? selectedChapter : FREE_TRIAL_CHAPTERS[0];
   showChapters();
@@ -5329,7 +5352,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-      .register("/service-worker.js?v=38-promo-campaign", { updateViaCache: "none" })
+      .register("/service-worker.js?v=39-free-trial-7d", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });

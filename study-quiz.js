@@ -5,7 +5,7 @@
   const API = TRIAL_MODE ? "/api/trial" : "/api/quiz";
   const HOME = TRIAL_MODE ? "/prova-gratis" : "/magic-book";
   const TRIAL_ALLOWED_CHAPTERS = new Set([1, 3]);
-  const TRIAL_POLICY_VERSION = "chapters-1-3-v1";
+  const TRIAL_POLICY_VERSION = "chapters-1-3-audio-preview-v2";
   const HELP_MANIFEST_SOURCE = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const LOCAL_HELP_SOURCE = "/data/patente/quiz-help-runtime-v2.json";
   const STUDY_HISTORY_KEY = "magicph-study-history-v1";
@@ -135,7 +135,7 @@
   if (TRIAL_MODE) {
     const headerKicker = document.querySelector(".study-heading small");
     const practiceLink = document.querySelector(".study-practice-link");
-    if (headerKicker) headerKicker.textContent = "PROVA GRATUITA · 4 GIORNI";
+    if (headerKicker) headerKicker.textContent = "PROVA GRATUITA · 7 GIORNI";
     if (practiceLink) practiceLink.href = "/quiz/prova-gratis?chapter=1";
   }
 
@@ -318,7 +318,7 @@
     elements.chapters.classList.remove("hidden");
     elements.title.textContent = "Studia quiz";
     elements.subtitle.textContent = TRIAL_MODE
-      ? "Capitoli 1 e 3 gratuiti per quattro giorni."
+      ? "Capitoli 1 e 3 gratuiti per sette giorni, con una selezione di audio."
       : "Scegli un capitolo e studia tutte le domande.";
     renderStudyIntro();
     document.title = "MagicBook | Studia quiz";
@@ -497,13 +497,28 @@
 
     const actions = document.createElement("div");
     actions.className = "study-actions";
+    const trialAudioAvailable = !TRIAL_MODE || question.trialAudioPreview === true;
     const italian = actionButton("study-action-italian", "Italiano", "audio-action");
-    italian.setAttribute("aria-label", `Ascolta in italiano la domanda ${index + 1}`);
-    italian.addEventListener("click", () => playTts(question, "it", italian, card));
+    italian.classList.toggle("is-trial-preview", TRIAL_MODE && trialAudioAvailable);
+    italian.classList.toggle("is-trial-locked", TRIAL_MODE && !trialAudioAvailable);
+    italian.setAttribute("aria-label", trialAudioAvailable
+      ? `Ascolta in italiano la domanda ${index + 1}`
+      : `Audio italiano Premium per la domanda ${index + 1}`);
+    italian.addEventListener("click", () => {
+      if (!trialAudioAvailable) window.location.href = trialOfferUrl("Audio italiano completo");
+      else playTts(question, "it", italian, card);
+    });
     const bangla = actionButton("study-action-bangla", "বাংলা", "audio-action");
     bangla.lang = "bn";
-    bangla.setAttribute("aria-label", `Ascolta in bengali la domanda ${index + 1}`);
-    bangla.addEventListener("click", () => playTts(question, "bn", bangla, card));
+    bangla.classList.toggle("is-trial-preview", TRIAL_MODE && trialAudioAvailable);
+    bangla.classList.toggle("is-trial-locked", TRIAL_MODE && !trialAudioAvailable);
+    bangla.setAttribute("aria-label", trialAudioAvailable
+      ? `Ascolta in bengali la domanda ${index + 1}`
+      : `Audio Bengali Premium per la domanda ${index + 1}`);
+    bangla.addEventListener("click", () => {
+      if (!trialAudioAvailable) window.location.href = trialOfferUrl("Audio Bengali completo");
+      else playTts(question, "bn", bangla, card);
+    });
     const explanation = createExplanationPlayer(question, index);
     const lockedExplanation = TRIAL_MODE
       ? actionButton("study-action-locked", "Spiegazione audio Premium", "🔒")
@@ -949,6 +964,10 @@
   }
 
   async function playTts(question, language, button, card) {
+    if (TRIAL_MODE && question.trialAudioPreview !== true) {
+      window.location.href = trialOfferUrl(language === "bn" ? "Audio Bengali completo" : "Audio italiano completo");
+      return;
+    }
     wordTtsRequestId += 1;
     const key = `${language}:${question.id || fingerprint(question)}`;
     if (activePlayback?.key === key) {

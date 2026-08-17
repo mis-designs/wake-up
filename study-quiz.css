@@ -66,6 +66,9 @@ body.study-trial-mode .study-header{border-bottom-color:rgba(217,155,22,.35);box
 .study-chapter.is-trial-locked:hover,.study-chapter.is-trial-locked:focus-visible{border-color:#e0a52b;background:#fff8e6;filter:saturate(.7)}
 .study-chapter.is-trial-locked .study-chapter-arrow{font-size:1rem}
 .study-action-locked{border-style:dashed;border-color:#d9a526;background:#fff8e5;color:#76520b}
+.study-action.is-trial-preview{border-color:#42bb75;background:#edfff4;color:#08743a}
+.study-action.is-trial-locked{border-style:dashed;border-color:#d9a526;background:#f3f1ec;color:#76520b;filter:saturate(.45)}
+.study-action.is-trial-locked .study-action-icon::after{content:"🔒";font-size:.7rem}
 
 .study-reader-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(230px, 340px); gap: 22px; align-items: end; margin-bottom: 20px; }
 .study-reader-toolbar > div > span { color: var(--purple); }

@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v95-whats-new-popup";
+const CACHE_NAME = "magicbook-pwa-v96-free-trial-7d";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -7,13 +7,13 @@ const STATIC_ASSETS = [
   "/magic-dictionary.css?v=1.2.2",
   "/screen-protection.css?v=1.1.0",
   "/homebg.css?v=3",
-  "/mystyle.css?v=41-review-audio-button",
-  "/script.js?v=47-whats-new-popup",
+  "/mystyle.css?v=42-trial-audio-preview",
+  "/script.js?v=48-free-trial-7d",
   "/study-quiz.html",
-  "/study-quiz.css?v=15-anek-bangla-hero",
-  "/study-quiz.js?v=13-automatic-translation-backup",
+  "/study-quiz.css?v=16-trial-audio-preview",
+  "/study-quiz.js?v=14-trial-audio-preview",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=61-review-audio-button",
+  "/quiz.js?v=62-trial-audio-preview",
   "/quiz-help.css?v=20260714-magic-help-v4",
   "/quiz-help.js?v=20260812-automatic-translation-backup",
   "/patenteGlossaryResolver.js?v=1.0.0",

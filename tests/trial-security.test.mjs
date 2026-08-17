@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { hasOnlyIssuedTrialQuestions, isAllowedTrialChapter, isAllowedTrialService } from "../api/trial.js";
+import { hasOnlyIssuedTrialQuestions, hasTrialAudioPreview, isAllowedTrialChapter, isAllowedTrialService } from "../api/trial.js";
 import {
   createGuestTrialToken,
   GUEST_TRIAL_ENABLED,
@@ -30,30 +30,23 @@ test("legacy grading accepts only IDs issued in its signed quiz", () => {
   assert.equal(hasOnlyIssuedTrialQuestions([{ id: "q2-a", answer: 7 }], ids), false);
 });
 
-test("the public landing replaces the guest trial with promo-code login", () => {
+test("the public landing offers the seven-day trial without promo-code fields", () => {
   const page = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   const main = readFileSync(new URL("../script.js", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../style.css", import.meta.url), "utf8");
   const landing = page.match(/<main class="public-landing[\s\S]*?<\/main>/)?.[0] || "";
 
-  assert.match(landing, /class="promo-access-card"/);
-  assert.match(landing, /Login con Promo Code/);
-  assert.match(landing, /Prendi il Promo Code dalle nostre pagine e dai gruppi WhatsApp!/);
-  assert.match(landing, /id="promoLandingPhone"[\s\S]*?id="promoLandingCode"/);
-  assert.match(landing, /data-promo-days[\s\S]*?data-promo-hours[\s\S]*?data-promo-minutes[\s\S]*?data-promo-seconds/);
-  assert.match(landing, /facebook\.com\/TMMBanglaPatente/);
-  assert.match(landing, /chat\.whatsapp\.com\/LBL1G7nvz2B3SThJj4uRxD/);
-  assert.doesNotMatch(landing, /class="trial-card"|startGuestTrial/);
-  assert.match(main, /PROMO_STATUS_API = "\/api\/promo-status"/);
-  assert.match(main, /function setupPromoCampaign/);
-  assert.match(main, /remaining \/ PROMO_CAMPAIGN_DURATION_MS \* 100/);
-  assert.match(styles, /PROMO CODE ACCESS/);
-  assert.match(styles, /--promo-teal: #0A8270/);
-  assert.match(styles, /--promo-lime: #7CFF6B/);
-  assert.match(styles, /prefers-reduced-motion: reduce[\s\S]*?promo-access-card/);
+  assert.match(landing, /class="trial-card"/);
+  assert.match(landing, /data-trial-hours>168</);
+  assert.match(landing, /startGuestTrial\(\{ openChapter: 1 \}\)[\s\S]*?startGuestTrial\(\{ openChapter: 3 \}\)/);
+  assert.doesNotMatch(landing, /promo-access-card|promoLandingPhone|promoLandingCode|Login con Promo Code/);
+  assert.doesNotMatch(page, /id="promoCode"|promo-code-hint/);
+  assert.match(main, /FREE_TRIAL_DURATION_MS = 7 \* 24 \* 60 \* 60 \* 1000/);
+  assert.match(main, /setupTrialMarketing\(\);/);
+  assert.match(styles, /\.trial-card/);
 });
 
-test("the former guest trial cannot issue or consume access", () => {
+test("the guest trial can issue and consume restricted access", () => {
   const secret = "test-secret";
   const trialId = "trial_device_123456789";
   const issued = createGuestTrialToken(trialId, secret);
@@ -62,10 +55,25 @@ test("the former guest trial cannot issue or consume access", () => {
   const bookApi = readFileSync(new URL("../api/trialBook.js", import.meta.url), "utf8");
   const main = readFileSync(new URL("../script.js", import.meta.url), "utf8");
 
-  assert.equal(GUEST_TRIAL_ENABLED, false);
-  assert.equal(verifyGuestTrialToken(issued.token, trialId, secret), null);
+  assert.equal(GUEST_TRIAL_ENABLED, true);
+  assert.equal(verifyGuestTrialToken(issued.token, trialId, secret)?.trialId, trialId);
   assert.match(accessApi, /if \(!GUEST_TRIAL_ENABLED\) return res\.status\(410\)/);
   assert.match(quizApi, /if \(!GUEST_TRIAL_ENABLED\) return res\.status\(410\)/);
   assert.match(bookApi, /if \(!GUEST_TRIAL_ENABLED\) return res\.status\(410\)/);
-  assert.match(main, /path === "\/prova-gratis"[\s\S]*?return \{ screen: "welcome" \}/);
+  assert.match(main, /path === "\/prova-gratis"\) return \{ screen: "trialHub" \}/);
+});
+
+test("trial audio is a deterministic preview enforced by server and clients", () => {
+  const quizApi = readFileSync(new URL("../api/trial.js", import.meta.url), "utf8");
+  const quizClient = readFileSync(new URL("../quiz.js", import.meta.url), "utf8");
+  const studyClient = readFileSync(new URL("../study-quiz.js", import.meta.url), "utf8");
+
+  assert.equal(hasTrialAudioPreview(0), true);
+  assert.equal(hasTrialAudioPreview(1), false);
+  assert.equal(hasTrialAudioPreview(2), false);
+  assert.equal(hasTrialAudioPreview(3), true);
+  assert.match(quizApi, /audioIds: quiz\.filter\(q => q\.trialAudioPreview\)/);
+  assert.match(quizApi, /payload\.audioIds\?\.includes\(questionId\)/);
+  assert.match(quizClient, /question\?\.trialAudioPreview === true/);
+  assert.match(studyClient, /question\.trialAudioPreview !== true/);
 });

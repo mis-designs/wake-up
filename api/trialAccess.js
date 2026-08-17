@@ -1,8 +1,8 @@
 import crypto from "crypto";
 
 const SESSION_SECRET = process.env.SESSION_SECRET;
-export const GUEST_TRIAL_ENABLED = false;
-export const GUEST_TRIAL_DURATION_MS = 4 * 24 * 60 * 60 * 1000;
+export const GUEST_TRIAL_ENABLED = true;
+export const GUEST_TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 export const GUEST_TRIAL_CHAPTERS = Object.freeze([1, 3]);
 
 function signature(encoded, secret = SESSION_SECRET) {

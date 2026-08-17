@@ -191,16 +191,14 @@ test("promo backend setup failures are normalized without leaking internal error
   assert.match(scriptSource, /Servizio promozionale momentaneamente non disponibile/);
 });
 
-test("login presents phone first and optional promo code second", () => {
+test("login temporarily presents phone without promo-code controls", () => {
   const phoneIndex = pageSource.indexOf('id="user"');
-  const promoIndex = pageSource.indexOf('id="promoCode"');
   assert.ok(phoneIndex > 0);
-  assert.ok(promoIndex > phoneIndex);
-  assert.match(pageSource, /Con un codice valido ricevi 5 giorni di accesso completo/);
+  assert.doesNotMatch(pageSource, /id="promoCode"|promo-code-hint/);
 });
 
-test("landing promo login requires phone and promo code without exposing environment values", () => {
-  assert.ok(pageSource.indexOf('id="promoLandingCode"') > pageSource.indexOf('id="promoLandingPhone"'));
-  assert.match(pageSource, /loginFromPromoCard\(\)/);
+test("landing hides expired promo controls without exposing environment values", () => {
+  assert.doesNotMatch(pageSource, /id="promoLandingCode"|id="promoLandingPhone"|loginFromPromoCard\(\)/);
+  assert.match(pageSource, /class="trial-card"/);
   assert.doesNotMatch(pageSource, /PROMO_CODE_5_DAYS|PROMO_CODE_5_DAYS_EXPIRES_AT/);
 });

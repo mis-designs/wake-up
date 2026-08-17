@@ -30,10 +30,8 @@ test("login fills the upper space with restrained multilingual greetings", () =>
   assert.match(styles, /prefers-reduced-motion: reduce[\s\S]*?login-greeting-cloud/);
 });
 
-test("login shows phone first and a visually distinct optional promo code", () => {
-  assert.ok(page.indexOf('id="promoCode"') > page.indexOf('id="user"'));
-  assert.match(styles, /#login \.login-promo-input[\s\S]*?border-style: dashed/);
-  assert.match(styles, /#login \.promo-code-hint/);
+test("login temporarily hides the expired promo-code controls", () => {
+  assert.ok(page.indexOf('id="user"') > 0);
+  assert.doesNotMatch(page, /id="promoCode"|promo-code-hint/);
   assert.match(script, /promoCode: promoCode \|\| undefined/);
-  assert.match(script, /promoGranted[\s\S]*?5 giorni di accesso completo/);
 });

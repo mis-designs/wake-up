@@ -11,8 +11,8 @@ const iconUrl = new URL("../icons/explain_quiz.svg", import.meta.url);
 test("explanation artwork is rendered beside the shared audio player", () => {
   assert.equal(existsSync(iconUrl), true);
   assert.match(html, /id="quiz-audio-artwork"[^>]+src="icons\/explain_quiz\.svg"/u);
-  assert.match(html, /mystyle\.css\?v=41-review-audio-button/u);
-  assert.match(html, /quiz\.js\?v=61-review-audio-button/u);
+  assert.match(html, /mystyle\.css\?v=42-trial-audio-preview/u);
+  assert.match(html, /quiz\.js\?v=62-trial-audio-preview/u);
   assert.match(worker, /\/icons\/explain_quiz\.svg/u);
 });
 

@@ -34,6 +34,10 @@ export function isAllowedTrialService(action) {
   return TRIAL_SERVICE_ACTIONS.has(String(action || ""));
 }
 
+export function hasTrialAudioPreview(index) {
+  return Number(index) % 3 === 0;
+}
+
 function textHash(value) {
   return crypto.createHash("sha256").update(String(value || "").trim()).digest("base64url");
 }
@@ -121,8 +125,9 @@ export default async function handler(req, res) {
       const quiz = sourceRows
         .filter(question => String(question?.chapter ?? "").trim() === chapter)
         .slice(0, isStudyMode ? sourceRows.length : 30)
-        .map(({ id, chapter: rowChapter, question, figure, question_bd, explanations, correct }) => ({
+        .map(({ id, chapter: rowChapter, question, figure, question_bd, explanations, correct }, index) => ({
           ...applyCuratedQuizTranslation({ id, chapter: rowChapter, question, figure, question_bd, explanations }),
+          trialAudioPreview: hasTrialAudioPreview(index),
           ...(isStudyMode ? { correct } : {})
         }));
       if (!quiz.length) return res.status(502).json({ error: "invalid_quiz_response" });
@@ -132,6 +137,7 @@ export default async function handler(req, res) {
         trialId,
         chapter,
         ids: quiz.map(q => String(q.id)),
+        audioIds: quiz.filter(q => q.trialAudioPreview).map(q => String(q.id)),
         textHashes: [...new Set(quiz.flatMap(q => [q.question, q.question_bd]
           .filter(Boolean)
           .map(textHash)))],
@@ -154,7 +160,7 @@ export default async function handler(req, res) {
       if (!isAllowedTrialChapter(payload.chapter) || !text || text.length > 500 || !payload.textHashes?.includes(textHash(text))) {
         return res.status(403).json({ error: "trial_content_forbidden" });
       }
-      if (action === "getBengaliAudio" && !payload.ids?.includes(questionId)) {
+      if (!questionId || !payload.audioIds?.includes(questionId)) {
         return res.status(403).json({ error: "trial_content_forbidden" });
       }
       if (action === "getTTS" && !BENGALI_TEXT_PATTERN.test(text)) {

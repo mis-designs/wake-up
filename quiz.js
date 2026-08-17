@@ -1336,7 +1336,26 @@ function stopAllAudio() {
   banglaAudioBtn?.classList.remove("is-playing", "is-loading");
 }
 
-async function fetchItalianAudio(text, cacheKey) {
+function hasTrialAudioPreview(question = quiz[current]) {
+  return !TRIAL_MODE || question?.trialAudioPreview === true;
+}
+
+function openTrialAudioOffer(language = "Audio") {
+  window.location.href = `${TRIAL_HOME_ROUTE}&feature=${encodeURIComponent(`${language} completo`)}`;
+}
+
+function updateTrialAudioButtons(question) {
+  if (!TRIAL_MODE) return;
+  const available = hasTrialAudioPreview(question);
+  [italianAudioBtn, banglaAudioBtn].forEach(button => {
+    button?.classList.toggle("is-trial-preview", available);
+    button?.classList.toggle("is-trial-locked", !available);
+  });
+  italianAudioBtn?.setAttribute("aria-label", available ? "Ascolta l’anteprima in italiano" : "Audio italiano Premium");
+  banglaAudioBtn?.setAttribute("aria-label", available ? "Ascolta l’anteprima in Bengali" : "Audio Bengali Premium");
+}
+
+async function fetchItalianAudio(text, cacheKey, questionId) {
   if (italianAudioCache[cacheKey]) return italianAudioCache[cacheKey];
 
   const controller = new AbortController();
@@ -1344,7 +1363,7 @@ async function fetchItalianAudio(text, cacheKey) {
 
   try {
     const res = await fetchQuizJson(
-      buildQuizApiUrl("getItalianAudio", { text }),
+      buildQuizApiUrl("getItalianAudio", { text, questionId: String(questionId || "") }),
       { signal: controller.signal }
     );
     clearTimeout(timeoutId);
@@ -1362,6 +1381,10 @@ function speakItalian() {
   if (!quiz.length) return;
   const q = quiz[current];
   if (!q || !q.question) return;
+  if (!hasTrialAudioPreview(q)) {
+    openTrialAudioOffer("Audio italiano");
+    return;
+  }
 
   if (isTtsPlaying) {
     stopAllAudio();
@@ -1374,7 +1397,7 @@ function speakItalian() {
 
   const cacheKey = String(q.id || current) + "_it";
 
-  fetchItalianAudio(q.question, cacheKey)
+  fetchItalianAudio(q.question, cacheKey, q.id)
     .then(data => {
       if (italianAudioId !== myId) return;
       italianAudioBtn?.classList.remove("is-loading");
@@ -1478,6 +1501,10 @@ function playBanglaAudio() {
   if (!quiz.length) return;
   const q = quiz[current];
   if (!q || !q.question) return;
+  if (!hasTrialAudioPreview(q)) {
+    openTrialAudioOffer("Audio Bengali");
+    return;
+  }
 
   if (isBengaliPlaying) {
     stopAllAudio();
@@ -2290,6 +2317,7 @@ function renderAnswerReview(items = []) {
       const audioButton = document.createElement("button");
       audioButton.type = "button";
       audioButton.className = "modal-review-audio-button";
+      audioButton.classList.toggle("is-trial-locked", TRIAL_MODE);
       audioButton.dataset.audioLabel = `Ascolta la spiegazione audio della domanda ${item.index}`;
       setReviewAudioButtonState(audioButton, "idle");
 
@@ -2303,7 +2331,8 @@ function renderAnswerReview(items = []) {
       audioButton.appendChild(explainIcon);
       audioButton.addEventListener("click", event => {
         event.stopPropagation();
-        toggleReviewAudio(audioButton, item);
+        if (TRIAL_MODE) openTrialAudioOffer("Spiegazioni audio");
+        else toggleReviewAudio(audioButton, item);
       });
       reviewAudioControl = audioButton;
     }
@@ -2443,6 +2472,7 @@ function showQuestion() {
   const falsoBtn = document.getElementById("falso");
   document.getElementById("question").innerText = q.question;
   updateProgressBar();
+  updateTrialAudioButtons(q);
 
   loadQuizImage(q);
   updateExplanationButton(q);
