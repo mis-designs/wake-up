@@ -77,3 +77,13 @@ test("trial audio is a deterministic preview enforced by server and clients", ()
   assert.match(quizClient, /question\?\.trialAudioPreview === true/);
   assert.match(studyClient, /question\.trialAudioPreview !== true/);
 });
+
+test("trial controls stay inside their mobile cards", () => {
+  const styles = readFileSync(new URL("../style.css", import.meta.url), "utf8");
+
+  assert.match(styles, /\.trial-promo-cta\{[\s\S]*?grid-template-columns:minmax\(0,1fr\) 42px/);
+  assert.match(styles, /\.trial-promo-cta>span\{[\s\S]*?min-width:0[\s\S]*?overflow:hidden/);
+  assert.match(styles, /body\.guest-trial-mode #qmsCapPills\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,72px\)\)/);
+  assert.match(styles, /#qmsCapPills \.qms-pill\.guest-qms-locked\{display:none\}/);
+  assert.match(styles, /\.qms-body \{[\s\S]*?overflow-x: hidden/);
+});
