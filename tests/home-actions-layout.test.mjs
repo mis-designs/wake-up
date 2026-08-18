@@ -13,10 +13,12 @@ test("desktop home actions sit beside the promotion without changing mobile layo
     /@media \(min-width: 821px\)\s*\{[\s\S]*?body\.app-mode #home:not\(\.hidden\)[\s\S]*?flex-direction:\s*row;/u
   );
   assert.match(styles, /body\.app-mode #home > \.home-promo-shell,\s*body\.app-mode #home > \.home-actions/u);
+  assert.match(styles, /body\.app-mode #home \.home-promo-shell\s*\{\s*width:\s*min\(100%, 52dvh, 410px\);/u);
+  assert.match(styles, /body\.app-mode #home > \.home-actions\s*\{\s*width:\s*min\(520px, 49vw\);/u);
 });
 
 test("the desktop home layout ships in a fresh PWA build", () => {
-  assert.match(page, /style\.css\?v=53-home-actions-beside-promo/u);
-  assert.match(worker, /magicbook-pwa-v101-home-actions-beside-promo/u);
-  assert.match(worker, /style\.css\?v=53-home-actions-beside-promo/u);
+  assert.match(page, /style\.css\?v=54-large-promo-green-open/u);
+  assert.match(worker, /magicbook-pwa-v102-large-promo-green-open/u);
+  assert.match(worker, /style\.css\?v=54-large-promo-green-open/u);
 });

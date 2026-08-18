@@ -1,9 +1,9 @@
-const CACHE_NAME = "magicbook-pwa-v101-home-actions-beside-promo";
+const CACHE_NAME = "magicbook-pwa-v102-large-promo-green-open";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
-  "/style.css?v=53-home-actions-beside-promo",
+  "/style.css?v=54-large-promo-green-open",
   "/magic-dictionary.css?v=1.2.2",
   "/screen-protection.css?v=1.1.0",
   "/homebg.css?v=3",
