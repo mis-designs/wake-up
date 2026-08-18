@@ -1929,26 +1929,27 @@ function stopResultVideo() {
   modalResultVideo.currentTime = 0;
 }
 
-function setModalVideo(videoSrc, fallbackIconSrc, fallbackText) {
+function setModalVideo(videoSrc, fallbackIconSrc, fallbackText, muted = false) {
   if (!modalResultVideo || !videoSrc) {
     setModalIcon(fallbackIconSrc, fallbackText);
     return;
   }
 
+  const shouldMute = muted === true;
   modalIcon.classList.add("hidden");
   modalIconFallback.classList.add("hidden");
   modalResultVideo.src = videoSrc;
   modalResultVideo.classList.remove("hidden");
   modalResultVideo.currentTime = 0;
   modalResultVideo.loop = true;
-  modalResultVideo.muted = false;
-  modalResultVideo.volume = 1;
+  modalResultVideo.muted = shouldMute;
+  modalResultVideo.volume = shouldMute ? 0 : 1;
   modalIconShell.setAttribute("role", "button");
   modalIconShell.setAttribute("tabindex", "0");
   modalIconShell.setAttribute("aria-label", "Riproduci video risultato");
   modalIconShell.onclick = () => {
-    modalResultVideo.muted = false;
-    modalResultVideo.volume = 1;
+    modalResultVideo.muted = shouldMute;
+    modalResultVideo.volume = shouldMute ? 0 : 1;
     modalResultVideo.play().catch(() => {});
   };
   modalResultVideo.onerror = () => {
@@ -1956,7 +1957,8 @@ function setModalVideo(videoSrc, fallbackIconSrc, fallbackText) {
     setModalIcon(fallbackIconSrc, fallbackText);
   };
   modalResultVideo.play().catch(() => {
-    modalResultVideo.muted = false;
+    modalResultVideo.muted = shouldMute;
+    modalResultVideo.volume = shouldMute ? 0 : 1;
   });
 }
 
@@ -2016,7 +2018,8 @@ function openModal({
     setModalVideo(
       isPassed ? RESULT_VIDEO_SOURCES.pass : RESULT_VIDEO_SOURCES.fail,
       isPassed ? "icons/promosso.png" : "icons/bocciato.png",
-      isPassed ? "OK" : "X"
+      isPassed ? "OK" : "X",
+      !isPassed
     );
 
     // In exam mode, starting again must draw a new randomized exam.

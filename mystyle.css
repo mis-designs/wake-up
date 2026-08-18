@@ -651,6 +651,11 @@ body.loading-open {
   transform: scale(1.05);
 }
 
+#vero.selected .answer-label,
+#falso.selected .answer-label {
+  color: var(--color-dark);
+}
+
 .controls button.tap-feedback {
   animation: buttonNudge 0.22s ease;
 }

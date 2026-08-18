@@ -20,7 +20,7 @@ test("the MagicBook image reveals an OPEN cue on hover and keyboard focus", () =
 });
 
 test("the OPEN cue ships in a fresh PWA cache", () => {
-  assert.match(index, /style\.css\?v=52-qms-desktop-fix/u);
-  assert.match(worker, /magicbook-pwa-v98-qms-desktop-fix/u);
-  assert.match(worker, /style\.css\?v=52-qms-desktop-fix/u);
+  assert.match(index, /style\.css\?v=53-home-actions-beside-promo/u);
+  assert.match(worker, /magicbook-pwa-v101-home-actions-beside-promo/u);
+  assert.match(worker, /style\.css\?v=53-home-actions-beside-promo/u);
 });

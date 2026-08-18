@@ -1,19 +1,19 @@
-const CACHE_NAME = "magicbook-pwa-v98-qms-desktop-fix";
+const CACHE_NAME = "magicbook-pwa-v101-home-actions-beside-promo";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
-  "/style.css?v=52-qms-desktop-fix",
+  "/style.css?v=53-home-actions-beside-promo",
   "/magic-dictionary.css?v=1.2.2",
   "/screen-protection.css?v=1.1.0",
   "/homebg.css?v=3",
-  "/mystyle.css?v=42-trial-audio-preview",
+  "/mystyle.css?v=43-answer-label-contrast",
   "/script.js?v=48-free-trial-7d",
   "/study-quiz.html",
   "/study-quiz.css?v=16-trial-audio-preview",
   "/study-quiz.js?v=14-trial-audio-preview",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=62-trial-audio-preview",
+  "/quiz.js?v=63-fail-video-muted",
   "/quiz-help.css?v=20260714-magic-help-v4",
   "/quiz-help.js?v=20260812-automatic-translation-backup",
   "/patenteGlossaryResolver.js?v=1.0.0",

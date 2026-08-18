@@ -5289,6 +5289,24 @@ body.app-mode #home .watermark-link {
     font-size: 10px;
 }
 
+@media (min-width: 821px) {
+    body.app-mode #home:not(.hidden) {
+        flex-direction: row;
+        gap: clamp(28px, 4vw, 68px);
+    }
+
+    body.app-mode #home > .home-promo-shell,
+    body.app-mode #home > .home-actions {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    body.app-mode #home > .home-actions {
+        width: min(390px, 42vw);
+        max-width: 390px;
+    }
+}
+
 body.app-mode .lesson-card {
     height: calc(100dvh - 60px);
     min-height: 0;
