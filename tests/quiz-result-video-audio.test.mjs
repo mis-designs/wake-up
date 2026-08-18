@@ -18,6 +18,6 @@ test("the failed-result video stays muted while the passed-result video keeps it
 
 test("the muted failed-result behavior ships in a fresh PWA build", () => {
   assert.match(page, /quiz\.js\?v=63-fail-video-muted/u);
-  assert.match(worker, /magicbook-pwa-v102-large-promo-green-open/u);
+  assert.match(worker, /magicbook-pwa-v103-pro-gradient-open/u);
   assert.match(worker, /quiz\.js\?v=63-fail-video-muted/u);
 });

@@ -3543,15 +3543,20 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     grid-template-columns: minmax(0, 1.18fr) minmax(82px, 0.82fr);
     align-items: stretch;
     gap: 10px;
-    padding: 4px 16px 4px 4px;
-    border: 5px solid #08792c;
-    border-radius: 28px;
-    background: #00c83d;
+    padding: 7px 15px 7px 7px;
+    border: 1px solid rgba(3, 67, 55, 0.56);
+    border-radius: 30px;
+    background:
+        radial-gradient(circle at 18% -24%, rgba(205, 255, 126, 0.4), transparent 44%),
+        radial-gradient(circle at 92% 115%, rgba(144, 213, 54, 0.34), transparent 42%),
+        linear-gradient(128deg, #063f36 0%, #087a60 40%, #10a56d 69%, #65bf49 100%);
     box-shadow:
-        0 16px 30px rgba(0, 115, 42, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+        0 22px 46px rgba(5, 91, 67, 0.26),
+        0 7px 18px rgba(12, 143, 91, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.36),
+        inset 0 -1px 0 rgba(2, 52, 43, 0.32);
     isolation: isolate;
-    animation: startRecall 1.8s ease-in-out infinite;
+    animation: startRecall 5s ease-in-out infinite;
 }
 
 #home .home-start-btn::before,
@@ -3565,29 +3570,39 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
 
 #home .home-start-btn::before {
     z-index: -1;
-    background: radial-gradient(circle, rgba(0, 200, 61, 0.34), rgba(8, 121, 44, 0.14) 48%, transparent 74%);
-    filter: blur(5px);
-    opacity: 0.8;
-    animation: startGlow 1.8s ease-in-out infinite;
+    inset: -13px;
+    border-radius: 38px;
+    background: radial-gradient(ellipse at 50% 76%, rgba(28, 181, 113, 0.34), rgba(105, 199, 67, 0.12) 48%, transparent 74%);
+    filter: blur(12px);
+    opacity: 0.42;
+    animation: startGlow 5s ease-in-out infinite;
 }
 
 #home .home-start-btn::after {
     z-index: 1;
-    border: 2px solid rgba(255, 255, 255, 0.72);
-    opacity: 0;
-    animation: startRing 1.8s ease-out infinite;
+    inset: 1px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 28px;
+    background: linear-gradient(118deg, rgba(255, 255, 255, 0.17), transparent 30%, transparent 69%, rgba(209, 255, 121, 0.12));
+    opacity: 1;
+    animation: none;
 }
 
 #home .home-start-btn img {
+    position: relative;
+    z-index: 3;
     display: block;
     width: 100%;
     height: 100%;
     min-height: 0;
     margin: 0;
-    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.82);
+    border-radius: 23px;
     background: #ffffff;
     object-fit: cover;
-    box-shadow: inset 0 0 0 1px rgba(8, 121, 44, 0.08);
+    box-shadow:
+        0 11px 26px rgba(3, 57, 49, 0.2),
+        inset 0 0 0 1px rgba(8, 121, 44, 0.06);
     transition: filter 220ms ease, transform 220ms ease;
 }
 
@@ -3600,18 +3615,22 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     min-width: 0;
     min-height: 0;
     place-items: center;
-    padding: 7px 4px 6px;
-    border: 2px dotted #0a5426;
+    padding: 11px 7px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.34);
     border-radius: 999px;
     color: #ffffff;
-    background: transparent;
-    box-shadow: none;
-    font: 900 clamp(16px, 2vw, 20px)/1 "Rubik", "Inter", sans-serif;
-    letter-spacing: 0.025em;
-    text-indent: 0;
+    background: linear-gradient(135deg, rgba(2, 52, 48, 0.72), rgba(3, 79, 66, 0.38));
+    box-shadow:
+        0 12px 26px rgba(2, 49, 44, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    font: 900 clamp(15px, 2vw, 19px)/1 "Rubik", "Inter", sans-serif;
+    letter-spacing: 0.1em;
+    text-indent: 0.1em;
     text-shadow:
-        0 2px 0 rgba(0, 91, 32, 0.72),
-        0 4px 10px rgba(0, 91, 32, 0.24);
+        0 2px 0 rgba(0, 48, 41, 0.72),
+        0 5px 14px rgba(0, 45, 38, 0.28);
     opacity: 1;
     pointer-events: none;
     transform: scale(1);
@@ -3622,27 +3641,29 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
 #home .home-start-btn:focus-visible {
     transform: translateY(-2px) scale(1.02);
     box-shadow:
-        0 20px 36px rgba(0, 115, 42, 0.24),
-        inset 0 1px 0 rgba(255, 255, 255, 0.34);
+        0 26px 50px rgba(5, 91, 67, 0.3),
+        0 9px 22px rgba(12, 143, 91, 0.17),
+        inset 0 1px 0 rgba(255, 255, 255, 0.42),
+        inset 0 -1px 0 rgba(2, 52, 43, 0.26);
     animation-play-state: paused;
 }
 
 #home .home-start-btn:hover img,
 #home .home-start-btn:focus-visible img {
-    filter: brightness(0.96) saturate(1.04);
+    filter: brightness(1.035) saturate(1.02);
     transform: scale(1.01);
 }
 
 #home .home-start-btn:hover .home-start-open-label,
 #home .home-start-btn:focus-visible .home-start-open-label {
     opacity: 1;
-    transform: scale(1.05);
+    transform: scale(1.035);
 }
 
 @media (hover: none), (pointer: coarse) {
     #home .home-start-open-label {
-        padding: 6px 3px 5px;
-        font-size: clamp(14px, 5vw, 18px);
+        padding: 10px 6px 9px;
+        font-size: clamp(14px, 5vw, 17px);
         opacity: 1;
         transform: scale(1);
     }
@@ -3654,14 +3675,12 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
 
 @keyframes startRecall {
     0%, 100% { transform: translateY(0) scale(1); }
-    44% { transform: translateY(-4px) scale(1.045); }
-    58% { transform: translateY(0) scale(0.99); }
-    72% { transform: translateY(-2px) scale(1.02); }
+    50% { transform: translateY(-2px) scale(1.006); }
 }
 
 @keyframes startGlow {
-    0%, 100% { opacity: 0.48; transform: scale(0.92); }
-    50% { opacity: 0.95; transform: scale(1.08); }
+    0%, 100% { opacity: 0.32; transform: scale(0.98); }
+    50% { opacity: 0.5; transform: scale(1.025); }
 }
 
 @keyframes startRing {
