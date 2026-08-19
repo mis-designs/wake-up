@@ -6468,6 +6468,23 @@ body.qms-open { overflow: hidden; }
     gap: 12px;
 }
 
+.admin-user-card.is-promo {
+    background: linear-gradient(145deg, rgba(250, 247, 255, 0.96), rgba(235, 226, 252, 0.88));
+    border-color: rgba(167, 139, 250, 0.4);
+    box-shadow:
+        0 12px 28px rgba(109, 76, 170, 0.13),
+        inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.admin-user-card.is-promo .admin-phone {
+    color: #4c1d95;
+}
+
+.admin-user-card.is-promo .admin-status {
+    background: rgba(255, 255, 255, 0.66);
+    color: #6d4aa3;
+}
+
 .admin-user-head {
     display: flex;
     align-items: center;
@@ -6516,6 +6533,17 @@ body.qms-open { overflow: hidden; }
     font-weight: 800;
 }
 
+.admin-promo-badge {
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(124, 58, 237, 0.1);
+    color: #6d28d9;
+    font-size: 0.66rem;
+    font-weight: 900;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
 .admin-card-actions {
     display: flex;
     gap: 8px;
@@ -6552,6 +6580,13 @@ body.qms-open { overflow: hidden; }
     color: #12833d;
     font-size: 0.72rem;
     font-weight: 900;
+}
+
+.admin-action-btn.is-send.is-promo-send {
+    background: linear-gradient(135deg, #7c3aed, #9f67e8);
+    border-color: rgba(109, 40, 217, 0.32);
+    color: #ffffff;
+    box-shadow: 0 9px 18px rgba(109, 40, 217, 0.2);
 }
 
 .admin-empty,

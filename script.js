@@ -2168,6 +2168,35 @@ function getExpiredBanglaMessage() {
   ].join("\n");
 }
 
+function getPromoBanglaMessage() {
+  return [
+    "আসসালামু আলাইকুম,",
+    "",
+    "আশা করি TMM Bangla Patente-এর ৫ দিনের Promo Access আপনার ভালো লেগেছে। এই সময়ে আপনি আমাদের এমন একটি সম্পূর্ণ স্টাডি সিস্টেম দেখেছেন, যা ইতালির ড্রাইভিং পরীক্ষার প্রস্তুতিকে আরও সহজ, গোছানো এবং আত্মবিশ্বাসী করে।",
+    "",
+    "MagicBook-এ আপনি পাচ্ছেন:",
+    "✅ অধ্যায়ভিত্তিক বই ও ৭৮৬টি Magic Quiz",
+    "✅ ৩০ প্রশ্নের Mix Quiz ও পরীক্ষার অনুশীলন",
+    "✅ ইতালিয়ান–বাংলা Dictionary, অডিও ও অনুবাদ",
+    "✅ ভুল উত্তরের ব্যাখ্যা, ছবি ও সহজ রিভিশন",
+    "✅ নিয়মিত নতুন অডিও, অনুবাদ, ব্যাখ্যা ও ফিচার আপডেট",
+    "",
+    "আমাদের লক্ষ্য শুধু প্রশ্ন মুখস্থ করানো নয়—কঠিন বিষয় সহজভাবে বুঝিয়ে প্রতিদিনের পড়াশোনাকে কার্যকর করা। নিয়মিত এই সিস্টেম অনুসরণ করলে আপনার প্রস্তুতি আরও শক্ত হবে এবং পরীক্ষার দিন আত্মবিশ্বাস বাড়বে।",
+    "",
+    "সব প্ল্যানেই সম্পূর্ণ সিস্টেম ও ভবিষ্যৎ আপডেট অন্তর্ভুক্ত:",
+    "• ৩০ দিন — ১০€",
+    "• ৯০ দিন — ২০€ (সবচেয়ে জনপ্রিয়)",
+    "• ৩৬৫ দিন — ৪০€",
+    "",
+    "প্ল্যানের বিস্তারিত দেখুন এবং আপনার জন্য সঠিকটি বেছে নিন:",
+    "https://tmmmagic.eu/join",
+    "",
+    "অ্যাক্টিভ করতে বা কোনো প্রশ্ন থাকলে WhatsApp-এ লিখুন: +39 366 358 4525",
+    "",
+    "TMM Bangla Patente"
+  ].join("\n");
+}
+
 function getRenewPopupState() {
   try {
     const state = JSON.parse(Storage.get(KEYS.renewPopupDailyState) || "{}");
@@ -4578,6 +4607,26 @@ function getAdminStatus(user) {
   return { key: "active", label: "Attivo", days };
 }
 
+function isAdminPromoUser(user) {
+  const source = String(user?.accessSource ?? user?.access_source ?? user?.source ?? "")
+    .trim()
+    .toLowerCase();
+  if (["paid", "normal", "regular", "customer", "manual", "admin"].includes(source)) return false;
+
+  const promoFlag = user?.isPromo ?? user?.is_promo ?? user?.promoUser ?? user?.promo_user ?? user?.promo;
+  if (promoFlag !== undefined && promoFlag !== null && String(promoFlag).trim() !== "") {
+    return promoFlag === true
+      || promoFlag === 1
+      || ["1", "true", "yes", "si", "sì", "promo"].includes(String(promoFlag).trim().toLowerCase());
+  }
+
+  if (source === "promo" || source === "promotion" || source === "promotional") return true;
+
+  return Number(user?.promoDaysUsed ?? user?.promo_days_used) > 0
+    || Number(user?.promoRedemptions ?? user?.promo_redemptions) > 0
+    || Boolean(String(user?.lastPromoCodeId ?? user?.last_promo_code_id ?? "").trim());
+}
+
 function getAdminPhoneKey(phone) {
   return normalizePhone(phone);
 }
@@ -4852,8 +4901,10 @@ function updateAdminStats() {
 
 function renderAdminUserCard(user, duplicatePhones = getAdminDuplicatePhones()) {
   const status = getAdminStatus(user);
+  const isPromo = isAdminPromoUser(user);
   const isDuplicate = duplicatePhones.has(getAdminPhoneKey(user.phone));
   const showRenew = isRenewActionVisible(user);
+  const showSend = showRenew || isPromo;
   const daysText = status.days === null
     ? "senza scadenza"
     : status.days < 0
@@ -4862,7 +4913,7 @@ function renderAdminUserCard(user, duplicatePhones = getAdminDuplicatePhones()) 
   const deviceCount = [user.device1, user.device2].filter(Boolean).length;
 
   return `
-    <article class="admin-user-card is-${status.key}">
+    <article class="admin-user-card is-${status.key}${isPromo ? " is-promo" : ""}">
       <div class="admin-user-head">
         <div class="admin-phone">${escapeHtml(user.phone)}</div>
         <div class="admin-status">
@@ -4871,6 +4922,7 @@ function renderAdminUserCard(user, duplicatePhones = getAdminDuplicatePhones()) 
         </div>
       </div>
       <div class="admin-meta">
+        ${isPromo ? '<span class="admin-promo-badge">Promo 5 giorni</span>' : ''}
         <span>Scadenza: ${escapeHtml(formatAdminDate(user.expiry))}</span>
         <span>${escapeHtml(daysText)}</span>
         <span>Dispositivi: ${deviceCount}/2</span>
@@ -4883,7 +4935,7 @@ function renderAdminUserCard(user, duplicatePhones = getAdminDuplicatePhones()) 
         ${showRenew ? `<button class="admin-action-btn" type="button" data-admin-action="renew" data-phone="${escapeHtml(user.phone)}" aria-label="Rinnova">
           <img src="assets/admin/renew.png" alt="">
         </button>` : ''}
-        ${showRenew ? `<button class="admin-action-btn is-send" type="button" data-admin-action="send" data-phone="${escapeHtml(user.phone)}" aria-label="Invia WhatsApp">Send</button>` : ''}
+        ${showSend ? `<button class="admin-action-btn is-send${isPromo ? " is-promo-send" : ""}" type="button" data-admin-action="send" data-phone="${escapeHtml(user.phone)}" aria-label="${isPromo ? "Invia offerta promo su WhatsApp" : "Invia WhatsApp"}">Send</button>` : ''}
         <button class="admin-action-btn" type="button" data-admin-action="reset" data-phone="${escapeHtml(user.phone)}" aria-label="Reset dispositivi">
           <img src="assets/admin/reset.png" alt="">
         </button>
@@ -5075,7 +5127,13 @@ async function adminSubmitUserModal() {
       await adminRequest("update", { phone: originalPhone, newPhone: phone, expiry });
       setAdminMessage("Utente aggiornato.", "success");
     } else {
-      await adminRequest("renew", { phone: originalPhone || phone, days: days || 90, expiry, mode: addMode ? "add" : "set" });
+      await adminRequest("renew", {
+        phone: originalPhone || phone,
+        days: days || 90,
+        expiry,
+        mode: addMode ? "add" : "set",
+        accessSource: "paid"
+      });
       setAdminMessage("Rinnovo completato.", "success");
     }
 
@@ -5222,6 +5280,7 @@ async function adminFillBulkFromClipboard() {
 }
 
 function getAdminWhatsAppText(user) {
+  if (isAdminPromoUser(user)) return getPromoBanglaMessage();
   const status = getAdminStatus(user);
   if (status.key === "expired") return getExpiredBanglaMessage();
   return getExpiringBanglaMessage(Math.max(0, Number(status.days) || 0));

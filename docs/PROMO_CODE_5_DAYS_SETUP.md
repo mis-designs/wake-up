@@ -22,12 +22,19 @@ Nel router `doPost`, dopo il parsing JSON, aggiungere:
 if (payload.action === 'promo_redeem') {
   return promoJsonOutput_(promoRedeem_(payload));
 }
+if (payload.action === 'admin_promo_users') {
+  return promoJsonOutput_(promoAdminUsers_(payload));
+}
+if (payload.action === 'admin_mark_paid') {
+  return promoJsonOutput_(promoAdminMarkPaid_(payload));
+}
 ```
 
 Nelle Script Properties configurare:
 
 - `GAS_SECRET`: lo stesso valore protetto configurato su Vercel.
 - `ACCESS_USERS_SHEET_NAME`: facoltativo; se assente viene usato `Users`.
+- `GAS_ADMIN_KEY` oppure `ADMIN_KEY`: la stessa chiave admin protetta usata dal backend Vercel.
 
 Pubblicare una nuova versione della Web App Apps Script mantenendo lo stesso URL di accesso.
 
@@ -43,6 +50,8 @@ Il foglio utenti deve avere le colonne base `phone` e `expiry` (sono accettati a
 - `accessSource`
 
 Viene creato anche il foglio append-only `PromoRedemptions`. Le scritture sono protette con `LockService`; un accesso ancora valido non viene modificato, lo stesso codice non può essere riutilizzato dallo stesso numero e il totale non supera 30 giorni.
+
+Il pannello admin legge `accessSource` e l'eventuale casella `isPromo`/`promo`: gli utenti promozionali mantengono l'evidenziazione anche dopo la scadenza. Quando un rinnovo a pagamento viene completato dal pannello, `admin_mark_paid` imposta `accessSource` su `paid` e disattiva la casella promo senza cancellare lo storico delle campagne.
 
 ## 4. Rotazione manuale
 

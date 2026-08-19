@@ -30,9 +30,9 @@ test("chapter titles stay inside the mini cards without changing carousel geomet
 });
 
 test("chapter-card titles ship with fresh stylesheet, script, and PWA cache versions", () => {
-  assert.match(page, /style\.css\?v=56-chapter-card-titles/u);
-  assert.match(page, /script\.js\?v=49-chapter-card-titles/u);
-  assert.match(worker, /magicbook-pwa-v106-chapter-card-titles/u);
-  assert.match(worker, /style\.css\?v=56-chapter-card-titles/u);
-  assert.match(worker, /script\.js\?v=49-chapter-card-titles/u);
+  assert.match(page, /style\.css\?v=57-promo-admin-users/u);
+  assert.match(page, /script\.js\?v=50-promo-admin-users/u);
+  assert.match(worker, /magicbook-pwa-v107-promo-admin-users/u);
+  assert.match(worker, /style\.css\?v=57-promo-admin-users/u);
+  assert.match(worker, /script\.js\?v=50-promo-admin-users/u);
 });

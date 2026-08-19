@@ -116,6 +116,23 @@ function getGasAction(action) {
   return "";
 }
 
+export function mergeAdminPromoMetadata(users, promoUsers) {
+  const promoByPhone = new Map((Array.isArray(promoUsers) ? promoUsers : []).map(user => [
+    normalizePhone(user?.phone),
+    {
+      accessSource: String(user?.accessSource || "").trim().toLowerCase(),
+      isPromo: user?.isPromo === true,
+      promoDaysUsed: Math.max(0, Number(user?.promoDaysUsed) || 0),
+      promoRedemptions: Math.max(0, Number(user?.promoRedemptions) || 0)
+    }
+  ]));
+
+  return (Array.isArray(users) ? users : []).map(user => ({
+    ...user,
+    ...(promoByPhone.get(normalizePhone(user?.phone)) || {})
+  }));
+}
+
 function sanitizeAdminFields(action, body) {
   const fields = {};
   const phone = normalizePhone(body.phone);
@@ -123,6 +140,7 @@ function sanitizeAdminFields(action, body) {
   const days = Number(body.days);
   const expiry = String(body.expiry || "").trim();
   const mode = String(body.mode || "").trim();
+  const accessSource = String(body.accessSource || "").trim().toLowerCase();
   const isValidExpiry = value => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
 
   if (!isValidExpiry(expiry)) return { error: "bad_expiry" };
@@ -136,6 +154,7 @@ function sanitizeAdminFields(action, body) {
     if (Number.isFinite(days) && days > 0) fields.days = Math.min(Math.floor(days), 3650);
     if (expiry) fields.expiry = expiry;
     if (mode === "add") fields.mode = "add";
+    if (action === "renew" && accessSource === "paid") fields.accessSource = "paid";
   }
 
   if (action === "update") {
@@ -184,6 +203,27 @@ export default async function handler(req, res) {
     const data = await callGasAdmin(getGasAction(action), sanitized.fields);
     if (data?.success !== true) {
       return res.status(200).json({ success: false, error: readAdminError(data) });
+    }
+
+    if (action === "list") {
+      try {
+        const promoData = await callGasAdmin("admin_promo_users");
+        if (promoData?.success === true) {
+          data.list = mergeAdminPromoMetadata(data.list, promoData.list);
+        }
+      } catch {
+        // Keep the core admin list available while the Apps Script extension
+        // is being deployed or temporarily unavailable.
+      }
+    }
+
+    if (action === "renew" && sanitized.fields.accessSource === "paid") {
+      try {
+        const paidData = await callGasAdmin("admin_mark_paid", { phone: sanitized.fields.phone });
+        data.promoSourceUpdated = paidData?.success === true;
+      } catch {
+        data.promoSourceUpdated = false;
+      }
     }
 
     return res.status(200).json(data);

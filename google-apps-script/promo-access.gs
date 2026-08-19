@@ -5,6 +5,12 @@
  *   if (payload.action === 'promo_redeem') {
  *     return promoJsonOutput_(promoRedeem_(payload));
  *   }
+ *   if (payload.action === 'admin_promo_users') {
+ *     return promoJsonOutput_(promoAdminUsers_(payload));
+ *   }
+ *   if (payload.action === 'admin_mark_paid') {
+ *     return promoJsonOutput_(promoAdminMarkPaid_(payload));
+ *   }
  *
  * Required Script Properties:
  *   GAS_SECRET               same value used by the Vercel backend
@@ -23,6 +29,102 @@ function promoJsonOutput_(data) {
   return ContentService
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function promoGetUsersSheet_() {
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var configuredName = PropertiesService.getScriptProperties().getProperty('ACCESS_USERS_SHEET_NAME') || '';
+  var existingName = typeof SHEET_NAME !== 'undefined' ? String(SHEET_NAME || '').trim() : '';
+  return spreadsheet.getSheetByName(String(configuredName || existingName || 'Sheet1').trim());
+}
+
+function promoVerifyAdminRequest_(payload) {
+  var properties = PropertiesService.getScriptProperties();
+  var secret = properties.getProperty('GAS_SECRET') || '';
+  var adminKey = properties.getProperty('GAS_ADMIN_KEY') || properties.getProperty('ADMIN_KEY') || '';
+  if (!secret || !adminKey) return false;
+  return promoSafeEqual_(String(payload.token || ''), secret)
+    && promoSafeEqual_(String(payload.adminKey || ''), adminKey);
+}
+
+function promoAdminUsers_(payload) {
+  if (!promoVerifyAdminRequest_(payload)) return { success: false, error: 'unauthorized' };
+
+  var usersSheet = promoGetUsersSheet_();
+  if (!usersSheet) return { success: false, error: 'promo_users_sheet_missing' };
+
+  try {
+    var columns = promoEnsureUserColumns_(usersSheet);
+    if (!columns.phone || !columns.expiry) {
+      return { success: false, error: 'promo_user_columns_missing' };
+    }
+
+    var lastRow = usersSheet.getLastRow();
+    if (lastRow < 2) return { success: true, list: [] };
+    var values = usersSheet.getRange(2, 1, lastRow - 1, usersSheet.getLastColumn()).getValues();
+    var list = [];
+
+    values.forEach(function (rowValues) {
+      var phone = promoNormalizePhone_(rowValues[columns.phone - 1]);
+      if (!phone || !promoRowHasPromoHistory_(rowValues, columns)) return;
+
+      var accessSource = String(rowValues[columns.accessSource - 1] || '').trim().toLowerCase();
+      var explicitPromo = columns.promoFlag ? rowValues[columns.promoFlag - 1] : '';
+      var isPaid = ['paid', 'normal', 'regular', 'customer', 'manual', 'admin'].indexOf(accessSource) !== -1;
+      var hasExplicitPromoFlag = Boolean(columns.promoFlag)
+        && explicitPromo !== ''
+        && explicitPromo !== null;
+      var explicitPromoEnabled = explicitPromo === true
+        || String(explicitPromo || '').trim().toLowerCase() === 'true'
+        || String(explicitPromo || '').trim() === '1';
+      var isPromo = !isPaid && (hasExplicitPromoFlag
+        ? explicitPromoEnabled
+        : accessSource === 'promo');
+
+      list.push({
+        phone: phone,
+        accessSource: accessSource,
+        isPromo: isPromo,
+        promoDaysUsed: Number(rowValues[columns.promoDaysUsed - 1]) || 0,
+        promoRedemptions: Number(rowValues[columns.promoRedemptions - 1]) || 0
+      });
+    });
+
+    return { success: true, list: list };
+  } catch (error) {
+    console.error('[admin_promo_users]', error && error.stack ? error.stack : error);
+    return { success: false, error: 'server_error' };
+  }
+}
+
+function promoAdminMarkPaid_(payload) {
+  if (!promoVerifyAdminRequest_(payload)) return { success: false, error: 'unauthorized' };
+
+  var usersSheet = promoGetUsersSheet_();
+  if (!usersSheet) return { success: false, error: 'promo_users_sheet_missing' };
+
+  var phone = promoNormalizePhone_(payload.phone);
+  if (!phone) return { success: false, error: 'bad_phone' };
+
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(1200)) return { success: false, error: 'busy' };
+  try {
+    var columns = promoEnsureUserColumns_(usersSheet);
+    if (!columns.phone || !columns.accessSource) {
+      return { success: false, error: 'promo_user_columns_missing' };
+    }
+    var rowNumber = promoFindUserRow_(usersSheet, columns.phone, phone);
+    if (!rowNumber) return { success: false, error: 'not_found' };
+
+    usersSheet.getRange(rowNumber, columns.accessSource).setValue('paid');
+    if (columns.promoFlag) usersSheet.getRange(rowNumber, columns.promoFlag).setValue(false);
+    return { success: true, phone: phone, accessSource: 'paid', isPromo: false };
+  } catch (error) {
+    console.error('[admin_mark_paid]', error && error.stack ? error.stack : error);
+    return { success: false, error: 'server_error' };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function promoRedeem_(payload) {
@@ -134,6 +236,7 @@ function promoRedeem_(payload) {
     rowValues[columns.lastPromoCodeId - 1] = promoCodeId;
     rowValues[columns.promoUsedCodeIds - 1] = usedCodeIds.join(',');
     rowValues[columns.accessSource - 1] = 'promo';
+    if (columns.promoFlag) rowValues[columns.promoFlag - 1] = true;
     usersSheet.getRange(rowNumber, 1, 1, lastColumn).setValues([rowValues]);
 
     auditRow = [
@@ -244,6 +347,7 @@ function promoEnsureUserColumns_(sheet) {
   columns.lastPromoCodeId = promoFindColumn_(map, ['lastpromocodeid']) || promoAppendColumn_(sheet, map, 'lastPromoCodeId');
   columns.promoUsedCodeIds = promoFindColumn_(map, ['promousedcodeids']) || promoAppendColumn_(sheet, map, 'promoUsedCodeIds');
   columns.accessSource = promoFindColumn_(map, ['accesssource']) || promoAppendColumn_(sheet, map, 'accessSource');
+  columns.promoFlag = promoFindColumn_(map, ['ispromo', 'promo', 'promouser']);
   return columns;
 }
 
@@ -283,6 +387,7 @@ function promoRowHasPromoHistory_(rowValues, columns) {
     || (Number(rowValues[columns.promoRedemptions - 1]) || 0) > 0
     || Boolean(String(rowValues[columns.lastPromoCodeId - 1] || '').trim())
     || Boolean(String(rowValues[columns.promoUsedCodeIds - 1] || '').trim())
+    || Boolean(columns.promoFlag && rowValues[columns.promoFlag - 1])
     || String(rowValues[columns.accessSource - 1] || '').trim().toLowerCase() === 'promo';
 }
 
@@ -298,6 +403,7 @@ function promoCountUniqueUsers_(sheet, columns) {
     columns.promoUsedCodeIds,
     columns.accessSource
   ];
+  if (columns.promoFlag) relevantColumns.push(columns.promoFlag);
   var firstColumn = Math.min.apply(null, relevantColumns);
   var lastColumn = Math.max.apply(null, relevantColumns);
   var values = sheet
