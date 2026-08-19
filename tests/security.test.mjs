@@ -88,8 +88,9 @@ test("admin renewal fails closed when the proof, phone binding or allow-list doe
 });
 
 test("admin recovery retries only read-only operations", () => {
-  assert.match(clientSource, /const readOnlyAction = action === "list" \|\| action === "search"/);
+  assert.match(clientSource, /const readOnlyAction = action === "list" \|\| action === "search" \|\| action === "promo_users"/);
   assert.match(clientSource, /ADMIN_READ_RETRYABLE_ERRORS/);
-  assert.match(clientSource, /transientAttempt < 2/);
+  assert.match(clientSource, /const maxTransientAttempts = action === "promo_users" \? 1 : 2/);
+  assert.match(clientSource, /transientAttempt < maxTransientAttempts/);
   assert.doesNotMatch(clientSource, /readOnlyAction = [^\n]*(?:create|renew|delete)/);
 });

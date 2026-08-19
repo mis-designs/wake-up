@@ -185,7 +185,7 @@ export default async function handler(req, res) {
     const sanitized = sanitizeAdminFields(action, body);
     if (sanitized.error) return res.status(400).json({ success: false, error: sanitized.error });
 
-    const timeoutMs = action === "promo_users" ? 4_000 : 12_000;
+    const timeoutMs = action === "promo_users" ? 20_000 : 12_000;
     const data = await callGasAdmin(getGasAction(action), sanitized.fields, timeoutMs);
     if (data?.success !== true) {
       return res.status(200).json({ success: false, error: readAdminError(data) });

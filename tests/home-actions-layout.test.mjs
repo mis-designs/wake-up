@@ -18,7 +18,7 @@ test("desktop home actions sit beside the promotion without changing mobile layo
 });
 
 test("the desktop home layout ships in a fresh PWA build", () => {
-  assert.match(page, /style\.css\?v=58-promo-users-tab/u);
-  assert.match(worker, /magicbook-pwa-v109-promo-users-tab/u);
-  assert.match(worker, /style\.css\?v=58-promo-users-tab/u);
+  assert.match(page, /style\.css\?v=59-promo-users-load-fix/u);
+  assert.match(worker, /magicbook-pwa-v111-promo-users-load-fix/u);
+  assert.match(worker, /style\.css\?v=59-promo-users-load-fix/u);
 });

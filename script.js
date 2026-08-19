@@ -4559,6 +4559,9 @@ const adminState = {
   query: "",
   loading: false,
   loadVersion: 0,
+  promoLoading: false,
+  promoLoaded: false,
+  promoError: "",
   confirm: null
 };
 
@@ -4742,7 +4745,8 @@ async function adminRequest(action, fields = {}, retryToken = true, transientAtt
   const hasToken = await ensureAccessToken({ force: !isAccessTokenUsable() });
   if (!hasToken && !getCurrentAccessToken()) throw new Error("unauthorized");
 
-  const readOnlyAction = action === "list" || action === "search";
+  const readOnlyAction = action === "list" || action === "search" || action === "promo_users";
+  const maxTransientAttempts = action === "promo_users" ? 1 : 2;
   let response;
   try {
     response = await fetch(ADMIN_API, {
@@ -4757,7 +4761,7 @@ async function adminRequest(action, fields = {}, retryToken = true, transientAtt
       })
     });
   } catch {
-    if (readOnlyAction && transientAttempt < 2) {
+    if (readOnlyAction && transientAttempt < maxTransientAttempts) {
       await waitForAdminRetry(transientAttempt === 0 ? 700 : 1400);
       return adminRequest(action, fields, retryToken, transientAttempt + 1);
     }
@@ -4772,7 +4776,7 @@ async function adminRequest(action, fields = {}, retryToken = true, transientAtt
 
   if (!response.ok || !data?.success) {
     const errorCode = String(data?.error || "admin_backend_error").trim();
-    if (readOnlyAction && transientAttempt < 2 && ADMIN_READ_RETRYABLE_ERRORS.has(errorCode)) {
+    if (readOnlyAction && transientAttempt < maxTransientAttempts && ADMIN_READ_RETRYABLE_ERRORS.has(errorCode)) {
       await waitForAdminRetry(transientAttempt === 0 ? 700 : 1400);
       return adminRequest(action, fields, retryToken, transientAttempt + 1);
     }
@@ -4790,6 +4794,9 @@ function setupAdminUI() {
         btn.classList.toggle("is-active", btn === tab);
       });
       renderAdminUsers();
+      if (adminState.tab === "promo" && !adminState.promoLoaded && !adminState.promoLoading) {
+        void adminLoadPromoUsers(adminState.loadVersion);
+      }
     });
   });
 
@@ -4864,6 +4871,9 @@ async function adminLoadUsers(force = false) {
     const data = await adminRequest("list");
     adminState.users = (Array.isArray(data.list) ? data.list : [])
       .sort((a, b) => getAdminRegistrationTime(b) - getAdminRegistrationTime(a));
+    adminState.promoLoaded = false;
+    adminState.promoLoading = true;
+    adminState.promoError = "";
     setAdminMessage("Lista aggiornata.", "success");
     renderAdminUsers();
     void adminLoadPromoUsers(loadVersion);
@@ -4876,15 +4886,30 @@ async function adminLoadUsers(force = false) {
 }
 
 async function adminLoadPromoUsers(loadVersion) {
+  if (!isCurrentSessionAdmin()) return;
+  adminState.promoLoading = true;
+  adminState.promoError = "";
+  if (adminState.tab === "promo") renderAdminUsers();
+
   try {
     const data = await adminRequest("promo_users");
     if (loadVersion !== adminState.loadVersion) return;
     adminState.users = mergeAdminPromoUsers(adminState.users, data.list);
-    renderAdminUsers();
-  } catch {
-    // Promo metadata is optional: the core user list must stay usable even if
-    // the Apps Script extension is slow, unavailable, or not deployed yet.
+    adminState.promoLoaded = true;
+  } catch (error) {
+    if (loadVersion !== adminState.loadVersion) return;
+    adminState.promoError = getAdminErrorMessage(error?.message || "service_unavailable");
+  } finally {
+    if (loadVersion === adminState.loadVersion) {
+      adminState.promoLoading = false;
+      renderAdminUsers();
+    }
   }
+}
+
+function adminRetryPromoUsers() {
+  if (adminState.promoLoading) return;
+  void adminLoadPromoUsers(adminState.loadVersion);
 }
 
 function renderAdminLoading() {
@@ -4985,9 +5010,32 @@ function renderAdminUsers() {
   const list = document.getElementById("adminUserList");
   if (!list) return;
 
+  if (adminState.tab === "promo" && adminState.promoLoading) {
+    list.innerHTML = `
+      <div class="admin-promo-state is-loading" role="status">
+        <span class="admin-promo-spinner" aria-hidden="true"></span>
+        <strong>Caricamento utenti promo...</strong>
+        <small>Sto leggendo i dati promozionali dal database.</small>
+      </div>
+    `;
+    return;
+  }
+
+  if (adminState.tab === "promo" && adminState.promoError) {
+    list.innerHTML = `
+      <div class="admin-promo-state is-error" role="alert">
+        <strong>Utenti promo non caricati</strong>
+        <small>${escapeHtml(adminState.promoError)}</small>
+        <button class="admin-promo-retry" type="button" onclick="adminRetryPromoUsers()">Riprova</button>
+      </div>
+    `;
+    return;
+  }
+
   const users = getFilteredAdminUsers();
   if (!users.length) {
-    list.innerHTML = '<div class="admin-empty">Nessun utente trovato.</div>';
+    const emptyText = adminState.tab === "promo" ? "Nessun utente promo trovato." : "Nessun utente trovato.";
+    list.innerHTML = `<div class="admin-empty">${emptyText}</div>`;
     return;
   }
 

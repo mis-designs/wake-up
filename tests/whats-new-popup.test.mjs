@@ -24,8 +24,8 @@ test("the popup has both requested dismissal controls", () => {
 
 test("the popup coordinates with existing blocking dialogs and ships in the PWA cache", () => {
   assert.match(script, /document\.getElementById\("whatsNewPopupOverlay"\)/u);
-  assert.match(index, /style\.css\?v=58-promo-users-tab/u);
-  assert.match(index, /script\.js\?v=52-promo-users-tab/u);
-  assert.match(worker, /magicbook-pwa-v109-promo-users-tab/u);
+  assert.match(index, /style\.css\?v=59-promo-users-load-fix/u);
+  assert.match(index, /script\.js\?v=54-promo-users-load-fix/u);
+  assert.match(worker, /magicbook-pwa-v111-promo-users-load-fix/u);
   assert.match(worker, /\/icons\/ui%20mobile\.svg/u);
 });

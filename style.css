@@ -6607,6 +6607,73 @@ body.qms-open { overflow: hidden; }
     border: 1px solid rgba(255, 255, 255, 0.72);
 }
 
+.admin-promo-state {
+    grid-column: 1 / -1;
+    min-height: 150px;
+    padding: 26px 18px;
+    border: 1px solid rgba(167, 139, 250, 0.36);
+    border-radius: 20px;
+    background: linear-gradient(145deg, rgba(250, 247, 255, 0.96), rgba(239, 232, 255, 0.84));
+    color: #5b21b6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+    box-shadow: 0 12px 28px rgba(109, 40, 217, 0.09);
+}
+
+.admin-promo-state strong {
+    font-size: 0.98rem;
+    font-weight: 900;
+}
+
+.admin-promo-state small {
+    color: #7c6a9c;
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.admin-promo-spinner {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 2px;
+    border: 3px solid rgba(124, 58, 237, 0.16);
+    border-top-color: #7c3aed;
+    border-radius: 50%;
+    animation: adminPromoSpin 0.8s linear infinite;
+}
+
+.admin-promo-state.is-error {
+    border-color: rgba(220, 38, 38, 0.22);
+    background: linear-gradient(145deg, rgba(255, 250, 250, 0.98), rgba(254, 226, 226, 0.72));
+    color: #b91c1c;
+}
+
+.admin-promo-retry {
+    min-width: 112px;
+    min-height: 38px;
+    margin-top: 5px;
+    padding: 8px 18px;
+    border: 0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #7c3aed, #9f67e8);
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(109, 40, 217, 0.2);
+    font-size: 0.78rem;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+@keyframes adminPromoSpin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-promo-spinner { animation: none; }
+}
+
 .admin-modal {
     position: fixed;
     inset: 0;
