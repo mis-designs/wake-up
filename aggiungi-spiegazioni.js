@@ -1,4 +1,6 @@
 const API = "/api/quiz";
+const ACCESS_VALIDATION_API = "/api/getPages";
+const ACCESS_TOKEN_REFRESH_SKEW_MS = 5 * 60 * 1000;
 const $ = id => document.getElementById(id);
 const ADD_ICON = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 8V16M8 12H16M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const CLOSE_ICON = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>';
@@ -31,52 +33,127 @@ const state = {
 };
 let dialogResolver = null;
 const DRAFT_DB = "magicph-quiz-audio-drafts";
+let accessTokenRefreshPromise = null;
+
+function readStoredSession() {
+  try { return JSON.parse(localStorage.getItem("user_session") || localStorage.getItem("session") || "null"); }
+  catch (_) { return null; }
+}
 
 function credentials() {
-  let session = null;
-  try { session = JSON.parse(localStorage.getItem("user_session") || localStorage.getItem("session") || "null"); } catch (_) { session = null; }
+  const session = readStoredSession();
   return {
     phone: session?.phone || localStorage.getItem("phone") || "",
     deviceId: session?.deviceId || localStorage.getItem("deviceId") || "",
-    accessToken: session?.accessToken || localStorage.getItem("accessToken") || ""
+    accessToken: session?.accessToken || localStorage.getItem("accessToken") || "",
+    accessTokenExpiresAt: Number(session?.accessTokenExpiresAt || localStorage.getItem("accessTokenExpiresAt") || 0)
   };
 }
 
 function isAdmin() {
+  return readStoredSession()?.role === "admin";
+}
+
+function tokenExpiresAt(accessToken) {
   try {
-    const session = JSON.parse(localStorage.getItem("user_session") || localStorage.getItem("session") || "null");
-    return session?.role === "admin";
-  } catch (_) { return false; }
+    const encodedPayload = String(accessToken || "").split(".")[0];
+    const padded = `${encodedPayload}${"=".repeat((4 - encodedPayload.length % 4) % 4)}`;
+    return Number(JSON.parse(atob(padded.replace(/-/g, "+").replace(/_/g, "/"))).exp || 0);
+  } catch (_) { return 0; }
+}
+
+function persistRefreshedSession(data) {
+  if (!data?.accessToken || !data?.accessTokenExpiresAt) return false;
+  const current = readStoredSession() || {};
+  const session = {
+    ...current,
+    phone: data.phone || current.phone,
+    deviceId: data.deviceId || current.deviceId,
+    role: data.role || current.role || "user",
+    expiry: data.expiry || current.expiry,
+    accessToken: data.accessToken,
+    accessTokenExpiresAt: data.accessTokenExpiresAt,
+    loggedIn: true,
+    lastValid: Date.now()
+  };
+  localStorage.setItem("user_session", JSON.stringify(session));
+  localStorage.setItem("phone", session.phone || "");
+  localStorage.setItem("deviceId", session.deviceId || "");
+  localStorage.setItem("accessToken", session.accessToken);
+  localStorage.setItem("accessTokenExpiresAt", String(session.accessTokenExpiresAt));
+  return session.role === "admin";
+}
+
+async function refreshAccessToken() {
+  if (accessTokenRefreshPromise) return accessTokenRefreshPromise;
+  accessTokenRefreshPromise = (async () => {
+    const c = credentials();
+    if (!c.phone || !c.deviceId || !c.accessToken) return false;
+    const response = await fetch(ACCESS_VALIDATION_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${c.accessToken}` },
+      body: JSON.stringify({ action: "validate", phone: c.phone, deviceId: c.deviceId })
+    });
+    const data = await response.json().catch(() => ({}));
+    return response.ok && data?.success === true && persistRefreshedSession(data);
+  })();
+  try { return await accessTokenRefreshPromise; }
+  catch (_) { return false; }
+  finally { accessTokenRefreshPromise = null; }
+}
+
+async function ensureFreshAccessToken({ force = false } = {}) {
+  const c = credentials();
+  const expiresAt = c.accessTokenExpiresAt || tokenExpiresAt(c.accessToken);
+  if (!force && c.accessToken && expiresAt > Date.now() + ACCESS_TOKEN_REFRESH_SKEW_MS) return true;
+  return refreshAccessToken();
+}
+
+function isRetryableAuthFailure(response, data) {
+  return [401, 403].includes(response.status)
+    && ["token_expired", "unauthorized", "admin_forbidden"].includes(String(data?.error || ""));
 }
 
 async function api(action, payload = {}) {
-  const response = await fetch(API, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...(credentials().accessToken ? { Authorization: `Bearer ${credentials().accessToken}` } : {}) },
-    body: JSON.stringify({ action, ...credentials(), ...payload })
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data?.error || `api_${response.status}`);
-  return data;
+  await ensureFreshAccessToken();
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const c = credentials();
+    const response = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(c.accessToken ? { Authorization: `Bearer ${c.accessToken}` } : {}) },
+      body: JSON.stringify({ action, ...c, ...payload })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (response.ok) return data;
+    if (attempt === 0 && isRetryableAuthFailure(response, data) && await ensureFreshAccessToken({ force: true })) continue;
+    const error = new Error(data?.error || `api_${response.status}`); error.status = response.status; throw error;
+  }
+  throw new Error("api_retry_exhausted");
 }
 
 async function apiBlob(action, payload = {}) {
-  const response = await fetch(API, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...(credentials().accessToken ? { Authorization: `Bearer ${credentials().accessToken}` } : {}) },
-    body: JSON.stringify({ action, ...credentials(), ...payload })
-  });
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data?.error || `api_${response.status}`);
+  await ensureFreshAccessToken();
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const c = credentials();
+    const response = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(c.accessToken ? { Authorization: `Bearer ${c.accessToken}` } : {}) },
+      body: JSON.stringify({ action, ...c, ...payload })
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      if (attempt === 0 && isRetryableAuthFailure(response, data) && await ensureFreshAccessToken({ force: true })) continue;
+      const error = new Error(data?.error || `api_${response.status}`); error.status = response.status; throw error;
+    }
+    const blob = await response.blob();
+    if (!blob.size) throw new Error("empty_audio_blob");
+    const mimeType = String(blob.type || "audio/webm").startsWith("audio/") ? blob.type : "audio/webm";
+    return {
+      blob: new Blob([blob], { type: mimeType }),
+      durationMs: Number(response.headers.get("X-Audio-Duration-Ms")) || 0
+    };
   }
-  const blob = await response.blob();
-  if (!blob.size) throw new Error("empty_audio_blob");
-  const mimeType = String(blob.type || "audio/webm").startsWith("audio/") ? blob.type : "audio/webm";
-  return {
-    blob: new Blob([blob], { type: mimeType }),
-    durationMs: Number(response.headers.get("X-Audio-Duration-Ms")) || 0
-  };
+  throw new Error("audio_blob_retry_exhausted");
 }
 
 function normalize(text) { return QuizAudioIdentity.normalizeQuestion(text); }
@@ -769,6 +846,7 @@ function renderLegacyReviews() {
 async function load() {
   if (!isAdmin()) { showMessage("Accesso admin richiesto.", "error"); return; }
   try {
+    await ensureFreshAccessToken({ force: true });
     showMessage("Caricamento catalogo Magic Book…");
     const [catalog, overview, collisionRegistry] = await Promise.all([
       api("getMagicBookCatalog"),
