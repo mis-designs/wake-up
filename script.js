@@ -4558,6 +4558,7 @@ const adminState = {
   tab: "users",
   query: "",
   loading: false,
+  loadVersion: 0,
   confirm: null
 };
 
@@ -4643,6 +4644,23 @@ function getAdminDuplicatePhones(users = adminState.users) {
 function getAdminRegistrationTime(user) {
   const date = user?.registration_date ? new Date(user.registration_date) : null;
   return date && !isNaN(date.getTime()) ? date.getTime() : 0;
+}
+
+function mergeAdminPromoUsers(users, promoUsers) {
+  const promoByPhone = new Map((Array.isArray(promoUsers) ? promoUsers : []).map(user => [
+    getAdminPhoneKey(user?.phone),
+    {
+      accessSource: String(user?.accessSource || "").trim().toLowerCase(),
+      isPromo: user?.isPromo === true,
+      promoDaysUsed: Math.max(0, Number(user?.promoDaysUsed) || 0),
+      promoRedemptions: Math.max(0, Number(user?.promoRedemptions) || 0)
+    }
+  ]));
+
+  return (Array.isArray(users) ? users : []).map(user => ({
+    ...user,
+    ...(promoByPhone.get(getAdminPhoneKey(user?.phone)) || {})
+  }));
 }
 
 function normalizeAdminSearch(input) {
@@ -4837,6 +4855,7 @@ async function adminLoadUsers(force = false) {
   if (!isCurrentSessionAdmin()) return;
   if (adminState.loading && !force) return;
 
+  const loadVersion = ++adminState.loadVersion;
   adminState.loading = true;
   renderAdminLoading();
   setAdminMessage("Caricamento utenti...");
@@ -4847,11 +4866,24 @@ async function adminLoadUsers(force = false) {
       .sort((a, b) => getAdminRegistrationTime(b) - getAdminRegistrationTime(a));
     setAdminMessage("Lista aggiornata.", "success");
     renderAdminUsers();
+    void adminLoadPromoUsers(loadVersion);
   } catch (err) {
     setAdminMessage(getAdminErrorMessage(err.message), "error");
     renderAdminUsers();
   } finally {
     adminState.loading = false;
+  }
+}
+
+async function adminLoadPromoUsers(loadVersion) {
+  try {
+    const data = await adminRequest("promo_users");
+    if (loadVersion !== adminState.loadVersion) return;
+    adminState.users = mergeAdminPromoUsers(adminState.users, data.list);
+    renderAdminUsers();
+  } catch {
+    // Promo metadata is optional: the core user list must stay usable even if
+    // the Apps Script extension is slow, unavailable, or not deployed yet.
   }
 }
 

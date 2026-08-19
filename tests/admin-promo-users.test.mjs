@@ -1,7 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { mergeAdminPromoMetadata } from "../api/admin.js";
 
 const read = relativePath => readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
 const script = read("script.js");
@@ -68,7 +67,13 @@ test("a paid admin renewal asks the database to clear promo presentation", () =>
 });
 
 test("admin list merges protected promo metadata without losing normal user fields", () => {
-  const merged = mergeAdminPromoMetadata([
+  const normalizePhoneSource = readFunction("normalizePhone", "isValidStoredDeviceId");
+  const phoneKeySource = readFunction("getAdminPhoneKey", "getAdminDuplicatePhones");
+  const mergeSource = readFunction("mergeAdminPromoUsers", "normalizeAdminSearch");
+  const mergeAdminPromoUsers = Function(
+    `${normalizePhoneSource}\n${phoneKeySource}\n${mergeSource}; return mergeAdminPromoUsers;`
+  )();
+  const merged = mergeAdminPromoUsers([
     { phone: "+39 333 111 2222", expiry: "2026-08-01" },
     { phone: "393332223333", expiry: "2026-12-01" }
   ], [
@@ -80,15 +85,27 @@ test("admin list merges protected promo metadata without losing normal user fiel
   assert.equal(merged[0].expiry, "2026-08-01");
   assert.equal(merged[1].isPromo, false);
   assert.equal(merged[1].accessSource, "paid");
-  assert.match(adminApi, /callGasAdmin\("admin_promo_users"\)/u);
+  assert.match(adminApi, /if \(action === "promo_users"\) return "admin_promo_users"/u);
   assert.match(promoGas, /function promoAdminUsers_\(payload\)/u);
   assert.match(promoGas, /promoVerifyAdminRequest_\(payload\)/u);
 });
 
+test("the core admin list renders before optional promo metadata is requested", () => {
+  const loadUsers = readFunction("adminLoadUsers", "adminLoadPromoUsers");
+  const loadPromoUsers = readFunction("adminLoadPromoUsers", "renderAdminLoading");
+
+  assert.match(loadUsers, /adminRequest\("list"\)[\s\S]*?renderAdminUsers\(\);[\s\S]*?void adminLoadPromoUsers\(loadVersion\)/u);
+  assert.match(loadPromoUsers, /adminRequest\("promo_users"\)/u);
+  assert.match(loadPromoUsers, /catch[\s\S]*?core user list must stay usable/u);
+  assert.match(adminApi, /"promo_users"/u);
+  assert.match(adminApi, /action === "promo_users" \? 4_000 : 12_000/u);
+  assert.doesNotMatch(adminApi, /if \(action === "list"\) \{[\s\S]*?admin_promo_users/u);
+});
+
 test("promo admin UI ships with fresh PWA assets", () => {
   assert.match(page, /style\.css\?v=57-promo-admin-users/u);
-  assert.match(page, /script\.js\?v=50-promo-admin-users/u);
-  assert.match(worker, /magicbook-pwa-v107-promo-admin-users/u);
+  assert.match(page, /script\.js\?v=51-admin-list-fast/u);
+  assert.match(worker, /magicbook-pwa-v108-admin-list-fast/u);
   assert.match(worker, /style\.css\?v=57-promo-admin-users/u);
-  assert.match(worker, /script\.js\?v=50-promo-admin-users/u);
+  assert.match(worker, /script\.js\?v=51-admin-list-fast/u);
 });

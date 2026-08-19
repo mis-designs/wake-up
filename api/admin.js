@@ -8,6 +8,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET;
 
 const ADMIN_ACTIONS = new Set([
   "list",
+  "promo_users",
   "create",
   "update",
   "renew",
@@ -82,7 +83,7 @@ function readAdminError(data) {
   return data?.error || data?.message || data?.status || "admin_backend_error";
 }
 
-async function callGasAdmin(action, fields = {}) {
+async function callGasAdmin(action, fields = {}, timeoutMs = 12_000) {
   const response = await fetchUpstream(GAS_ACCESS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -92,7 +93,7 @@ async function callGasAdmin(action, fields = {}) {
       action,
       ...fields
     })
-  }, { service: "admin_service", timeoutMs: 12_000 });
+  }, { service: "admin_service", timeoutMs });
 
   let data = null;
   try {
@@ -107,6 +108,7 @@ async function callGasAdmin(action, fields = {}) {
 
 function getGasAction(action) {
   if (action === "list") return "admin_list";
+  if (action === "promo_users") return "admin_promo_users";
   if (action === "create") return "admin_add";
   if (action === "update") return "admin_update";
   if (action === "renew") return "admin_renew";
@@ -114,23 +116,6 @@ function getGasAction(action) {
   if (action === "reset_devices") return "admin_reset_devices";
   if (action === "search") return "admin_search";
   return "";
-}
-
-export function mergeAdminPromoMetadata(users, promoUsers) {
-  const promoByPhone = new Map((Array.isArray(promoUsers) ? promoUsers : []).map(user => [
-    normalizePhone(user?.phone),
-    {
-      accessSource: String(user?.accessSource || "").trim().toLowerCase(),
-      isPromo: user?.isPromo === true,
-      promoDaysUsed: Math.max(0, Number(user?.promoDaysUsed) || 0),
-      promoRedemptions: Math.max(0, Number(user?.promoRedemptions) || 0)
-    }
-  ]));
-
-  return (Array.isArray(users) ? users : []).map(user => ({
-    ...user,
-    ...(promoByPhone.get(normalizePhone(user?.phone)) || {})
-  }));
 }
 
 function sanitizeAdminFields(action, body) {
@@ -200,21 +185,10 @@ export default async function handler(req, res) {
     const sanitized = sanitizeAdminFields(action, body);
     if (sanitized.error) return res.status(400).json({ success: false, error: sanitized.error });
 
-    const data = await callGasAdmin(getGasAction(action), sanitized.fields);
+    const timeoutMs = action === "promo_users" ? 4_000 : 12_000;
+    const data = await callGasAdmin(getGasAction(action), sanitized.fields, timeoutMs);
     if (data?.success !== true) {
       return res.status(200).json({ success: false, error: readAdminError(data) });
-    }
-
-    if (action === "list") {
-      try {
-        const promoData = await callGasAdmin("admin_promo_users");
-        if (promoData?.success === true) {
-          data.list = mergeAdminPromoMetadata(data.list, promoData.list);
-        }
-      } catch {
-        // Keep the core admin list available while the Apps Script extension
-        // is being deployed or temporarily unavailable.
-      }
     }
 
     if (action === "renew" && sanitized.fields.accessSource === "paid") {
