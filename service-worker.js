@@ -1,14 +1,14 @@
-const CACHE_NAME = "magicbook-pwa-v108-admin-list-fast";
+const CACHE_NAME = "magicbook-pwa-v109-promo-users-tab";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
-  "/style.css?v=57-promo-admin-users",
+  "/style.css?v=58-promo-users-tab",
   "/magic-dictionary.css?v=1.2.2",
   "/screen-protection.css?v=1.1.0",
   "/homebg.css?v=3",
   "/mystyle.css?v=43-answer-label-contrast",
-  "/script.js?v=51-admin-list-fast",
+  "/script.js?v=52-promo-users-tab",
   "/study-quiz.html",
   "/study-quiz.css?v=16-trial-audio-preview",
   "/study-quiz.js?v=14-trial-audio-preview",

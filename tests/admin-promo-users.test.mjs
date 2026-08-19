@@ -41,6 +41,16 @@ test("promo cards remain purple and keep a dedicated Send action even when activ
   );
 });
 
+test("promo users have a dedicated filter tab with their Send message", () => {
+  const filteredUsers = readFunction("getFilteredAdminUsers", "updateAdminStats");
+
+  assert.match(page, /data-admin-tab="promo">Promo Users<\/button>/u);
+  assert.match(filteredUsers, /adminState\.tab === "promo"\) return isAdminPromoUser\(user\)/u);
+  assert.match(style, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/u);
+  assert.match(script, /const showSend = showRenew \|\| isPromo/u);
+  assert.match(script, /if \(isAdminPromoUser\(user\)\) return getPromoBanglaMessage\(\);/u);
+});
+
 test("promo Send opens the dedicated Bangla conversion message", () => {
   const source = readFunction("getPromoBanglaMessage", "getRenewPopupState");
   const getPromoBanglaMessage = Function(`${source}; return getPromoBanglaMessage;`)();
@@ -103,9 +113,9 @@ test("the core admin list renders before optional promo metadata is requested", 
 });
 
 test("promo admin UI ships with fresh PWA assets", () => {
-  assert.match(page, /style\.css\?v=57-promo-admin-users/u);
-  assert.match(page, /script\.js\?v=51-admin-list-fast/u);
-  assert.match(worker, /magicbook-pwa-v108-admin-list-fast/u);
-  assert.match(worker, /style\.css\?v=57-promo-admin-users/u);
-  assert.match(worker, /script\.js\?v=51-admin-list-fast/u);
+  assert.match(page, /style\.css\?v=58-promo-users-tab/u);
+  assert.match(page, /script\.js\?v=52-promo-users-tab/u);
+  assert.match(worker, /magicbook-pwa-v109-promo-users-tab/u);
+  assert.match(worker, /style\.css\?v=58-promo-users-tab/u);
+  assert.match(worker, /script\.js\?v=52-promo-users-tab/u);
 });

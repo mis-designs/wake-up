@@ -4899,6 +4899,7 @@ function getFilteredAdminUsers() {
     const status = getAdminStatus(user);
     const phoneDigits = normalizeAdminSearch(user.phone);
     if (query && !phoneDigits.includes(query)) return false;
+    if (adminState.tab === "promo") return isAdminPromoUser(user);
     if (adminState.tab === "expiring") return status.key === "expiring";
     if (adminState.tab === "expired") return status.key === "expired";
     if (adminState.tab === "duplicates") return duplicates.has(getAdminPhoneKey(user.phone));
