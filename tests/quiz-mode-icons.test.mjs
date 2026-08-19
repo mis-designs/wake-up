@@ -18,6 +18,11 @@ test("quiz mode cards use the supplied image assets instead of emoji", () => {
   assert.doesNotMatch(index, /qms-badge-study">🎧|qms-badge-mix">🎲|qms-badge-cap">📖|qms-badge-multi">🗂️/u);
 });
 
+test("the study card uses the Magic Quizzes title", () => {
+  assert.match(index, /<div class="qms-card-title">Studia 786 Magic Quizzes :\)<\/div>/u);
+  assert.doesNotMatch(index, /<div class="qms-card-title">STUDIA QUIZ<\/div>/u);
+});
+
 test("supplied quiz mode artwork keeps its original colors and loads on demand", () => {
   assert.match(styles, /\.qms-card-badge\.qms-badge-art img[\s\S]*?filter:\s*none/);
   iconSources.forEach(source => {

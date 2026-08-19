@@ -4372,6 +4372,31 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     letter-spacing: -0.02em;
 }
 
+.chapter-card-title {
+    position: absolute;
+    right: 8px;
+    bottom: 12px;
+    left: 8px;
+    min-height: 22px;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.53rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: 0.01em;
+    text-align: center;
+    overflow-wrap: anywhere;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+}
+
+.chapter-card.is-active .chapter-card-title {
+    color: #ffffff;
+}
+
 .chapter-card-dots {
     display: flex;
     align-items: center;

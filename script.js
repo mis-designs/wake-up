@@ -3198,6 +3198,33 @@ function back() { goBack(); }
  * CAPITOLI (CARD STACK)
  ***********************/
 const TOTAL_CHAPTERS = 25;
+const CHAPTER_TITLES = Object.freeze([
+  "Doveri nell'uso della strada",
+  "Segnali di pericolo",
+  "Segnali di divieto",
+  "Segnali d'obbligo",
+  "Segnali di precedenza",
+  "Segnaletica orizzontale",
+  "Semafori e agenti di traffico",
+  "Segnali di indicazione",
+  "Segnali complementari e di cantiere",
+  "Pannelli integrativi",
+  "Limiti di velocità",
+  "Distanza di sicurezza",
+  "Norme e circolazione veicoli",
+  "Precedenza e incroci",
+  "Norme sul sorpasso",
+  "Fermata, sosta e arresto",
+  "Circolazione su autostrade",
+  "Luci e dispositivi acustici",
+  "Casco e cintura di sicurezza",
+  "Patente e documenti",
+  "Incidenti stradali",
+  "Alcol e droga",
+  "Responsabilità civile e penale",
+  "Consumi di carburante",
+  "Manutenzione ed elementi del veicolo"
+]);
 let selectedChapter = 1;
 
 const CARD_WIDTH = 140;
@@ -3262,11 +3289,14 @@ function initCardTrack() {
 
   for (let i = 1; i <= TOTAL_CHAPTERS; i++) {
     const card = document.createElement("div");
+    const chapterTitle = CHAPTER_TITLES[i - 1] || `Capitolo ${i}`;
     card.className = "chapter-card";
     card.dataset.chapter = i;
+    card.setAttribute("aria-label", `Capitolo ${i}: ${chapterTitle}`);
     card.innerHTML = `
       <span class="chapter-card-label">Capitolo</span>
       <strong class="chapter-card-number">${formatChapter(i)}</strong>
+      <span class="chapter-card-title">${chapterTitle}</span>
     `;
     track.appendChild(card);
   }

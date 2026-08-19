@@ -1909,6 +1909,7 @@ function resetModalState() {
   if (modalResultVideo) {
     modalResultVideo.pause();
     modalResultVideo.onerror = null;
+    modalResultVideo.onended = null;
     modalResultVideo.removeAttribute("src");
     modalResultVideo.load();
     modalResultVideo.classList.add("hidden");
@@ -1929,19 +1930,21 @@ function stopResultVideo() {
   modalResultVideo.currentTime = 0;
 }
 
-function setModalVideo(videoSrc, fallbackIconSrc, fallbackText, muted = false) {
+function setModalVideo(videoSrc, fallbackIconSrc, fallbackText, options = {}) {
   if (!modalResultVideo || !videoSrc) {
     setModalIcon(fallbackIconSrc, fallbackText);
     return;
   }
 
-  const shouldMute = muted === true;
+  const shouldMute = options.muted === true;
+  const shouldLoop = options.loop !== false;
+  const endIconSrc = String(options.endIconSrc || "").trim();
   modalIcon.classList.add("hidden");
   modalIconFallback.classList.add("hidden");
   modalResultVideo.src = videoSrc;
   modalResultVideo.classList.remove("hidden");
   modalResultVideo.currentTime = 0;
-  modalResultVideo.loop = true;
+  modalResultVideo.loop = shouldLoop;
   modalResultVideo.muted = shouldMute;
   modalResultVideo.volume = shouldMute ? 0 : 1;
   modalIconShell.setAttribute("role", "button");
@@ -1956,6 +1959,14 @@ function setModalVideo(videoSrc, fallbackIconSrc, fallbackText, muted = false) {
     modalResultVideo.classList.add("hidden");
     setModalIcon(fallbackIconSrc, fallbackText);
   };
+  modalResultVideo.onended = !shouldLoop && endIconSrc
+    ? () => {
+        modalResultVideo.pause();
+        modalResultVideo.muted = true;
+        modalResultVideo.volume = 0;
+        setModalIcon(endIconSrc, fallbackText);
+      }
+    : null;
   modalResultVideo.play().catch(() => {
     modalResultVideo.muted = shouldMute;
     modalResultVideo.volume = shouldMute ? 0 : 1;
@@ -1963,6 +1974,12 @@ function setModalVideo(videoSrc, fallbackIconSrc, fallbackText, muted = false) {
 }
 
 function setModalIcon(iconSrc, fallbackText) {
+  modalIconShell.onclick = null;
+  modalIconShell.removeAttribute("role");
+  modalIconShell.removeAttribute("tabindex");
+  modalIconShell.removeAttribute("aria-label");
+  if (modalResultVideo) modalResultVideo.onended = null;
+
   if (!iconSrc) {
     modalResultVideo?.classList.add("hidden");
     modalIcon.classList.add("hidden");
@@ -2019,7 +2036,11 @@ function openModal({
       isPassed ? RESULT_VIDEO_SOURCES.pass : RESULT_VIDEO_SOURCES.fail,
       isPassed ? "icons/promosso.png" : "icons/bocciato.png",
       isPassed ? "OK" : "X",
-      !isPassed
+      {
+        muted: !isPassed,
+        loop: !isPassed,
+        endIconSrc: isPassed ? "icons/superato.png" : ""
+      }
     );
 
     // In exam mode, starting again must draw a new randomized exam.
