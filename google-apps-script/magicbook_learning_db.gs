@@ -1,14 +1,13 @@
 /**
  * Magic Book learning data layer for Google Apps Script + Google Sheets.
  *
- * Run setupLearningDatabase() once from the Apps Script editor. The setup is
- * safe to run again: it creates missing sheets and appends missing columns,
- * while preserving every existing row and column.
+ * The database and its sheets must already exist. This code never creates a
+ * Spreadsheet, a sheet or a schema column. setupLearningDatabase() is retained
+ * as a read-only validation command for the Apps Script editor.
  */
 
-var LEARNING_DB_NAME_ = 'Magic Book Learning Database';
 var LEARNING_DB_SCHEMA_VERSION_ = 1;
-var LEARNING_DB_SETUP_LOCK_TIMEOUT_MS_ = 30000;
+var LEARNING_DB_ID_PROPERTY_ = 'MAGICBOOK_LEARNING_DB_ID';
 var LEARNING_DB_WRITE_LOCK_TIMEOUT_MS_ = 5000;
 var LEARNING_DB_MAX_BATCH_SIZE_ = 25;
 var LEARNING_DB_MAX_INSIGHT_EVENTS_ = 10000;
@@ -256,69 +255,79 @@ var LEARNING_DB_SHEET_ORDER_ = [
 ];
 
 /**
- * Creates or upgrades the learning spreadsheet without deleting existing data.
+ * Validates the existing learning spreadsheet without changing it.
  *
- * @return {{spreadsheetId:string, spreadsheetUrl:string, sheetsCreated:number,
- *   columnsAdded:number, schemaVersion:number}}
+ * The legacy function name is retained so existing operator instructions keep
+ * working, but this function performs no create, insert or schema-update call.
+ *
+ * @return {{spreadsheetId:string, spreadsheetUrl:string, sheetsChecked:number,
+ *   columnsChecked:number, sheetsCreated:number, columnsAdded:number,
+ *   schemaVersion:number}}
  */
 function setupLearningDatabase() {
-  var lock = LockService.getScriptLock();
-  if (!lock.tryLock(LEARNING_DB_SETUP_LOCK_TIMEOUT_MS_)) {
-    throw new Error('Learning database setup is already running. Try again shortly.');
-  }
+  var spreadsheet = getLearningDatabase_();
+  var columnsChecked = 0;
 
-  try {
-    var spreadsheet = getLearningDatabase_();
-
-    var sheetsCreated = 0;
-    var columnsAdded = 0;
-
-    LEARNING_DB_SHEET_ORDER_.forEach(function (sheetName) {
-      var result = ensureSheetSchema_(spreadsheet, sheetName, LEARNING_DB_SCHEMA[sheetName]);
-      if (result.created) sheetsCreated += 1;
-      columnsAdded += result.columnsAdded;
+  LEARNING_DB_SHEET_ORDER_.forEach(function (sheetName) {
+    var sheet = learningRequireSheet_(spreadsheet, sheetName);
+    var columns = learningGetHeaderMap_(sheet);
+    LEARNING_DB_SCHEMA[sheetName].forEach(function (columnName) {
+      learningRequireColumn_(columns, columnName, sheetName);
+      columnsChecked += 1;
     });
+  });
 
-    learningEnsureMetadata_(spreadsheet);
+  var summary = {
+    spreadsheetId: spreadsheet.getId(),
+    spreadsheetUrl: spreadsheet.getUrl(),
+    sheetsChecked: LEARNING_DB_SHEET_ORDER_.length,
+    columnsChecked: columnsChecked,
+    sheetsCreated: 0,
+    columnsAdded: 0,
+    schemaVersion: LEARNING_DB_SCHEMA_VERSION_
+  };
 
-    var summary = {
-      spreadsheetId: spreadsheet.getId(),
-      spreadsheetUrl: spreadsheet.getUrl(),
-      sheetsCreated: sheetsCreated,
-      columnsAdded: columnsAdded,
-      schemaVersion: LEARNING_DB_SCHEMA_VERSION_
-    };
+  Logger.log(
+    'Magic Book Learning DB verified | Spreadsheet ID: %s | Spreadsheet URL: %s | ' +
+    'Sheets checked: %s | Columns checked: %s | Schema version: %s',
+    summary.spreadsheetId,
+    summary.spreadsheetUrl,
+    summary.sheetsChecked,
+    summary.columnsChecked,
+    summary.schemaVersion
+  );
 
-    Logger.log(
-      'Magic Book Learning DB ready | Spreadsheet ID: %s | Spreadsheet URL: %s | ' +
-      'Sheets created: %s | Columns added: %s | Schema version: %s',
-      summary.spreadsheetId,
-      summary.spreadsheetUrl,
-      summary.sheetsCreated,
-      summary.columnsAdded,
-      summary.schemaVersion
-    );
-
-    return summary;
-  } finally {
-    lock.releaseLock();
-  }
+  return summary;
 }
 
 /**
- * Returns the Spreadsheet to which this Apps Script project is bound.
+ * Opens the existing learning database by its Script Property ID.
+ *
+ * Web-app executions do not have an active Spreadsheet context, even when the
+ * script is container-bound. The explicit ID therefore remains the single
+ * database lookup path for editor runs and doPost requests alike.
  *
  * @return {GoogleAppsScript.Spreadsheet.Spreadsheet}
  */
 function getLearningDatabase_() {
-  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  if (!spreadsheet) {
+  var spreadsheetId = String(
+    PropertiesService.getScriptProperties().getProperty(LEARNING_DB_ID_PROPERTY_) || ''
+  ).trim();
+  if (!spreadsheetId) {
     throw new Error(
-      'Questo progetto Apps Script deve essere collegato al Google Sheet utilizzato ' +
-      'come Magic Book Learning Database.'
+      'Configura la proprietà script ' + LEARNING_DB_ID_PROPERTY_ +
+      ' con l\'ID del Google Sheet Magic Book Learning Database già esistente.'
     );
   }
-  return spreadsheet;
+
+  try {
+    return SpreadsheetApp.openById(spreadsheetId);
+  } catch (error) {
+    throw new Error(
+      'Impossibile aprire il Magic Book Learning Database configurato in ' +
+      LEARNING_DB_ID_PROPERTY_ + '. Verifica ID e autorizzazioni.'
+    );
+  }
 }
 
 /**
@@ -699,47 +708,6 @@ function syncLearningEventsBatch_(events) {
   }
 }
 
-/**
- * Ensures one sheet has every schema column. Existing headers remain in place;
- * missing headers are appended after the current last column.
- *
- * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} spreadsheet
- * @param {string} sheetName
- * @param {string[]} columns
- * @return {{created:boolean, columnsAdded:number}}
- */
-function ensureSheetSchema_(spreadsheet, sheetName, columns) {
-  var sheet = spreadsheet.getSheetByName(sheetName);
-  var created = false;
-
-  if (!sheet) {
-    sheet = spreadsheet.insertSheet(sheetName);
-    created = true;
-  }
-
-  var lastColumn = sheet.getLastColumn();
-  var existingHeaders = lastColumn > 0
-    ? sheet.getRange(1, 1, 1, lastColumn).getValues()[0]
-    : [];
-  var existingHeaderMap = {};
-
-  existingHeaders.forEach(function (header) {
-    var key = learningHeaderKey_(header);
-    if (key && !existingHeaderMap[key]) existingHeaderMap[key] = true;
-  });
-
-  var missingColumns = columns.filter(function (columnName) {
-    return !existingHeaderMap[learningHeaderKey_(columnName)];
-  });
-
-  if (missingColumns.length) {
-    sheet.getRange(1, lastColumn + 1, 1, missingColumns.length).setValues([missingColumns]);
-  }
-
-  learningFormatSheet_(sheet);
-  return { created: created, columnsAdded: missingColumns.length };
-}
-
 function learningAppendRow_(sheetName, rowValues) {
   var expectedColumns = LEARNING_DB_SCHEMA[sheetName];
   if (!expectedColumns || rowValues.length !== expectedColumns.length) {
@@ -839,92 +807,6 @@ function learningJsonOutput_(data) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function learningEnsureMetadata_(spreadsheet) {
-  var sheet = learningRequireSheet_(spreadsheet, 'DB_META');
-  var columns = learningGetHeaderMap_(sheet);
-  var keyColumn = learningRequireColumn_(columns, 'key', 'DB_META');
-  var valueColumn = learningRequireColumn_(columns, 'value', 'DB_META');
-  var updatedAtColumn = learningRequireColumn_(columns, 'updated_at', 'DB_META');
-  var lastRow = sheet.getLastRow();
-  var existingRows = {};
-
-  if (lastRow >= 2) {
-    var keys = sheet.getRange(2, keyColumn, lastRow - 1, 1).getValues();
-    keys.forEach(function (values, index) {
-      var key = String(values[0] || '').trim();
-      if (key && !existingRows[key]) existingRows[key] = index + 2;
-    });
-  }
-
-  var now = new Date();
-  var definitions = [
-    { key: 'schema_version', value: LEARNING_DB_SCHEMA_VERSION_, updateExisting: true },
-    { key: 'database_name', value: LEARNING_DB_NAME_, updateExisting: false },
-    { key: 'created_at', value: now, updateExisting: false }
-  ];
-  var rowsToAppend = [];
-
-  definitions.forEach(function (definition) {
-    var rowNumber = existingRows[definition.key];
-    if (!rowNumber) {
-      var row = new Array(sheet.getLastColumn());
-      var index;
-      for (index = 0; index < row.length; index += 1) row[index] = '';
-      row[keyColumn - 1] = definition.key;
-      row[valueColumn - 1] = definition.value;
-      row[updatedAtColumn - 1] = now;
-      rowsToAppend.push(row);
-      return;
-    }
-
-    var currentValue = sheet.getRange(rowNumber, valueColumn).getValue();
-    var shouldUpdate = definition.updateExisting
-      ? String(currentValue) !== String(definition.value)
-      : currentValue === '' || currentValue === null;
-    if (shouldUpdate) {
-      sheet.getRange(rowNumber, valueColumn).setValue(definition.value);
-      sheet.getRange(rowNumber, updatedAtColumn).setValue(now);
-    }
-  });
-
-  if (rowsToAppend.length) {
-    sheet.getRange(
-      Math.max(2, sheet.getLastRow() + 1),
-      1,
-      rowsToAppend.length,
-      sheet.getLastColumn()
-    ).setValues(rowsToAppend);
-  }
-}
-
-function learningFormatSheet_(sheet) {
-  var lastColumn = sheet.getLastColumn();
-  if (lastColumn < 1) return;
-
-  var headers = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
-  sheet.setFrozenRows(1);
-  sheet.setRowHeight(1, 28);
-  sheet.getRange(1, 1, 1, lastColumn)
-    .setFontWeight('bold')
-    .setBackground('#16324F')
-    .setFontColor('#FFFFFF')
-    .setHorizontalAlignment('center')
-    .setWrap(true);
-
-  headers.forEach(function (header, index) {
-    var columnName = String(header || '').trim();
-    if (!columnName) return;
-
-    sheet.setColumnWidth(index + 1, learningColumnWidth_(columnName));
-    if (learningIsDateColumn_(columnName) && sheet.getMaxRows() > 1) {
-      var numberFormat = columnName === 'plan_date'
-        ? 'yyyy-mm-dd'
-        : 'yyyy-mm-dd hh:mm:ss';
-      sheet.getRange(2, index + 1, sheet.getMaxRows() - 1, 1).setNumberFormat(numberFormat);
-    }
-  });
-}
-
 function learningGetHeaderMap_(sheet) {
   var lastColumn = sheet.getLastColumn();
   var headers = lastColumn > 0
@@ -951,7 +833,10 @@ function learningRequireColumn_(columns, columnName, sheetName) {
 function learningRequireSheet_(spreadsheet, sheetName) {
   var sheet = spreadsheet.getSheetByName(sheetName);
   if (!sheet) {
-    throw new Error('Missing sheet ' + sheetName + '. Run setupLearningDatabase() first.');
+    throw new Error(
+      'Missing required sheet ' + sheetName +
+      '. The learning database must already contain every required sheet.'
+    );
   }
   return sheet;
 }
@@ -973,18 +858,6 @@ function learningSetRowValue_(rowValues, columns, columnName, value, sheetName) 
 
 function learningHeaderKey_(value) {
   return String(value || '').trim().toLowerCase();
-}
-
-function learningIsDateColumn_(columnName) {
-  return /_at$/.test(columnName) || columnName === 'plan_date' || columnName === 'last_seen';
-}
-
-function learningColumnWidth_(columnName) {
-  if (columnName === 'metadata_json' || columnName === 'reason_text') return 320;
-  if (columnName === 'user_answer') return 240;
-  if (learningIsDateColumn_(columnName)) return 165;
-  if (/_id$/.test(columnName) || columnName === 'word_key') return 190;
-  return 130;
 }
 
 function learningRequireObject_(value, label) {

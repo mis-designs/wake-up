@@ -172,7 +172,10 @@ class FakeSpreadsheet {
 }
 
 function createRuntime() {
-  const scriptProperties = new Map([["GAS_SECRET", "test-gas-secret"]]);
+  const scriptProperties = new Map([
+    ["GAS_SECRET", "test-gas-secret"],
+    ["MAGICBOOK_LEARNING_DB_ID", "bound-spreadsheet"]
+  ]);
   const spreadsheets = new Map();
   const logEntries = [];
   const lockStats = { attempts: 0, releases: 0, available: true };
@@ -191,9 +194,11 @@ function createRuntime() {
       spreadsheetStats.createCalls += 1;
       throw new Error("SpreadsheetApp.create() must not be called");
     },
-    openById() {
+    openById(spreadsheetId) {
       spreadsheetStats.openByIdCalls += 1;
-      throw new Error("SpreadsheetApp.openById() must not be called");
+      const spreadsheet = spreadsheets.get(spreadsheetId);
+      if (!spreadsheet) throw new Error("Spreadsheet not found");
+      return spreadsheet;
     }
   };
 
@@ -263,6 +268,14 @@ function createRuntime() {
     filename: "google-apps-script/magicbook_learning_db.gs"
   });
 
+  // Simulate the database that already exists in production. Creation here is
+  // test-fixture setup, not behavior provided by the Apps Script under test.
+  Array.from(context.LEARNING_DB_SHEET_ORDER_).forEach(sheetName => {
+    const sheet = activeSpreadsheet.insertSheet(sheetName);
+    const schema = Array.from(context.LEARNING_DB_SCHEMA[sheetName]);
+    sheet.getRange(1, 1, 1, schema.length).setValues([schema]);
+  });
+
   return {
     context,
     spreadsheets,
@@ -283,14 +296,16 @@ function columnIndex(sheet, name) {
   return headers(sheet).indexOf(name) + 1;
 }
 
-test("TEST 1: first setup configures the bound Spreadsheet without creating another file", () => {
+test("TEST 1: setup validates the existing Spreadsheet configured by ID", () => {
   const runtime = createRuntime();
   const summary = runtime.context.setupLearningDatabase();
   const spreadsheet = runtime.spreadsheets.get(summary.spreadsheetId);
   const expectedSheetNames = Array.from(runtime.context.LEARNING_DB_SHEET_ORDER_);
 
   assert.equal(spreadsheet, runtime.activeSpreadsheet);
-  assert.equal(summary.sheetsCreated, 14);
+  assert.equal(summary.sheetsChecked, 14);
+  assert.equal(summary.sheetsCreated, 0);
+  assert.equal(summary.columnsAdded, 0);
   assert.equal(summary.schemaVersion, 1);
   assert.deepEqual(
     spreadsheet.getSheets().map(sheet => sheet.getName()),
@@ -301,10 +316,10 @@ test("TEST 1: first setup configures the bound Spreadsheet without creating anot
       headers(spreadsheet.getSheetByName(sheetName)),
       Array.from(runtime.context.LEARNING_DB_SCHEMA[sheetName])
     );
-    assert.equal(spreadsheet.getSheetByName(sheetName).frozenRows, 1);
   });
   assert.equal(runtime.spreadsheetStats.createCalls, 0);
-  assert.equal(runtime.spreadsheetStats.openByIdCalls, 0);
+  assert.equal(runtime.spreadsheetStats.activeCalls, 0);
+  assert.equal(runtime.spreadsheetStats.openByIdCalls, 1);
   assert.equal(runtime.logEntries.length, 1);
 });
 
@@ -321,20 +336,21 @@ test("TEST 2: a second setup does not duplicate sheets or columns", () => {
   assert.equal(spreadsheet.getSheets().length, 15);
   assert.deepEqual(spreadsheet.getSheets().map(sheet => headers(sheet)), firstHeaders);
   assert.equal(runtime.spreadsheetStats.createCalls, 0);
-  assert.equal(runtime.spreadsheetStats.openByIdCalls, 0);
+  assert.equal(runtime.spreadsheetStats.activeCalls, 0);
+  assert.equal(runtime.spreadsheetStats.openByIdCalls, 2);
 });
 
-test("setup fails clearly when the Apps Script project is not bound to a Spreadsheet", () => {
+test("setup fails clearly when MAGICBOOK_LEARNING_DB_ID is missing", () => {
   const runtime = createRuntime();
-  runtime.setActiveSpreadsheetAvailable(false);
+  runtime.scriptProperties.delete("MAGICBOOK_LEARNING_DB_ID");
 
   assert.throws(
     () => runtime.context.setupLearningDatabase(),
-    /deve essere collegato al Google Sheet utilizzato come Magic Book Learning Database/
+    /Configura la proprietà script MAGICBOOK_LEARNING_DB_ID/
   );
   assert.equal(runtime.spreadsheetStats.createCalls, 0);
   assert.equal(runtime.spreadsheetStats.openByIdCalls, 0);
-  assert.equal(runtime.lockStats.releases, 1);
+  assert.equal(runtime.lockStats.releases, 0);
 });
 
 test("TEST 3: setup preserves an existing ANSWER_EVENTS row", () => {
@@ -356,7 +372,7 @@ test("TEST 3: setup preserves an existing ANSWER_EVENTS row", () => {
   );
 });
 
-test("TEST 4: a future schema column is appended once without shifting data", () => {
+test("TEST 4: setup reports a missing column without modifying the existing sheet", () => {
   const runtime = createRuntime();
   const summary = runtime.context.setupLearningDatabase();
   const spreadsheet = runtime.spreadsheets.get(summary.spreadsheetId);
@@ -366,18 +382,15 @@ test("TEST 4: a future schema column is appended once without shifting data", ()
   answerSheet.getRange(2, 1, 1, originalWidth).setValues([existingRow]);
   runtime.context.LEARNING_DB_SCHEMA.ANSWER_EVENTS.push("future_signal");
 
-  const upgraded = runtime.context.setupLearningDatabase();
-  const repeated = runtime.context.setupLearningDatabase();
-
-  assert.equal(upgraded.columnsAdded, 1);
-  assert.equal(repeated.columnsAdded, 0);
-  assert.equal(answerSheet.getLastColumn(), originalWidth + 1);
-  assert.equal(headers(answerSheet).at(-1), "future_signal");
+  assert.throws(
+    () => runtime.context.setupLearningDatabase(),
+    /Missing required column future_signal in ANSWER_EVENTS/
+  );
+  assert.equal(answerSheet.getLastColumn(), originalWidth);
   assert.deepEqual(
     answerSheet.getRange(2, 1, 1, originalWidth).getValues()[0],
     existingRow
   );
-  assert.equal(answerSheet.getRange(2, originalWidth + 1).getValue(), "");
 });
 
 test("TEST 5: appendAnswerEvent writes a typed, append-only event row", () => {
