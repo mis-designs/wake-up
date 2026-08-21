@@ -43,6 +43,24 @@
       ]
     },
     {
+      "source": "/statistiche",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/errori",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/quiz.html",
       "headers": [
         {
@@ -193,6 +211,14 @@
     },
     {
       "source": "/dizionario",
+      "destination": "/"
+    },
+    {
+      "source": "/statistiche",
+      "destination": "/"
+    },
+    {
+      "source": "/errori",
       "destination": "/"
     },
     {

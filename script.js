@@ -55,6 +55,8 @@ function getAppRoute(state = {}) {
   if (state.screen === "home") return "/home";
   if (state.screen === "chapters") return "/magic-book";
   if (state.screen === "dictionary") return "/dizionario";
+  if (state.screen === "statistics") return "/statistiche";
+  if (state.screen === "errors") return "/errori";
   if (state.screen === "admin") return "/admin";
   if (state.screen === "exam") return "/magic-book/esame-pdf";
   if (state.screen === "viewer" && state.chapter) return getChapterPath(state.chapter);
@@ -69,6 +71,8 @@ function getRouteTitle(state = {}) {
   if (state.screen === "home") return `${APP_TITLE} | Home`;
   if (state.screen === "chapters") return `${APP_TITLE} | Capitoli`;
   if (state.screen === "dictionary") return `${APP_TITLE} | Dizionario`;
+  if (state.screen === "statistics") return `${APP_TITLE} | Statistiche`;
+  if (state.screen === "errors") return `${APP_TITLE} | Errori`;
   if (state.screen === "admin") return `${APP_TITLE} | Admin`;
   if (state.screen === "exam") return `${APP_TITLE} | Esame PDF`;
   if (state.screen === "viewer" && state.chapter) return `${APP_TITLE} | Capitolo ${state.chapter}`;
@@ -99,6 +103,8 @@ function getRouteStateFromLocation() {
   if (path === "/magic-book/esame-pdf") return { screen: "exam" };
   if (path === "/magic-book" || path === "/capitoli") return { screen: "chapters" };
   if (path === "/dizionario") return { screen: "dictionary" };
+  if (path === "/statistiche") return { screen: "statistics" };
+  if (path === "/errori") return { screen: "errors" };
   if (path === "/admin") return { screen: "admin" };
   if (path === "/login") return { screen: "login" };
   if (path === "/join") return { screen: "join" };
@@ -128,6 +134,10 @@ function openRouteState(state = getRouteStateFromLocation()) {
       showChapters();
     } else if (nextState.screen === "dictionary") {
       showMagicDictionary({ replace: true });
+    } else if (nextState.screen === "statistics") {
+      showLearningStatistics({ replace: true });
+    } else if (nextState.screen === "errors") {
+      showLearningErrors({ replace: true });
     } else if (nextState.screen === "viewer") {
       openMagicBookPages({ type: "chapter", chapter: nextState.chapter });
     } else if (nextState.screen === "exam") {
@@ -3148,11 +3158,12 @@ function showWhatsAppGroupPopup() {
  ***********************/
 function hideAll() {
   cleanupMagicBookViewer();
-  ["landing", "about", "join", "login", "home", "chapters", "viewer", "adminPanel", "trialHub", "magicDictionaryScreen"].forEach(id => {
+  window.MagicBookLearningInsights?.hide();
+  ["landing", "about", "join", "login", "home", "chapters", "viewer", "adminPanel", "trialHub", "magicDictionaryScreen", "learningInsightsScreen"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.add("hidden");
   });
-  document.body.classList.remove("admin-mode", "app-mode", "public-mode", "trial-hub-mode");
+  document.body.classList.remove("admin-mode", "app-mode", "public-mode", "trial-hub-mode", "learning-insights-mode");
   updateAdminEntryVisibility();
 }
 
@@ -3191,7 +3202,7 @@ function showMagicDictionary(options = {}) {
     openTrialPaywall("Dizionario");
     return;
   }
-  const returnScreen = currentScreen === "home" ? "home" : "chapters";
+  const returnScreen = ["home", "statistics", "errors"].includes(currentScreen) ? currentScreen : "chapters";
   hideAll();
   setChapterMode(false);
   document.body.classList.add("app-mode");
@@ -3200,7 +3211,32 @@ function showMagicDictionary(options = {}) {
   setProfileIconVisible(false);
   setLoggedInChrome();
   setAppRoute({ screen: "dictionary" }, { replace: options.replace === true });
-  window.MagicDictionaryFeature?.showDictionary({ returnScreen });
+  window.MagicDictionaryFeature?.showDictionary({ returnScreen, query: options.query || "" });
+}
+
+function showLearningInsightsScreen(mode, options = {}) {
+  if (trialGuestMode) {
+    openTrialPaywall(mode === "errors" ? "Errori" : "Statistiche");
+    return;
+  }
+  hideAll();
+  setChapterMode(false);
+  document.getElementById("learningInsightsScreen")?.classList.remove("hidden");
+  document.body.classList.add("app-mode", "learning-insights-mode");
+  currentScreen = mode === "errors" ? "errors" : "statistics";
+  updateProfileUI(true);
+  setProfileIconVisible(false);
+  setLoggedInChrome();
+  setAppRoute({ screen: currentScreen }, { replace: options.replace === true });
+  window.MagicBookLearningInsights?.show(mode, { focus: options.focus !== false });
+}
+
+function showLearningStatistics(options = {}) {
+  showLearningInsightsScreen("statistics", options);
+}
+
+function showLearningErrors(options = {}) {
+  showLearningInsightsScreen("errors", options);
 }
 
 function isGuestTrialChapter(chapter) { return trialGuestMode && isFreeTrialChapter(chapter); }
@@ -3701,6 +3737,8 @@ function goBack() {
   if (currentScreen === "viewer" || currentScreen === "exam") {
     showChapters();
   } else if (currentScreen === "chapters") {
+    showHome();
+  } else if (currentScreen === "statistics" || currentScreen === "errors") {
     showHome();
   } else if (currentScreen === "dictionary") {
     showChapters();

@@ -475,6 +475,9 @@ setQuizTitle(`MagicBook | ${getQuizModeConfig(quizMode).title || "Quiz"}`);
 let quizDurationMinutes = getQuizModeConfig(quizMode).timerMinutes;
 let time = quizDurationMinutes * 60;
 let quizStartedAt = 0;
+let learningSessionId = "";
+let learningQuestionVisibleAt = 0;
+let learningQuestionWasHidden = false;
 let isFinishing = false;
 let lastQuizSet = null;
 let isAdmin = false;
@@ -487,6 +490,63 @@ let googleItalianAudio = null;
 let googleTTSAudio = null;
 const italianAudioCache = {};
 const bengaliAudioCache = {};
+
+function getLearningQuizMode() {
+  if (isExamQuizMode()) return "simulation";
+  return getQuizRouteInfo().chapters ? "chapter_quiz" : "random_quiz";
+}
+
+function beginLearningQuizSession() {
+  if (TRIAL_MODE || !window.MagicBookLearningSync) {
+    learningSessionId = "";
+    return;
+  }
+  learningSessionId = window.MagicBookLearningSync.generateEventId("ses");
+  learningQuestionVisibleAt = Date.now();
+  learningQuestionWasHidden = document.visibilityState === "hidden";
+}
+
+function markLearningQuestionVisible() {
+  if (!learningSessionId) return;
+  learningQuestionVisibleAt = Date.now();
+  learningQuestionWasHidden = document.visibilityState === "hidden";
+}
+
+function queueLearningAnswer(userAnswer) {
+  if (TRIAL_MODE || !learningSessionId || !window.MagicBookLearningSync) return;
+  const question = quiz[current];
+  const answerState = answers[current];
+  if (!question?.id || !answerState) return;
+
+  const answeredAt = Date.now();
+  const responseTimeMs = learningQuestionVisibleAt
+    ? Math.max(0, answeredAt - learningQuestionVisibleAt)
+    : "";
+  answerState.learningAttemptNumber = Number(answerState.learningAttemptNumber || 0) + 1;
+  void window.MagicBookLearningSync.enqueueAnswer({
+    quiz_id: String(question.id),
+    user_answer: userAnswer,
+    answered_at: new Date(answeredAt).toISOString(),
+    response_time_ms: responseTimeMs,
+    response_time_valid: responseTimeMs !== "" && !learningQuestionWasHidden,
+    page_was_hidden: learningQuestionWasHidden,
+    mode: getLearningQuizMode(),
+    session_id: learningSessionId,
+    attempt_number: answerState.learningAttemptNumber,
+    client_version: "quiz-65-learning-sync"
+  }).catch(error => {
+    console.warn("[LearningSync] answer could not be queued", error?.message || error);
+  });
+
+  learningQuestionVisibleAt = answeredAt;
+  learningQuestionWasHidden = document.visibilityState === "hidden";
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (learningSessionId && document.visibilityState === "hidden") {
+    learningQuestionWasHidden = true;
+  }
+});
 
 const modal = document.getElementById("custom-modal");
 const modalCard = modal.querySelector(".modal-card");
@@ -1798,6 +1858,7 @@ function rifaiScheda() {
   stopAllAudio();
   quiz    = lastQuizSet.slice();
   answers = quiz.map(q => ({ id: q.id, answer: null }));
+  beginLearningQuizSession();
   current = 0;
   isFinishing = false;
 
@@ -1849,6 +1910,7 @@ async function loadQuiz() {
 
     // inizializza risposte
     answers = quiz.map(q => ({ id: q.id, answer: null }));
+    beginLearningQuizSession();
 
     buildProgressBar();
     showQuestion();
@@ -2489,6 +2551,7 @@ function updateAdminCorrectDots(question) {
 
 function showQuestion() {
   const q = quiz[current];
+  markLearningQuestionVisible();
   if (inlineAudioRecording && inlineAudioRecording.questionIndex !== current) closeInlineAudioRecorder();
   quizAudioAdminTools?.classList.toggle("hidden", !isAdmin || TRIAL_MODE);
   updateQuizAudioAdminTool(false);
@@ -2525,6 +2588,7 @@ function answer(val) {
   const otherBtn = val === 1 ? falsoBtn : veroBtn;
 
   answers[current].answer = val;
+  queueLearningAnswer(val);
 
   // mantiene una sola risposta selezionata per volta
   veroBtn.classList.remove("selected", "tap-feedback");

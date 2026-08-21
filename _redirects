@@ -9,6 +9,8 @@ https://magicph.netlify.app/* https://tmmmagic.eu/:splat 301!
 /magic-book /index.html 200
 /capitoli /index.html 200
 /dizionario /index.html 200
+/statistiche /index.html 200
+/errori /index.html 200
 /magic-book/capitolo-* /index.html 200
 /magic-book/esame-pdf /index.html 200
 /admin /index.html 200

@@ -1,0 +1,17 @@
+{
+  "profile": "product-admin",
+  "sourceRoots": ["src"],
+  "canonicalMap": "UX-CONTRACT.md",
+  "requiredCapabilities": ["Scrollbar"],
+  "ownership": {
+    "Date": "native",
+    "Select/Listbox": "native"
+  },
+  "commands": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "requiredCommands": ["test"],
+  "evidence": {
+    "failurePaths": "tests/learning-insights-api.test.mjs"
+  }
+}

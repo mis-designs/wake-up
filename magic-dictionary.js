@@ -963,7 +963,9 @@
 
   async function showDictionary(options = {}) {
     ensureElements();
-    dictionaryReturnScreen = options.returnScreen === "home" ? "home" : "chapters";
+    dictionaryReturnScreen = ["home", "statistics", "errors"].includes(options.returnScreen)
+      ? options.returnScreen
+      : "chapters";
     const screen = root.document?.getElementById("magicDictionaryScreen");
     screen?.classList.remove("hidden");
     if (screen) screen.scrollTop = 0;
@@ -973,6 +975,8 @@
     try {
       await loadCatalog();
       dictionaryVisibleCount = PAGE_SIZE;
+      const search = root.document?.getElementById("magicDictionarySearch");
+      if (search && options.query) search.value = String(options.query).slice(0, 120);
       renderDictionary();
     } catch (error) {
       if (status) status.textContent = "Dizionario non disponibile. Riprova tra poco.";
@@ -1003,6 +1007,8 @@
     root.document.getElementById("magicDictionaryBack")?.addEventListener("click", () => {
       hideDictionary();
       if (dictionaryReturnScreen === "home" && typeof root.showHome === "function") root.showHome();
+      else if (dictionaryReturnScreen === "statistics" && typeof root.showLearningStatistics === "function") root.showLearningStatistics();
+      else if (dictionaryReturnScreen === "errors" && typeof root.showLearningErrors === "function") root.showLearningErrors();
       else if (typeof root.showChapters === "function") root.showChapters();
       else root.location.href = "/home";
     });
