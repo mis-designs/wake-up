@@ -7,6 +7,7 @@
  */
 
 var LEARNING_DB_SCHEMA_VERSION_ = 1;
+var LEARNING_DB_API_VERSION_ = 2;
 var LEARNING_DB_ID_PROPERTY_ = 'MAGICBOOK_LEARNING_DB_ID';
 var LEARNING_DB_WRITE_LOCK_TIMEOUT_MS_ = 5000;
 var LEARNING_DB_MAX_BATCH_SIZE_ = 25;
@@ -266,16 +267,7 @@ var LEARNING_DB_SHEET_ORDER_ = [
  */
 function setupLearningDatabase() {
   var spreadsheet = getLearningDatabase_();
-  var columnsChecked = 0;
-
-  LEARNING_DB_SHEET_ORDER_.forEach(function (sheetName) {
-    var sheet = learningRequireSheet_(spreadsheet, sheetName);
-    var columns = learningGetHeaderMap_(sheet);
-    LEARNING_DB_SCHEMA[sheetName].forEach(function (columnName) {
-      learningRequireColumn_(columns, columnName, sheetName);
-      columnsChecked += 1;
-    });
-  });
+  var columnsChecked = learningValidateDatabaseSchema_(spreadsheet);
 
   var summary = {
     spreadsheetId: spreadsheet.getId(),
@@ -300,6 +292,61 @@ function setupLearningDatabase() {
   return summary;
 }
 
+function learningValidateDatabaseSchema_(spreadsheet) {
+  var columnsChecked = 0;
+  LEARNING_DB_SHEET_ORDER_.forEach(function (sheetName) {
+    var sheet = learningRequireSheet_(spreadsheet, sheetName);
+    var columns = learningGetHeaderMap_(sheet);
+    LEARNING_DB_SCHEMA[sheetName].forEach(function (columnName) {
+      learningRequireColumn_(columns, columnName, sheetName);
+      columnsChecked += 1;
+    });
+  });
+  return columnsChecked;
+}
+
+/**
+ * Runs a safe, read-only configuration check from the Apps Script editor.
+ * No property value, Spreadsheet ID or secret is written to the log/output.
+ *
+ * @return {{success:boolean, apiVersion:number, databaseIdConfigured:boolean,
+ *   proxySecretConfigured:boolean, databaseAccessible:boolean,
+ *   schemaValid:boolean, error:(string|null)}}
+ */
+function diagnoseLearningDatabase() {
+  var properties = PropertiesService.getScriptProperties();
+  var report = {
+    success: false,
+    apiVersion: LEARNING_DB_API_VERSION_,
+    databaseIdConfigured: Boolean(
+      String(properties.getProperty(LEARNING_DB_ID_PROPERTY_) || '').trim()
+    ),
+    proxySecretConfigured: Boolean(
+      String(properties.getProperty('GAS_SECRET') || '').trim()
+    ),
+    databaseAccessible: false,
+    schemaValid: false,
+    error: null
+  };
+
+  try {
+    var spreadsheet = getLearningDatabase_();
+    report.databaseAccessible = true;
+    learningValidateDatabaseSchema_(spreadsheet);
+    report.schemaValid = true;
+    if (!report.proxySecretConfigured) {
+      report.error = 'gas_secret_missing';
+    } else {
+      report.success = true;
+    }
+  } catch (error) {
+    report.error = learningPublicRuntimeError_(error);
+  }
+
+  Logger.log(JSON.stringify(report));
+  return report;
+}
+
 /**
  * Opens the existing learning database by its Script Property ID.
  *
@@ -314,7 +361,8 @@ function getLearningDatabase_() {
     PropertiesService.getScriptProperties().getProperty(LEARNING_DB_ID_PROPERTY_) || ''
   ).trim();
   if (!spreadsheetId) {
-    throw new Error(
+    throw learningRuntimeError_(
+      'database_id_missing',
       'Configura la proprietà script ' + LEARNING_DB_ID_PROPERTY_ +
       ' con l\'ID del Google Sheet Magic Book Learning Database già esistente.'
     );
@@ -323,7 +371,8 @@ function getLearningDatabase_() {
   try {
     return SpreadsheetApp.openById(spreadsheetId);
   } catch (error) {
-    throw new Error(
+    throw learningRuntimeError_(
+      'database_open_failed',
       'Impossibile aprire il Magic Book Learning Database configurato in ' +
       LEARNING_DB_ID_PROPERTY_ + '. Verifica ID e autorizzazioni.'
     );
@@ -532,6 +581,9 @@ function endStudySession(data) {
 function doPost(e) {
   try {
     var payload = JSON.parse(e && e.postData && e.postData.contents ? e.postData.contents : '{}');
+    if (!learningProxySecretConfigured_()) {
+      return learningJsonOutput_({ success: false, error: 'gas_secret_missing' });
+    }
     if (!learningVerifyProxyToken_(payload.token)) {
       return learningJsonOutput_({ success: false, error: 'unauthorized' });
     }
@@ -544,7 +596,12 @@ function doPost(e) {
     return learningJsonOutput_({ success: false, error: 'invalid_action' });
   } catch (error) {
     console.error('[learning_database]', error && error.stack ? error.stack : error);
-    return learningJsonOutput_({ success: false, error: 'server_error', retryAfterSeconds: 5 });
+    return learningJsonOutput_({
+      success: false,
+      error: learningPublicRuntimeError_(error),
+      retryAfterSeconds: 5,
+      apiVersion: LEARNING_DB_API_VERSION_
+    });
   }
 }
 
@@ -558,7 +615,9 @@ function doPost(e) {
  */
 function learningReadAnswerEventsForUser_(userId) {
   userId = learningRequiredText_(userId, 'user_id', 255);
-  if (!/^\d{6,15}$/.test(userId)) throw new Error('invalid_user_id');
+  if (!/^\d{6,15}$/.test(userId)) {
+    throw learningRuntimeError_('invalid_user_id', 'The authenticated user ID is invalid.');
+  }
 
   var spreadsheet = getLearningDatabase_();
   var sheet = learningRequireSheet_(spreadsheet, 'ANSWER_EVENTS');
@@ -773,8 +832,8 @@ function learningExternalIdOrGenerated_(value, prefix, required) {
 
 function learningVerifyProxyToken_(suppliedToken) {
   var expectedToken = PropertiesService.getScriptProperties().getProperty('GAS_SECRET') || '';
-  var supplied = String(suppliedToken || '');
-  var expected = String(expectedToken || '');
+  var supplied = String(suppliedToken || '').trim();
+  var expected = String(expectedToken || '').trim();
   if (!supplied || !expected) return false;
 
   var difference = supplied.length ^ expected.length;
@@ -785,6 +844,30 @@ function learningVerifyProxyToken_(suppliedToken) {
       ^ expected.charCodeAt(index % expected.length);
   }
   return difference === 0;
+}
+
+function learningProxySecretConfigured_() {
+  return Boolean(
+    String(PropertiesService.getScriptProperties().getProperty('GAS_SECRET') || '').trim()
+  );
+}
+
+function learningRuntimeError_(code, message) {
+  var error = new Error(message || code || 'server_error');
+  error.learningCode = String(code || 'server_error');
+  return error;
+}
+
+function learningPublicRuntimeError_(error) {
+  var allowed = {
+    database_id_missing: true,
+    database_open_failed: true,
+    schema_missing_sheet: true,
+    schema_missing_column: true,
+    invalid_user_id: true
+  };
+  var code = String(error && error.learningCode ? error.learningCode : 'server_error');
+  return allowed[code] ? code : 'server_error';
 }
 
 function learningPublicValidationError_(error) {
@@ -825,7 +908,10 @@ function learningGetHeaderMap_(sheet) {
 function learningRequireColumn_(columns, columnName, sheetName) {
   var columnNumber = columns[learningHeaderKey_(columnName)];
   if (!columnNumber) {
-    throw new Error('Missing required column ' + columnName + ' in ' + sheetName + '.');
+    throw learningRuntimeError_(
+      'schema_missing_column',
+      'Missing required column ' + columnName + ' in ' + sheetName + '.'
+    );
   }
   return columnNumber;
 }
@@ -833,7 +919,8 @@ function learningRequireColumn_(columns, columnName, sheetName) {
 function learningRequireSheet_(spreadsheet, sheetName) {
   var sheet = spreadsheet.getSheetByName(sheetName);
   if (!sheet) {
-    throw new Error(
+    throw learningRuntimeError_(
+      'schema_missing_sheet',
       'Missing required sheet ' + sheetName +
       '. The learning database must already contain every required sheet.'
     );

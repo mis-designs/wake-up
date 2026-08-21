@@ -353,6 +353,58 @@ test("setup fails clearly when MAGICBOOK_LEARNING_DB_ID is missing", () => {
   assert.equal(runtime.lockStats.releases, 0);
 });
 
+test("diagnostics verify the existing database without exposing IDs or secrets", () => {
+  const runtime = createRuntime();
+  const report = runtime.context.diagnoseLearningDatabase();
+  const serializedLog = JSON.stringify(runtime.logEntries);
+
+  assert.equal(report.success, true);
+  assert.equal(report.apiVersion, 2);
+  assert.equal(report.databaseIdConfigured, true);
+  assert.equal(report.proxySecretConfigured, true);
+  assert.equal(report.databaseAccessible, true);
+  assert.equal(report.schemaValid, true);
+  assert.equal(report.error, null);
+  assert.equal(serializedLog.includes("bound-spreadsheet"), false);
+  assert.equal(serializedLog.includes("test-gas-secret"), false);
+});
+
+test("diagnostics and doPost identify a missing proxy secret safely", () => {
+  const runtime = createRuntime();
+  runtime.scriptProperties.delete("GAS_SECRET");
+  const report = runtime.context.diagnoseLearningDatabase();
+  const output = runtime.context.doPost({
+    postData: {
+      contents: JSON.stringify({ action: "learning_insights", user_id: "3331112222" })
+    }
+  });
+
+  assert.equal(report.success, false);
+  assert.equal(report.databaseAccessible, true);
+  assert.equal(report.schemaValid, true);
+  assert.equal(report.error, "gas_secret_missing");
+  assert.equal(JSON.parse(output.text).error, "gas_secret_missing");
+});
+
+test("diagnostics identify an inaccessible configured database", () => {
+  const runtime = createRuntime();
+  runtime.scriptProperties.set("MAGICBOOK_LEARNING_DB_ID", "missing-spreadsheet");
+  const report = runtime.context.diagnoseLearningDatabase();
+
+  assert.equal(report.success, false);
+  assert.equal(report.databaseIdConfigured, true);
+  assert.equal(report.databaseAccessible, false);
+  assert.equal(report.schemaValid, false);
+  assert.equal(report.error, "database_open_failed");
+});
+
+test("proxy secret comparison ignores accidental surrounding whitespace", () => {
+  const runtime = createRuntime();
+  runtime.scriptProperties.set("GAS_SECRET", "  test-gas-secret  ");
+
+  assert.equal(runtime.context.learningVerifyProxyToken_("test-gas-secret"), true);
+});
+
 test("TEST 3: setup preserves an existing ANSWER_EVENTS row", () => {
   const runtime = createRuntime();
   const summary = runtime.context.setupLearningDatabase();
