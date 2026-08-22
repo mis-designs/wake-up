@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:css": "tailwindcss -i ./src/daisyui.css -o ./assets/daisyui.css --minify",
+    "watch:css": "tailwindcss -i ./src/daisyui.css -o ./assets/daisyui.css --watch",
     "security:audit": "node --test tests/repository-security.test.mjs tests/security.test.mjs tests/promo-access-security.test.mjs tests/trial-access-security.test.mjs tests/trial-book-security.test.mjs tests/trial-security.test.mjs tests/upstream-fetch.test.mjs tests/book-content-security.test.mjs tests/magic-reader-watermark.test.mjs tests/screen-protection.test.mjs",
     "test:dictionary-gate": "node --test tests/magic-dictionary-feature.test.mjs"
   },
@@ -12,5 +14,10 @@
     "@aws-sdk/s3-request-presigner": "^3.1088.0",
     "@neondatabase/serverless": "^1.1.0",
     "sharp": "0.35.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "daisyui": "^5.7.0",
+    "tailwindcss": "^4.3.3"
   }
 }

@@ -1,0 +1,58 @@
+@layer theme, base, components, utilities;
+
+/*
+ * daisyUI is compiled locally and deliberately isolated from Magic Book's
+ * legacy global controls. Preflight is omitted, and every component class is
+ * prefixed with `d-` so `.card`, `button`, and `input` keep their app contract.
+ */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+
+/* Only generate the prefixed primitives used by the login. */
+@source inline("d-card d-card-body d-fieldset d-label d-input d-input-lg d-input-error d-btn d-btn-primary d-btn-lg d-alert d-alert-error d-alert-soft d-loading d-loading-spinner d-loading-sm");
+
+@plugin "daisyui" {
+  themes: false;
+  root: "#login";
+  include: button, input, card, fieldset, label, alert, loading;
+  exclude: rootcolor, scrollbar, rootscrollgutter, rootscrolllock;
+  prefix: "d-";
+  logs: false;
+}
+
+@plugin "daisyui/theme" {
+  name: "magicbook";
+  default: false;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: oklch(100% 0 0);
+  --color-base-200: oklch(97.2% 0.008 255);
+  --color-base-300: oklch(92.5% 0.014 255);
+  --color-base-content: oklch(28% 0.05 259);
+  --color-primary: oklch(55% 0.12 174);
+  --color-primary-content: oklch(99% 0 0);
+  --color-secondary: oklch(43% 0.1 251);
+  --color-secondary-content: oklch(99% 0 0);
+  --color-accent: oklch(91% 0.2 122);
+  --color-accent-content: oklch(25% 0.04 174);
+  --color-neutral: oklch(30% 0.06 255);
+  --color-neutral-content: oklch(98% 0.004 255);
+  --color-info: oklch(65% 0.14 233);
+  --color-info-content: oklch(20% 0.04 240);
+  --color-success: oklch(63% 0.15 158);
+  --color-success-content: oklch(20% 0.04 160);
+  --color-warning: oklch(76% 0.15 78);
+  --color-warning-content: oklch(25% 0.05 70);
+  --color-error: oklch(62% 0.2 27);
+  --color-error-content: oklch(98% 0.01 25);
+
+  --radius-selector: 0.875rem;
+  --radius-field: 0.875rem;
+  --radius-box: 1.25rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}

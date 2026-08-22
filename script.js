@@ -849,6 +849,21 @@ function showPromoLoginToast(message) {
 /***********************
  * LOGIN
  ***********************/
+function setLoginFieldInvalid(input, isInvalid) {
+  if (!input) return;
+  input.setAttribute("aria-invalid", isInvalid ? "true" : "false");
+  input.classList.toggle("d-input-error", Boolean(isInvalid));
+}
+
+function setLoginButtonBusy(button, isBusy) {
+  if (!button) return;
+  const spinner = button.querySelector(".login-submit-spinner");
+  button.classList.toggle("is-loading", Boolean(isBusy));
+  button.setAttribute("aria-busy", isBusy ? "true" : "false");
+  button.setAttribute("aria-disabled", button.disabled ? "true" : "false");
+  spinner?.classList.toggle("hidden", !isBusy);
+}
+
 async function login(options = {}) {
   const fromPromoCard = options.source === "promo-card";
   const phoneInput = document.getElementById(fromPromoCard ? "promoLandingPhone" : "user");
@@ -863,6 +878,10 @@ async function login(options = {}) {
 
   if (!isValidPhoneNumber(phoneInput?.value)) {
     if (err) err.textContent = "Inserisci un numero di telefono valido";
+    if (!fromPromoCard) {
+      setLoginFieldInvalid(phoneInput, true);
+      phoneInput?.focus();
+    }
     if (fromPromoCard) updatePromoLandingButtonState();
     else updateLoginButtonState();
     return;
@@ -879,11 +898,16 @@ async function login(options = {}) {
 
   if (loginButton) {
     loginButton.disabled = true;
-    loginButton.classList.add("is-loading");
+    if (!fromPromoCard) setLoginButtonBusy(loginButton, true);
+    else loginButton.classList.add("is-loading");
     if (loginButtonLabel) loginButtonLabel.textContent = "Verifica...";
   }
 
   if (err) err.textContent = "";
+  if (!fromPromoCard) {
+    setLoginFieldInvalid(phoneInput, false);
+    setLoginFieldInvalid(adminPasswordInput, false);
+  }
 
   try {
     const authPayload = {
@@ -918,6 +942,7 @@ async function login(options = {}) {
         showAdminPasswordUI();
         if (adminPasswordInput) {
           adminPasswordInput.value = "";
+          setLoginFieldInvalid(adminPasswordInput, true);
           adminPasswordInput.focus();
         }
         if (err) err.textContent = "Password amministratore non corretta.";
@@ -933,6 +958,10 @@ async function login(options = {}) {
         setTimeout(showExpiredRenewPopup, 80);
       }
       if (err) err.textContent = getLoginErrorMessage(loginError);
+      if (!fromPromoCard && (loginError === "not_found" || loginError === "bad_phone")) {
+        setLoginFieldInvalid(phoneInput, true);
+        phoneInput?.focus();
+      }
       return;
     }
 
@@ -942,7 +971,8 @@ async function login(options = {}) {
     if (err) err.textContent = "Verifica non riuscita. Riprova tra poco.";
   } finally {
     if (loginButton) {
-      loginButton.classList.remove("is-loading");
+      if (!fromPromoCard) setLoginButtonBusy(loginButton, false);
+      else loginButton.classList.remove("is-loading");
       if (loginButtonLabel) loginButtonLabel.textContent = originalText;
     }
     updateLoginButtonState();
@@ -951,43 +981,63 @@ async function login(options = {}) {
 }
 
 function ensureAdminPasswordUI() {
-  if (document.getElementById("adminPassword")) return;
+  const input = document.getElementById("adminPassword");
+  const toggle = document.getElementById("adminPasswordToggle");
+  if (!input || input.dataset.loginUiReady === "true") return;
 
-  const phoneInput = document.getElementById("user");
-  if (!phoneInput) return;
-
-  const input = document.createElement("input");
-  input.id = "adminPassword";
-  input.className = "admin-password hidden";
-  input.type = "password";
-  input.placeholder = "Password amministratore";
-  input.autocomplete = "current-password";
-  input.setAttribute("aria-label", "Password amministratore");
+  input.dataset.loginUiReady = "true";
 
   input.addEventListener("input", () => {
     const err = document.getElementById("err");
     if (err) err.textContent = "";
+    setLoginFieldInvalid(input, false);
     updateLoginButtonState();
   });
 
-  phoneInput.insertAdjacentElement("afterend", input);
+  toggle?.addEventListener("click", () => {
+    const shouldReveal = input.type === "password";
+    input.type = shouldReveal ? "text" : "password";
+    toggle.textContent = shouldReveal ? "Nascondi" : "Mostra";
+    toggle.setAttribute("aria-pressed", shouldReveal ? "true" : "false");
+    toggle.setAttribute(
+      "aria-label",
+      shouldReveal ? "Nascondi password amministratore" : "Mostra password amministratore"
+    );
+    toggle.title = shouldReveal ? "Nascondi password" : "Mostra password";
+    input.focus({ preventScroll: true });
+  });
 }
 
 function showAdminPasswordUI() {
   ensureAdminPasswordUI();
   adminPasswordRequired = true;
+  const group = document.getElementById("adminPasswordGroup");
   const input = document.getElementById("adminPassword");
-  input?.classList.remove("hidden");
+  group?.classList.remove("hidden");
+  group?.setAttribute("aria-hidden", "false");
+  input?.setAttribute("aria-required", "true");
   input?.focus();
 }
 
 function hideAdminPasswordUI() {
   adminPasswordRequired = false;
+  const group = document.getElementById("adminPasswordGroup");
   const input = document.getElementById("adminPassword");
+  const toggle = document.getElementById("adminPasswordToggle");
+  group?.classList.add("hidden");
+  group?.setAttribute("aria-hidden", "true");
   if (!input) return;
 
   input.value = "";
-  input.classList.add("hidden");
+  input.type = "password";
+  input.setAttribute("aria-required", "false");
+  setLoginFieldInvalid(input, false);
+  if (toggle) {
+    toggle.textContent = "Mostra";
+    toggle.setAttribute("aria-pressed", "false");
+    toggle.setAttribute("aria-label", "Mostra password amministratore");
+    toggle.title = "Mostra password";
+  }
 }
 
 function ensureOtpUI() {
@@ -1342,6 +1392,7 @@ function updateLoginButtonState() {
   const isLoading = loginButton.classList.contains("is-loading");
   const missingAdminPassword = adminPasswordRequired && !String(adminPasswordInput?.value || "").trim();
   loginButton.disabled = isLoading || !isValidPhoneNumber(phoneInput?.value) || missingAdminPassword;
+  loginButton.setAttribute("aria-disabled", loginButton.disabled ? "true" : "false");
 }
 
 function setupLoginUI() {
@@ -1353,12 +1404,13 @@ function setupLoginUI() {
   const err = document.getElementById("err");
 
   if (loginButton && !loginButton.dataset.defaultText) {
-    loginButton.dataset.defaultText = loginButton.textContent || "Continua";
+    loginButton.dataset.defaultText = loginButton.querySelector(".login-submit-label")?.textContent || "Continua";
   }
 
   phoneInput?.addEventListener("input", () => {
     hideAdminPasswordUI();
     if (err) err.textContent = "";
+    setLoginFieldInvalid(phoneInput, false);
     updateLoginButtonState();
   });
 
@@ -2009,6 +2061,9 @@ function showLoginScreen(message = "", options = {}) {
   setChapterMode(false);
   const err = document.getElementById("err");
   if (err) err.textContent = message;
+  setLoginFieldInvalid(document.getElementById("user"), false);
+  setLoginFieldInvalid(document.getElementById("adminPassword"), false);
+  setLoginButtonBusy(document.querySelector("#login .login-submit"), false);
   updateProfileUI(false);
   setProfileIconVisible(false);
   setLoggedOutChrome();

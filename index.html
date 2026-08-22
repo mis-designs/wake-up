@@ -93,11 +93,12 @@ gtag('config', 'G-C5JPY9HFHD', {
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MagicBook">
-<link rel="stylesheet" href="style.css?v=59-promo-users-load-fix">
+<link rel="stylesheet" href="assets/daisyui.css?v=1-login-form">
+<link rel="stylesheet" href="style.css?v=61-learning-roadbook">
 <link rel="stylesheet" href="homebg.css?v=3">
 <link rel="stylesheet" href="magic-dictionary.css?v=1.2.2">
 <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
-<link rel="stylesheet" href="src/learning-insights.css?v=1">
+<link rel="stylesheet" href="src/learning-insights.css?v=2-roadbook">
 </head>
 <body>
 
@@ -558,24 +559,82 @@ gtag('config', 'G-C5JPY9HFHD', {
 </main>
 
 <!-- LOGIN -->
-<div class="card hidden" id="login">
-    <div class="login-greeting-cloud" aria-hidden="true">
-      <span class="login-greeting login-greeting-ciao">Ciao!</span>
-      <span class="login-greeting login-greeting-hello">Hello</span>
-      <span class="login-greeting login-greeting-welcome">Welcome back</span>
-      <span class="login-greeting login-greeting-time" data-login-time-greeting>Good day</span>
-      <span class="login-greeting login-greeting-bangla" lang="bn">স্বাগতম</span>
-      <span class="login-greeting login-greeting-salaam">Assalamu alaikum</span>
-    </div>
-    <img class="login-hero-img" src="icons/login_img.svg" alt="TMM Bangla Patente">
-    <h1>MagicBook</h1>
-    <p class="login-subtitle">Studia il libro, esercitati con 786 quiz importanti, crea schede e simula l'esame.</p>
-    <form class="login-form" data-nosnippet onsubmit="event.preventDefault(); login();">
-      <label class="sr-only" for="user">Numero di telefono</label>
-      <input id="user" type="tel" placeholder="Numero di telefono" aria-label="Numero di telefono" autocomplete="tel" inputmode="tel" aria-describedby="err">
-      <button class="login-submit" type="submit" disabled>Continua</button>
-    </form>
-    <p id="err" data-nosnippet role="status" aria-live="polite"></p>
+<div class="card hidden" id="login" data-theme="magicbook">
+  <main class="login-pass d-card" aria-labelledby="loginTitle">
+    <section class="login-story" aria-label="MagicBook TMM Bangla Patente">
+      <div class="login-greeting-cloud" aria-hidden="true">
+        <span class="login-greeting login-greeting-ciao">Ciao!</span>
+        <span class="login-greeting login-greeting-hello">Hello</span>
+        <span class="login-greeting login-greeting-welcome">Welcome back</span>
+        <span class="login-greeting login-greeting-time" data-login-time-greeting>Good day</span>
+        <span class="login-greeting login-greeting-bangla" lang="bn">স্বাগতম</span>
+        <span class="login-greeting login-greeting-salaam">Assalamu alaikum</span>
+      </div>
+
+      <div class="login-story-body">
+        <img class="login-hero-img" src="icons/login_img.svg" alt="">
+        <div class="login-story-copy">
+          <p class="login-brand">MagicBook</p>
+          <p class="login-story-text">Libro, quiz e ripasso degli errori: il tuo percorso patente continua da qui.</p>
+        </div>
+      </div>
+
+      <div class="login-road" aria-hidden="true">
+        <span class="login-road-start"></span>
+        <span class="login-road-line"></span>
+        <span class="login-road-finish"></span>
+      </div>
+    </section>
+
+    <section class="login-panel d-card-body">
+      <div class="login-heading">
+        <p class="login-kicker">ACCESSO AL PERCORSO</p>
+        <h1 id="loginTitle">Bentornato.</h1>
+        <p class="login-subtitle">Inserisci il numero collegato a MagicBook per riprendere esattamente da dove eri rimasto.</p>
+      </div>
+
+      <form class="login-form d-fieldset" data-nosnippet novalidate onsubmit="event.preventDefault(); login();">
+        <div class="login-field">
+          <label class="login-label d-label" for="user">Numero di telefono</label>
+          <div class="login-input-wrap">
+            <svg class="login-input-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7.2 3.5 9.5 8l-1.8 1.7c.8 2 2.5 3.7 4.6 4.6l1.7-1.8 4.5 2.3-.7 3.2c-.2.9-1 1.5-1.9 1.5A15.4 15.4 0 0 1 4.5 8.1c0-.9.6-1.7 1.5-1.9l1.2-2.7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <input class="login-input d-input d-input-lg" id="user" type="tel" placeholder="320 123 4567" autocomplete="tel" inputmode="tel" aria-describedby="phoneHelp err" aria-required="true">
+          </div>
+          <p class="login-help" id="phoneHelp">Puoi scriverlo con o senza il prefisso +39.</p>
+        </div>
+
+        <div class="login-field admin-password-group hidden" id="adminPasswordGroup">
+          <label class="login-label d-label" for="adminPassword">Password amministratore</label>
+          <div class="login-input-wrap login-secret-wrap">
+            <svg class="login-input-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="5" y="10" width="14" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M8.5 10V7.5a3.5 3.5 0 0 1 7 0V10M12 14v2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <input class="login-input d-input d-input-lg" id="adminPassword" type="password" placeholder="Inserisci la password" autocomplete="current-password" aria-describedby="adminPasswordHelp err">
+            <button class="login-password-toggle" id="adminPasswordToggle" type="button" aria-label="Mostra password amministratore" aria-pressed="false" title="Mostra password">Mostra</button>
+          </div>
+          <p class="login-help" id="adminPasswordHelp">Richiesta solo per gli account amministratore.</p>
+        </div>
+
+        <button class="login-submit d-btn d-btn-primary d-btn-lg" type="submit" disabled aria-busy="false">
+          <span class="login-submit-label">Continua</span>
+          <span class="login-submit-spinner d-loading d-loading-spinner d-loading-sm hidden" aria-hidden="true"></span>
+        </button>
+      </form>
+
+      <div class="login-feedback-slot">
+        <p class="login-feedback d-alert d-alert-error d-alert-soft" id="err" data-nosnippet role="status" aria-live="polite"></p>
+      </div>
+
+      <p class="login-device-note">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5.5 5.7v5.8c0 4.2 2.7 7.8 6.5 9.5 3.8-1.7 6.5-5.3 6.5-9.5V5.7L12 3Z" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="m9.4 12 1.7 1.7 3.6-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Accesso protetto e associato al tuo dispositivo.
+      </p>
+    </section>
+  </main>
+
     <a class="watermark-link" data-nosnippet href="https://www.facebook.com/share/14aaeMyWJGw/" target="_blank" rel="noopener noreferrer">
       By MiskatDesigns
       <span class="watermark-tip">Visit</span>
@@ -610,12 +669,12 @@ gtag('config', 'G-C5JPY9HFHD', {
       <button class="home-learning-entry is-statistics" onclick="showLearningStatistics()" type="button">
         <img src="icons/statistiche-patente.png" alt="">
         <span><strong>Statistiche</strong><small>Leggi il tuo percorso</small></span>
-        <span class="home-learning-arrow" aria-hidden="true">→</span>
+        <img class="home-learning-arrow" src="icons/next.png" alt="" aria-hidden="true">
       </button>
       <button class="home-learning-entry is-errors" onclick="showLearningErrors()" type="button">
         <img src="icons/errori-patente.png" alt="">
         <span><strong>Errori</strong><small>Recupera ciò che conta</small></span>
-        <span class="home-learning-arrow" aria-hidden="true">→</span>
+        <img class="home-learning-arrow" src="icons/next.png" alt="" aria-hidden="true">
       </button>
     </div>
   </div>
@@ -1096,7 +1155,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script src="magic-dictionary.js?v=1.2.4"></script>
 <script src="screen-protection.js?v=1.2.0"></script>
 <script src="learning-sync.js?v=2"></script>
-<script src="src/learning-insights.js?v=1"></script>
-<script src="script.js?v=55-learning-insights"></script>
+<script src="src/learning-insights.js?v=2-roadbook"></script>
+<script src="script.js?v=56-login-daisyui"></script>
 </body>
 </html>

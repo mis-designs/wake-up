@@ -21,7 +21,7 @@ test("the passed-result video plays once with audio and settles on a static imag
 
 test("the one-shot passed-result video ships with its static image", () => {
   assert.match(page, /quiz\.js\?v=65-learning-sync/u);
-  assert.match(worker, /magicbook-pwa-v113-learning-insights/u);
+  assert.match(worker, /magicbook-pwa-v115-learning-roadbook/u);
   assert.match(worker, /quiz\.js\?v=65-learning-sync/u);
   assert.match(worker, /\/icons\/superato\.png/u);
 });
