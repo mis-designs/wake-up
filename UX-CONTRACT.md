@@ -8,12 +8,14 @@
 | Scrollbar | Application root | `src/learning-insights.css` global `html` rules | Browser forced-colors only | Computed root style and unclassed horizontal lens scroller |
 | Statistics Roadbook | `src/learning-insights.js` | Authenticated learning model | Empty, insufficient, ready, cached, refreshing | Data-state tests plus desktop/tablet/mobile browser verification |
 | Error Recovery | `src/learning-insights.js` | Authenticated errors and recovery plan | Six categories; empty or populated master/detail; recovered evidence | Interaction, URL, focus, and responsive browser verification |
+| Learning shell controls | `src/learning-insights.js` + `src/learning-insights.css` | Locally compiled `d-btn` primitives with Roadbook geometry | Compact labelled refresh on wider screens; icon-only refresh on narrow screens | 320/390/768/1440/1920 browser and keyboard verification |
 
 ## Feature ownership
 
 | Concern | Owner | Contract |
 | --- | --- | --- |
 | Login UI | `index.html`, `style.css`, `src/daisyui.css` | Phone-only access uses locally compiled, `d-`-prefixed daisyUI primitives scoped to `#login`; no CDN or global reset. |
+| Learning shell UI | `src/learning-insights.js`, `src/learning-insights.css`, `src/daisyui.css` | Back, refresh, and route buttons use locally compiled `d-`-prefixed daisyUI primitives. The full-screen learning route hides legacy fixed chrome to prevent duplicate or overlapping controls. |
 | Login behavior | `script.js` | Preserve phone input after remote errors; mask admin password; prevent duplicate submit; expose inline generic recovery without raw backend details. |
 | Learning routes | `script.js` | `/statistiche` and `/errori`; error lens is the `tipo` query parameter. |
 | Learning data | `src/learning-insights.js` | Local-first, user-scoped cached rendering plus one abortable request per visible route; prior requests are ignored when the route changes. |

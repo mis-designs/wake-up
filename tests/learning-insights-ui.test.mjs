@@ -7,6 +7,8 @@ const script = readFileSync(new URL("../script.js", import.meta.url), "utf8");
 const appCss = readFileSync(new URL("../style.css", import.meta.url), "utf8");
 const client = readFileSync(new URL("../src/learning-insights.js", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/learning-insights.css", import.meta.url), "utf8");
+const daisySource = readFileSync(new URL("../src/daisyui.css", import.meta.url), "utf8");
+const daisyBuild = readFileSync(new URL("../assets/daisyui.css", import.meta.url), "utf8");
 const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
 const redirects = readFileSync(new URL("../_redirects", import.meta.url), "utf8");
 const homeLearningStart = index.indexOf('<div class="home-learning-entries"');
@@ -58,7 +60,17 @@ test("the redesign cannot regress to the failed editorial or horizontally scroll
   assert.doesNotMatch(css, /min-height:\s*520px/u);
   assert.match(css, /@media \(max-width: 599px\)[\s\S]*?\.li-stage ol \{ grid-template-columns: 1fr;/u);
   assert.match(css, /\.li-chapter-copy strong \{[\s\S]*?-webkit-line-clamp: 2;/u);
-  assert.match(css, /body\.learning-insights-mode \.app-header \{ display: none !important; \}/u);
+  assert.match(css, /body\.learning-insights-mode :where\([\s\S]*?#adminEntryBtn,[\s\S]*?#profileBtn,[\s\S]*?#whatsappBtn,[\s\S]*?\) \{ display: none !important; \}/u);
+  assert.match(index, /id="learningInsightsScreen"[^>]*data-theme="magicbook"/u);
+  assert.match(client, /li-icon-button d-btn d-btn-ghost d-btn-square d-btn-sm/u);
+  assert.match(client, /li-refresh d-btn d-btn-ghost d-btn-sm/u);
+  assert.match(client, /aria-label="\$\{state\.isRefreshing \? "Aggiornamento in corso" : "Aggiorna il percorso"\}"/u);
+  assert.match(client, /li-refresh-icon" aria-hidden="true"/u);
+  assert.equal((client.match(/class="d-btn d-btn-ghost d-btn-sm" type="button" data-li-route=/gu) || []).length, 2);
+  assert.match(daisySource, /d-btn-sm d-btn-ghost d-btn-square/u);
+  for (const componentClass of ["d-btn-ghost", "d-btn-square", "d-btn-sm"]) {
+    assert.match(daisyBuild, new RegExp(`\\.${componentClass}`));
+  }
 });
 
 test("the UI includes stable loading, empty, offline, error and insufficient states", () => {
@@ -120,12 +132,14 @@ test("responsive, reduced-motion and global scrollbar rules are present", () => 
   assert.match(css, /forced-colors: active/u);
   assert.match(css, /#learningInsightsScreen::-webkit-scrollbar/u);
   assert.match(index, /style\.css\?v=62-home-learning-layout/u);
-  assert.match(index, /src\/learning-insights\.css\?v=2-roadbook/u);
-  assert.match(index, /src\/learning-insights\.js\?v=2-roadbook/u);
-  assert.match(worker, /magicbook-pwa-v116-home-learning-layout/u);
+  assert.match(index, /assets\/daisyui\.css\?v=2-learning-shell/u);
+  assert.match(index, /src\/learning-insights\.css\?v=3-daisy-shell/u);
+  assert.match(index, /src\/learning-insights\.js\?v=3-daisy-shell/u);
+  assert.match(worker, /magicbook-pwa-v117-learning-shell/u);
   assert.match(worker, /style\.css\?v=62-home-learning-layout/u);
-  assert.match(worker, /src\/learning-insights\.css\?v=2-roadbook/u);
-  assert.match(worker, /src\/learning-insights\.js\?v=2-roadbook/u);
+  assert.match(worker, /assets\/daisyui\.css\?v=2-learning-shell/u);
+  assert.match(worker, /src\/learning-insights\.css\?v=3-daisy-shell/u);
+  assert.match(worker, /src\/learning-insights\.js\?v=3-daisy-shell/u);
   assert.match(worker, /\/icons\/next\.png/u);
   assert.match(worker, /\/icons\/go-back\.png/u);
   assert.match(worker, /\/assets\/admin\/update\.png/u);

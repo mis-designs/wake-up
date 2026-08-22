@@ -114,15 +114,15 @@
     const isErrors = mode === "errors";
     return `
       <header class="li-topbar">
-        <button class="li-icon-button" type="button" data-li-action="home" onclick="MagicBookLearningInsights.handleClick(event)" aria-label="Torna alla Home"><img src="icons/go-back.png" alt=""></button>
+        <button class="li-icon-button d-btn d-btn-ghost d-btn-square d-btn-sm" type="button" data-li-action="home" onclick="MagicBookLearningInsights.handleClick(event)" aria-label="Torna alla Home"><img src="icons/go-back.png" alt=""></button>
         <a class="li-brand" href="/home" data-li-action="home" onclick="MagicBookLearningInsights.handleClick(event)">
           <img src="${iconForMode(mode)}" alt=""><span><strong>Magic Book</strong><small>${isErrors ? "Centro recupero" : "Il tuo percorso"}</small></span>
         </a>
-        <button class="li-refresh" type="button" data-li-action="refresh" onclick="MagicBookLearningInsights.handleClick(event)" aria-busy="${state.isRefreshing}" ${state.isRefreshing ? 'aria-disabled="true"' : ""}><img src="assets/admin/update.png" alt=""><span>${state.isRefreshing ? "Aggiorno" : "Aggiorna"}</span></button>
+        <button class="li-refresh d-btn d-btn-ghost d-btn-sm" type="button" data-li-action="refresh" onclick="MagicBookLearningInsights.handleClick(event)" aria-label="${state.isRefreshing ? "Aggiornamento in corso" : "Aggiorna il percorso"}" aria-busy="${state.isRefreshing}" ${state.isRefreshing ? 'aria-disabled="true"' : ""}><span class="li-refresh-icon" aria-hidden="true"><img src="assets/admin/update.png" alt=""></span><span class="li-refresh-label">${state.isRefreshing ? "Aggiorno" : "Aggiorna"}</span></button>
       </header>
       <nav class="li-route-nav" aria-label="Percorso di apprendimento">
-        <button type="button" data-li-route="statistics" onclick="MagicBookLearningInsights.handleClick(event)" ${!isErrors ? 'aria-current="page"' : ""}><img src="icons/statistiche-patente.png" alt=""><span>Statistiche</span></button>
-        <button type="button" data-li-route="errors" onclick="MagicBookLearningInsights.handleClick(event)" ${isErrors ? 'aria-current="page"' : ""}><img src="icons/errori-patente.png" alt=""><span>Errori</span></button>
+        <button class="d-btn d-btn-ghost d-btn-sm" type="button" data-li-route="statistics" onclick="MagicBookLearningInsights.handleClick(event)" ${!isErrors ? 'aria-current="page"' : ""}><img src="icons/statistiche-patente.png" alt=""><span>Statistiche</span></button>
+        <button class="d-btn d-btn-ghost d-btn-sm" type="button" data-li-route="errors" onclick="MagicBookLearningInsights.handleClick(event)" ${isErrors ? 'aria-current="page"' : ""}><img src="icons/errori-patente.png" alt=""><span>Errori</span></button>
       </nav>`;
   }
 

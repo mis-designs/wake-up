@@ -8,11 +8,11 @@ canonical_ui:
     - src/daisyui.css
     - assets/daisyui.css
     - src/learning-insights.css
-  notes: Existing application styles remain canonical; locally compiled, d-prefixed daisyUI primitives are scoped to the login, while the learning-insights layer adds scoped semantic tokens and components.
+  notes: Existing application styles remain canonical; locally compiled, d-prefixed daisyUI primitives serve the login and learning-shell controls, while screen styles own their scoped semantic tokens and final geometry.
 design_context:
   owner: Magic Book
   last_updated: 2026-08-22
-  revision_notes: Documented the Roadbook redesign for Statistics and Error Recovery while preserving the scoped daisyUI login study pass and established learning-route identity.
+  revision_notes: Unified the Roadbook header with locally compiled daisyUI button primitives and isolated it from legacy fixed application chrome.
 ---
 
 # Magic Book design context
@@ -62,9 +62,9 @@ The root variables in `style.css` remain the brand source of truth. The insights
 ## Components and behavior
 
 - Login study pass: a calm two-zone card connects the multilingual greeting and existing illustration to the phone-access form with one road-waypoint motif. On narrow screens it becomes one natural-height column.
-- Login controls: locally compiled daisyUI 5 components use the `d-` prefix and `#login` theme root. `style.css` remains the visual owner; generated `assets/daisyui.css` is never hand-edited.
+- Shared component base: locally compiled daisyUI 5 components use the `d-` prefix. Login fields/actions and learning-shell back, refresh, and route controls opt into those primitives; `style.css` and `src/learning-insights.css` remain the final visual owners. Generated `assets/daisyui.css` is never hand-edited.
 - Home learning entries: two equal-weight buttons for `Statistiche` and `Errori`, each with the supplied icon and a short purpose label.
-- Learning shell: shared Roadbook header, asset-based back/refresh/route controls, route-backed Statistics/Errori navigation, freshness status, and one live status region.
+- Learning shell: shared Roadbook header, daisyUI-backed asset controls, route-backed Statistics/Errori navigation, freshness status, and one live status region. While this full-screen shell is active, legacy fixed admin, profile, install, and WhatsApp controls are suppressed so there is one unambiguous chrome owner.
 - Statistics snapshot: a compact current-state summary combines attempts, precision, recent performance, and coverage with an explicit evidence-progress indicator. It is not an exam-readiness prediction.
 - Next move and signals: one evidence-backed recommendation is followed by at most three concise signals drawn from observed chapters, active recovery priorities, or recent recoveries.
 - Chapter Roadbook: all 25 chapters are always represented as five ordered stages of five checkpoints. Selecting a checkpoint reveals its detail inside that same stage, with status, attempts, accuracy, recent accuracy, active errors, and chapter/quiz actions.

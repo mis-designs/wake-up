@@ -8,8 +8,8 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities) source(none);
 
-/* Only generate the prefixed primitives used by the login. */
-@source inline("d-card d-card-body d-fieldset d-label d-input d-input-lg d-input-error d-btn d-btn-primary d-btn-lg d-alert d-alert-error d-alert-soft d-loading d-loading-spinner d-loading-sm");
+/* Generate only the prefixed primitives used by login and learning chrome. */
+@source inline("d-card d-card-body d-fieldset d-label d-input d-input-lg d-input-error d-btn d-btn-primary d-btn-lg d-btn-sm d-btn-ghost d-btn-square d-alert d-alert-error d-alert-soft d-loading d-loading-spinner d-loading-sm");
 
 @plugin "daisyui" {
   themes: false;

@@ -10,7 +10,7 @@ const daisyBuild = readFileSync(new URL("../assets/daisyui.css", import.meta.url
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
 test("login uses locally compiled, scoped daisyUI components", () => {
-  assert.ok(page.indexOf("assets/daisyui.css?v=1-login-form") < page.indexOf("style.css?v=62-home-learning-layout"));
+  assert.ok(page.indexOf("assets/daisyui.css?v=2-learning-shell") < page.indexOf("style.css?v=62-home-learning-layout"));
   assert.match(page, /id="login" data-theme="magicbook"/);
   assert.match(page, /class="login-pass d-card"/);
   assert.match(page, /class="login-form d-fieldset"/);
@@ -24,7 +24,7 @@ test("login uses locally compiled, scoped daisyUI components", () => {
   assert.match(daisySource, /include: button, input, card, fieldset, label, alert, loading/);
   assert.doesNotMatch(daisySource, /@import "tailwindcss";/);
   assert.doesNotMatch(daisySource, /@source "\.\.\/(?:index\.html|script\.js)"/);
-  assert.match(daisySource, /@source inline\("d-card[^"]*d-loading-sm"\)/);
+  assert.match(daisySource, /@source inline\("d-card[^"]*d-btn-ghost[^"]*d-loading-sm"\)/);
   for (const componentClass of ["d-card", "d-input", "d-btn", "d-alert", "d-loading"]) {
     assert.match(daisyBuild, new RegExp(`\\.${componentClass}`));
   }
