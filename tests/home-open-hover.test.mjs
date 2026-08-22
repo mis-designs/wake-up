@@ -22,7 +22,7 @@ test("the MagicBook action uses the green horizontal OPEN design", () => {
 });
 
 test("the OPEN cue ships in a fresh PWA cache", () => {
-  assert.match(index, /style\.css\?v=61-learning-roadbook/u);
-  assert.match(worker, /magicbook-pwa-v115-learning-roadbook/u);
-  assert.match(worker, /style\.css\?v=61-learning-roadbook/u);
+  assert.match(index, /style\.css\?v=62-home-learning-layout/u);
+  assert.match(worker, /magicbook-pwa-v116-home-learning-layout/u);
+  assert.match(worker, /style\.css\?v=62-home-learning-layout/u);
 });

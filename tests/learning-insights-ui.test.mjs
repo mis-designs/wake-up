@@ -20,9 +20,10 @@ test("home, history routing and deployment expose both learning screens", () => 
   assert.match(index, /showLearningErrors\(\)/u);
   assert.match(index, /icons\/statistiche-patente\.png/u);
   assert.match(index, /icons\/errori-patente\.png/u);
-  assert.equal((homeLearningMarkup.match(/<img class="home-learning-arrow" src="icons\/next\.png" alt="" aria-hidden="true">/gu) || []).length, 2);
+  assert.equal((homeLearningMarkup.match(/<span class="home-learning-arrow" aria-hidden="true"><\/span>/gu) || []).length, 2);
   assert.doesNotMatch(homeLearningMarkup, /(?:→|&rarr;|&#8594;|&#x0*2192;)/iu);
-  assert.match(appCss, /#home \.home-learning-entry > img\.home-learning-arrow\s*\{[^}]*width: 20px;[^}]*height: 20px;[^}]*object-fit: contain;[^}]*border-radius: 0;/u);
+  assert.match(appCss, /#home \.home-learning-entry > \.home-learning-icon\s*\{[^}]*width:\s*52px;[^}]*height:\s*52px;[^}]*object-fit:\s*contain;/u);
+  assert.match(appCss, /#home \.home-learning-arrow\s*\{[^}]*background:\s*url\("icons\/next\.png"\) center \/ contain no-repeat;/u);
   assert.match(client, /<img src="icons\/next\.png" alt="">/u);
   assert.doesNotMatch(client, /[→›]/u);
   assert.match(script, /path === "\/statistiche"/u);
@@ -118,11 +119,11 @@ test("responsive, reduced-motion and global scrollbar rules are present", () => 
   assert.match(css, /prefers-reduced-motion: reduce/u);
   assert.match(css, /forced-colors: active/u);
   assert.match(css, /#learningInsightsScreen::-webkit-scrollbar/u);
-  assert.match(index, /style\.css\?v=61-learning-roadbook/u);
+  assert.match(index, /style\.css\?v=62-home-learning-layout/u);
   assert.match(index, /src\/learning-insights\.css\?v=2-roadbook/u);
   assert.match(index, /src\/learning-insights\.js\?v=2-roadbook/u);
-  assert.match(worker, /magicbook-pwa-v115-learning-roadbook/u);
-  assert.match(worker, /style\.css\?v=61-learning-roadbook/u);
+  assert.match(worker, /magicbook-pwa-v116-home-learning-layout/u);
+  assert.match(worker, /style\.css\?v=62-home-learning-layout/u);
   assert.match(worker, /src\/learning-insights\.css\?v=2-roadbook/u);
   assert.match(worker, /src\/learning-insights\.js\?v=2-roadbook/u);
   assert.match(worker, /\/icons\/next\.png/u);

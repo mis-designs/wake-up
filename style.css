@@ -3522,6 +3522,198 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
+    gap: 12px;
+}
+
+#home .home-dictionary-entry {
+    width: 290px;
+    max-width: 100%;
+    min-height: 64px;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: center;
+    gap: 11px;
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 19px;
+    background: var(--gradient-dark);
+    color: #ffffff;
+    text-align: left;
+    box-shadow: 0 12px 26px rgba(37, 41, 67, 0.16);
+}
+
+#home .home-dictionary-new-badge {
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    font-size: 8px;
+}
+
+#home .home-dictionary-copy {
+    min-width: 0;
+}
+
+#home .home-dictionary-copy strong,
+#home .home-dictionary-copy small {
+    display: block;
+}
+
+#home .home-dictionary-copy strong {
+    font-size: 0.92rem;
+    line-height: 1.1;
+    font-weight: 900;
+}
+
+#home .home-dictionary-copy small {
+    margin-top: 4px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.7rem;
+    line-height: 1.25;
+    font-weight: 700;
+}
+
+#home .home-dictionary-entry:hover,
+#home .home-dictionary-entry:focus-visible {
+    box-shadow: 0 16px 32px rgba(37, 41, 67, 0.22);
+    transform: translateY(-2px);
+}
+
+#home .home-dictionary-entry:focus-visible {
+    outline: 3px solid rgba(58, 78, 251, 0.3);
+    outline-offset: 3px;
+}
+
+#home .home-dictionary-entry:active {
+    transform: scale(0.985);
+}
+
+#home .home-learning-entries {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+#home .home-learning-entry {
+    --home-learning-accent: var(--color-primary);
+    position: relative;
+    min-width: 0;
+    min-height: 78px;
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr) 20px;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+    padding: 11px 12px;
+    border: 1px solid rgba(37, 41, 67, 0.1);
+    border-radius: 20px;
+    background: #ffffff;
+    color: var(--color-dark);
+    text-align: left;
+    box-shadow: 0 10px 24px rgba(37, 41, 67, 0.1);
+}
+
+#home .home-learning-entry::before {
+    content: "";
+    position: absolute;
+    inset: 10px auto 10px 0;
+    width: 3px;
+    border-radius: 0 999px 999px 0;
+    background: var(--home-learning-accent);
+}
+
+#home .home-learning-entry.is-errors {
+    --home-learning-accent: #d85c55;
+}
+
+#home .home-learning-entry > .home-learning-icon {
+    display: block;
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    object-fit: contain;
+    border-radius: 14px;
+}
+
+#home .home-learning-copy {
+    min-width: 0;
+}
+
+#home .home-learning-copy strong,
+#home .home-learning-copy small {
+    display: block;
+}
+
+#home .home-learning-copy strong {
+    font-size: 0.9rem;
+    line-height: 1.1;
+    font-weight: 900;
+}
+
+#home .home-learning-copy small {
+    margin-top: 4px;
+    color: #68748a;
+    font-size: 0.68rem;
+    line-height: 1.25;
+    font-weight: 700;
+}
+
+#home .home-learning-arrow {
+    display: block;
+    width: 20px;
+    height: 20px;
+    background: url("icons/next.png") center / contain no-repeat;
+    opacity: 0.64;
+    transition: transform 180ms ease, opacity 180ms ease;
+}
+
+#home .home-learning-entry:hover,
+#home .home-learning-entry:focus-visible {
+    border-color: color-mix(in srgb, var(--home-learning-accent) 34%, transparent);
+    box-shadow: 0 14px 30px rgba(37, 41, 67, 0.14);
+    transform: translateY(-2px);
+}
+
+#home .home-learning-entry:focus-visible {
+    outline: 3px solid rgba(58, 78, 251, 0.3);
+    outline-offset: 3px;
+}
+
+#home .home-learning-entry:hover .home-learning-arrow,
+#home .home-learning-entry:focus-visible .home-learning-arrow {
+    opacity: 0.9;
+    transform: translateX(2px);
+}
+
+#home .home-learning-entry:active {
+    transform: scale(0.985);
+}
+
+@media (max-width: 480px) {
+    #home .home-learning-entry {
+        min-height: 70px;
+        grid-template-columns: 42px minmax(0, 1fr);
+        gap: 8px;
+        padding: 8px 10px;
+    }
+
+    #home .home-learning-entry > .home-learning-icon {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+    }
+
+    #home .home-learning-arrow {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #home .home-dictionary-entry,
+    #home .home-learning-entry,
+    #home .home-learning-arrow {
+        transition: none;
+    }
 }
 
 #home .watermark-link {
@@ -7782,12 +7974,4 @@ body.qms-open { overflow: hidden; }
     #login .login-password-toggle:focus-visible {
         outline-color: Highlight;
     }
-}
-
-/* Home learning entry: keep the route glyph independent from the feature icon. */
-#home .home-learning-entry > img.home-learning-arrow {
-    width: 20px;
-    height: 20px;
-    object-fit: contain;
-    border-radius: 0;
 }

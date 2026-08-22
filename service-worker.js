@@ -1,10 +1,10 @@
-const CACHE_NAME = "magicbook-pwa-v115-learning-roadbook";
+const CACHE_NAME = "magicbook-pwa-v116-home-learning-layout";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
   "/assets/daisyui.css?v=1-login-form",
-  "/style.css?v=61-learning-roadbook",
+  "/style.css?v=62-home-learning-layout",
   "/magic-dictionary.css?v=1.2.2",
   "/screen-protection.css?v=1.1.0",
   "/learning-sync.js?v=2",
