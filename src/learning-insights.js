@@ -6,7 +6,7 @@
     timeoutMs: 14_000,
     pageSize: 8,
     maxLocalEvents: 250,
-    validLenses: ["figure", "quiz", "parole", "argomenti", "capitoli", "recuperati"]
+    validLenses: ["figure", "quiz", "parole", "argomenti", "capitoli"]
   });
   const state = {
     mode: "statistics",
@@ -97,6 +97,18 @@
     return `is-${normalized.replace(/_/g, "-")}`;
   }
 
+  function simpleStatusLabel(status) {
+    return ({
+      attenzione: "Da ripassare",
+      in_miglioramento: "Sta migliorando",
+      recuperato: "Recuperato",
+      solido: "Bene",
+      pochi_dati: "Pochi dati",
+      in_pratica: "Pochi dati",
+      non_iniziato: "Non iniziato"
+    })[status] || "Pochi dati";
+  }
+
   function iconForMode(mode) {
     return mode === "errors" ? "icons/errori-patente.png" : "icons/statistiche-patente.png";
   }
@@ -116,11 +128,11 @@
       <header class="li-topbar">
         <button class="li-icon-button d-btn d-btn-ghost d-btn-square d-btn-sm" type="button" data-li-action="home" onclick="MagicBookLearningInsights.handleClick(event)" aria-label="Torna alla Home"><img src="icons/go-back.png" alt=""></button>
         <a class="li-brand" href="/home" data-li-action="home" onclick="MagicBookLearningInsights.handleClick(event)">
-          <img src="${iconForMode(mode)}" alt=""><span><strong>Magic Book</strong><small>${isErrors ? "Centro recupero" : "Il tuo percorso"}</small></span>
+          <img src="${iconForMode(mode)}" alt=""><span><strong>Magic Book</strong><small>${isErrors ? "Ripasso e recupero" : "I tuoi risultati"}</small></span>
         </a>
-        <button class="li-refresh d-btn d-btn-ghost d-btn-sm" type="button" data-li-action="refresh" onclick="MagicBookLearningInsights.handleClick(event)" aria-label="${state.isRefreshing ? "Aggiornamento in corso" : "Aggiorna il percorso"}" aria-busy="${state.isRefreshing}" ${state.isRefreshing ? 'aria-disabled="true"' : ""}><span class="li-refresh-icon" aria-hidden="true"><img src="assets/admin/update.png" alt=""></span><span class="li-refresh-label">${state.isRefreshing ? "Aggiorno" : "Aggiorna"}</span></button>
+        <button class="li-refresh d-btn d-btn-ghost d-btn-sm" type="button" data-li-action="refresh" onclick="MagicBookLearningInsights.handleClick(event)" aria-label="${state.isRefreshing ? "Aggiornamento in corso" : "Aggiorna i dati"}" aria-busy="${state.isRefreshing}" ${state.isRefreshing ? 'aria-disabled="true"' : ""}><span class="li-refresh-icon" aria-hidden="true"><img src="assets/admin/update.png" alt=""></span><span class="li-refresh-label">${state.isRefreshing ? "Aggiorno" : "Aggiorna"}</span></button>
       </header>
-      <nav class="li-route-nav" aria-label="Percorso di apprendimento">
+      <nav class="li-route-nav" aria-label="Statistiche e ripasso">
         <button class="d-btn d-btn-ghost d-btn-sm" type="button" data-li-route="statistics" onclick="MagicBookLearningInsights.handleClick(event)" ${!isErrors ? 'aria-current="page"' : ""}><img src="icons/statistiche-patente.png" alt=""><span>Statistiche</span></button>
         <button class="d-btn d-btn-ghost d-btn-sm" type="button" data-li-route="errors" onclick="MagicBookLearningInsights.handleClick(event)" ${isErrors ? 'aria-current="page"' : ""}><img src="icons/errori-patente.png" alt=""><span>Errori</span></button>
       </nav>`;
@@ -130,29 +142,28 @@
     if (!state.model) return "";
     const pending = Number(state.model.summary?.pendingLocalEvents || 0);
     const lines = [];
-    if (state.isCached) lines.push(`<strong>Copia locale.</strong> Aggiornata ${escapeHtml(formatDate(state.cachedAt || state.model.generatedAt))}.`);
+    if (state.isCached) lines.push(`<strong>Dati salvati sul dispositivo.</strong> Aggiornati ${escapeHtml(formatDate(state.cachedAt || state.model.generatedAt))}.`);
     if (pending) {
       lines.push(state.model.summary?.pendingLocalIncluded
-        ? `${pending} ${plural(pending, "risposta recente è", "risposte recenti sono")} già inclus${pending === 1 ? "a" : "e"} e in attesa di sincronizzazione.`
+        ? `${pending} ${plural(pending, "risposta recente è", "risposte recenti sono")} già inclus${pending === 1 ? "a" : "e"} e sar${pending === 1 ? "à" : "anno"} salvat${pending === 1 ? "a" : "e"} appena possibile.`
         : `${pending} ${plural(pending, "risposta recente è", "risposte recenti sono")} in attesa: entrer${pending === 1 ? "à" : "anno"} nei dati appena torni online.`);
     }
-    if (state.model.dataQuality?.sourceTruncated) lines.push("La lettura considera i 10.000 eventi più recenti.");
+    if (state.model.dataQuality?.sourceTruncated) lines.push("Sto usando le risposte più recenti disponibili.");
     if (!lines.length) return "";
     return `<div class="li-data-banner" role="note"><span class="li-live-dot" aria-hidden="true"></span><p>${lines.join(" ")}</p></div>`;
   }
 
   function renderSkeleton() {
-    const rows = Array.from({ length: 5 }, () => `<div class="li-skeleton-stage">${Array.from({ length: 5 }, () => "<span></span>").join("")}</div>`).join("");
+    const cells = Array.from({ length: 25 }, () => "<span></span>").join("");
     return `
       <div class="li-shell">
         ${renderTop(state.mode)}
         <main class="li-main li-skeleton" aria-hidden="true">
           <div class="li-skeleton-heading"><span></span><span></span></div>
-          <div class="li-skeleton-summary"><span></span><span></span><span></span><span></span></div>
-          <div class="li-skeleton-signal"><span></span><span></span></div>
-          <div class="li-skeleton-route">${rows}</div>
+          <div class="li-skeleton-top"><div class="li-skeleton-overview"><span></span><span></span><span></span><span></span></div><div class="li-skeleton-action"><span></span><span></span></div></div>
+          <div class="li-skeleton-matrix">${cells}</div>
         </main>
-        <p class="li-loading-copy">Leggo il tuo percorso…</p>
+        <p class="li-loading-copy">Carico i tuoi risultati…</p>
       </div>`;
   }
 
@@ -164,77 +175,92 @@
     return Number(model.dataQuality?.catalogQuizCount || model.dataQuality?.quizCatalogCount || 0);
   }
 
-  function journeyStageLabel(stage) {
-    const labels = ["Prime risposte", "Prime indicazioni", "Tendenza recente", "Percorso consolidato"];
-    return labels[Math.max(0, Math.min(labels.length - 1, Number(stage) || 0))];
-  }
-
   function recentComparison(summary) {
     const recent = Number(summary.recentAccuracyPct);
     const overall = Number(summary.overallAccuracyPct);
-    if (!Number.isFinite(recent) || !Number.isFinite(overall) || !Number(summary.recentWindowSize)) return `ultime ${summary.recentWindowSize || 0}`;
+    const recentCount = Number(summary.recentWindowSize || 0);
+    if (!recentCount || !Number.isFinite(recent) || !Number.isFinite(overall)) return "Fai un quiz per vedere il risultato.";
     const delta = Math.round(recent - overall);
-    if (delta > 0) return `+${delta} pt sulla media complessiva`;
-    if (delta < 0) return `${Math.abs(delta)} pt sotto la media complessiva`;
-    return "in linea con la media complessiva";
+    if (delta >= 5) return "Negli ultimi quiz stai migliorando.";
+    if (delta <= -5) return "Negli ultimi quiz hai fatto più errori del solito.";
+    return "Il risultato degli ultimi quiz è stabile.";
   }
 
-  function renderSnapshot(model) {
+  function startedChapterCount(model) {
+    return (model.chapters || []).filter(chapter => Number(chapter.attempts || 0) > 0).length;
+  }
+
+  function plainItemReason(item) {
+    const attempts = Number(item?.attempts || 0);
+    const wrong = Number(item?.wrong || 0);
+    const differentQuizWrong = Number(item?.differentQuizWrong || 0);
+    const activeErrors = Number(item?.activeErrors || 0);
+    if (item?.status === "in_miglioramento") return "Le risposte più recenti stanno andando meglio.";
+    if (item?.type === "figure") {
+      if (differentQuizWrong > 1) return `Hai sbagliato ${differentQuizWrong} quiz diversi che usano questa figura.`;
+      return wrong ? `${wrong} ${plural(wrong, "errore", "errori")} nei quiz che usano questa figura.` : "Ripassa la figura e riprova i quiz collegati.";
+    }
+    if (item?.type === "word") return wrong ? `Questa parola compare in ${wrong} ${plural(wrong, "risposta sbagliata", "risposte sbagliate")}.` : "Ripassa il significato di questa parola.";
+    if (item?.type === "topic") return wrong ? `Hai fatto ${wrong} ${plural(wrong, "errore", "errori")} in questo argomento.` : "Ripassa questo argomento prima del prossimo quiz.";
+    if (item?.type === "chapter") return activeErrors ? `${activeErrors} ${plural(activeErrors, "elemento da ripassare", "elementi da ripassare")} in questo capitolo.` : "Le risposte recenti stanno migliorando.";
+    return attempts ? `${wrong} ${plural(wrong, "errore", "errori")} su ${attempts} ${plural(attempts, "tentativo", "tentativi")}.` : "Riprova questo quiz.";
+  }
+
+  function planActionLabel(item) {
+    if (item?.action === "dictionary") return "Ripassa la parola";
+    if (item?.action === "figure") return "Riprova con la figura";
+    return "Ripassa adesso";
+  }
+
+  function planActionButton(item, label = planActionLabel(item)) {
+    return `<button class="li-primary-action d-btn d-btn-primary d-btn-sm" type="button" data-li-plan-action="${escapeHtml(item.action)}" data-entity-id="${escapeHtml(item.entityId)}" data-chapter="${Number(item.chapter || 0)}" data-title="${escapeHtml(item.title)}" onclick="MagicBookLearningInsights.handleClick(event)">${escapeHtml(label)}<img src="icons/next.png" alt=""></button>`;
+  }
+
+  function renderOverview(model) {
     const summary = model.summary;
-    const journey = model.journey;
     const catalogCount = catalogQuizCount(model);
-    const quizNote = catalogCount ? `${formatPercent(summary.quizCoveragePct)} di ${catalogCount}` : `${formatPercent(summary.quizCoveragePct)} del catalogo`;
-    const nextCopy = journey.nextMilestone
-      ? `${journey.answersToNext} ${plural(journey.answersToNext, "risposta", "risposte")} alla prossima tappa`
-      : "Le tappe di evidenza sono complete";
+    const recentValue = Number(summary.recentWindowSize || 0) ? formatPercent(summary.recentAccuracyPct) : "—";
+    const answered = Number(summary.totalAnswers || 0);
+    const correct = Number(summary.totalCorrect || 0);
     return `
-      <section class="li-snapshot" aria-labelledby="learningInsightsHeading">
-        <header class="li-page-heading"><div><p class="li-kicker">Quadro di apprendimento</p><h1 id="learningInsightsHeading" tabindex="-1">Il punto, adesso.</h1></div><p>Una lettura compatta dei quiz svolti, con più peso alle risposte recenti.</p></header>
-        <div class="li-snapshot-grid" aria-label="Riepilogo del percorso">
-          ${metric("Risposte recenti", formatPercent(summary.recentAccuracyPct), recentComparison(summary), "is-primary")}
-          ${metric("Precisione complessiva", formatPercent(summary.overallAccuracyPct), `${summary.totalCorrect || 0} corrette su ${summary.totalAnswers || 0}`)}
-          ${metric("Quiz esplorati", `${summary.uniqueQuizSeen || 0}`, quizNote)}
-          ${metric("Da recuperare", `${summary.activeErrors || 0}`, `${summary.recoveredThisWeek || 0} recuperati questa settimana`)}
+      <section class="li-overview" aria-labelledby="learningInsightsHeading">
+        <header class="li-page-heading"><p class="li-kicker">Statistiche</p><h1 id="learningInsightsHeading" tabindex="-1">Come stai andando?</h1><p>Qui trovi i risultati utili per scegliere cosa fare adesso.</p></header>
+        <div class="li-recent-score">
+          <div><span>Ultimi ${Number(summary.recentWindowSize || 0)} quiz</span><strong>${recentValue}</strong><p>${escapeHtml(recentComparison(summary))}</p></div>
+          <div class="li-score-track" role="progressbar" aria-label="Risposte corrette negli ultimi quiz" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${clampPercent(summary.recentAccuracyPct)}"><span style="--li-score:${clampPercent(summary.recentAccuracyPct)}%"></span></div>
         </div>
-        <div class="li-evidence-road" aria-label="Affidabilità della lettura">
-          <div class="li-evidence-copy"><strong>${escapeHtml(journeyStageLabel(journey.stage))}</strong><span>${escapeHtml(nextCopy)}</span></div>
-          <div class="li-progress-track" role="progressbar" aria-label="Progresso delle evidenze" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${clampPercent(journey.progressPct)}"><span style="--li-progress:${clampPercent(journey.progressPct)}%"></span></div>
-          <ol>${(journey.waypoints || []).map(point => `<li class="${point.reached ? "is-reached" : ""}"><span aria-hidden="true"></span><small>${escapeHtml(point.label)}</small></li>`).join("")}</ol>
+        <div class="li-metric-grid" aria-label="Riepilogo dei risultati">
+          ${metric("Risposte corrette", answered ? `${correct} / ${answered}` : "—", answered ? formatPercent(summary.overallAccuracyPct) : "Nessuna risposta")}
+          ${metric("Quiz fatti", `${Number(summary.uniqueQuizSeen || 0)}`, catalogCount ? `${formatPercent(summary.quizCoveragePct)} dei quiz disponibili` : "Quiz diversi")}
+          ${metric("Capitoli iniziati", `${startedChapterCount(model)} / 25`, "Puoi continuare da dove eri rimasto")}
+          ${metric("Da ripassare", `${Number(summary.activeErrors || 0)}`, `${Number(summary.recoveredThisWeek || 0)} recuperati questa settimana`, Number(summary.activeErrors || 0) ? "is-attention" : "is-positive")}
         </div>
       </section>`;
   }
 
-  function renderNextMove(model) {
-    const insight = model.insight || {};
-    const needed = Math.max(0, Number(model.minimumAnswers || 0) - Number(model.summary?.totalAnswers || 0));
-    const nextChapter = [...model.chapters].sort((a, b) => Number(a.attempts || 0) - Number(b.attempts || 0) || Number(a.chapter) - Number(b.chapter))[0];
-    const repeatsRecentAccuracy = /\d+%|precisione/i.test(String(insight.title || "")) && /recent/i.test(String(insight.title || ""));
-    const title = repeatsRecentAccuracy && nextChapter
-      ? `Esplora il capitolo ${nextChapter.chapter}: ${nextChapter.title}`
-      : (insight.title || "Continua a costruire il percorso");
-    return `
-      <aside class="li-next-move ${insight.tone ? `is-${escapeHtml(insight.tone)}` : ""}" aria-labelledby="liNextMoveTitle">
-        <p class="li-kicker">Prossima mossa</p><h2 id="liNextMoveTitle">${escapeHtml(title)}</h2><p>${escapeHtml(insight.body || "Ogni risposta rende la lettura più utile.")}</p>
-        ${model.state === "empty" ? '<button class="li-primary-action" type="button" data-li-action="start-quiz" data-chapter="1" onclick="MagicBookLearningInsights.handleClick(event)">Inizia dal capitolo 1</button>' : ""}
-        ${repeatsRecentAccuracy && nextChapter ? `<button class="li-secondary-action" type="button" data-li-action="start-quiz" data-chapter="${nextChapter.chapter}" onclick="MagicBookLearningInsights.handleClick(event)">Continua da qui</button>` : ""}
-        ${model.state === "insufficient" && needed ? `<small>Ancora ${needed} ${plural(needed, "risposta", "risposte")} per una lettura più affidabile.</small>` : ""}
-      </aside>`;
-  }
-
-  function strongestChapter(model) {
-    return model.chapters.filter(chapter => Number(chapter.attempts) > 0).sort((a, b) => Number(b.attempts) - Number(a.attempts) || Number(b.accuracyPct || 0) - Number(a.accuracyPct || 0))[0] || null;
-  }
-
-  function renderSignals(model) {
-    const chapter = strongestChapter(model);
+  function renderReviewNow(model) {
     const planItem = Array.isArray(model.plan) ? model.plan[0] : null;
-    const recovered = Number(model.summary?.recoveredThisWeek || 0);
-    const signals = [];
-    if (chapter) signals.push(`<div><span class="li-signal-mark is-route" aria-hidden="true"></span><p><strong>Capitolo più osservato</strong><span>${escapeHtml(chapter.title)} · ${chapter.attempts} ${plural(chapter.attempts, "tentativo", "tentativi")}</span></p></div>`);
-    if (planItem) signals.push(`<div><span class="li-signal-mark is-action" aria-hidden="true"></span><p><strong>Priorità attuale</strong><span>${escapeHtml(planItem.title)} · ${Number(planItem.estimatedMinutes || 0)} min</span></p></div>`);
-    if (recovered) signals.push(`<div><span class="li-signal-mark is-recovered" aria-hidden="true"></span><p><strong>Recuperi recenti</strong><span>${recovered} ${plural(recovered, "segnale è tornato stabile", "segnali sono tornati stabili")}</span></p></div>`);
-    if (!signals.length) signals.push(`<div><span class="li-signal-mark is-route" aria-hidden="true"></span><p><strong>La mappa si sta formando</strong><span>I primi quiz collegheranno capitoli, segnali e prossime azioni.</span></p></div>`);
-    return `<section class="li-signal-board" aria-labelledby="liSignalsTitle"><div><p class="li-kicker">Cosa sappiamo adesso</p><h2 id="liSignalsTitle">Segnali, senza supposizioni.</h2></div><div class="li-signal-list">${signals.slice(0, 3).join("")}</div></section>`;
+    const needed = Math.max(0, Number(model.minimumAnswers || 0) - Number(model.summary?.totalAnswers || 0));
+    const nextChapter = [...model.chapters].sort((a, b) => Number(a.attempts || 0) - Number(b.attempts || 0) || Number(a.chapter) - Number(b.chapter))[0] || { chapter: 1, title: "Capitolo 1" };
+    if (planItem) return `
+      <aside class="li-review-now" aria-labelledby="liReviewNowTitle">
+        <p class="li-kicker">Da ripassare</p><h2 id="liReviewNowTitle">${escapeHtml(planItem.title)}</h2>${planItem.titleBn ? `<p lang="bn" class="li-bangla-title">${escapeHtml(planItem.titleBn)}</p>` : ""}<p>${escapeHtml(plainItemReason(planItem))}</p><div class="li-review-meta"><span>${Number(planItem.estimatedMinutes || 0)} min</span>${planItem.chapter ? `<span>Capitolo ${Number(planItem.chapter)}</span>` : ""}</div>${planActionButton(planItem)}
+      </aside>`;
+    if (model.state === "empty") return `
+      <aside class="li-review-now is-quiet" aria-labelledby="liReviewNowTitle"><p class="li-kicker">Inizia qui</p><h2 id="liReviewNowTitle">Fai il primo quiz</h2><p>Dopo le prime risposte vedrai cosa stai imparando e cosa ripassare.</p><button class="li-primary-action d-btn d-btn-primary d-btn-sm" type="button" data-li-action="start-quiz" data-chapter="1" onclick="MagicBookLearningInsights.handleClick(event)">Inizia il capitolo 1<img src="icons/next.png" alt=""></button></aside>`;
+    if (model.state === "insufficient") return `
+      <aside class="li-review-now is-quiet" aria-labelledby="liReviewNowTitle"><p class="li-kicker">Continua così</p><h2 id="liReviewNowTitle">Servono ancora alcuni quiz</h2><p>Ancora ${needed} ${plural(needed, "risposta", "risposte")} per mostrarti un ripasso più preciso.</p><button class="li-primary-action d-btn d-btn-primary d-btn-sm" type="button" data-li-action="start-quiz" data-chapter="${nextChapter.chapter}" onclick="MagicBookLearningInsights.handleClick(event)">Continua con il capitolo ${nextChapter.chapter}<img src="icons/next.png" alt=""></button></aside>`;
+    return `
+      <aside class="li-review-now is-positive" aria-labelledby="liReviewNowTitle"><p class="li-kicker">Continua così</p><h2 id="liReviewNowTitle">Niente di urgente da ripassare</h2><p>Puoi continuare con il prossimo capitolo o rifare un quiz.</p><button class="li-primary-action d-btn d-btn-primary d-btn-sm" type="button" data-li-action="start-quiz" data-chapter="${nextChapter.chapter}" onclick="MagicBookLearningInsights.handleClick(event)">Continua con un quiz<img src="icons/next.png" alt=""></button></aside>`;
+  }
+
+  function renderProgressGroups(model) {
+    const good = (model.chapters || []).filter(chapter => ["solido", "in_miglioramento"].includes(chapter.status)).sort((a, b) => Number(b.recentAccuracyPct || 0) - Number(a.recentAccuracyPct || 0)).slice(0, 3);
+    const review = (model.chapters || []).filter(chapter => chapter.status === "attenzione").sort((a, b) => Number(b.activeErrors || 0) - Number(a.activeErrors || 0)).slice(0, 3);
+    const rows = (items, emptyCopy) => items.length
+      ? `<ul>${items.map(chapter => `<li><span>${String(chapter.chapter).padStart(2, "0")}</span><p><strong>${escapeHtml(chapter.title)}</strong><small>${simpleStatusLabel(chapter.status)} · ${Number(chapter.attempts || 0)} ${plural(chapter.attempts, "tentativo", "tentativi")}</small></p></li>`).join("")}</ul>`
+      : `<p class="li-group-empty">${escapeHtml(emptyCopy)}</p>`;
+    return `<section class="li-progress-groups" aria-label="Capitoli principali"><div class="is-good"><header><span aria-hidden="true"></span><h2>Stai andando bene</h2></header>${rows(good, model.state === "ready" ? "Continua i quiz per mantenere i risultati." : "Fai ancora qualche quiz: qui vedrai i capitoli che vanno meglio.")}</div><div class="is-review"><header><span aria-hidden="true"></span><h2>Da ripassare</h2></header>${rows(review, model.state === "ready" ? "Nessun capitolo urgente da ripassare." : "Servono ancora alcuni quiz per consigliarti un capitolo.")}</div></section>`;
   }
 
   function chapterDetail(chapter) {
@@ -243,31 +269,31 @@
     const accuracy = chapter.accuracyPct === null || chapter.accuracyPct === undefined ? "—" : formatPercent(chapter.accuracyPct);
     return `
       <aside id="liChapterDetail" class="li-chapter-detail" aria-label="Dettaglio capitolo ${chapter.chapter}">
-        <div class="li-chapter-detail-copy"><div class="li-detail-title"><span class="li-state ${stateClass(chapter.status)}">${escapeHtml(chapter.statusLabel)}</span><small>Capitolo ${chapter.chapter}</small></div><h3 tabindex="-1">${escapeHtml(chapter.title)}</h3>${chapter.titleBn ? `<p lang="bn" class="li-bangla-title">${escapeHtml(chapter.titleBn)}</p>` : ""}</div>
-        <dl><div><dt>Tentativi</dt><dd>${Number(chapter.attempts || 0)}</dd></div><div><dt>Copertura</dt><dd>${formatPercent(chapter.coveragePct)}</dd></div><div><dt>Precisione</dt><dd>${accuracy}</dd></div><div><dt>Recente</dt><dd>${recent}</dd></div><div><dt>Da rivedere</dt><dd>${Number(chapter.activeErrors || 0)}</dd></div><div><dt>Recuperati</dt><dd>${Number(chapter.resolvedErrors || 0)}</dd></div></dl>
-        <div class="li-detail-actions"><button class="li-primary-action" type="button" data-li-action="start-quiz" data-chapter="${chapter.chapter}" onclick="MagicBookLearningInsights.handleClick(event)">Fai il quiz</button><button class="li-secondary-action" type="button" data-li-action="open-book" data-chapter="${chapter.chapter}" onclick="MagicBookLearningInsights.handleClick(event)">Apri il capitolo</button></div>
+        <button class="li-chapter-detail-close" type="button" data-li-chapter="${chapter.chapter}" onclick="MagicBookLearningInsights.handleClick(event)" aria-label="Chiudi dettaglio capitolo"><span aria-hidden="true"></span></button>
+        <div class="li-chapter-detail-copy"><div class="li-detail-title"><span class="li-state ${stateClass(chapter.status)}">${simpleStatusLabel(chapter.status)}</span><small>Capitolo ${chapter.chapter}</small></div><h3 tabindex="-1">${escapeHtml(chapter.title)}</h3>${chapter.titleBn ? `<p lang="bn" class="li-bangla-title">${escapeHtml(chapter.titleBn)}</p>` : ""}</div>
+        <dl><div><dt>Tentativi</dt><dd>${Number(chapter.attempts || 0)}</dd></div><div><dt>Quiz visti</dt><dd>${formatPercent(chapter.coveragePct)}</dd></div><div><dt>Risposte corrette</dt><dd>${accuracy}</dd></div><div><dt>Ultimi quiz</dt><dd>${recent}</dd></div><div><dt>Da ripassare</dt><dd>${Number(chapter.activeErrors || 0)}</dd></div><div><dt>Recuperati</dt><dd>${Number(chapter.resolvedErrors || 0)}</dd></div></dl>
+        <div class="li-detail-actions"><button class="li-primary-action d-btn d-btn-primary d-btn-sm" type="button" data-li-action="start-quiz" data-chapter="${chapter.chapter}" onclick="MagicBookLearningInsights.handleClick(event)">Fai il quiz</button><button class="li-secondary-action d-btn d-btn-ghost d-btn-sm" type="button" data-li-action="open-book" data-chapter="${chapter.chapter}" onclick="MagicBookLearningInsights.handleClick(event)">Ripassa il capitolo</button></div>
       </aside>`;
   }
 
   function chapterNode(chapter) {
     const selected = state.selectedChapter === chapter.chapter;
-    return `<li><button type="button" class="${stateClass(chapter.status)} ${selected ? "is-selected" : ""}" data-li-chapter="${chapter.chapter}" onclick="MagicBookLearningInsights.handleClick(event)" aria-expanded="${selected}" ${selected ? 'aria-controls="liChapterDetail"' : ""}><span class="li-checkpoint" aria-hidden="true"><span>${String(chapter.chapter).padStart(2, "0")}</span></span><span class="li-chapter-copy"><strong>${escapeHtml(chapter.title)}</strong><small>${escapeHtml(chapter.statusLabel)} · ${Number(chapter.attempts || 0)} ${plural(chapter.attempts, "tentativo", "tentativi")}</small></span></button></li>`;
+    return `<li><button type="button" class="li-chapter-cell ${stateClass(chapter.status)} ${selected ? "is-selected" : ""}" data-li-chapter="${chapter.chapter}" onclick="MagicBookLearningInsights.handleClick(event)" aria-expanded="${selected}" ${selected ? 'aria-controls="liChapterDetail"' : ""}><span class="li-chapter-number">${String(chapter.chapter).padStart(2, "0")}</span><span class="li-chapter-copy"><strong>${escapeHtml(chapter.title)}</strong><small>${simpleStatusLabel(chapter.status)}</small></span>${Number(chapter.activeErrors || 0) ? `<span class="li-chapter-count" aria-label="${Number(chapter.activeErrors)} da ripassare">${Number(chapter.activeErrors)}</span>` : ""}</button></li>`;
   }
 
-  function renderChapterMap(model) {
-    const groups = Array.from({ length: 5 }, (_, index) => model.chapters.slice(index * 5, index * 5 + 5));
+  function renderChapterMatrix(model) {
+    const selected = model.chapters.find(chapter => chapter.chapter === state.selectedChapter);
+    const started = startedChapterCount(model);
+    const reviewCount = model.chapters.filter(chapter => chapter.status === "attenzione").length;
     return `
       <section class="li-chapters" aria-labelledby="liChaptersTitle">
-        <header class="li-section-heading"><div><p class="li-kicker">Mappa dei 25 capitoli</p><h2 id="liChaptersTitle">Il percorso, tappa per tappa.</h2><p>Apri un checkpoint per leggere i dati del capitolo e scegliere cosa fare.</p></div><div class="li-legend" aria-label="Legenda degli stati"><span class="is-solido">Solido</span><span class="is-in-miglioramento">In miglioramento</span><span class="is-attenzione">Da rivedere</span><span class="is-non-iniziato">Non iniziato</span></div></header>
-        <div class="li-stage-list">${groups.map((chapters, groupIndex) => {
-          const selected = chapters.find(chapter => chapter.chapter === state.selectedChapter);
-          return `<section class="li-stage ${groupIndex % 2 ? "is-reverse" : ""}" aria-labelledby="liStage${groupIndex + 1}"><div class="li-stage-label"><span>Tappa ${groupIndex + 1}</span><strong id="liStage${groupIndex + 1}">Capitoli ${groupIndex * 5 + 1}–${groupIndex * 5 + 5}</strong></div><ol>${chapters.map(chapterNode).join("")}</ol>${chapterDetail(selected)}</section>`;
-        }).join("")}</div>
+        <header class="li-section-heading"><div><p class="li-kicker">Tutti i capitoli</p><h2 id="liChaptersTitle">I tuoi 25 capitoli</h2><p>${started} iniziati · ${reviewCount} da ripassare. Tocca un capitolo per vedere i dettagli.</p></div><div class="li-legend" aria-label="Stato dei capitoli"><span class="is-solido">Bene</span><span class="is-in-miglioramento">Sta migliorando</span><span class="is-attenzione">Da ripassare</span><span class="is-pochi-dati">Pochi dati</span><span class="is-non-iniziato">Non iniziato</span></div></header>
+        <div class="li-chapter-workspace ${selected ? "is-open" : ""}"><ol class="li-chapter-matrix">${model.chapters.map(chapterNode).join("")}</ol>${chapterDetail(selected)}</div>
       </section>`;
   }
 
   function renderStatistics(model) {
-    return `${freshnessBanner()}<div class="li-stat-layout">${renderSnapshot(model)}${renderNextMove(model)}</div>${renderSignals(model)}${renderChapterMap(model)}`;
+    return `${freshnessBanner()}<div class="li-stat-layout">${renderOverview(model)}${renderReviewNow(model)}</div>${renderProgressGroups(model)}${renderChapterMatrix(model)}`;
   }
 
   const LENSES = Object.freeze([
@@ -275,8 +301,7 @@
     { id: "quiz", label: "Quiz", key: "questions" },
     { id: "parole", label: "Parole", key: "words" },
     { id: "argomenti", label: "Argomenti", key: "topics" },
-    { id: "capitoli", label: "Capitoli", key: "chapters" },
-    { id: "recuperati", label: "Recuperati", key: "recovered" }
+    { id: "capitoli", label: "Capitoli", key: "chapters" }
   ]);
 
   function activeLens() {
@@ -305,10 +330,11 @@
         wrong: chapter.wrong,
         accuracy: chapter.accuracyPct,
         status: chapter.status,
-        statusLabel: chapter.statusLabel,
+        statusLabel: simpleStatusLabel(chapter.status),
+        activeErrors: Number(chapter.activeErrors || 0),
         reason: Number(chapter.activeErrors || 0) > 0
-          ? `${chapter.activeErrors} ${plural(chapter.activeErrors, "segnale attivo richiede", "segnali attivi richiedono")} un ripasso mirato.`
-          : "Le risposte recenti mostrano un miglioramento da consolidare.",
+          ? `${chapter.activeErrors} ${plural(chapter.activeErrors, "elemento da ripassare", "elementi da ripassare")} in questo capitolo.`
+          : "Le risposte recenti stanno migliorando.",
         relatedQuiz: []
       }));
   }
@@ -326,14 +352,14 @@
   }
 
   function renderErrorDetail(item) {
-    if (!item) return `<aside class="li-detail-placeholder" aria-label="Dettaglio del segnale"><span class="li-placeholder-route" aria-hidden="true"></span><h3>Scegli un segnale</h3><p>Qui trovi perché emerge, i quiz collegati e l’azione più utile.</p></aside>`;
+    if (!item) return `<aside class="li-detail-placeholder" aria-label="Dettaglio da ripassare"><span class="li-placeholder-route" aria-hidden="true"></span><h3>Scegli un elemento</h3><p>Qui vedrai gli errori fatti, i quiz collegati e cosa puoi fare adesso.</p></aside>`;
     const chapter = Number(item.chapter || item.relatedQuiz?.[0]?.chapter || 0);
     return `
       <aside class="li-error-detail" id="liErrorDetail-${escapeHtml(item.type)}-${escapeHtml(item.id)}" aria-label="Dettaglio ${escapeHtml(item.title)}">
         <button class="li-detail-close" type="button" data-li-action="close-detail" onclick="MagicBookLearningInsights.handleClick(event)" aria-label="Chiudi dettaglio"><span aria-hidden="true"></span></button>
         ${item.figureId ? `<figure><div class="li-media-frame"><img class="li-figure-image" loading="lazy" decoding="async" src="${figureUrl(item.figureId)}" alt="${escapeHtml(item.title)}"><span class="li-media-fallback">Figura non disponibile</span></div><figcaption>Figura collegata ai tuoi quiz</figcaption></figure>` : ""}
-        <div class="li-error-explanation"><div class="li-detail-title"><span class="li-state ${stateClass(item.status)}">${escapeHtml(item.statusLabel)}</span><small>${escapeHtml(item.typeLabel)}${chapter ? ` · Capitolo ${chapter}` : ""}</small></div><h3 tabindex="-1">${escapeHtml(item.title)}</h3>${item.titleBn ? `<p lang="bn" class="li-bangla-title">${escapeHtml(item.titleBn)}</p>` : ""}<div class="li-why"><strong>Perché emerge</strong><p>${escapeHtml(item.reason)}</p></div>${item.simpleItalian ? `<p class="li-simple-copy">${escapeHtml(item.simpleItalian)}</p>` : ""}${item.simpleBangla ? `<p lang="bn" class="li-simple-copy">${escapeHtml(item.simpleBangla)}</p>` : ""}${renderRelatedQuiz(item)}
-          <div class="li-detail-actions">${item.type === "word" ? `<button class="li-primary-action" type="button" data-li-action="dictionary" data-query="${escapeHtml(item.title)}" onclick="MagicBookLearningInsights.handleClick(event)">Apri nel dizionario</button>` : ""}${chapter ? `<button class="li-primary-action" type="button" data-li-action="start-quiz" data-chapter="${chapter}" onclick="MagicBookLearningInsights.handleClick(event)">Fai il quiz</button><button class="li-secondary-action" type="button" data-li-action="open-book" data-chapter="${chapter}" onclick="MagicBookLearningInsights.handleClick(event)">Apri il capitolo</button>` : ""}</div>
+        <div class="li-error-explanation"><div class="li-detail-title"><span class="li-state ${stateClass(item.status)}">${simpleStatusLabel(item.status)}</span><small>${escapeHtml(item.typeLabel)}${chapter ? ` · Capitolo ${chapter}` : ""}</small></div><h3 tabindex="-1">${escapeHtml(item.title)}</h3>${item.titleBn ? `<p lang="bn" class="li-bangla-title">${escapeHtml(item.titleBn)}</p>` : ""}<div class="li-why"><strong>I tuoi risultati</strong><p>${escapeHtml(plainItemReason(item))}</p></div>${item.simpleItalian ? `<p class="li-simple-copy">${escapeHtml(item.simpleItalian)}</p>` : ""}${item.simpleBangla ? `<p lang="bn" class="li-simple-copy">${escapeHtml(item.simpleBangla)}</p>` : ""}${renderRelatedQuiz(item)}
+          <div class="li-detail-actions">${item.type === "word" ? `<button class="li-primary-action d-btn d-btn-primary d-btn-sm" type="button" data-li-action="dictionary" data-query="${escapeHtml(item.title)}" onclick="MagicBookLearningInsights.handleClick(event)">Ripassa nel dizionario</button>` : ""}${chapter ? `<button class="li-primary-action d-btn d-btn-primary d-btn-sm" type="button" data-li-action="start-quiz" data-chapter="${chapter}" onclick="MagicBookLearningInsights.handleClick(event)">Riprova</button><button class="li-secondary-action d-btn d-btn-ghost d-btn-sm" type="button" data-li-action="open-book" data-chapter="${chapter}" onclick="MagicBookLearningInsights.handleClick(event)">Guarda la spiegazione</button>` : ""}</div>
         </div>
       </aside>`;
   }
@@ -342,7 +368,7 @@
     const key = itemKey(item);
     const selected = state.selectedKey === key;
     const detailId = `liErrorDetail-${item.type}-${item.id}`;
-    return `<li class="li-error-row ${selected ? "is-selected" : ""}"><button type="button" data-li-detail="${escapeHtml(key)}" onclick="MagicBookLearningInsights.handleClick(event)" aria-expanded="${selected}" ${selected ? `aria-controls="${escapeHtml(detailId)}"` : ""}>${item.figureId ? `<span class="li-row-media"><img class="li-figure-image" loading="lazy" decoding="async" src="${figureUrl(item.figureId)}" alt=""><span class="li-media-fallback">Img</span></span>` : `<span class="li-error-index" aria-hidden="true">${escapeHtml(String(item.typeLabel || "S").slice(0, 1))}</span>`}<span class="li-error-copy"><small>${escapeHtml(item.typeLabel)}${item.chapter ? ` · Capitolo ${Number(item.chapter)}` : ""}</small><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.reason)}</span></span><span class="li-state ${stateClass(item.status)}">${escapeHtml(item.statusLabel)}</span><span class="li-disclosure" aria-hidden="true"><span></span></span></button></li>`;
+    return `<li class="li-error-row ${selected ? "is-selected" : ""}"><button type="button" data-li-detail="${escapeHtml(key)}" onclick="MagicBookLearningInsights.handleClick(event)" aria-expanded="${selected}" ${selected ? `aria-controls="${escapeHtml(detailId)}"` : ""}>${item.figureId ? `<span class="li-row-media"><img class="li-figure-image" loading="lazy" decoding="async" src="${figureUrl(item.figureId)}" alt=""><span class="li-media-fallback">Img</span></span>` : `<span class="li-error-index" aria-hidden="true">${escapeHtml(String(item.typeLabel || "R").slice(0, 1))}</span>`}<span class="li-error-copy"><small>${escapeHtml(item.typeLabel)}${item.chapter ? ` · Capitolo ${Number(item.chapter)}` : ""}</small><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(plainItemReason(item))}</span></span><span class="li-state ${stateClass(item.status)}">${simpleStatusLabel(item.status)}</span><span class="li-disclosure" aria-hidden="true"><span></span></span></button></li>`;
   }
 
   function renderErrorList(model) {
@@ -350,10 +376,9 @@
     const all = itemsForLens(model, lens);
     const visible = all.slice(0, state.visibleCount);
     if (!all.length) {
-      const recovered = lens.id === "recuperati";
-      return `<div class="li-empty-list"><span class="li-empty-mark ${recovered ? "is-recovered" : ""}" aria-hidden="true"></span><h3>${recovered ? "I recuperi appariranno qui" : "Nessun pattern affidabile"}</h3><p>${model.state === "ready" ? "Continua a esercitarti: mostriamo solo segnali sostenuti da più risposte." : "Servono più risposte per separare un caso isolato da un pattern."}</p><button class="li-secondary-action" type="button" data-li-action="start-quiz" data-chapter="1" onclick="MagicBookLearningInsights.handleClick(event)">Continua con un quiz</button></div>`;
+      return `<div class="li-empty-list"><span class="li-empty-mark" aria-hidden="true"></span><h3>Niente da ripassare qui</h3><p>${model.state === "ready" ? "Continua così. Se farai altri errori, li troverai in questa categoria." : "Servono ancora alcuni quiz per capire cosa può essere utile ripassare."}</p><button class="li-secondary-action d-btn d-btn-ghost d-btn-sm" type="button" data-li-action="start-quiz" data-chapter="1" onclick="MagicBookLearningInsights.handleClick(event)">Continua con un quiz</button></div>`;
     }
-    return `<ol class="li-error-list">${visible.map(renderErrorItem).join("")}</ol>${visible.length < all.length ? `<button class="li-more" type="button" data-li-action="more" onclick="MagicBookLearningInsights.handleClick(event)">Mostra altri ${Math.min(CONFIG.pageSize, all.length - visible.length)}</button>` : ""}`;
+    return `<ol class="li-error-list">${visible.map(renderErrorItem).join("")}</ol>${visible.length < all.length ? `<button class="li-more d-btn d-btn-ghost d-btn-sm" type="button" data-li-action="more" onclick="MagicBookLearningInsights.handleClick(event)">Mostra altri ${Math.min(CONFIG.pageSize, all.length - visible.length)}</button>` : ""}`;
   }
 
   function emergingSignals(model) {
@@ -367,37 +392,37 @@
 
   function renderEmerging(model) {
     const signals = emergingSignals(model);
-    if (!signals.length) return `<section class="li-emerging is-quiet" aria-labelledby="liEmergingTitle"><header><div><p class="li-kicker">Cosa sta emergendo</p><h2 id="liEmergingTitle">Il quadro è ancora aperto.</h2></div><p>Quiz, segnali e piano si attiveranno solo quando i dati saranno abbastanza solidi.</p></header><div class="li-quiet-steps"><span>Quiz</span><span>Segnali</span><span>Piano</span></div></section>`;
-    return `<section class="li-emerging" aria-labelledby="liEmergingTitle"><header><div><p class="li-kicker">Cosa sta emergendo</p><h2 id="liEmergingTitle">Prima guarda qui.</h2></div><p>I segnali più utili, ordinati per priorità e frequenza.</p></header><div class="li-emerging-grid">${signals.map(({ item, lens }, index) => `<button type="button" class="li-emerging-card" data-li-emerging="${escapeHtml(itemKey(item))}" data-li-emerging-lens="${lens}" onclick="MagicBookLearningInsights.handleClick(event)"><span class="li-emerging-rank">0${index + 1}</span>${item.figureId ? `<span class="li-emerging-media"><img class="li-figure-image" loading="lazy" decoding="async" src="${figureUrl(item.figureId)}" alt=""><span class="li-media-fallback">Figura</span></span>` : `<span class="li-emerging-type">${escapeHtml(item.typeLabel)}</span>`}<span class="li-emerging-copy"><small>${escapeHtml(item.typeLabel)}${item.chapter ? ` · Capitolo ${Number(item.chapter)}` : ""}</small><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.reason)}</span></span><span class="li-state ${stateClass(item.status)}">${escapeHtml(item.statusLabel)}</span></button>`).join("")}</div></section>`;
+    if (!signals.length) return `<section class="li-emerging is-quiet" aria-labelledby="liEmergingTitle"><header><div><p class="li-kicker">Da controllare</p><h2 id="liEmergingTitle">Per ora niente di urgente</h2></div><p>${model.state === "ready" ? "Continua con i quiz: questa area si aggiorna con i tuoi risultati." : "Servono ancora alcuni quiz per mostrarti cosa ripassare."}</p></header></section>`;
+    return `<section class="li-emerging" aria-labelledby="liEmergingTitle"><header><div><p class="li-kicker">Da controllare</p><h2 id="liEmergingTitle">Guarda prima questi</h2></div><p>Gli elementi con più errori recenti.</p></header><div class="li-emerging-grid">${signals.map(({ item, lens }, index) => `<button type="button" class="li-emerging-card" data-li-emerging="${escapeHtml(itemKey(item))}" data-li-emerging-lens="${lens}" onclick="MagicBookLearningInsights.handleClick(event)"><span class="li-emerging-rank">0${index + 1}</span>${item.figureId ? `<span class="li-emerging-media"><img class="li-figure-image" loading="lazy" decoding="async" src="${figureUrl(item.figureId)}" alt=""><span class="li-media-fallback">Figura</span></span>` : `<span class="li-emerging-type">${escapeHtml(item.typeLabel)}</span>`}<span class="li-emerging-copy"><small>${escapeHtml(item.typeLabel)}${item.chapter ? ` · Capitolo ${Number(item.chapter)}` : ""}</small><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(plainItemReason(item))}</span></span><span class="li-state ${stateClass(item.status)}">${simpleStatusLabel(item.status)}</span></button>`).join("")}</div></section>`;
   }
 
   function renderPlan(model) {
     const plan = Array.isArray(model.plan) ? model.plan.slice(0, 3) : [];
-    if (!plan.length) return `<aside class="li-plan"><p class="li-kicker">Piano di oggi</p><h2>Prima raccogliamo evidenze.</h2><p>Il piano apparirà quando i risultati indicano azioni abbastanza precise da essere utili.</p><button class="li-secondary-action" type="button" data-li-action="start-quiz" data-chapter="1" onclick="MagicBookLearningInsights.handleClick(event)">Continua a esercitarti</button></aside>`;
+    if (!plan.length) return `<aside class="li-plan"><p class="li-kicker">Il tuo ripasso</p><h2>Servono ancora alcuni quiz</h2><p>Dopo altre risposte troverai qui da una a tre azioni brevi.</p><button class="li-secondary-action d-btn d-btn-ghost d-btn-sm" type="button" data-li-action="start-quiz" data-chapter="1" onclick="MagicBookLearningInsights.handleClick(event)">Continua con un quiz</button></aside>`;
     const minutes = plan.reduce((sum, item) => sum + Number(item.estimatedMinutes || 0), 0);
-    return `<aside class="li-plan" aria-labelledby="liPlanTitle"><div class="li-plan-head"><div><p class="li-kicker">Piano di oggi</p><h2 id="liPlanTitle">${minutes} minuti, in ordine.</h2></div><span>${plan.length}</span></div><ol>${plan.map((item, index) => `<li><span class="li-plan-number">0${index + 1}</span><div><strong>${escapeHtml(item.title)}</strong>${item.titleBn ? `<small lang="bn">${escapeHtml(item.titleBn)}</small>` : ""}<p>${escapeHtml(item.reason)}</p><button type="button" data-li-plan-action="${escapeHtml(item.action)}" data-entity-id="${escapeHtml(item.entityId)}" data-chapter="${Number(item.chapter || 0)}" data-title="${escapeHtml(item.title)}" onclick="MagicBookLearningInsights.handleClick(event)">${item.action === "dictionary" ? "Apri nel dizionario" : item.action === "figure" ? "Rivedi la figura" : "Vai al quiz"}<img src="icons/next.png" alt=""></button></div></li>`).join("")}</ol></aside>`;
+    return `<aside class="li-plan" aria-labelledby="liPlanTitle"><div class="li-plan-head"><div><p class="li-kicker">Il tuo ripasso</p><h2 id="liPlanTitle">${minutes} minuti in tutto</h2></div><span>${plan.length}</span></div><p class="li-plan-intro">Fai queste azioni nell’ordine che preferisci.</p><ol>${plan.map((item, index) => `<li><span class="li-plan-number">${index + 1}</span><div><strong>${escapeHtml(item.title)}</strong>${item.titleBn ? `<small lang="bn">${escapeHtml(item.titleBn)}</small>` : ""}<p>${escapeHtml(plainItemReason(item))}</p>${planActionButton(item)}</div></li>`).join("")}</ol></aside>`;
   }
 
   function renderRecovered(model) {
     const recovered = Array.isArray(model.errors?.recovered) ? model.errors.recovered.slice(0, 3) : [];
     if (!recovered.length) return "";
-    return `<section class="li-recovered" aria-labelledby="liRecoveredTitle"><header><span class="li-recovered-mark" aria-hidden="true"></span><div><p class="li-kicker">Recuperati</p><h2 id="liRecoveredTitle">I progressi che restano visibili.</h2></div></header><ul>${recovered.map(item => `<li><small>${escapeHtml(item.typeLabel)}</small><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.statusLabel)}</span></li>`).join("")}</ul></section>`;
+    return `<section class="li-recovered" aria-labelledby="liRecoveredTitle"><header><span class="li-recovered-mark" aria-hidden="true"></span><div><p class="li-kicker">Recuperati</p><h2 id="liRecoveredTitle">Questi elementi stanno andando meglio</h2></div></header><ul>${recovered.map(item => `<li><small>${escapeHtml(item.typeLabel)}</small><strong>${escapeHtml(item.title)}</strong><span>${simpleStatusLabel(item.status)}</span></li>`).join("")}</ul></section>`;
   }
 
   function renderErrors(model) {
     const lens = activeLens();
     const selected = resolveItem(state.selectedKey);
-    const planCount = Array.isArray(model.plan) ? Math.min(3, model.plan.length) : 0;
+    const improvingCount = (model.chapters || []).filter(chapter => chapter.status === "in_miglioramento").length;
     return `
       ${freshnessBanner()}
-      <header class="li-errors-heading"><div><p class="li-kicker">Centro recupero</p><h1 id="learningInsightsHeading" tabindex="-1">Capire. Riprovare. Recuperare.</h1><p>Qui gli errori diventano segnali concreti e azioni brevi.</p></div><dl aria-label="Riepilogo del recupero"><div><dt>Attivi</dt><dd>${Number(model.summary.activeErrors || 0)}</dd></div><div><dt>Nel piano</dt><dd>${planCount}</dd></div><div><dt>Recuperati</dt><dd>${Number(model.summary.recoveredThisWeek || 0)}</dd></div></dl></header>
+      <header class="li-errors-heading"><div><p class="li-kicker">Ripasso</p><h1 id="learningInsightsHeading" tabindex="-1">Errori</h1><p>Qui trovi cosa ripassare e cosa stai già recuperando.</p></div><dl aria-label="Riepilogo del ripasso"><div><dt>Da ripassare</dt><dd>${Number(model.summary.activeErrors || 0)}</dd></div><div><dt>Sta migliorando</dt><dd>${improvingCount}</dd></div><div><dt>Recuperati</dt><dd>${Number(model.summary.recoveredThisWeek || 0)}</dd></div></dl></header>
       ${renderEmerging(model)}
       <div class="li-errors-layout">
         <section class="li-error-explorer" aria-labelledby="liLensHeading">
-          <header class="li-lens-head"><div><p class="li-kicker">Esplora i segnali</p><h2 id="liLensHeading">${escapeHtml(lens.label)}</h2></div><span>${itemsForLens(model, lens).length || "—"} risultati</span></header>
+          <header class="li-lens-head"><div><p class="li-kicker">Scegli cosa vedere</p><h2 id="liLensHeading">${escapeHtml(lens.label)}</h2></div><span>${itemsForLens(model, lens).length} ${plural(itemsForLens(model, lens).length, "elemento", "elementi")}</span></header>
           <div class="li-lenses" role="tablist" aria-label="Categorie di errore">${LENSES.map(item => {
             const count = itemsForLens(model, item).length;
-            return `<button type="button" role="tab" id="li-tab-${item.id}" aria-controls="li-panel-${item.id}" aria-selected="${item.id === state.lens}" tabindex="${item.id === state.lens ? "0" : "-1"}" data-li-lens="${item.id}" onclick="MagicBookLearningInsights.handleClick(event)"><span>${escapeHtml(item.label)}</span><small>${count || "—"}</small></button>`;
+            return `<button class="d-btn d-btn-ghost d-btn-sm" type="button" role="tab" id="li-tab-${item.id}" aria-controls="li-panel-${item.id}" aria-selected="${item.id === state.lens}" tabindex="${item.id === state.lens ? "0" : "-1"}" data-li-lens="${item.id}" onclick="MagicBookLearningInsights.handleClick(event)"><span>${escapeHtml(item.label)}</span><small>${count}</small></button>`;
           }).join("")}</div>
           ${LENSES.filter(item => item.id !== state.lens).map(item => `<div id="li-panel-${item.id}" role="tabpanel" aria-labelledby="li-tab-${item.id}" hidden></div>`).join("")}
           <div class="li-explorer-body"><div id="li-panel-${state.lens}" class="li-list-pane" role="tabpanel" aria-labelledby="li-tab-${state.lens}" tabindex="0">${renderErrorList(model)}</div><div class="li-detail-pane">${renderErrorDetail(selected)}</div></div>
@@ -411,9 +436,9 @@
     const auth = kind === "auth";
     const offline = kind === "offline";
     const timeout = kind === "timeout";
-    const title = auth ? "La sessione non è più valida." : offline ? "Sei offline e non ci sono ancora dati salvati." : timeout ? "La lettura sta impiegando troppo tempo." : "Non riesco a leggere il percorso adesso.";
+    const title = auth ? "La sessione non è più valida." : offline ? "Sei offline e non ci sono ancora dati salvati." : timeout ? "Il caricamento sta impiegando troppo tempo." : "Non riesco a leggere i dati adesso.";
     const body = auth ? "Accedi di nuovo per proteggere le tue statistiche personali." : offline ? "Torna online una volta per creare la prima copia locale delle statistiche." : timeout ? "I quiz continuano a funzionare. Riprova tra poco: le risposte registrate restano al sicuro." : "I quiz continuano a funzionare. Puoi riprovare senza perdere le risposte già registrate.";
-    return `<div class="li-shell">${renderTop(state.mode)}<main class="li-main"><section class="li-failure" aria-labelledby="learningInsightsHeading"><span class="li-failure-mark ${offline ? "is-offline" : auth ? "is-auth" : ""}" aria-hidden="true"></span><p class="li-kicker">${auth ? "Accesso" : offline ? "Modalità offline" : timeout ? "Tempo scaduto" : "Interruzione temporanea"}</p><h1 id="learningInsightsHeading" tabindex="-1">${escapeHtml(title)}</h1><p>${escapeHtml(body)}</p><div><button class="li-primary-action" type="button" data-li-action="${auth ? "login" : "refresh"}" onclick="MagicBookLearningInsights.handleClick(event)">${auth ? "Accedi di nuovo" : "Riprova"}</button><button class="li-secondary-action" type="button" data-li-action="home" onclick="MagicBookLearningInsights.handleClick(event)">Torna alla Home</button></div></section></main></div>`;
+    return `<div class="li-shell">${renderTop(state.mode)}<main class="li-main"><section class="li-failure" aria-labelledby="learningInsightsHeading"><span class="li-failure-mark ${offline ? "is-offline" : auth ? "is-auth" : ""}" aria-hidden="true"></span><p class="li-kicker">${auth ? "Accesso" : offline ? "Modalità offline" : timeout ? "Tempo scaduto" : "Interruzione temporanea"}</p><h1 id="learningInsightsHeading" tabindex="-1">${escapeHtml(title)}</h1><p>${escapeHtml(body)}</p><div><button class="li-primary-action d-btn d-btn-primary d-btn-sm" type="button" data-li-action="${auth ? "login" : "refresh"}" onclick="MagicBookLearningInsights.handleClick(event)">${auth ? "Accedi di nuovo" : "Riprova"}</button><button class="li-secondary-action d-btn d-btn-ghost d-btn-sm" type="button" data-li-action="home" onclick="MagicBookLearningInsights.handleClick(event)">Torna alla Home</button></div></section></main></div>`;
   }
 
   function focusHeading(content) {
@@ -459,11 +484,13 @@
 
   function bindRenderedMedia() {
     root.document?.querySelectorAll(".li-figure-image").forEach(image => {
-      image.addEventListener("error", () => {
+      const markUnavailable = () => {
         const frame = image.closest(".li-media-frame, .li-row-media, .li-emerging-media");
         frame?.classList.add("is-unavailable");
         image.alt = "Figura temporaneamente non disponibile";
-      }, { once: true });
+      };
+      if (image.complete && !image.naturalWidth) markUnavailable();
+      else image.addEventListener("error", markUnavailable, { once: true });
     });
   }
 
@@ -547,7 +574,7 @@
       state.cachedAt = Date.now();
       state.isCached = false;
       await root.MagicBookLearningSync?.setInsightsCache?.(auth.userId, data);
-      announce("Percorso aggiornato.");
+      announce("Statistiche aggiornate.");
     } catch (error) {
       if (requestId !== state.requestId) return;
       if (error?.name === "AbortError" && !timedOut) return;
@@ -617,9 +644,10 @@
     const chapter = event.target.closest("[data-li-chapter]");
     if (chapter) {
       const chapterNumber = Number(chapter.dataset.liChapter);
-      state.selectedChapter = state.selectedChapter === chapterNumber ? 0 : chapterNumber;
+      const opening = state.selectedChapter !== chapterNumber;
+      state.selectedChapter = opening ? chapterNumber : 0;
       render();
-      focusControl(`[data-li-chapter="${chapterNumber}"]`);
+      focusControl(opening ? ".li-chapter-detail h3" : `[data-li-chapter="${chapterNumber}"]`);
       return;
     }
     const detail = event.target.closest("[data-li-detail]");
@@ -636,6 +664,7 @@
       const action = planAction.dataset.liPlanAction;
       if (action === "dictionary") root.showMagicDictionary?.({ query: planAction.dataset.title });
       else if (action === "figure") {
+        state.mode = "errors";
         state.lens = "figure";
         state.selectedKey = `figure:${planAction.dataset.entityId}`;
         state.visibleCount = CONFIG.pageSize;

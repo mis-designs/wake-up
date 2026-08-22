@@ -34,23 +34,24 @@ test("home, history routing and deployment expose both learning screens", () => 
   assert.match(redirects, /\/errori \/index\.html 200/u);
 });
 
-test("statistics use the roadbook narrative and split all 25 chapters into five stages", () => {
+test("statistics use the adaptive study workspace and render all 25 chapters in one matrix", () => {
   for (const copy of [
-    "Il punto, adesso.",
-    "Prossima mossa",
-    "Cosa sappiamo adesso",
-    "Mappa dei 25 capitoli",
-    "Il percorso, tappa per tappa."
-  ]) assert.ok(client.includes(copy), `missing roadbook copy: ${copy}`);
+    "Come stai andando?",
+    "Da ripassare",
+    "Stai andando bene",
+    "I tuoi 25 capitoli",
+    "Servono ancora alcuni quiz"
+  ]) assert.ok(client.includes(copy), `missing study-workspace copy: ${copy}`);
 
-  for (const className of ["li-snapshot", "li-next-move", "li-signal-board", "li-stage-list", "li-stage", "li-checkpoint"]) {
+  for (const className of ["li-overview", "li-review-now", "li-progress-groups", "li-chapter-workspace", "li-chapter-matrix", "li-chapter-cell"]) {
     assert.match(client, new RegExp(`class="(?:[^"]*\\s)?${className}(?=\\s|")`, "u"));
     assert.match(css, new RegExp(`\\.${className}(?=[\\s:{,.#>+~\\[])`, "u"));
   }
 
   assert.match(client, /value\.chapters\.length !== 25/u);
-  assert.match(client, /Array\.from\(\{ length: 5 \}, \(_, index\) => model\.chapters\.slice\(index \* 5, index \* 5 \+ 5\)\)/u);
-  assert.match(client, /Tappa \$\{groupIndex \+ 1\}/u);
+  assert.match(client, /model\.chapters\.map\(chapterNode\)/u);
+  assert.match(css, /\.li-chapter-matrix \{[^}]*grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/u);
+  assert.doesNotMatch(client, /Tappa|checkpoint|Quadro di apprendimento|Percorso consolidato/u);
   assert.doesNotMatch(client, /\b788\b/u);
 });
 
@@ -58,13 +59,13 @@ test("the redesign cannot regress to the failed editorial or horizontally scroll
   assert.doesNotMatch(css, /Bodoni Moda/u);
   assert.doesNotMatch(css, /overflow-x:\s*auto/u);
   assert.doesNotMatch(css, /min-height:\s*520px/u);
-  assert.match(css, /@media \(max-width: 599px\)[\s\S]*?\.li-stage ol \{ grid-template-columns: 1fr;/u);
+  assert.match(css, /@media \(max-width: 767px\)[\s\S]*?\.li-chapter-matrix \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/u);
   assert.match(css, /\.li-chapter-copy strong \{[\s\S]*?-webkit-line-clamp: 2;/u);
   assert.match(css, /body\.learning-insights-mode :where\([\s\S]*?#adminEntryBtn,[\s\S]*?#profileBtn,[\s\S]*?#whatsappBtn,[\s\S]*?\) \{ display: none !important; \}/u);
   assert.match(index, /id="learningInsightsScreen"[^>]*data-theme="magicbook"/u);
   assert.match(client, /li-icon-button d-btn d-btn-ghost d-btn-square d-btn-sm/u);
   assert.match(client, /li-refresh d-btn d-btn-ghost d-btn-sm/u);
-  assert.match(client, /aria-label="\$\{state\.isRefreshing \? "Aggiornamento in corso" : "Aggiorna il percorso"\}"/u);
+  assert.match(client, /aria-label="\$\{state\.isRefreshing \? "Aggiornamento in corso" : "Aggiorna i dati"\}"/u);
   assert.match(client, /li-refresh-icon" aria-hidden="true"/u);
   assert.equal((client.match(/class="d-btn d-btn-ghost d-btn-sm" type="button" data-li-route=/gu) || []).length, 2);
   assert.match(daisySource, /d-btn-sm d-btn-ghost d-btn-square/u);
@@ -107,6 +108,8 @@ test("error lenses and detail disclosure have accessible semantics", () => {
   assert.match(client, /else if \(restoreFocus\) focusControl\(restoreFocus\)/u);
   assert.match(client, /aria-busy="\$\{state\.isRefreshing\}"/u);
   assert.match(client, /dataset\.liAction === "refresh" && !state\.isRefreshing/u);
+  assert.equal((client.match(/\{ id: "(?:figure|quiz|parole|argomenti|capitoli)"/gu) || []).length, 5);
+  assert.doesNotMatch(client, /\{ id: "recuperati"/u);
 });
 
 test("figure media load lazily and expose a visible fallback on failure", () => {
@@ -133,13 +136,13 @@ test("responsive, reduced-motion and global scrollbar rules are present", () => 
   assert.match(css, /#learningInsightsScreen::-webkit-scrollbar/u);
   assert.match(index, /style\.css\?v=62-home-learning-layout/u);
   assert.match(index, /assets\/daisyui\.css\?v=2-learning-shell/u);
-  assert.match(index, /src\/learning-insights\.css\?v=3-daisy-shell/u);
-  assert.match(index, /src\/learning-insights\.js\?v=3-daisy-shell/u);
-  assert.match(worker, /magicbook-pwa-v117-learning-shell/u);
+  assert.match(index, /src\/learning-insights\.css\?v=4-study-workspace/u);
+  assert.match(index, /src\/learning-insights\.js\?v=4-study-workspace/u);
+  assert.match(worker, /magicbook-pwa-v118-study-workspace/u);
   assert.match(worker, /style\.css\?v=62-home-learning-layout/u);
   assert.match(worker, /assets\/daisyui\.css\?v=2-learning-shell/u);
-  assert.match(worker, /src\/learning-insights\.css\?v=3-daisy-shell/u);
-  assert.match(worker, /src\/learning-insights\.js\?v=3-daisy-shell/u);
+  assert.match(worker, /src\/learning-insights\.css\?v=4-study-workspace/u);
+  assert.match(worker, /src\/learning-insights\.js\?v=4-study-workspace/u);
   assert.match(worker, /\/icons\/next\.png/u);
   assert.match(worker, /\/icons\/go-back\.png/u);
   assert.match(worker, /\/assets\/admin\/update\.png/u);
