@@ -864,6 +864,31 @@ body.learning-insights-mode :where(
   background: var(--li-navy);
   color: #fff;
 }
+
+/* The route switcher is only a layout group: its two buttons own the lines. */
+#learningInsightsScreen .li-route-nav {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Give adjacent priority items breathing room without adding nested cards. */
+#learningInsightsScreen .li-emerging-grid {
+  column-gap: 28px;
+}
+
+@media (max-width: 1279px) {
+  #learningInsightsScreen .li-emerging-grid {
+    column-gap: 20px;
+  }
+}
+
+@media (max-width: 767px) {
+  #learningInsightsScreen .li-emerging-grid {
+    column-gap: 0;
+  }
+}
 #learningInsightsScreen .li-lenses .d-btn:not([aria-selected="true"]) {
   border: 1px dashed #bdc9d8;
   background: #fff;
