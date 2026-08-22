@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v121-figure-explanation-ui";
+const CACHE_NAME = "magicbook-pwa-v125-card-spacing";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -8,7 +8,7 @@ const STATIC_ASSETS = [
   "/magic-dictionary.css?v=1.2.2",
   "/screen-protection.css?v=1.1.0",
   "/learning-sync.js?v=2",
-  "/src/learning-insights.css?v=5-quiet-study-canvas",
+  "/src/learning-insights.css?v=9-card-spacing",
   "/src/learning-insights.js?v=5-figure-explanation-ui",
   "/homebg.css?v=3",
   "/mystyle.css?v=43-answer-label-contrast",

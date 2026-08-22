@@ -52,6 +52,7 @@ test("statistics use the adaptive study workspace and render all 25 chapters in 
   assert.match(client, /model\.chapters\.map\(chapterNode\)/u);
   assert.match(css, /\.li-chapter-matrix \{[^}]*grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/u);
   assert.doesNotMatch(client, /Tappa|checkpoint|Quadro di apprendimento|Percorso consolidato/u);
+  assert.doesNotMatch(client, /Tutti i capitoli/u);
   assert.doesNotMatch(client, /\b788\b/u);
 });
 
@@ -142,7 +143,7 @@ test("figure errors use learner-facing references and optional R2 explanations",
   assert.match(client, /simpleStatusLabel\(chapter\.status\)/u);
   assert.match(css, /\.li-media-frame \.li-figure-image \{[\s\S]*?max-height: min\(52vh, 430px\)/u);
   assert.match(css, /\.li-explanation-frame \{[\s\S]*?background: #fff;/u);
-  assert.match(css, /\.li-state\.is-solido \{ background: #d9f5ed; color: #0f766e; \}/u);
+  assert.match(css, /\.li-state\.is-in-pratica \{ background: #dcfce7; color: #15803d; \}/u);
   assert.match(css, /\.li-state\.is-attenzione \{ background: #fee4e2; color: #b42318; \}/u);
 });
 
@@ -154,12 +155,12 @@ test("responsive, reduced-motion and global scrollbar rules are present", () => 
   assert.match(css, /#learningInsightsScreen::-webkit-scrollbar/u);
   assert.match(index, /style\.css\?v=62-home-learning-layout/u);
   assert.match(index, /assets\/daisyui\.css\?v=2-learning-shell/u);
-  assert.match(index, /src\/learning-insights\.css\?v=5-quiet-study-canvas/u);
+  assert.match(index, /src\/learning-insights\.css\?v=9-card-spacing/u);
   assert.match(index, /src\/learning-insights\.js\?v=5-figure-explanation-ui/u);
-  assert.match(worker, /magicbook-pwa-v121-figure-explanation-ui/u);
+  assert.match(worker, /magicbook-pwa-v125-card-spacing/u);
   assert.match(worker, /style\.css\?v=62-home-learning-layout/u);
   assert.match(worker, /assets\/daisyui\.css\?v=2-learning-shell/u);
-  assert.match(worker, /src\/learning-insights\.css\?v=5-quiet-study-canvas/u);
+  assert.match(worker, /src\/learning-insights\.css\?v=9-card-spacing/u);
   assert.match(worker, /src\/learning-insights\.js\?v=5-figure-explanation-ui/u);
   assert.match(worker, /\/icons\/next\.png/u);
   assert.match(worker, /\/icons\/go-back\.png/u);
@@ -173,4 +174,10 @@ test("learning workspace keeps a flat, aligned surface rhythm", () => {
   assert.match(css, /\.li-explorer-body \{[\s\S]*?border-top: 1px solid var\(--li-line\);[\s\S]*?border-radius: 0;/u);
   assert.match(css, /\.li-error-row > button \{[\s\S]*?border-bottom: 1px solid var\(--li-line\) !important;/u);
   assert.match(css, /@media \(max-width: 430px\)[\s\S]*?\.li-chapter-cell \{ min-height: 78px;/u);
+  assert.match(css, /\.li-progress-groups ul \{ margin-top: 22px; \}/u);
+  assert.match(css, /@media \(min-width: 1024px\)[\s\S]*?\.li-route-nav \{[\s\S]*?left: 50%;[\s\S]*?transform: translateX\(-50%\);/u);
+  assert.match(css, /\.li-route-nav \.d-btn:not\(\[aria-current="page"\]\) \{[\s\S]*?border: 1px dashed/u);
+  assert.match(css, /\.li-lenses \.d-btn:not\(\[aria-selected="true"\]\) \{[\s\S]*?border: 1px dashed/u);
+  assert.match(css, /\.li-emerging-card > \.li-state \{[\s\S]*?grid-column: 4;[\s\S]*?grid-row: 1;/u);
+  assert.match(css, /grid-template-areas:[\s\S]*?"media copy disclosure"[\s\S]*?"media state disclosure"/u);
 });

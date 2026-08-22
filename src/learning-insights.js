@@ -342,7 +342,7 @@
     const reviewCount = model.chapters.filter(chapter => chapter.status === "attenzione").length;
     return `
       <section class="li-chapters" aria-labelledby="liChaptersTitle">
-        <header class="li-section-heading"><div><p class="li-kicker">Tutti i capitoli</p><h2 id="liChaptersTitle">I tuoi 25 capitoli</h2><p>${started} iniziati · ${reviewCount} da ripassare. Tocca un capitolo per vedere i dettagli.</p></div><div class="li-legend" aria-label="Stato dei capitoli"><span class="is-solido">Eccellente</span><span class="is-in-pratica">Buono</span><span class="is-in-miglioramento">In miglioramento</span><span class="is-attenzione">Da ripassare</span><span class="is-pochi-dati">Pochi dati</span><span class="is-non-iniziato">Non iniziato</span></div></header>
+        <header class="li-section-heading"><div><h2 id="liChaptersTitle">I tuoi 25 capitoli</h2><p>${started} iniziati · ${reviewCount} da ripassare. Tocca un capitolo per vedere i dettagli.</p></div><div class="li-legend" aria-label="Stato dei capitoli"><span class="is-solido">Eccellente</span><span class="is-in-pratica">Buono</span><span class="is-in-miglioramento">In miglioramento</span><span class="is-attenzione">Da ripassare</span><span class="is-pochi-dati">Pochi dati</span><span class="is-non-iniziato">Non iniziato</span></div></header>
         <div class="li-chapter-workspace ${selected ? "is-open" : ""}"><ol class="li-chapter-matrix">${model.chapters.map(chapterNode).join("")}</ol>${chapterDetail(selected)}</div>
       </section>`;
   }
