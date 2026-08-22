@@ -155,7 +155,19 @@
   }
 
   function itemMetaLabel(item, chapterOverride = 0) {
-    const type = String(item?.typeLabel || "Ripasso").toLocaleUpperCase("it-IT");
+    const rawType = String(item?.typeLabel || item?.type || "Ripasso").trim().toLowerCase();
+    const type = ({
+      figure: "FIGURA",
+      figura: "FIGURA",
+      question: "QUIZ",
+      quiz: "QUIZ",
+      word: "PAROLA",
+      parola: "PAROLA",
+      topic: "ARGOMENTO",
+      argomento: "ARGOMENTO",
+      chapter: "CAPITOLO",
+      capitolo: "CAPITOLO"
+    })[rawType] || String(item?.typeLabel || "Ripasso").toLocaleUpperCase("it-IT");
     const chapter = Number(item?.chapter || chapterOverride || 0);
     return chapter ? `${type} · CAP. ${chapter}` : type;
   }

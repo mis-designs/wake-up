@@ -46,7 +46,7 @@ body.learning-insights-mode :where(
   scrollbar-width: thin;
   background: var(--li-page);
   color: var(--li-ink);
-  font-family: "Rubik", "Inter", Arial, sans-serif;
+  font-family: "Inter", Arial, sans-serif;
   text-align: left;
   -webkit-overflow-scrolling: touch;
   isolation: isolate;
@@ -920,6 +920,136 @@ body.learning-insights-mode :where(
       "media copy disclosure"
       "media state disclosure";
     gap: 8px;
+  }
+  #learningInsightsScreen .li-error-row > button > .li-row-media,
+  #learningInsightsScreen .li-error-row > button > .li-error-index { grid-area: media; }
+  #learningInsightsScreen .li-error-row > button > .li-error-copy { grid-area: copy; }
+  #learningInsightsScreen .li-error-row > button > .li-state { grid-area: state; }
+  #learningInsightsScreen .li-error-row > button > .li-disclosure { grid-area: disclosure; }
+}
+
+/*
+ * Learning workspace contract
+ * ----------------------------
+ * This is the final scoped layer for the route. Earlier legacy rules keep
+ * compatibility with the rest of Magic Book; these tokens make the learning
+ * surface predictable: cards 16px, controls 8px, pills 9999px.
+ */
+#learningInsightsScreen {
+  --li-radius-card: 16px;
+  --li-radius-control: 8px;
+  --li-radius-pill: 9999px;
+  --li-green: #178844;
+  --li-green-soft: #e6f6ec;
+  --li-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-family: "Inter", Arial, sans-serif;
+}
+
+#learningInsightsScreen :where(.li-overview, .li-review-now, .li-progress-groups,
+  .li-chapters, .li-errors-heading, .li-emerging, .li-error-explorer,
+  .li-plan, .li-recovered, .li-failure) {
+  border-radius: var(--li-radius-card);
+}
+
+#learningInsightsScreen :where(.li-icon-button.d-btn, .li-refresh.d-btn,
+  .li-route-nav .d-btn, .li-lenses .d-btn, .li-primary-action.d-btn,
+  .li-secondary-action.d-btn, .li-more.d-btn, .li-plan .d-btn,
+  .li-detail-actions .d-btn) {
+  border-radius: var(--li-radius-control);
+}
+
+#learningInsightsScreen :where(.li-state, .li-review-meta span,
+  .li-chapter-count, .li-lenses .d-btn small, .li-score-track,
+  .li-placeholder-route) {
+  border-radius: var(--li-radius-pill);
+}
+
+/* Technical labels are deliberately quieter and easier to scan. */
+#learningInsightsScreen :where(.li-kicker, .li-error-copy small,
+  .li-emerging-copy small, .li-detail-title small, .li-metric > span,
+  .li-errors-heading dt, .li-related li span, .li-plan-intro) {
+  font-family: var(--li-mono);
+  letter-spacing: 0.035em;
+}
+
+/* Center the route switcher in the desktop topbar without moving the brand. */
+@media (min-width: 1024px) {
+  #learningInsightsScreen .li-route-nav {
+    top: calc(var(--li-safe-top) + 8px);
+    width: min(620px, calc(100% - 420px));
+  }
+}
+
+/* Active route is filled; the other route remains a quiet, dashed control. */
+#learningInsightsScreen .li-route-nav .d-btn:not([aria-current="page"]) {
+  border: 1px dashed #b8c5d6;
+  background: #fff;
+  color: var(--li-navy);
+}
+#learningInsightsScreen .li-route-nav .d-btn[aria-current="page"] {
+  border: 1px solid var(--li-navy);
+  background: var(--li-navy);
+  color: #fff;
+}
+
+/* Keep error rows readable when a state badge and disclosure share a row. */
+#learningInsightsScreen .li-error-row > button {
+  grid-template-columns: auto minmax(0, 1fr) max-content 18px;
+  gap: 14px;
+  overflow: hidden;
+}
+#learningInsightsScreen .li-error-copy {
+  min-width: 0;
+  padding-inline: 2px;
+}
+#learningInsightsScreen .li-error-copy > span,
+#learningInsightsScreen .li-error-copy strong {
+  overflow-wrap: anywhere;
+}
+#learningInsightsScreen .li-error-row > button > .li-state {
+  justify-self: start;
+}
+
+/* Status hierarchy: teal for excellent, clear green for good, amber for
+   improving, coral for review, and neutral slate for low/no data. */
+#learningInsightsScreen .li-state.is-solido,
+#learningInsightsScreen .li-legend .is-solido::before {
+  background: #0f8078;
+}
+#learningInsightsScreen .li-state.is-solido { color: #fff; }
+#learningInsightsScreen .li-state.is-in-pratica,
+#learningInsightsScreen .li-legend .is-in-pratica::before {
+  background: var(--li-green);
+}
+#learningInsightsScreen .li-state.is-in-pratica { color: #fff; }
+#learningInsightsScreen .li-state.is-in-miglioramento,
+#learningInsightsScreen .li-legend .is-in-miglioramento::before {
+  background: #b7791f;
+}
+#learningInsightsScreen .li-state.is-in-miglioramento { color: #fff; }
+#learningInsightsScreen .li-state.is-attenzione { background: #c84f4b; color: #fff; }
+#learningInsightsScreen .li-state.is-pochi-dati { background: #e7edf4; color: #46566c; }
+#learningInsightsScreen .li-state.is-non-iniziato { background: #d7e0ea; color: #46566c; }
+#learningInsightsScreen .li-state.is-recuperato { background: var(--li-green); color: #fff; }
+
+#learningInsightsScreen .li-chapter-cell.is-in-pratica {
+  border-left-color: var(--li-green) !important;
+}
+#learningInsightsScreen .li-chapter-cell.is-in-pratica .li-chapter-number {
+  background: var(--li-green-soft);
+  color: var(--li-green);
+}
+#learningInsightsScreen .li-chapter-cell.is-in-pratica .li-chapter-copy small {
+  color: var(--li-green);
+}
+
+@media (max-width: 767px) {
+  #learningInsightsScreen .li-error-row > button {
+    grid-template-columns: auto minmax(0, 1fr) 18px;
+    grid-template-areas:
+      "media copy disclosure"
+      "media state disclosure";
+    gap: 8px 10px;
   }
   #learningInsightsScreen .li-error-row > button > .li-row-media,
   #learningInsightsScreen .li-error-row > button > .li-error-index { grid-area: media; }

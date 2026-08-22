@@ -38,9 +38,14 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 - Ink/navy: `#17233a` / `#12315f`.
 - Positive: `--li-teal: #138f86`; attention: `--li-coral: #c84f4b`; limited data: `--li-amber: #a96c16`.
 - Page/surface/line: `#f3f6fb`, `#ffffff`, `#d9e2ee`.
-- Type: Rubik/Inter/system sans for Italian UI; existing Bengali font support remains available for catalog copy.
-- Radius: 13–17px controls/cells, 19–24px grouped surfaces.
+- Type: Inter/system sans for Italian UI; existing Bengali font support remains available for catalog copy.
+- Radius: 16px learning cards, 8px controls, and 9999px status/action pills.
 - Focus: 3px cobalt outline with 3px offset.
+- Learning-route UI contract: Inter for display and body copy; JetBrains Mono or
+  an equivalent system mono for technical labels and metadata. Cards use a
+  16px radius, controls 8px, and status/action pills 9999px. Eccellente uses
+  teal, Buono uses a distinct green, In miglioramento amber, and Da ripassare
+  coral so status can be understood at a glance.
 
 ## Layout
 
