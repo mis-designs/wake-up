@@ -2653,8 +2653,34 @@ function showExpiredRenewPopup() {
  * WHAT'S NEW POPUP
  ***********************/
 const WHATS_NEW_ARTWORK = "icons/ui%20mobile.svg";
+const WHATS_NEW_CAMPAIGN_ID = "mobile-ui-2026-08";
+const WHATS_NEW_MAX_SHOWS_PER_USER = 3;
+const WHATS_NEW_SHOW_COUNT_PREFIX = "whats_new_popup_show_count:";
 let whatsNewPopupShownThisVisit = false;
 let whatsNewPopupRetryTimer = null;
+
+function getWhatsNewPopupCountKey() {
+  const phone = normalizePhone(getCurrentSessionPhone());
+  return phone ? `${WHATS_NEW_SHOW_COUNT_PREFIX}${WHATS_NEW_CAMPAIGN_ID}:${phone}` : "";
+}
+
+function getWhatsNewPopupShowCount() {
+  const key = getWhatsNewPopupCountKey();
+  if (!key) return WHATS_NEW_MAX_SHOWS_PER_USER;
+  const count = Number.parseInt(Storage.get(key) || "0", 10);
+  return Number.isFinite(count) && count > 0 ? count : 0;
+}
+
+function hasReachedWhatsNewPopupLimit() {
+  return getWhatsNewPopupShowCount() >= WHATS_NEW_MAX_SHOWS_PER_USER;
+}
+
+function recordWhatsNewPopupShown() {
+  const key = getWhatsNewPopupCountKey();
+  if (!key) return;
+  const nextCount = Math.min(WHATS_NEW_MAX_SHOWS_PER_USER, getWhatsNewPopupShowCount() + 1);
+  Storage.set(key, String(nextCount));
+}
 
 function resetWhatsNewPopupForNextLogin() {
   if (whatsNewPopupRetryTimer) {
@@ -2668,6 +2694,7 @@ function resetWhatsNewPopupForNextLogin() {
 function isWhatsNewPopupAllowed() {
   if (whatsNewPopupShownThisVisit) return false;
   if (trialGuestMode || !getCurrentSessionPhone()) return false;
+  if (hasReachedWhatsNewPopupLimit()) return false;
   if (hasVisibleBlockingPopup()) return false;
   return true;
 }
@@ -2675,10 +2702,12 @@ function isWhatsNewPopupAllowed() {
 function maybeShowWhatsNewPopup() {
   if (whatsNewPopupShownThisVisit || whatsNewPopupRetryTimer) return;
   if (trialGuestMode || !getCurrentSessionPhone()) return;
+  if (hasReachedWhatsNewPopupLimit()) return;
 
   const tryToShow = () => {
     whatsNewPopupRetryTimer = null;
     if (whatsNewPopupShownThisVisit || trialGuestMode || !getCurrentSessionPhone()) return;
+    if (hasReachedWhatsNewPopupLimit()) return;
 
     if (!isWhatsNewPopupAllowed()) {
       whatsNewPopupRetryTimer = window.setTimeout(tryToShow, 900);
@@ -2694,6 +2723,7 @@ function maybeShowWhatsNewPopup() {
 function showWhatsNewPopup() {
   if (!isWhatsNewPopupAllowed()) return;
 
+  recordWhatsNewPopupShown();
   whatsNewPopupShownThisVisit = true;
   const previouslyFocused = document.activeElement;
   const overlay = document.createElement("div");

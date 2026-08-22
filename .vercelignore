@@ -39,6 +39,7 @@ service-account*.json
 MAGICPH_ALLBOOKS_AUDIO_SYNC.md
 coverage/
 dist/
+premium-audit.json
 *.log
 *.tmp
 *.bak

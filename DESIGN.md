@@ -12,7 +12,7 @@ canonical_ui:
 design_context:
   owner: Magic Book
   last_updated: 2026-08-22
-  revision_notes: Replaced the Roadbook metaphor with an adaptive study workspace, plain Italian labels, a 25-chapter matrix, and a compact recovery workflow.
+  revision_notes: Replaced the Roadbook metaphor with an adaptive study workspace, plain Italian labels, a 25-chapter matrix, a compact recovery workflow, and a flat surface rhythm for mobile and desktop.
 ---
 
 # Magic Book design context
@@ -26,7 +26,8 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 - Direction: Adaptive Study Workspace — a calm, adult study tool that changes density with the amount of real data.
 - Signature composition: recent-result band, compact action rail, five-by-five chapter matrix, and recovery stack.
 - Tone: direct, professional, reassuring, and operational. Avoid poetic, analytical, and internal-system language in student-facing copy.
-- Density: useful information in the first viewport, wide desktop use up to 1720px, and one natural vertical flow on mobile.
+- Density: useful information in the first viewport, a restrained 1240px reading canvas on desktop, and one natural vertical flow on mobile.
+- Surface rule: one bordered surface per section; use dividers for rows and tabs instead of cards nested inside cards. Elevation is reserved for the single next-action panel.
 - Imagery: reuse `icons/statistiche-patente.png`, `icons/errori-patente.png`, `icons/go-back.png`, `icons/next.png`, `assets/admin/update.png`, and authenticated figure assets. Existing SVGs are reused only when their meaning matches.
 - Icon rule: no Unicode characters as UI icons. Use repository assets, text labels, or decorative CSS marks hidden from assistive technology.
 - Avoid giant headings, oversized empty surfaces, decorative gradients, neon, game styling, generic KPI-card grids, traffic-sign decoration, and horizontal scrollers.

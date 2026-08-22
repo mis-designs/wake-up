@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v118-study-workspace";
+const CACHE_NAME = "magicbook-pwa-v120-quiet-study-canvas";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -8,11 +8,11 @@ const STATIC_ASSETS = [
   "/magic-dictionary.css?v=1.2.2",
   "/screen-protection.css?v=1.1.0",
   "/learning-sync.js?v=2",
-  "/src/learning-insights.css?v=4-study-workspace",
+  "/src/learning-insights.css?v=5-quiet-study-canvas",
   "/src/learning-insights.js?v=4-study-workspace",
   "/homebg.css?v=3",
   "/mystyle.css?v=43-answer-label-contrast",
-  "/script.js?v=56-login-daisyui",
+  "/script.js?v=57-whats-new-limit",
   "/study-quiz.html",
   "/study-quiz.css?v=16-trial-audio-preview",
   "/study-quiz.js?v=14-trial-audio-preview",

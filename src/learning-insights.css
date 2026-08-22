@@ -559,3 +559,178 @@ body.learning-insights-mode :where(
 }
 @keyframes li-spin { to { transform: rotate(360deg); } }
 @keyframes li-pulse { from { opacity: 0.48; } to { opacity: 1; } }
+
+/*
+ * Quiet study canvas
+ * ------------------
+ * The learning routes are information tools, not a stack of nested cards.
+ * Keep one surface per section, use rules for grouping, and reserve elevation
+ * for the single next-action panel. This makes the same rhythm hold on a
+ * narrow phone and on a wide desktop viewport.
+ */
+#learningInsightsScreen {
+  --li-page: #eef3f7;
+  --li-line: #d7e1ea;
+  --li-line-strong: #c2cfdd;
+  --li-shadow: none;
+  --li-shadow-soft: 0 5px 18px rgba(25, 47, 83, 0.045);
+}
+
+#learningInsightsScreen .li-topbar {
+  height: calc(68px + var(--li-safe-top));
+  border-bottom-color: #d6e0e9;
+  box-shadow: none;
+}
+
+#learningInsightsScreen .li-route-nav {
+  width: min(560px, calc(100% - 32px));
+  margin-top: 12px;
+  padding: 3px;
+  border: 1px solid var(--li-line);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: none;
+}
+
+#learningInsightsScreen .li-route-nav .d-btn {
+  height: 44px;
+  min-height: 44px;
+  border-radius: 11px;
+  font-size: 14px;
+}
+
+#learningInsightsScreen .li-main {
+  width: min(1240px, calc(100% - 48px));
+  margin-top: 26px;
+  margin-bottom: 56px;
+}
+
+#learningInsightsScreen .li-main > * + * { margin-top: 16px; }
+
+#learningInsightsScreen .li-overview,
+#learningInsightsScreen .li-review-now,
+#learningInsightsScreen .li-progress-groups,
+#learningInsightsScreen .li-chapters,
+#learningInsightsScreen .li-errors-heading,
+#learningInsightsScreen .li-emerging,
+#learningInsightsScreen .li-error-explorer,
+#learningInsightsScreen .li-plan,
+#learningInsightsScreen .li-recovered {
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+#learningInsightsScreen .li-overview { padding: 28px; }
+#learningInsightsScreen .li-review-now { padding: 28px; }
+#learningInsightsScreen .li-progress-groups { padding-inline: 26px; }
+#learningInsightsScreen .li-chapters { padding: 28px; }
+
+#learningInsightsScreen .li-chapter-workspace { gap: 14px; margin-top: 20px; }
+#learningInsightsScreen .li-chapter-matrix { gap: 8px; }
+#learningInsightsScreen .li-chapter-cell {
+  min-height: 84px;
+  padding: 10px 11px;
+  border-left-width: 3px !important;
+  border-radius: 12px;
+}
+#learningInsightsScreen .li-chapter-number { width: 30px; height: 30px; border-radius: 8px; }
+#learningInsightsScreen .li-chapter-copy strong { font-size: 12px; line-height: 1.25; }
+#learningInsightsScreen .li-chapter-copy small { margin-top: 5px; font-size: 10px; }
+
+#learningInsightsScreen .li-errors-heading { padding: 22px 28px; }
+#learningInsightsScreen .li-errors-heading dl {
+  min-width: min(420px, 45%);
+  border: 0;
+  border-radius: 12px;
+  background: #f5f8fb;
+}
+#learningInsightsScreen .li-errors-heading dl div { padding: 12px 15px; }
+
+#learningInsightsScreen .li-emerging { padding: 22px 28px; }
+#learningInsightsScreen .li-emerging-grid {
+  gap: 0;
+  margin-top: 14px;
+  border-top: 1px solid var(--li-line);
+}
+#learningInsightsScreen .li-emerging-card {
+  min-height: 70px;
+  padding: 12px 0;
+  border: 0 !important;
+  border-bottom: 1px solid var(--li-line) !important;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none;
+}
+#learningInsightsScreen .li-emerging-card:hover { background: #f7fafc !important; }
+#learningInsightsScreen .li-emerging-card:last-child { border-bottom: 0 !important; }
+
+#learningInsightsScreen .li-errors-layout { gap: 16px; }
+#learningInsightsScreen .li-error-explorer { padding: 22px 28px; }
+#learningInsightsScreen .li-lenses {
+  gap: 3px;
+  margin-top: 14px;
+  padding: 3px;
+  border: 0;
+  border-radius: 12px;
+  background: #edf2f6;
+}
+#learningInsightsScreen .li-lenses .d-btn { min-height: 40px; border-radius: 9px; }
+#learningInsightsScreen .li-explorer-body {
+  margin-top: 14px;
+  border: 0;
+  border-top: 1px solid var(--li-line);
+  border-radius: 0;
+  overflow: visible;
+}
+#learningInsightsScreen .li-list-pane { padding: 10px 0 0; background: transparent; }
+#learningInsightsScreen .li-detail-pane { background: #f7f9fb; }
+#learningInsightsScreen .li-error-list { gap: 0; }
+#learningInsightsScreen .li-error-row > button {
+  min-height: 72px;
+  padding: 11px 8px;
+  border: 0 !important;
+  border-bottom: 1px solid var(--li-line) !important;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none;
+}
+#learningInsightsScreen .li-error-row > button:hover { background: #f7fafc !important; }
+#learningInsightsScreen .li-error-row:last-child > button { border-bottom: 0 !important; }
+#learningInsightsScreen .li-error-row.is-selected > button {
+  border-left: 3px solid var(--li-action) !important;
+  background: var(--li-blue-soft) !important;
+  box-shadow: none;
+}
+#learningInsightsScreen .li-plan { padding: 22px; border-top-width: 3px; }
+#learningInsightsScreen .li-error-detail { padding: 22px; }
+#learningInsightsScreen .li-media-frame { height: clamp(170px, 18vw, 240px); border-radius: 12px; }
+
+@media (max-width: 767px) {
+  #learningInsightsScreen .li-main { width: calc(100% - 24px); margin-top: 20px; margin-bottom: 40px; }
+  #learningInsightsScreen .li-overview,
+  #learningInsightsScreen .li-chapters,
+  #learningInsightsScreen .li-error-explorer { padding: 20px 16px; }
+  #learningInsightsScreen .li-review-now,
+  #learningInsightsScreen .li-errors-heading,
+  #learningInsightsScreen .li-emerging,
+  #learningInsightsScreen .li-plan,
+  #learningInsightsScreen .li-recovered { padding: 19px 16px; }
+  #learningInsightsScreen .li-errors-heading dl { width: 100%; min-width: 0; }
+  #learningInsightsScreen .li-emerging-card { padding: 11px 0; }
+  #learningInsightsScreen .li-explorer-body { margin-top: 12px; }
+  #learningInsightsScreen .li-detail-pane { border-top: 1px solid var(--li-line); }
+  #learningInsightsScreen .li-error-detail { padding: 20px 16px; }
+  #learningInsightsScreen .li-media-frame { height: 190px; }
+  #learningInsightsScreen .li-chapter-cell { min-height: 82px; padding: 9px 8px; }
+}
+
+@media (max-width: 430px) {
+  #learningInsightsScreen .li-main { width: calc(100% - 20px); }
+  #learningInsightsScreen .li-route-nav { width: calc(100% - 24px); }
+  #learningInsightsScreen .li-route-nav .d-btn { height: 44px; min-height: 44px; font-size: 12px; }
+  #learningInsightsScreen .li-progress-groups { padding-inline: 16px; }
+  #learningInsightsScreen .li-chapter-cell { min-height: 78px; }
+  #learningInsightsScreen .li-errors-heading dl div { padding: 10px 7px; }
+  #learningInsightsScreen .li-errors-heading dt { font-size: 9px; }
+  #learningInsightsScreen .li-errors-heading dd { font-size: 20px; }
+}
