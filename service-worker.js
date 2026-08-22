@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v120-quiet-study-canvas";
+const CACHE_NAME = "magicbook-pwa-v121-figure-explanation-ui";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -9,7 +9,7 @@ const STATIC_ASSETS = [
   "/screen-protection.css?v=1.1.0",
   "/learning-sync.js?v=2",
   "/src/learning-insights.css?v=5-quiet-study-canvas",
-  "/src/learning-insights.js?v=4-study-workspace",
+  "/src/learning-insights.js?v=5-figure-explanation-ui",
   "/homebg.css?v=3",
   "/mystyle.css?v=43-answer-label-contrast",
   "/script.js?v=57-whats-new-limit",

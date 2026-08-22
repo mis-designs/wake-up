@@ -8,6 +8,8 @@
     maxLocalEvents: 250,
     validLenses: ["figure", "quiz", "parole", "argomenti", "capitoli"]
   });
+  const EXPLANATION_EXTENSIONS = Object.freeze(["png", "webp", "jpg", "jpeg"]);
+  const explanationAssetCache = new Map();
   const state = {
     mode: "statistics",
     lens: "figure",
@@ -100,11 +102,11 @@
   function simpleStatusLabel(status) {
     return ({
       attenzione: "Da ripassare",
-      in_miglioramento: "Sta migliorando",
+      in_miglioramento: "In miglioramento",
       recuperato: "Recuperato",
-      solido: "Bene",
+      solido: "Eccellente",
       pochi_dati: "Pochi dati",
-      in_pratica: "Pochi dati",
+      in_pratica: "Buono",
       non_iniziato: "Non iniziato"
     })[status] || "Pochi dati";
   }
@@ -114,7 +116,60 @@
   }
 
   function figureUrl(figureId) {
-    return `/api/asset?kind=figure&amp;figure=${encodeURIComponent(String(figureId || ""))}`;
+    return `/api/asset?kind=figure&figure=${encodeURIComponent(String(figureId || ""))}`;
+  }
+
+  function figureAssetId(item) {
+    return String(item?.figureId || (item?.type === "figure" ? item?.id : "") || "").trim();
+  }
+
+  function explanationUrl(figureId, extension) {
+    return `/api/asset?kind=explanation&figure=${encodeURIComponent(String(figureId || ""))}&value=0&ext=${encodeURIComponent(String(extension || "png"))}`;
+  }
+
+  async function findExplanationAsset(figureId) {
+    const key = String(figureId || "").trim().toLowerCase();
+    if (!key || typeof root.fetch !== "function") return "";
+    const cached = explanationAssetCache.get(key);
+    if (cached?.status === "ready") return cached.url;
+    if (cached?.status === "missing") return "";
+    if (cached?.promise) return cached.promise;
+
+    const promise = (async () => {
+      for (const extension of EXPLANATION_EXTENSIONS) {
+        const url = explanationUrl(key, extension);
+        try {
+          const response = await root.fetch(url, { method: "HEAD", cache: "force-cache" });
+          if (response.ok) return url;
+        } catch {
+          // A missing explanation is a normal content state, not a page error.
+        }
+      }
+      return "";
+    })().then(url => {
+      explanationAssetCache.set(key, { status: url ? "ready" : "missing", url });
+      return url;
+    });
+    explanationAssetCache.set(key, { status: "pending", promise });
+    return promise;
+  }
+
+  function itemMetaLabel(item, chapterOverride = 0) {
+    const type = String(item?.typeLabel || "Ripasso").toLocaleUpperCase("it-IT");
+    const chapter = Number(item?.chapter || chapterOverride || 0);
+    return chapter ? `${type} · CAP. ${chapter}` : type;
+  }
+
+  function formatQuizReference(quizId, chapter = 0) {
+    const raw = String(quizId || "").trim();
+    const chapterMatch = raw.match(/(?:cap|ch(?:apter)?)[_-]?0*(\d+)/i);
+    const quizMatch = raw.match(/(?:^|[_-])q(?:uiz)?[_-]?0*(\d+)/i) || raw.match(/q[_-]?0*(\d+)/i);
+    const chapterNumber = Number(chapterMatch?.[1] || chapter || 0);
+    const quizNumber = Number(quizMatch?.[1] || 0);
+    if (chapterNumber && quizNumber) return `CAP. ${chapterNumber} · QUIZ ${quizNumber}`;
+    if (quizNumber) return `QUIZ ${quizNumber}`;
+    if (chapterNumber) return `CAP. ${chapterNumber}`;
+    return "QUIZ COLLEGATO";
   }
 
   function cssEscape(value) {
@@ -287,7 +342,7 @@
     const reviewCount = model.chapters.filter(chapter => chapter.status === "attenzione").length;
     return `
       <section class="li-chapters" aria-labelledby="liChaptersTitle">
-        <header class="li-section-heading"><div><p class="li-kicker">Tutti i capitoli</p><h2 id="liChaptersTitle">I tuoi 25 capitoli</h2><p>${started} iniziati · ${reviewCount} da ripassare. Tocca un capitolo per vedere i dettagli.</p></div><div class="li-legend" aria-label="Stato dei capitoli"><span class="is-solido">Bene</span><span class="is-in-miglioramento">Sta migliorando</span><span class="is-attenzione">Da ripassare</span><span class="is-pochi-dati">Pochi dati</span><span class="is-non-iniziato">Non iniziato</span></div></header>
+        <header class="li-section-heading"><div><p class="li-kicker">Tutti i capitoli</p><h2 id="liChaptersTitle">I tuoi 25 capitoli</h2><p>${started} iniziati · ${reviewCount} da ripassare. Tocca un capitolo per vedere i dettagli.</p></div><div class="li-legend" aria-label="Stato dei capitoli"><span class="is-solido">Eccellente</span><span class="is-in-pratica">Buono</span><span class="is-in-miglioramento">In miglioramento</span><span class="is-attenzione">Da ripassare</span><span class="is-pochi-dati">Pochi dati</span><span class="is-non-iniziato">Non iniziato</span></div></header>
         <div class="li-chapter-workspace ${selected ? "is-open" : ""}"><ol class="li-chapter-matrix">${model.chapters.map(chapterNode).join("")}</ol>${chapterDetail(selected)}</div>
       </section>`;
   }
@@ -348,18 +403,21 @@
   function renderRelatedQuiz(item) {
     const rows = Array.isArray(item.relatedQuiz) ? item.relatedQuiz : [];
     if (!rows.length) return "";
-    return `<div class="li-related"><h4>Quiz collegati</h4><ul>${rows.map(row => `<li><span>${escapeHtml(row.quizId)}</span><p>${escapeHtml(row.question)}</p></li>`).join("")}</ul></div>`;
+    return `<div class="li-related"><h4>Quiz collegati</h4><ul>${rows.map(row => `<li><span>${escapeHtml(formatQuizReference(row.quizId, row.chapter))}</span><p>${escapeHtml(row.question)}</p></li>`).join("")}</ul></div>`;
   }
 
   function renderErrorDetail(item) {
     if (!item) return `<aside class="li-detail-placeholder" aria-label="Dettaglio da ripassare"><span class="li-placeholder-route" aria-hidden="true"></span><h3>Scegli un elemento</h3><p>Qui vedrai gli errori fatti, i quiz collegati e cosa puoi fare adesso.</p></aside>`;
     const chapter = Number(item.chapter || item.relatedQuiz?.[0]?.chapter || 0);
+    const figureId = figureAssetId(item);
+    const explanationFigure = item.type === "figure" ? figureId : "";
     return `
       <aside class="li-error-detail" id="liErrorDetail-${escapeHtml(item.type)}-${escapeHtml(item.id)}" aria-label="Dettaglio ${escapeHtml(item.title)}">
         <button class="li-detail-close" type="button" data-li-action="close-detail" onclick="MagicBookLearningInsights.handleClick(event)" aria-label="Chiudi dettaglio"><span aria-hidden="true"></span></button>
-        ${item.figureId ? `<figure><div class="li-media-frame"><img class="li-figure-image" loading="lazy" decoding="async" src="${figureUrl(item.figureId)}" alt="${escapeHtml(item.title)}"><span class="li-media-fallback">Figura non disponibile</span></div><figcaption>Figura collegata ai tuoi quiz</figcaption></figure>` : ""}
-        <div class="li-error-explanation"><div class="li-detail-title"><span class="li-state ${stateClass(item.status)}">${simpleStatusLabel(item.status)}</span><small>${escapeHtml(item.typeLabel)}${chapter ? ` · Capitolo ${chapter}` : ""}</small></div><h3 tabindex="-1">${escapeHtml(item.title)}</h3>${item.titleBn ? `<p lang="bn" class="li-bangla-title">${escapeHtml(item.titleBn)}</p>` : ""}<div class="li-why"><strong>I tuoi risultati</strong><p>${escapeHtml(plainItemReason(item))}</p></div>${item.simpleItalian ? `<p class="li-simple-copy">${escapeHtml(item.simpleItalian)}</p>` : ""}${item.simpleBangla ? `<p lang="bn" class="li-simple-copy">${escapeHtml(item.simpleBangla)}</p>` : ""}${renderRelatedQuiz(item)}
-          <div class="li-detail-actions">${item.type === "word" ? `<button class="li-primary-action d-btn d-btn-primary d-btn-sm" type="button" data-li-action="dictionary" data-query="${escapeHtml(item.title)}" onclick="MagicBookLearningInsights.handleClick(event)">Ripassa nel dizionario</button>` : ""}${chapter ? `<button class="li-primary-action d-btn d-btn-primary d-btn-sm" type="button" data-li-action="start-quiz" data-chapter="${chapter}" onclick="MagicBookLearningInsights.handleClick(event)">Riprova</button><button class="li-secondary-action d-btn d-btn-ghost d-btn-sm" type="button" data-li-action="open-book" data-chapter="${chapter}" onclick="MagicBookLearningInsights.handleClick(event)">Guarda la spiegazione</button>` : ""}</div>
+        ${figureId ? `<figure><div class="li-media-frame"><img class="li-figure-image" loading="lazy" decoding="async" src="${figureUrl(figureId)}" alt="${escapeHtml(item.title)}"><span class="li-media-fallback">Figura non disponibile</span></div><figcaption>Figura collegata ai tuoi quiz</figcaption></figure>` : ""}
+        <div class="li-error-explanation"><div class="li-detail-title"><span class="li-state ${stateClass(item.status)}">${simpleStatusLabel(item.status)}</span><small>${escapeHtml(itemMetaLabel(item, chapter))}</small></div><h3 tabindex="-1">${escapeHtml(item.title)}</h3>${item.titleBn ? `<p lang="bn" class="li-bangla-title">${escapeHtml(item.titleBn)}</p>` : ""}<div class="li-why"><strong>I tuoi risultati</strong><p>${escapeHtml(plainItemReason(item))}</p></div>${item.simpleItalian ? `<p class="li-simple-copy">${escapeHtml(item.simpleItalian)}</p>` : ""}${item.simpleBangla ? `<p lang="bn" class="li-simple-copy">${escapeHtml(item.simpleBangla)}</p>` : ""}${renderRelatedQuiz(item)}
+          <div class="li-detail-actions">${item.type === "word" ? `<button class="li-primary-action d-btn d-btn-primary d-btn-sm" type="button" data-li-action="dictionary" data-query="${escapeHtml(item.title)}" onclick="MagicBookLearningInsights.handleClick(event)">Ripassa nel dizionario</button>` : ""}${chapter ? `<button class="li-primary-action d-btn d-btn-primary d-btn-sm" type="button" data-li-action="start-quiz" data-chapter="${chapter}" onclick="MagicBookLearningInsights.handleClick(event)">Riprova</button>` : ""}${explanationFigure ? `<button class="li-secondary-action li-explanation-action d-btn d-btn-ghost d-btn-sm" type="button" data-li-action="open-explanation" data-li-explanation-figure="${escapeHtml(explanationFigure)}" aria-expanded="false" aria-hidden="true" hidden onclick="MagicBookLearningInsights.handleClick(event)">Guarda la spiegazione</button>` : ""}</div>
+          ${explanationFigure ? `<div class="li-explanation-panel" hidden><p class="li-explanation-label">Spiegazione della figura</p><div class="li-explanation-frame"><img class="li-explanation-image" loading="lazy" decoding="async" alt="Spiegazione della figura ${escapeHtml(item.title)}" data-li-explanation-image></div></div>` : ""}
         </div>
       </aside>`;
   }
@@ -368,7 +426,8 @@
     const key = itemKey(item);
     const selected = state.selectedKey === key;
     const detailId = `liErrorDetail-${item.type}-${item.id}`;
-    return `<li class="li-error-row ${selected ? "is-selected" : ""}"><button type="button" data-li-detail="${escapeHtml(key)}" onclick="MagicBookLearningInsights.handleClick(event)" aria-expanded="${selected}" ${selected ? `aria-controls="${escapeHtml(detailId)}"` : ""}>${item.figureId ? `<span class="li-row-media"><img class="li-figure-image" loading="lazy" decoding="async" src="${figureUrl(item.figureId)}" alt=""><span class="li-media-fallback">Img</span></span>` : `<span class="li-error-index" aria-hidden="true">${escapeHtml(String(item.typeLabel || "R").slice(0, 1))}</span>`}<span class="li-error-copy"><small>${escapeHtml(item.typeLabel)}${item.chapter ? ` · Capitolo ${Number(item.chapter)}` : ""}</small><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(plainItemReason(item))}</span></span><span class="li-state ${stateClass(item.status)}">${simpleStatusLabel(item.status)}</span><span class="li-disclosure" aria-hidden="true"><span></span></span></button></li>`;
+    const figureId = figureAssetId(item);
+    return `<li class="li-error-row ${selected ? "is-selected" : ""}"><button type="button" data-li-detail="${escapeHtml(key)}" onclick="MagicBookLearningInsights.handleClick(event)" aria-expanded="${selected}" ${selected ? `aria-controls="${escapeHtml(detailId)}"` : ""}>${figureId ? `<span class="li-row-media"><img class="li-figure-image" loading="lazy" decoding="async" src="${figureUrl(figureId)}" alt=""><span class="li-media-fallback">Figura non disponibile</span></span>` : `<span class="li-error-index" aria-hidden="true">${escapeHtml(String(item.typeLabel || "R").slice(0, 1))}</span>`}<span class="li-error-copy"><small>${escapeHtml(itemMetaLabel(item))}</small><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(plainItemReason(item))}</span></span><span class="li-state ${stateClass(item.status)}">${simpleStatusLabel(item.status)}</span><span class="li-disclosure" aria-hidden="true"><span></span></span></button></li>`;
   }
 
   function renderErrorList(model) {
@@ -393,7 +452,7 @@
   function renderEmerging(model) {
     const signals = emergingSignals(model);
     if (!signals.length) return `<section class="li-emerging is-quiet" aria-labelledby="liEmergingTitle"><header><div><p class="li-kicker">Da controllare</p><h2 id="liEmergingTitle">Per ora niente di urgente</h2></div><p>${model.state === "ready" ? "Continua con i quiz: questa area si aggiorna con i tuoi risultati." : "Servono ancora alcuni quiz per mostrarti cosa ripassare."}</p></header></section>`;
-    return `<section class="li-emerging" aria-labelledby="liEmergingTitle"><header><div><p class="li-kicker">Da controllare</p><h2 id="liEmergingTitle">Guarda prima questi</h2></div><p>Gli elementi con più errori recenti.</p></header><div class="li-emerging-grid">${signals.map(({ item, lens }, index) => `<button type="button" class="li-emerging-card" data-li-emerging="${escapeHtml(itemKey(item))}" data-li-emerging-lens="${lens}" onclick="MagicBookLearningInsights.handleClick(event)"><span class="li-emerging-rank">0${index + 1}</span>${item.figureId ? `<span class="li-emerging-media"><img class="li-figure-image" loading="lazy" decoding="async" src="${figureUrl(item.figureId)}" alt=""><span class="li-media-fallback">Figura</span></span>` : `<span class="li-emerging-type">${escapeHtml(item.typeLabel)}</span>`}<span class="li-emerging-copy"><small>${escapeHtml(item.typeLabel)}${item.chapter ? ` · Capitolo ${Number(item.chapter)}` : ""}</small><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(plainItemReason(item))}</span></span><span class="li-state ${stateClass(item.status)}">${simpleStatusLabel(item.status)}</span></button>`).join("")}</div></section>`;
+    return `<section class="li-emerging" aria-labelledby="liEmergingTitle"><header><div><p class="li-kicker">Da controllare</p><h2 id="liEmergingTitle">Guarda prima questi</h2></div><p>Gli elementi con più errori recenti.</p></header><div class="li-emerging-grid">${signals.map(({ item, lens }, index) => { const figureId = figureAssetId(item); return `<button type="button" class="li-emerging-card" data-li-emerging="${escapeHtml(itemKey(item))}" data-li-emerging-lens="${lens}" onclick="MagicBookLearningInsights.handleClick(event)"><span class="li-emerging-rank">0${index + 1}</span>${figureId ? `<span class="li-emerging-media"><img class="li-figure-image" loading="lazy" decoding="async" src="${figureUrl(figureId)}" alt=""><span class="li-media-fallback">Figura non disponibile</span></span>` : `<span class="li-emerging-type">${escapeHtml(item.typeLabel)}</span>`}<span class="li-emerging-copy"><small>${escapeHtml(itemMetaLabel(item))}</small><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(plainItemReason(item))}</span></span><span class="li-state ${stateClass(item.status)}">${simpleStatusLabel(item.status)}</span></button>`; }).join("")}</div></section>`;
   }
 
   function renderPlan(model) {
@@ -491,6 +550,27 @@
       };
       if (image.complete && !image.naturalWidth) markUnavailable();
       else image.addEventListener("error", markUnavailable, { once: true });
+    });
+    root.document?.querySelectorAll("[data-li-explanation-figure]").forEach(button => {
+      if (button.dataset.liExplanationBound === "true") return;
+      button.dataset.liExplanationBound = "true";
+      void findExplanationAsset(button.dataset.liExplanationFigure).then(url => {
+        if (!button.isConnected) return;
+        if (!url) {
+          button.remove();
+          return;
+        }
+        button.dataset.liExplanationUrl = url;
+        button.hidden = false;
+        button.removeAttribute("aria-hidden");
+      });
+    });
+    root.document?.querySelectorAll(".li-explanation-image").forEach(image => {
+      image.addEventListener("error", () => {
+        const panel = image.closest(".li-explanation-panel");
+        panel?.setAttribute("hidden", "");
+        panel?.closest(".li-error-detail")?.querySelector("[data-li-action=\"open-explanation\"]")?.remove();
+      }, { once: true });
     });
   }
 
@@ -686,6 +766,17 @@
     else if (action.dataset.liAction === "close-detail") { state.selectedKey = ""; render(); focusControl(".li-list-pane"); }
     else if (action.dataset.liAction === "start-quiz") root.location.href = `/quiz/capitolo-${String(chapterNumber || 1).padStart(2, "0")}`;
     else if (action.dataset.liAction === "open-book" && chapterNumber) root.openChapter?.(chapterNumber);
+    else if (action.dataset.liAction === "open-explanation") {
+      const detail = action.closest(".li-error-detail");
+      const panel = detail?.querySelector(".li-explanation-panel");
+      const image = panel?.querySelector("[data-li-explanation-image]");
+      const url = action.dataset.liExplanationUrl;
+      if (!panel || !image || !url) return;
+      const opening = panel.hidden;
+      if (opening && !image.getAttribute("src")) image.src = url;
+      panel.hidden = !opening;
+      action.setAttribute("aria-expanded", String(opening));
+    }
     else if (action.dataset.liAction === "dictionary") root.showMagicDictionary?.({ query: action.dataset.query });
     else if (action.dataset.liAction === "login") root.logout?.(true, "expired");
   }

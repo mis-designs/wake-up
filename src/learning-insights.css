@@ -734,3 +734,101 @@ body.learning-insights-mode :where(
   #learningInsightsScreen .li-errors-heading dt { font-size: 9px; }
   #learningInsightsScreen .li-errors-heading dd { font-size: 20px; }
 }
+
+/* Figure media and learner-facing status language. */
+#learningInsightsScreen .li-row-media,
+#learningInsightsScreen .li-emerging-media {
+  width: 64px;
+  height: 58px;
+  border-color: #cfdbe7;
+  border-radius: 10px;
+  background: #fff;
+}
+#learningInsightsScreen .li-row-media img,
+#learningInsightsScreen .li-emerging-media img {
+  width: 100%;
+  height: 100%;
+  padding: 4px;
+  object-fit: contain;
+}
+#learningInsightsScreen .li-emerging-card { grid-template-columns: 28px 64px minmax(0, 1fr) auto; }
+
+#learningInsightsScreen .li-media-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: auto;
+  min-height: 140px;
+  padding: 10px;
+  overflow: visible;
+  background: #fff;
+}
+#learningInsightsScreen .li-media-frame .li-figure-image {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: min(52vh, 430px);
+  padding: 0;
+  object-fit: contain;
+}
+
+#learningInsightsScreen .li-explanation-panel {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--li-line);
+}
+#learningInsightsScreen .li-explanation-label {
+  color: var(--li-navy);
+  font-size: 13px;
+  font-weight: 800;
+}
+#learningInsightsScreen .li-explanation-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--li-line);
+  border-radius: 12px;
+  background: #fff;
+}
+#learningInsightsScreen .li-explanation-image {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: min(50vh, 420px);
+  object-fit: contain;
+}
+
+#learningInsightsScreen .li-state { min-height: 26px; padding: 5px 10px; font-size: 11px; letter-spacing: 0.01em; }
+#learningInsightsScreen .li-state.is-solido { background: #d9f5ed; color: #0f766e; }
+#learningInsightsScreen .li-state.is-in-pratica { background: #dbeafe; color: #1d4ed8; }
+#learningInsightsScreen .li-state.is-in-miglioramento { background: #ede9fe; color: #6d28d9; }
+#learningInsightsScreen .li-state.is-attenzione { background: #fee4e2; color: #b42318; }
+#learningInsightsScreen .li-state.is-pochi-dati { background: #fff0c2; color: #8a4b08; }
+#learningInsightsScreen .li-state.is-non-iniziato { background: #e7edf4; color: #44546a; }
+#learningInsightsScreen .li-state.is-recuperato { background: #dcfce7; color: #15803d; }
+#learningInsightsScreen .li-legend .is-solido::before { background: #0f766e; }
+#learningInsightsScreen .li-legend .is-in-miglioramento::before { background: #6d28d9; }
+#learningInsightsScreen .li-legend .is-attenzione::before { background: #b42318; }
+#learningInsightsScreen .li-legend .is-pochi-dati::before { background: #a16207; }
+#learningInsightsScreen .li-legend .is-non-iniziato::before { background: #64748b; }
+#learningInsightsScreen .li-chapter-cell.is-solido { border-left-color: #0f766e !important; }
+#learningInsightsScreen .li-chapter-cell.is-in-pratica { border-left-color: #1d4ed8 !important; }
+#learningInsightsScreen .li-chapter-cell.is-in-miglioramento { border-left-color: #6d28d9 !important; }
+#learningInsightsScreen .li-chapter-cell.is-attenzione { border-left-color: #b42318 !important; }
+#learningInsightsScreen .li-chapter-cell.is-pochi-dati { border-left-color: #a16207 !important; }
+#learningInsightsScreen .li-chapter-cell.is-non-iniziato { border-left-color: #94a3b8 !important; }
+
+@media (max-width: 767px) {
+  #learningInsightsScreen .li-media-frame { min-height: 120px; }
+  #learningInsightsScreen .li-media-frame .li-figure-image { max-height: min(44vh, 320px); }
+  #learningInsightsScreen .li-explanation-image { max-height: min(42vh, 300px); }
+  #learningInsightsScreen .li-emerging-card { grid-template-columns: 24px 58px minmax(0, 1fr) auto; }
+  #learningInsightsScreen .li-emerging-media { width: 58px; height: 54px; }
+}
+
+@media (max-width: 430px) {
+  #learningInsightsScreen .li-row-media { width: 58px; height: 54px; }
+}

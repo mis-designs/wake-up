@@ -128,6 +128,24 @@ test("figure media load lazily and expose a visible fallback on failure", () => 
   assert.match(css, /\.is-unavailable[^\{]*(?:img|\.li-figure-image)/u);
 });
 
+test("figure errors use learner-facing references and optional R2 explanations", () => {
+  assert.match(client, /const EXPLANATION_EXTENSIONS = Object\.freeze\(\["png", "webp", "jpg", "jpeg"\]\)/u);
+  assert.match(client, /method: "HEAD"/u);
+  assert.match(client, /data-li-action="open-explanation"/u);
+  assert.match(client, /data-li-explanation-figure=/u);
+  assert.match(client, /function figureAssetId\(item\)/u);
+  assert.match(client, /function formatQuizReference\(quizId, chapter = 0\)/u);
+  assert.match(client, /CAP\. \$\{chapterNumber\} · QUIZ \$\{quizNumber\}/u);
+  assert.match(client, /solido: "Eccellente"/u);
+  assert.match(client, /in_pratica: "Buono"/u);
+  assert.match(client, /class="is-in-pratica">Buono<\/span>/u);
+  assert.match(client, /simpleStatusLabel\(chapter\.status\)/u);
+  assert.match(css, /\.li-media-frame \.li-figure-image \{[\s\S]*?max-height: min\(52vh, 430px\)/u);
+  assert.match(css, /\.li-explanation-frame \{[\s\S]*?background: #fff;/u);
+  assert.match(css, /\.li-state\.is-solido \{ background: #d9f5ed; color: #0f766e; \}/u);
+  assert.match(css, /\.li-state\.is-attenzione \{ background: #fee4e2; color: #b42318; \}/u);
+});
+
 test("responsive, reduced-motion and global scrollbar rules are present", () => {
   assert.match(css, /@media \(min-width: 1024px\)/u);
   assert.match(css, /@media \(max-width: 360px\)/u);
@@ -137,12 +155,12 @@ test("responsive, reduced-motion and global scrollbar rules are present", () => 
   assert.match(index, /style\.css\?v=62-home-learning-layout/u);
   assert.match(index, /assets\/daisyui\.css\?v=2-learning-shell/u);
   assert.match(index, /src\/learning-insights\.css\?v=5-quiet-study-canvas/u);
-  assert.match(index, /src\/learning-insights\.js\?v=4-study-workspace/u);
-  assert.match(worker, /magicbook-pwa-v120-quiet-study-canvas/u);
+  assert.match(index, /src\/learning-insights\.js\?v=5-figure-explanation-ui/u);
+  assert.match(worker, /magicbook-pwa-v121-figure-explanation-ui/u);
   assert.match(worker, /style\.css\?v=62-home-learning-layout/u);
   assert.match(worker, /assets\/daisyui\.css\?v=2-learning-shell/u);
   assert.match(worker, /src\/learning-insights\.css\?v=5-quiet-study-canvas/u);
-  assert.match(worker, /src\/learning-insights\.js\?v=4-study-workspace/u);
+  assert.match(worker, /src\/learning-insights\.js\?v=5-figure-explanation-ui/u);
   assert.match(worker, /\/icons\/next\.png/u);
   assert.match(worker, /\/icons\/go-back\.png/u);
   assert.match(worker, /\/assets\/admin\/update\.png/u);
