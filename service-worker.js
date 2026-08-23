@@ -12,7 +12,7 @@ const STATIC_ASSETS = [
   "/src/learning-insights.js?v=5-figure-explanation-ui&ui=6",
   "/homebg.css?v=3",
   "/mystyle.css?v=43-answer-label-contrast",
-  "/script.js?v=57-whats-new-limit",
+  "/script.js?v=58-reader-continuation",
   "/study-quiz.html",
   "/study-quiz.css?v=16-trial-audio-preview",
   "/study-quiz.js?v=14-trial-audio-preview",

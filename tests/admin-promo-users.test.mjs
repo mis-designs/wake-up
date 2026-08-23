@@ -119,8 +119,8 @@ test("promo metadata gets enough time and never appears as a false empty result"
 
 test("promo admin UI ships with fresh PWA assets", () => {
   assert.match(page, /style\.css\?v=62-home-learning-layout/u);
-  assert.match(page, /script\.js\?v=57-whats-new-limit/u);
+  assert.match(page, /script\.js\?v=58-reader-continuation/u);
   assert.match(worker, /magicbook-pwa-v125-card-spacing/u);
   assert.match(worker, /style\.css\?v=62-home-learning-layout/u);
-  assert.match(worker, /script\.js\?v=57-whats-new-limit/u);
+  assert.match(worker, /script\.js\?v=58-reader-continuation/u);
 });

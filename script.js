@@ -3893,7 +3893,6 @@ let currentBookViewer = {
   page: 0,
   isLoading: false,
   hasNext: false,
-  userAdvanced: false,
   loaderInView: false
 };
 let magicBookViewerRequestId = 0;
@@ -4074,7 +4073,6 @@ function cleanupMagicBookViewer({ resetState = true } = {}) {
       page: 0,
       isLoading: false,
       hasNext: false,
-      userAdvanced: false,
       loaderInView: false
     };
   }
@@ -4129,10 +4127,6 @@ function setMagicBookLoading(pages, visible, { active = true } = {}) {
   loader.classList.toggle("is-active", active);
   loader.setAttribute("role", "status");
   loader.setAttribute("aria-live", "polite");
-  loader.addEventListener("click", () => {
-    currentBookViewer.userAdvanced = true;
-    checkMagicBookScrollLoad();
-  });
 
   const figureShell = document.createElement("div");
   figureShell.className = "viewer-loading-figure";
@@ -4228,7 +4222,6 @@ function checkMagicBookScrollLoad() {
   const viewer = document.getElementById("viewer");
   if (!viewer) return;
   if (!currentBookViewer.type || currentBookViewer.isLoading || !currentBookViewer.hasNext) return;
-  if (!currentBookViewer.userAdvanced) return;
 
   if (shouldLoadNextMagicBookPage(viewer) || currentBookViewer.loaderInView) {
     loadNextMagicBookPage();
@@ -4265,7 +4258,6 @@ function ensureMagicBookScrollLoading() {
   if (!viewer || magicBookScrollHandlerInstalled) return;
 
   viewer.addEventListener("scroll", () => {
-    if (viewer.scrollTop > 24) currentBookViewer.userAdvanced = true;
     checkMagicBookScrollLoad();
   }, { passive: true });
 
@@ -4372,7 +4364,6 @@ async function openMagicBookPages({ type, chapter = null }) {
     page: 0,
     isLoading: false,
     hasNext: true,
-    userAdvanced: false,
     loaderInView: false
   };
 
