@@ -94,7 +94,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MagicBook">
 <link rel="stylesheet" href="assets/daisyui.css?v=2-learning-shell">
-<link rel="stylesheet" href="style.css?v=64-promo-single-use">
+<link rel="stylesheet" href="style.css?v=65-promo-desktop-layout">
 <link rel="stylesheet" href="homebg.css?v=3">
 <link rel="stylesheet" href="magic-dictionary.css?v=1.2.2">
 <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
@@ -147,7 +147,7 @@ gtag('config', 'G-C5JPY9HFHD', {
       <span class="promo-access-glow" aria-hidden="true"></span>
       <header class="promo-access-heading">
         <span class="promo-access-kicker"><i aria-hidden="true"></i> ACCESSO PROMO · 5 GIORNI</span>
-        <h2 id="promoAccessTitle">Login con Promo Code</h2>
+        <h2 id="promoAccessTitle">Login con <span>Promo Code</span></h2>
         <p>Prendi il Promo Code dalle nostre pagine e dai gruppi WhatsApp!</p>
       </header>
 
@@ -165,21 +165,33 @@ gtag('config', 'G-C5JPY9HFHD', {
         <span class="promo-countdown-progress" data-promo-progress style="--promo-progress:0%" aria-hidden="true"><i></i></span>
       </div>
 
-      <form class="promo-access-form" data-nosnippet novalidate onsubmit="event.preventDefault(); loginFromPromoCard();">
-        <label class="sr-only" for="promoLandingPhone">Numero di telefono</label>
-        <input id="promoLandingPhone" type="tel" placeholder="Numero di telefono" aria-label="Numero di telefono" autocomplete="tel" inputmode="tel" aria-describedby="promoLandingError" aria-required="true" aria-invalid="false">
-        <label class="sr-only" for="promoLandingCode">Promo Code</label>
-        <input id="promoLandingCode" class="promo-access-code" type="text" placeholder="Inserisci il Promo Code" aria-label="Promo Code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="64" aria-describedby="promoLandingError" aria-required="true" aria-invalid="false">
-        <button class="promo-access-submit" type="submit" disabled aria-disabled="true" aria-busy="false"><span>Entra con Promo Code</span><b aria-hidden="true">→</b></button>
-      </form>
-      <p class="promo-access-error" id="promoLandingError" data-nosnippet role="status" aria-live="polite"></p>
+      <div class="promo-access-entry-shell">
+        <div class="promo-access-entry-heading">
+          <span>ACCESSO PERSONALE</span>
+          <h3>Attiva il tuo accesso</h3>
+          <p>Inserisci il numero di telefono e il codice ricevuto.</p>
+        </div>
 
-      <section class="promo-access-next-step hidden" id="promoAccessNextStep" role="status" aria-live="polite" aria-labelledby="promoAccessNextTitle" aria-hidden="true">
-        <span class="promo-access-next-kicker" id="promoAccessNextKicker">PROMO GIÀ UTILIZZATA</span>
-        <strong id="promoAccessNextTitle">Spero che ti sia piaciuta la nostra ultima promo.</strong>
-        <p id="promoAccessNextMessage">La promozione può essere utilizzata una sola volta. Scegli un pacchetto per continuare con MagicBook.</p>
-        <button class="promo-access-packages-button" type="button" aria-describedby="promoAccessNextTitle promoAccessNextMessage" onclick="openPromoPackages()">Vedi i pacchetti</button>
-      </section>
+        <form class="promo-access-form" data-nosnippet novalidate onsubmit="event.preventDefault(); loginFromPromoCard();">
+          <div class="promo-access-field">
+            <label class="sr-only promo-access-field-label" for="promoLandingPhone">Numero di telefono</label>
+            <input id="promoLandingPhone" type="tel" placeholder="Numero di telefono" aria-label="Numero di telefono" autocomplete="tel" inputmode="tel" aria-describedby="promoLandingError" aria-required="true" aria-invalid="false">
+          </div>
+          <div class="promo-access-field">
+            <label class="sr-only promo-access-field-label" for="promoLandingCode">Promo Code</label>
+            <input id="promoLandingCode" class="promo-access-code" type="text" placeholder="Inserisci il Promo Code" aria-label="Promo Code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="64" aria-describedby="promoLandingError" aria-required="true" aria-invalid="false">
+          </div>
+          <button class="promo-access-submit" type="submit" disabled aria-disabled="true" aria-busy="false"><span>Entra con Promo Code</span><b aria-hidden="true"></b></button>
+        </form>
+        <p class="promo-access-error" id="promoLandingError" data-nosnippet role="status" aria-live="polite"></p>
+
+        <section class="promo-access-next-step hidden" id="promoAccessNextStep" role="status" aria-live="polite" aria-labelledby="promoAccessNextTitle" aria-hidden="true">
+          <span class="promo-access-next-kicker" id="promoAccessNextKicker">PROMO GIÀ UTILIZZATA</span>
+          <strong id="promoAccessNextTitle">Spero che ti sia piaciuta la nostra ultima promo.</strong>
+          <p id="promoAccessNextMessage">La promozione può essere utilizzata una sola volta. Scegli un pacchetto per continuare con MagicBook.</p>
+          <button class="promo-access-packages-button" type="button" aria-describedby="promoAccessNextTitle promoAccessNextMessage" onclick="openPromoPackages()">Vedi i pacchetti</button>
+        </section>
+      </div>
 
       <nav class="promo-access-sources" aria-label="Dove trovare il Promo Code">
         <span>NON HAI IL CODICE?</span>
@@ -189,15 +201,15 @@ gtag('config', 'G-C5JPY9HFHD', {
     </section>
     <div class="landing-actions" aria-label="Scegli accesso">
       <button class="landing-choice glass-button is-highlight" type="button" onclick="showLoginScreen()" aria-label="Login">
-        <span class="landing-choice-label">LOGIN</span>
+        <span class="landing-choice-label">Login</span>
         <span class="button-shine" aria-hidden="true"></span>
       </button>
       <button class="landing-choice glass-button" type="button" onclick="showJoinScreen()" aria-label="Join">
-        <span class="landing-choice-label">JOIN</span>
+        <span class="landing-choice-label">Join</span>
         <span class="button-shine" aria-hidden="true"></span>
       </button>
       <button class="landing-choice glass-button" type="button" onclick="showAboutScreen()" aria-label="About">
-        <span class="landing-choice-label">ABOUT</span>
+        <span class="landing-choice-label">About</span>
         <span class="button-shine" aria-hidden="true"></span>
       </button>
     </div>
@@ -1192,6 +1204,6 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script src="screen-protection.js?v=1.2.0"></script>
 <script src="learning-sync.js?v=2"></script>
 <script src="src/learning-insights.js?v=5-figure-explanation-ui&ui=6"></script>
-<script src="script.js?v=60-promo-single-use"></script>
+<script src="script.js?v=61-promo-desktop-layout"></script>
 </body>
 </html>

@@ -867,7 +867,8 @@ a:focus-visible {
     display: flex;
     align-items: stretch;
     justify-content: center;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     background: #111827;
     color: #ffffff;
 }
@@ -933,7 +934,7 @@ a:focus-visible {
     order: 1;
     margin: 0;
     font-family: "Bodoni Moda", Georgia, serif;
-    font-size: clamp(4.1rem, 15vw, 9.25rem);
+    font-size: clamp(4.1rem, 12vw, 9.25rem);
     font-weight: 700;
     line-height: 0.82;
     letter-spacing: 0;
@@ -1234,7 +1235,7 @@ a:focus-visible {
         0 1px 0 rgba(255, 255, 255, .92) inset,
         0 0 0 1px rgba(10, 130, 112, .08);
     box-sizing: border-box;
-    font-family: "Rubik", "Inter", sans-serif;
+    font-family: "Inter", Arial, sans-serif;
     animation: promoAccessEnter .72s cubic-bezier(.22, 1, .36, 1) both;
 }
 
@@ -1296,24 +1297,36 @@ a:focus-visible {
 .promo-access-heading h2 {
     margin: 0;
     color: var(--promo-teal);
-    background: linear-gradient(100deg, #075f54 0%, #0A8270 48%, #20b875 72%, #61df61 100%);
+    background: linear-gradient(100deg, #075f54 0%, #0A8270 52%, #138f86 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     font-size: clamp(1.72rem, 6vw, 2.2rem);
-    font-weight: 850;
+    font-weight: 800;
     letter-spacing: -.045em;
     line-height: 1.08;
     filter: drop-shadow(0 7px 15px rgba(10, 130, 112, .13));
 }
 
+.promo-access-heading h2 span {
+    white-space: nowrap;
+}
+
 .promo-access-heading p {
     width: min(100%, 360px);
     margin: 10px auto 0;
-    color: rgba(37, 41, 67, .64);
+    color: rgba(37, 41, 67, .74);
     font-size: .79rem;
     font-weight: 600;
     line-height: 1.45;
+}
+
+.promo-access-entry-heading {
+    display: none;
+}
+
+.promo-access-entry-shell {
+    display: contents;
 }
 
 .promo-access-countdown {
@@ -1334,8 +1347,8 @@ a:focus-visible {
 }
 
 .promo-countdown-heading span {
-    color: rgba(37, 41, 67, .56);
-    font-size: .58rem;
+    color: rgba(37, 41, 67, .76);
+    font-size: .62rem;
     font-weight: 800;
     letter-spacing: .12em;
 }
@@ -1346,10 +1359,13 @@ a:focus-visible {
     border-radius: 999px;
     background: rgba(124, 255, 107, .13);
     color: #087262;
-    font-size: .56rem;
+    max-width: 54%;
+    font-size: .6rem;
     font-weight: 800;
     letter-spacing: .04em;
-    white-space: nowrap;
+    line-height: 1.25;
+    text-align: right;
+    white-space: normal;
 }
 
 .promo-countdown-units {
@@ -1375,15 +1391,15 @@ a:focus-visible {
 .promo-countdown-units b {
     color: var(--promo-ink);
     font-size: clamp(1.2rem, 5vw, 1.55rem);
-    font-weight: 750;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
     letter-spacing: -.04em;
     line-height: 1;
 }
 
 .promo-countdown-units i {
-    color: rgba(37, 41, 67, .45);
-    font-size: .46rem;
+    color: rgba(37, 41, 67, .66);
+    font-size: .5rem;
     font-style: normal;
     font-weight: 800;
     letter-spacing: .1em;
@@ -1435,6 +1451,12 @@ a:focus-visible {
     gap: 10px;
 }
 
+.promo-access-field {
+    min-width: 0;
+    display: grid;
+    gap: 7px;
+}
+
 .promo-access-form input {
     width: 100%;
     height: 49px;
@@ -1447,9 +1469,9 @@ a:focus-visible {
     color: #252943;
     box-shadow: 0 7px 20px rgba(10, 130, 112, .055);
     box-sizing: border-box;
-    font-family: "Rubik", "Inter", sans-serif;
+    font-family: "Inter", Arial, sans-serif;
     font-size: .88rem;
-    font-weight: 650;
+    font-weight: 600;
     text-align: center;
     transition: border-color .25s ease, box-shadow .25s ease, background .25s ease, transform .25s ease;
 }
@@ -1475,7 +1497,7 @@ a:focus-visible {
 .promo-access-form input[aria-invalid="true"]:focus,
 .promo-access-form input[aria-invalid="true"]:focus-visible {
     border-color: #d85c55;
-    outline-color: rgba(216, 92, 85, .28);
+    outline-color: #a92f40;
     box-shadow: 0 0 0 4px rgba(216, 92, 85, .16), 0 12px 27px rgba(216, 92, 85, .08);
 }
 
@@ -1507,7 +1529,7 @@ a:focus-visible {
     box-shadow: 0 14px 30px rgba(10, 130, 112, .25), 0 7px 22px rgba(124, 255, 107, .13), inset 0 1px 0 rgba(255, 255, 255, .27);
     box-sizing: border-box;
     cursor: pointer;
-    font-family: "Rubik", "Inter", sans-serif;
+    font-family: "Inter", Arial, sans-serif;
     font-size: .91rem;
     font-weight: 800;
     letter-spacing: .01em;
@@ -1550,6 +1572,29 @@ a:focus-visible {
     animation: promoArrowMove 2.2s ease-in-out infinite;
 }
 
+.promo-access-submit b::before,
+.promo-access-submit b::after {
+    content: "";
+    position: absolute;
+    display: block;
+}
+
+.promo-access-submit b::before {
+    width: 15px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+}
+
+.promo-access-submit b::after {
+    right: 9px;
+    width: 7px;
+    height: 7px;
+    border-top: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    transform: rotate(45deg);
+}
+
 .promo-access-submit:hover:not(:disabled) {
     transform: translateY(-2px);
     background-position: 100% 50%;
@@ -1564,7 +1609,7 @@ a:focus-visible {
 .promo-access-form input:focus-visible,
 .promo-access-packages-button:focus-visible,
 .promo-access-sources a:focus-visible {
-    outline: 3px solid rgba(124, 255, 107, .45);
+    outline: 3px solid #075f55;
     outline-offset: 3px;
 }
 
@@ -1627,7 +1672,7 @@ a:focus-visible {
 .promo-access-next-kicker {
     color: var(--promo-teal-dark);
     font-size: .56rem;
-    font-weight: 850;
+    font-weight: 800;
     letter-spacing: .12em;
 }
 
@@ -1654,7 +1699,7 @@ a:focus-visible {
     background: var(--promo-teal);
     color: #fff;
     cursor: pointer;
-    font-family: "Rubik", "Inter", sans-serif;
+    font-family: "Inter", Arial, sans-serif;
     font-size: .75rem;
     font-weight: 800;
     transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
@@ -1688,22 +1733,26 @@ a:focus-visible {
 
 .promo-access-sources > span {
     width: 100%;
-    color: rgba(37, 41, 67, .43);
-    font-size: .53rem;
+    color: rgba(37, 41, 67, .68);
+    font-size: .6rem;
     font-weight: 800;
     letter-spacing: .13em;
     text-align: center;
 }
 
 .promo-access-sources a {
-    padding: 7px 10px;
+    min-height: 40px;
+    padding: 0 12px;
     border: 1px solid rgba(10, 130, 112, .13);
     border-radius: 999px;
     background: rgba(10, 130, 112, .055);
     color: #087262;
-    font-size: .64rem;
-    font-weight: 750;
+    font-size: .69rem;
+    font-weight: 700;
     text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     transition: transform .22s ease, background .22s ease, border-color .22s ease;
 }
 
@@ -1869,6 +1918,300 @@ body.promo-campaign-ended .promo-countdown-heading b {
     }
 }
 
+@media (min-width: 1024px) {
+    .public-landing .landing-panel {
+        padding: calc(env(safe-area-inset-top, 0px) + 24px) clamp(32px, 5vw, 80px) calc(env(safe-area-inset-bottom, 0px) + 24px);
+        gap: clamp(14px, 2dvh, 22px);
+    }
+
+    .public-landing .public-logo {
+        width: min(100%, 1120px);
+    }
+
+    .public-landing .public-logo strong {
+        font-size: clamp(4.25rem, 8vw, 7.5rem);
+        line-height: .76;
+    }
+
+    .public-landing .promo-access-card {
+        width: min(calc(100% - 64px), 1120px);
+        margin: 0 auto;
+        padding: clamp(30px, 3vw, 42px);
+        border-radius: 32px;
+        background:
+            radial-gradient(circle at 8% 0%, rgba(124, 255, 107, .18), transparent 28%),
+            linear-gradient(90deg, rgba(247, 252, 250, .98) 0 54.5%, rgba(255, 255, 255, .97) 54.5% 100%);
+        box-shadow:
+            0 34px 90px rgba(0, 0, 0, .34),
+            0 1px 0 rgba(255, 255, 255, .96) inset,
+            0 0 0 1px rgba(10, 130, 112, .08);
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(360px, .92fr);
+        grid-template-areas:
+            "heading entry"
+            "countdown entry"
+            "sources sources";
+        column-gap: clamp(34px, 4vw, 58px);
+        row-gap: 12px;
+        align-items: start;
+    }
+
+    .promo-access-heading {
+        grid-area: heading;
+        min-width: 0;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .promo-access-kicker {
+        margin-bottom: 12px;
+        font-size: .72rem;
+    }
+
+    .promo-access-heading h2 {
+        max-width: 570px;
+        background: none;
+        color: #17203b;
+        -webkit-text-fill-color: #17203b;
+        font-family: "Bodoni Moda", Georgia, serif;
+        font-size: clamp(3.1rem, 4.5vw, 4.55rem);
+        font-weight: 700;
+        letter-spacing: -.045em;
+        line-height: .98;
+        filter: none;
+    }
+
+    .promo-access-heading h2 span {
+        background: linear-gradient(100deg, #075f54, #0A8270 55%, #138f86);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .promo-access-heading p {
+        width: min(100%, 450px);
+        margin: 14px 0 0;
+        font-size: .92rem;
+        line-height: 1.55;
+    }
+
+    .promo-access-entry-heading {
+        min-width: 0;
+        padding-top: 2px;
+        display: block;
+        text-align: left;
+    }
+
+    .promo-access-entry-shell {
+        position: relative;
+        grid-area: entry;
+        min-width: 0;
+        display: grid;
+        align-content: start;
+        gap: 18px;
+    }
+
+    .promo-access-entry-shell::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: clamp(-29px, -2vw, -17px);
+        width: 1px;
+        background: linear-gradient(180deg, transparent, rgba(10, 130, 112, .22) 18%, rgba(10, 130, 112, .22) 82%, transparent);
+        box-shadow: 0 0 18px rgba(124, 255, 107, .2);
+        pointer-events: none;
+    }
+
+    .promo-access-entry-heading > span {
+        color: #087262;
+        font-size: .68rem;
+        font-weight: 800;
+        letter-spacing: .14em;
+    }
+
+    .promo-access-entry-heading h3 {
+        margin: 9px 0 0;
+        color: #17203b;
+        font-family: "Inter", Arial, sans-serif;
+        font-size: clamp(1.38rem, 2vw, 1.72rem);
+        font-weight: 800;
+        letter-spacing: -.03em;
+        line-height: 1.12;
+    }
+
+    .promo-access-entry-heading p {
+        margin: 8px 0 0;
+        color: rgba(37, 41, 67, .72);
+        font-size: .8rem;
+        font-weight: 600;
+        line-height: 1.45;
+    }
+
+    .promo-access-countdown {
+        grid-area: countdown;
+        min-width: 0;
+        margin-top: 0;
+        padding: 18px;
+        border-radius: 20px;
+    }
+
+    .promo-countdown-heading {
+        margin-bottom: 14px;
+    }
+
+    .promo-countdown-heading span {
+        font-size: .66rem;
+    }
+
+    .promo-countdown-heading b {
+        max-width: none;
+        font-size: .64rem;
+        white-space: nowrap;
+    }
+
+    .promo-countdown-units {
+        gap: 9px;
+    }
+
+    .promo-countdown-units > span {
+        padding: 14px 7px 11px;
+        border-radius: 15px;
+    }
+
+    .promo-countdown-units b {
+        font-size: clamp(1.55rem, 2.4vw, 1.95rem);
+    }
+
+    .promo-countdown-units i {
+        font-size: .55rem;
+    }
+
+    .promo-access-form {
+        min-width: 0;
+        margin-top: 0;
+        gap: 14px;
+    }
+
+    .promo-access-field-label {
+        position: static;
+        width: auto;
+        height: auto;
+        margin: 0 0 0 2px;
+        padding: 0;
+        overflow: visible;
+        clip: auto;
+        white-space: normal;
+        color: #3e465d;
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .02em;
+    }
+
+    .promo-access-form input {
+        height: 54px;
+        padding: 0 17px;
+        border-radius: 14px;
+        font-size: .94rem;
+        text-align: left;
+    }
+
+    .promo-access-submit {
+        min-height: 54px;
+        border-radius: 14px;
+        font-size: .94rem;
+    }
+
+    .promo-access-error {
+        margin: 0 2px;
+        text-align: left;
+    }
+
+    .promo-access-next-step {
+        margin-top: 0;
+    }
+
+    .promo-access-sources {
+        grid-area: sources;
+        min-width: 0;
+        margin-top: 0;
+        padding-top: 15px;
+        border-top: 1px solid rgba(10, 130, 112, .1);
+        justify-content: flex-start;
+    }
+
+    .promo-access-sources > span {
+        width: auto;
+        margin-right: 3px;
+        text-align: left;
+    }
+
+    .public-landing .landing-actions {
+        width: min(calc(100% - 64px), 860px);
+        margin: 0 auto;
+        padding: 10px;
+        border-width: 1px;
+        border-radius: 21px;
+        gap: 10px;
+    }
+
+    .public-landing .landing-choice {
+        min-height: 50px;
+    }
+
+    .public-landing .landing-choice-label {
+        font-family: "Inter", Arial, sans-serif;
+        font-size: .94rem;
+        font-weight: 700;
+        line-height: 50px;
+    }
+}
+
+@media (min-width: 1024px) and (max-height: 720px) {
+    .public-landing .landing-panel {
+        padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+        gap: 12px;
+    }
+
+    .public-landing .public-logo strong {
+        font-size: clamp(3.5rem, 6.5vw, 5.5rem);
+    }
+
+    .public-landing .promo-access-card {
+        padding-top: 27px;
+        padding-bottom: 27px;
+    }
+}
+
+@media (forced-colors: active) {
+    .public-landing .promo-access-card {
+        border: 2px solid CanvasText;
+        background: Canvas;
+        color: CanvasText;
+    }
+
+    .promo-access-heading h2,
+    .promo-access-heading h2 span {
+        background: none;
+        color: CanvasText;
+        -webkit-text-fill-color: CanvasText;
+    }
+
+    .promo-access-submit:focus-visible,
+    .promo-access-form input:focus-visible,
+    .promo-access-packages-button:focus-visible,
+    .promo-access-sources a:focus-visible {
+        outline-color: Highlight;
+    }
+
+    .promo-access-form input[aria-invalid="true"]:focus,
+    .promo-access-form input[aria-invalid="true"]:focus-visible {
+        outline-color: Highlight;
+    }
+}
+
 /* PUBLIC FREE TRIAL */
 .trial-card { width:min(calc(100% - 32px),640px); min-height:104px; padding:18px 22px; border:1px solid rgba(255,255,255,.42); border-radius:24px; color:#fff; background:linear-gradient(120deg,rgba(7,10,24,.88),rgba(52,20,105,.78),rgba(7,10,24,.9)); box-shadow:0 18px 55px rgba(0,0,0,.34),inset 0 1px rgba(255,255,255,.28),0 0 40px rgba(127,57,255,.2); backdrop-filter:blur(18px); display:grid; grid-template-columns:1fr auto auto; gap:18px; align-items:center; position:relative; overflow:hidden; cursor:pointer; text-align:left; isolation:isolate; transition:transform .35s ease,box-shadow .35s ease; }
 .trial-card::before { content:""; position:absolute; inset:-150% -30%; z-index:-1; background:conic-gradient(from 0deg,transparent,#36e6ff55,transparent 28%,#ffbf3f66,transparent 55%,#cc44ff66,transparent 82%); animation:trialGlow 7s linear infinite; }
@@ -1909,7 +2252,7 @@ body.promo-campaign-ended .promo-countdown-heading b {
 @media(max-width:560px){
   html,body,body.public-mode,.public-landing{width:100%;max-width:100%;overflow-x:hidden}
   .public-landing .spline-container,.public-landing #aura-spline{width:100%;max-width:100vw;overflow:hidden}
-  .public-landing .landing-panel{width:100%;max-width:100vw;min-height:100dvh;padding:calc(env(safe-area-inset-top,0px) + 18px) 16px calc(env(safe-area-inset-bottom,0px) + 24px);gap:16px;overflow-y:auto;overflow-x:hidden;justify-content:flex-start;box-sizing:border-box}
+  .public-landing .landing-panel{width:100%;max-width:100vw;min-height:100dvh;padding:calc(env(safe-area-inset-top,0px) + 18px) 16px calc(env(safe-area-inset-bottom,0px) + 24px);gap:16px;overflow-y:visible;overflow-x:clip;justify-content:flex-start;box-sizing:border-box}
   .public-landing .public-logo{width:100%;min-width:0;overflow:hidden;padding:8px 0 2px}
   .public-landing .public-logo strong{display:block;width:100%;font-size:clamp(2.75rem,13vw,3.7rem);line-height:.92;letter-spacing:-.045em;text-align:center;white-space:nowrap}
   .trial-card{width:100%;max-width:390px;min-width:0;min-height:0;padding:16px;grid-template-columns:minmax(0,1fr) 42px;grid-template-rows:auto auto;gap:14px 12px;border-radius:25px;box-sizing:border-box}

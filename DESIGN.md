@@ -55,6 +55,7 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 - At 767px and below, content becomes one vertical flow. In Errori, `Il tuo ripasso` precedes category exploration.
 - The chapter matrix uses five columns when space permits and two columns on phones. All 25 chapters remain visible without horizontal scrolling.
 - Reading order remains meaningful without CSS. Nothing may create page-level horizontal scrolling at 320px.
+- Public promo landing: from 1024px, the access card becomes a wide two-column pass with campaign title and timer on the left, the labelled phone/code form on the right, and the Login/Join/About switcher in one compact row below. Below 1024px it keeps the existing vertical flow.
 
 ## Components and behavior
 

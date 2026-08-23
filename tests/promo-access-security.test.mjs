@@ -18,6 +18,20 @@ const scriptSource = readFileSync(new URL("../script.js", import.meta.url), "utf
 const styleSource = readFileSync(new URL("../style.css", import.meta.url), "utf8");
 const promoStatusSource = readFileSync(new URL("../api/promo-status.js", import.meta.url), "utf8");
 
+function extractCssBlock(source, header) {
+  const headerIndex = source.indexOf(header);
+  assert.notEqual(headerIndex, -1, `Missing CSS block: ${header}`);
+  const openIndex = source.indexOf("{", headerIndex + header.length);
+  assert.notEqual(openIndex, -1, `Missing opening brace: ${header}`);
+  let depth = 0;
+  for (let index = openIndex; index < source.length; index += 1) {
+    if (source[index] === "{") depth += 1;
+    if (source[index] === "}") depth -= 1;
+    if (depth === 0) return source.slice(headerIndex, index + 1);
+  }
+  assert.fail(`Missing closing brace: ${header}`);
+}
+
 test("promo codes are normalized and checked with a server-controlled expiry", () => {
   const now = Date.parse("2026-08-12T10:00:00.000Z");
   assert.equal(normalizePromoCode(" ab 12 34 "), "AB1234");
@@ -312,9 +326,40 @@ test("landing renders the promo login without exposing environment values", () =
   assert.match(pageSource, /id="joinPackagesTitle" tabindex="-1">Pacchetti MagicBook/);
   assert.match(scriptSource, /promoConversionErrors = \["promo_already_used", "promo_code_reused", "promo_limit_reached", "promo_campaign_full"\]/);
   assert.match(scriptSource, /function openPromoPackages\(\)[\s\S]*?showJoinScreen\(\)[\s\S]*?joinPackagesTitle/);
-  assert.match(scriptSource, /service-worker\.js\?v=41-promo-single-use/);
+  assert.match(scriptSource, /service-worker\.js\?v=42-promo-desktop-layout/);
   assert.match(styleSource, /\.promo-access-next-step[\s\S]*?\.promo-access-packages-button/);
   assert.match(styleSource, /\.promo-access-packages-button:focus-visible[\s\S]*?outline-color: #075f55/);
   assert.doesNotMatch(pageSource, /class="trial-card"/);
   assert.doesNotMatch(pageSource, /PROMO_CODE_5_DAYS|PROMO_CODE_5_DAYS_EXPIRES_AT/);
+});
+
+test("promo landing uses a two-column access pass on desktop and keeps the mobile flow", () => {
+  const desktop = extractCssBlock(styleSource, "@media (min-width: 1024px)");
+  const desktopCard = extractCssBlock(desktop, ".public-landing .promo-access-card");
+  const desktopShell = extractCssBlock(desktop, ".promo-access-entry-shell");
+  const baseCard = extractCssBlock(styleSource, ".public-landing .promo-access-card");
+  const baseShell = extractCssBlock(styleSource, ".promo-access-entry-shell");
+  const baseLogo = extractCssBlock(styleSource, ".public-landing .public-logo strong");
+  const forcedColors = extractCssBlock(styleSource, "@media (forced-colors: active)");
+
+  assert.match(pageSource, /id="promoAccessTitle"[^>]*>\s*Login con\s*<span>\s*Promo Code\s*<\/span>\s*<\/h2>/u);
+  assert.match(pageSource, /class="promo-access-entry-heading"[\s\S]*?Attiva il tuo accesso/);
+  assert.match(pageSource, /class="promo-access-entry-shell"[\s\S]*?class="promo-access-field"[\s\S]*?class="sr-only promo-access-field-label"/);
+  assert.match(styleSource, /\.promo-access-entry-heading\s*\{\s*display:\s*none;/);
+  assert.doesNotMatch(baseCard, /display:\s*(?:grid|flex)|grid-template-(?:columns|areas)\s*:/u);
+  assert.match(baseShell, /display:\s*contents;/u);
+  assert.match(baseLogo, /font-size:\s*clamp\(4\.1rem,\s*12vw,\s*9\.25rem\);/u);
+  assert.match(desktopCard, /display:\s*grid;/u);
+  assert.match(desktopCard, /grid-template-columns:\s*minmax\(0,\s*1\.08fr\)\s+minmax\(360px,\s*\.92fr\);/u);
+  assert.match(desktopCard, /grid-template-areas:\s*"heading entry"\s*"countdown entry"\s*"sources sources";/u);
+  assert.match(desktopShell, /grid-area:\s*entry;/u);
+  assert.match(desktopShell, /display:\s*grid;/u);
+  assert.match(desktop, /\.promo-access-heading\s*\{[\s\S]*?grid-area:\s*heading;/u);
+  assert.match(desktop, /\.promo-access-countdown\s*\{[\s\S]*?grid-area:\s*countdown;/u);
+  assert.match(desktop, /\.promo-access-sources\s*\{[\s\S]*?grid-area:\s*sources;/u);
+  assert.match(styleSource, /@media \(max-width: 560px\)[\s\S]*?\.public-landing \.promo-access-card\s*\{[\s\S]*?width:\s*min\(100%,\s*380px\)/);
+  assert.doesNotMatch(pageSource, /<b aria-hidden="true">→<\/b>/u);
+  assert.match(styleSource, /\.promo-access-submit b::before[\s\S]*?\.promo-access-submit b::after/);
+  assert.match(styleSource, /input\[aria-invalid="true"\]:focus-visible\s*\{[\s\S]*?outline-color:\s*#a92f40;/u);
+  assert.match(forcedColors, /input\[aria-invalid="true"\]:focus-visible\s*\{[\s\S]*?outline-color:\s*Highlight;/u);
 });

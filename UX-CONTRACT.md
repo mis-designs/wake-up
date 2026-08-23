@@ -48,6 +48,7 @@
 
 ## Responsive behavior
 
+- Public promo landing: from 1024px the access pass uses two columns — campaign title and timer on the left, labelled phone/code form on the right — with Login/Join/About in one compact row below. Below 1024px the semantic vertical order remains heading, timer, form, feedback, sources, then access switcher.
 - 1280–1920: wide grouped surfaces use the viewport; Statistics is overview/action, chapter matrix/detail; Errori is explorer/plan with master-detail.
 - 768–1024: major regions stack only when necessary; chapter detail becomes sequential; no control is compressed below a usable target.
 - 320–430: one vertical flow, two-column chapter matrix, three-column category grid wrapping to two rows, sequential detail, plan before categories.

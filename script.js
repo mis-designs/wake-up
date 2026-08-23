@@ -5715,7 +5715,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-      .register("/service-worker.js?v=41-promo-single-use", { updateViaCache: "none" })
+      .register("/service-worker.js?v=42-promo-desktop-layout", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });

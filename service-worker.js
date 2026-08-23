@@ -1,10 +1,10 @@
-const CACHE_NAME = "magicbook-pwa-v127-promo-single-use";
+const CACHE_NAME = "magicbook-pwa-v128-promo-desktop-layout";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
   "/assets/daisyui.css?v=2-learning-shell",
-  "/style.css?v=64-promo-single-use",
+  "/style.css?v=65-promo-desktop-layout",
   "/magic-dictionary.css?v=1.2.2",
   "/screen-protection.css?v=1.1.0",
   "/learning-sync.js?v=2",
@@ -12,7 +12,7 @@ const STATIC_ASSETS = [
   "/src/learning-insights.js?v=5-figure-explanation-ui&ui=6",
   "/homebg.css?v=3",
   "/mystyle.css?v=43-answer-label-contrast",
-  "/script.js?v=60-promo-single-use",
+  "/script.js?v=61-promo-desktop-layout",
   "/study-quiz.html",
   "/study-quiz.css?v=16-trial-audio-preview",
   "/study-quiz.js?v=14-trial-audio-preview",
