@@ -4,7 +4,7 @@
 // numero whatsapp per rinnovo
 const RENEW_WHATSAPP_NUMBER = "393663584525";
 const RENEW_MESSAGE = "Ciao, vorrei rinnovare il mio accesso.";
-const WHATSAPP_GROUP_CODE = "LBL1G7nvz2B3SThJj4uRxD";
+const WHATSAPP_GROUP_CODE = "IMMZ6UaFfbWEseRttKpvQk";
 const AUTH_API = "/api/auth";
 const ADMIN_API = "/api/admin";
 const PROMO_STATUS_API = "/api/promo-status";
