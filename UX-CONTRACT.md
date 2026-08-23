@@ -4,7 +4,7 @@
 
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 | --- | --- | --- | --- | --- |
-| Form | Login form | `index.html` `#login .login-form` + login helpers | Phone access; server-requested admin password | Login behavior and browser keyboard/failure checks |
+| Form | Login and Promo access forms | `index.html` `#login .login-form`, `#promoAccessCard` + shared login helpers | Phone access; server-requested admin password; promo conversion | Login behavior and browser keyboard/failure checks |
 | Scrollbar | Learning screen root | `src/learning-insights.css` | Browser forced-colors only | No nested horizontal scroller; no page overflow at 320px |
 | Statistics workspace | `src/learning-insights.js` | Authenticated learning model | Empty, insufficient, ready, cached, refreshing | Data-state tests and 320–1920 browser verification |
 | Error recovery | `src/learning-insights.js` | Authenticated errors and plan | Five categories; empty/populated master-detail; recovered section | URL, interaction, focus, and responsive verification |
@@ -23,6 +23,7 @@
 | Pagination | `src/learning-insights.js` | Eight initial items; `Mostra altri` appends without losing stable focus. |
 | Async status | `#learningInsightsStatus` | Polite live region for refresh, offline cache, and retry results. |
 | UI assets | Repository images/SVGs + authenticated figure endpoint | No Unicode glyphs as UI icons. Decorative CSS marks remain hidden from assistive technology. |
+| Promo conversion | `#promoAccessNextStep` + `openPromoPackages()` | A previous promo or a full campaign produces persistent inline guidance; the user chooses when to open `/join`, which focuses the packages heading. |
 
 ## Statistiche
 

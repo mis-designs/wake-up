@@ -15,6 +15,7 @@ const authSource = readFileSync(new URL("../api/auth.js", import.meta.url), "utf
 const gasSource = readFileSync(new URL("../google-apps-script/promo-access.gs", import.meta.url), "utf8");
 const pageSource = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const scriptSource = readFileSync(new URL("../script.js", import.meta.url), "utf8");
+const styleSource = readFileSync(new URL("../style.css", import.meta.url), "utf8");
 const promoStatusSource = readFileSync(new URL("../api/promo-status.js", import.meta.url), "utf8");
 
 test("promo codes are normalized and checked with a server-controlled expiry", () => {
@@ -51,6 +52,9 @@ test("promo identifiers and GAS writes are signed without forwarding the raw cod
   const promoCodeId = createPromoCodeId("AB1234", secret);
   assert.match(promoCodeId, /^[a-f0-9]{64}$/);
   assert.equal(promoCodeId.includes("AB1234"), false);
+  assert.equal(createPromoCodeId(" ab 12 34 ", secret), promoCodeId);
+  assert.notEqual(createPromoCodeId("NEW1234", secret), promoCodeId);
+  assert.notEqual(createPromoCodeId("AB1234", "rotated-secret"), promoCodeId);
 
   const proof = createPromoRedeemProof({
     phone: "393331112222",
@@ -107,65 +111,163 @@ test("public promo status exposes only availability and server expiry", () => {
   assert.doesNotMatch(promoStatusSource, /\bpromoCode\s*:/);
 });
 
-test("GAS owns the five-day grant, thirty-day cap and atomic write", () => {
+test("GAS owns one lifetime five-day promo grant and the atomic write", () => {
   assert.match(gasSource, /PROMO_GRANT_DAYS_ = 5/);
-  assert.match(gasSource, /PROMO_MAX_DAYS_ = 30/);
+  assert.doesNotMatch(gasSource, /PROMO_MAX_DAYS_ = 30/);
   assert.match(gasSource, /configuredUsersSheetName \|\| existingUsersSheetName \|\| 'Sheet1'/);
   assert.match(gasSource, /LockService\.getScriptLock\(\)/);
   assert.match(gasSource, /promoVerifyRequest_\(payload\)[\s\S]*?LockService\.getScriptLock\(\)/);
   assert.match(gasSource, /tryLock\(1200\)/);
-  assert.match(gasSource, /existingExpiry[\s\S]*?error: 'active_access'[\s\S]*?newExpiry/);
-  assert.match(gasSource, /history\.usedCodeIds\[promoCodeId\]/);
-  assert.match(gasSource, /newPromoDaysUsed = Math\.min\(PROMO_MAX_DAYS_, promoDaysUsed \+ PROMO_GRANT_DAYS_\)/);
+  assert.match(gasSource, /existingExpiry[\s\S]*?error: 'active_access'[\s\S]*?hasPromoHistory[\s\S]*?error: 'promo_already_used'/);
+  assert.match(gasSource, /promoFindCampaignEntry_\(redemptionSheet, promoCodeId, phone, 'reserved'\)/);
+  assert.match(gasSource, /activeAuditValues\[0\] = existingExpiry[\s\S]*?activeAuditValues\[2\] = 'granted'/);
+  assert.doesNotMatch(gasSource, /activeAuditValues\[1\]\s*=/);
+  assert.match(gasSource, /Object\.keys\(history\.usedCodeIds\)\.length > 0/);
+  assert.match(gasSource, /newPromoDaysUsed = PROMO_GRANT_DAYS_/);
+  assert.match(gasSource, /newPromoRedemptions = 1/);
   assert.match(gasSource, /usedCodeIds\.push\(promoCodeId\)/);
   assert.match(gasSource, /promoUsedCodeIds/);
   assert.match(gasSource, /setValues\(\[rowValues\]\)/);
-  assert.doesNotMatch(gasSource, /SpreadsheetApp\.flush\(\)/);
+  assert.match(gasSource, /setValues\(\[rowValues\]\)[\s\S]*?SpreadsheetApp\.flush\(\)/);
+  assert.doesNotMatch(gasSource, /promo_reservation_release/);
   assert.match(gasSource, /CacheService\.getScriptCache\(\)/);
   assert.match(gasSource, /computeHmacSha256Signature/);
   assert.match(gasSource, /PropertiesService\.getScriptProperties\(\)\.getProperty\('GAS_SECRET'\)/);
-  assert.match(gasSource, /promoDaysUsed >= PROMO_MAX_DAYS_/);
+  assert.match(authSource, /PUBLIC_PROMO_REDEMPTION_ERRORS[\s\S]*?"promo_already_used"/);
 });
 
-test("GAS atomically caps the campaign at 1,500 distinct promo users", () => {
-  assert.match(gasSource, /PROMO_MAX_UNIQUE_USERS_ = 1500/);
-  assert.match(gasSource, /promoCountUniqueUsers_\(usersSheet, columns\) >= PROMO_MAX_UNIQUE_USERS_/);
+test("GAS atomically caps each promo-code campaign at 800 first-time users", () => {
+  assert.match(gasSource, /PROMO_MAX_UNIQUE_USERS_ = 800/);
+  assert.match(gasSource, /PROMO_RESERVATION_TTL_MS_ = 10 \* 60 \* 1000/);
+  assert.match(gasSource, /promoFindCampaignEntry_\(redemptionSheet, promoCodeId, phone\)/);
+  assert.match(gasSource, /promoReconcileStaleReservations_\([\s\S]*?PROMO_RESERVATION_TTL_MS_/);
+  assert.match(gasSource, /promoCountCampaignUsers_\(redemptionSheet, promoCodeId\)[\s\S]*?>= PROMO_MAX_UNIQUE_USERS_/);
   assert.match(gasSource, /error: 'promo_campaign_full'/);
-  assert.match(gasSource, /LockService\.getScriptLock\(\)[\s\S]*?promoCountUniqueUsers_\(usersSheet, columns\)/);
+  assert.match(gasSource, /LockService\.getScriptLock\(\)[\s\S]*?promoCountCampaignUsers_\(redemptionSheet, promoCodeId\)/);
+  assert.match(gasSource, /redemptionSheet\.appendRow\([\s\S]*?'reserved'[\s\S]*?usersSheet\.getRange\([\s\S]*?setValues\(\[rowValues\]\)[\s\S]*?redemptionSheet\.getRange\(campaignRow[\s\S]*?'granted'/);
   assert.match(gasSource, /uniquePhones\[phone\] = true/);
+  assert.doesNotMatch(gasSource, /function promoCountUniqueUsersForCode_/);
   assert.match(authSource, /PUBLIC_PROMO_REDEMPTION_ERRORS[\s\S]*?"promo_campaign_full"/);
-  assert.match(scriptSource, /promo_campaign_full[\s\S]*?It's too late, follow our page to know for the next promo code, thanks\./);
+  assert.match(scriptSource, /promo_campaign_full[\s\S]*?Gli 800 posti gratuiti/);
   assert.doesNotMatch(scriptSource, /PROMO_MAX_UNIQUE_USERS_/);
 });
 
-test("the campaign counter counts distinct promo phones and ignores normal users", () => {
+test("the durable campaign ledger isolates code IDs and survives user-row deletion", () => {
   const context = vm.createContext({ console });
   vm.runInContext(gasSource, context);
-  const columns = {
-    phone: 1,
-    promoDaysUsed: 2,
-    promoRedemptions: 3,
-    lastPromoCodeId: 4,
-    promoUsedCodeIds: 5,
-    accessSource: 6
-  };
+  const codeA = "a".repeat(64);
+  const codeB = "b".repeat(64);
   const rows = [
-    ["3331112222", 5, 1, "", "", "promo"],
-    ["393331112222", 0, 0, "", "", "promo"],
-    ["3339998888", 0, 0, "", "", "paid"],
-    ["3345556677", 0, 0, "code-id", "", ""]
+    ["3331112222", codeA, 5, "2026-08-28T00:00:00Z", "hash-1", "granted"],
+    ["393331112222", codeA, 5, "", "hash-1", "reserved"],
+    ["3339998888", codeA, 5, "", "hash-2", "reserved"],
+    ["3345556677", codeB, 5, "2026-08-28T00:00:00Z", "hash-3", "granted"],
+    ["3357778899", codeB, 5, "", "hash-4", "failed"],
+    ["3367778899", codeA, 5, "", "hash-5", "rejected"]
   ];
   const sheet = {
     getLastRow: () => rows.length + 1,
     getRange: (row, column, rowCount, columnCount) => ({
       getValues: () => rows
         .slice(row - 2, row - 2 + rowCount)
-        .map(values => values.slice(column - 1, column - 1 + columnCount))
+        .map(values => values.slice(column - 2, column - 2 + columnCount))
     })
   };
 
-  assert.equal(context.PROMO_MAX_UNIQUE_USERS_, 1500);
-  assert.equal(context.promoCountUniqueUsers_(sheet, columns), 2);
+  assert.equal(context.PROMO_MAX_UNIQUE_USERS_, 800);
+  assert.equal(context.promoCountCampaignUsers_(sheet, codeA), 2);
+  assert.equal(context.promoCountCampaignUsers_(sheet, codeB), 1);
+  assert.equal(context.promoCountCampaignUsers_(sheet, "invalid"), 0);
+  assert.equal(context.promoFindCampaignEntry_(sheet, codeA, "3331112222"), 2);
+  assert.equal(context.promoFindCampaignEntry_(sheet, codeA, "3331112222", "granted"), 2);
+  assert.equal(context.promoFindCampaignEntry_(sheet, codeA, "3331112222", "reserved"), 3);
+  assert.equal(context.promoFindCampaignEntry_(sheet, codeA, "3339998888"), 4);
+  assert.equal(context.promoFindCampaignEntry_(sheet, codeB, "3357778899"), 0);
+  const history = context.promoReadHistory_(sheet, "3331112222");
+  assert.equal(history.daysUsed, 5);
+  assert.equal(history.usedCodeIds[codeA], true);
+  assert.equal(history.usedCodeIds[codeB], undefined);
+
+  // The counter reads the durable ledger, so deleting a mutable user row
+  // cannot free a campaign place. The 800th reservation remains occupied.
+  rows.length = 0;
+  for (let index = 0; index < 800; index += 1) {
+    rows.push([String(390000000000 + index), codeA, 5, "", `hash-${index}`, index % 2 ? "reserved" : "granted"]);
+  }
+  assert.equal(context.promoCountCampaignUsers_(sheet, codeA), 800);
+  rows.pop();
+  assert.equal(context.promoCountCampaignUsers_(sheet, codeA), 799);
+});
+
+test("legacy false promo flags do not become lifetime promo history", () => {
+  const context = vm.createContext({ console });
+  vm.runInContext(gasSource, context);
+  const columns = {
+    promoDaysUsed: 1,
+    promoRedemptions: 2,
+    lastPromoCodeId: 3,
+    promoUsedCodeIds: 4,
+    promoFlag: 5,
+    accessSource: 6
+  };
+  const rowForFlag = flag => [0, 0, "", "", flag, ""];
+
+  [false, 0, "0", "false", "FALSE", "", null].forEach(flag => {
+    assert.equal(context.promoRowHasPromoHistory_(rowForFlag(flag), columns), false);
+  });
+  [true, 1, "1", "true", "TRUE"].forEach(flag => {
+    assert.equal(context.promoRowHasPromoHistory_(rowForFlag(flag), columns), true);
+  });
+  assert.equal(context.promoRowHasPromoHistory_([0, 0, "", "", false, "promo"], columns), true);
+});
+
+test("stale reservations reconcile to granted or failed before freeing a place", () => {
+  let flushes = 0;
+  const context = vm.createContext({
+    console,
+    SpreadsheetApp: { flush: () => { flushes += 1; } }
+  });
+  vm.runInContext(gasSource, context);
+  const codeA = "a".repeat(64);
+  const now = new Date("2026-08-23T12:00:00.000Z");
+  const stale = new Date(now.getTime() - (11 * 60 * 1000));
+  const recent = new Date(now.getTime() - (60 * 1000));
+  const ledgerRows = [
+    [stale, "393331111111", codeA, 5, "", "hash-1", "reserved"],
+    [stale, "393332222222", codeA, 5, "", "hash-2", "reserved"],
+    [recent, "393333333333", codeA, 5, "", "hash-3", "reserved"],
+    [stale, "393334444444", codeA, 5, "", "hash-4", "granted"]
+  ];
+  const makeRange = (rows, row, column, rowCount, columnCount) => ({
+    getValues: () => rows
+      .slice(row - 2, row - 2 + rowCount)
+      .map(values => values.slice(column - 1, column - 1 + columnCount)),
+    setValue: value => { rows[row - 2][column - 1] = value; },
+    setValues: values => values.forEach((nextRow, rowOffset) => {
+      nextRow.forEach((value, columnOffset) => {
+        rows[row - 2 + rowOffset][column - 1 + columnOffset] = value;
+      });
+    })
+  });
+  const redemptionSheet = {
+    getLastRow: () => ledgerRows.length + 1,
+    getRange: (row, column, rowCount = 1, columnCount = 1) =>
+      makeRange(ledgerRows, row, column, rowCount, columnCount)
+  };
+  const userRows = [["393331111111", codeA, codeA]];
+  const usersSheet = {
+    getLastRow: () => userRows.length + 1,
+    getRange: (row, column, rowCount, columnCount) =>
+      makeRange(userRows, row, column, rowCount, columnCount)
+  };
+  const columns = { phone: 1, lastPromoCodeId: 2, promoUsedCodeIds: 3 };
+
+  context.promoReconcileStaleReservations_(redemptionSheet, usersSheet, columns, codeA, now);
+  assert.equal(ledgerRows[0][6], "granted");
+  assert.equal(ledgerRows[1][6], "failed");
+  assert.equal(ledgerRows[2][6], "reserved");
+  assert.equal(ledgerRows[3][6], "granted");
+  assert.equal(flushes, 1);
 });
 
 test("transient promo contention is retried without retrying business denials", () => {
@@ -205,6 +307,14 @@ test("landing renders the promo login without exposing environment values", () =
   assert.match(pageSource, /class="promo-access-card"/);
   assert.match(pageSource, /id="promoLandingPhone"[\s\S]*?id="promoLandingCode"/);
   assert.match(pageSource, /<form class="promo-access-form"[^>]*novalidate[^>]*loginFromPromoCard\(\)/);
+  assert.match(pageSource, /id="promoAccessNextStep"[^>]*role="status"[\s\S]*?Spero che ti sia piaciuta la nostra ultima promo\./);
+  assert.match(pageSource, /class="promo-access-packages-button"[^>]*aria-describedby="promoAccessNextTitle promoAccessNextMessage"[^>]*openPromoPackages\(\)[^>]*>Vedi i pacchetti/);
+  assert.match(pageSource, /id="joinPackagesTitle" tabindex="-1">Pacchetti MagicBook/);
+  assert.match(scriptSource, /promoConversionErrors = \["promo_already_used", "promo_code_reused", "promo_limit_reached", "promo_campaign_full"\]/);
+  assert.match(scriptSource, /function openPromoPackages\(\)[\s\S]*?showJoinScreen\(\)[\s\S]*?joinPackagesTitle/);
+  assert.match(scriptSource, /service-worker\.js\?v=41-promo-single-use/);
+  assert.match(styleSource, /\.promo-access-next-step[\s\S]*?\.promo-access-packages-button/);
+  assert.match(styleSource, /\.promo-access-packages-button:focus-visible[\s\S]*?outline-color: #075f55/);
   assert.doesNotMatch(pageSource, /class="trial-card"/);
   assert.doesNotMatch(pageSource, /PROMO_CODE_5_DAYS|PROMO_CODE_5_DAYS_EXPIRES_AT/);
 });

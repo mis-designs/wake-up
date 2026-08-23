@@ -66,7 +66,7 @@ function getAppRoute(state = {}) {
 function getRouteTitle(state = {}) {
   if (state.screen === "welcome") return APP_TITLE;
   if (state.screen === "login") return `${APP_TITLE} | Accesso`;
-  if (state.screen === "join") return `${APP_TITLE} | Join`;
+  if (state.screen === "join") return `${APP_TITLE} | Pacchetti`;
   if (state.screen === "about") return `${APP_TITLE} | About`;
   if (state.screen === "home") return `${APP_TITLE} | Home`;
   if (state.screen === "chapters") return `${APP_TITLE} | Capitoli`;
@@ -817,6 +817,7 @@ function completeLogin(phone, deviceId, data) {
   if (promoLandingCodeInput) promoLandingCodeInput.value = "";
   const promoLandingError = document.getElementById("promoLandingError");
   if (promoLandingError) promoLandingError.textContent = "";
+  hidePromoAccessNextStep();
   pendingOtpLogin = null;
   hideAdminPasswordUI();
   hideOtpUI();
@@ -829,8 +830,7 @@ function completeLogin(phone, deviceId, data) {
   maybeShowWhatsAppGroupPopup();
 
   if (data?.promoGranted) {
-    const usedDays = Math.max(0, Math.min(30, Number(data.promoDaysUsed) || 0));
-    setTimeout(() => showPromoLoginToast(`Promo attivata: 5 giorni di accesso completo. Hai utilizzato ${usedDays}/30 giorni promozionali.`), 120);
+    setTimeout(() => showPromoLoginToast("Promo attivata: 5 giorni di accesso completo. La promozione può essere utilizzata una sola volta."), 120);
   } else if (data?.promoNotice === "access_already_active") {
     setTimeout(() => showPromoLoginToast("Il tuo accesso era già attivo: la scadenza non è stata modificata."), 120);
   }
@@ -963,15 +963,28 @@ async function login(options = {}) {
       if (loginError === "expired") {
         setTimeout(showExpiredRenewPopup, 80);
       }
-      if (loginError === "promo_limit_reached") {
-        setTimeout(showExpiredRenewPopup, 80);
+      const promoConversionErrors = ["promo_already_used", "promo_code_reused", "promo_limit_reached", "promo_campaign_full"];
+      if (promoConversionErrors.includes(loginError)) {
+        if (fromPromoCard) {
+          if (err) err.textContent = "";
+          showPromoAccessNextStep(loginError);
+        } else {
+          const landingPhone = document.getElementById("promoLandingPhone");
+          const landingCode = document.getElementById("promoLandingCode");
+          showLandingScreen();
+          if (landingPhone) landingPhone.value = phoneInput?.value || "";
+          if (landingCode) landingCode.value = promoCode;
+          updatePromoLandingButtonState();
+          showPromoAccessNextStep(loginError);
+        }
+        return;
       }
       if (err) err.textContent = getLoginErrorMessage(loginError);
       if (!fromPromoCard && (loginError === "not_found" || loginError === "bad_phone")) {
         setLoginFieldInvalid(phoneInput, true);
         phoneInput?.focus();
       }
-      if (["promo_invalid", "promo_expired", "promo_code_reused", "promo_unavailable"].includes(loginError)) {
+      if (["promo_invalid", "promo_expired", "promo_unavailable"].includes(loginError)) {
         setLoginFieldInvalid(promoCodeInput, true);
         promoCodeInput?.focus();
       }
@@ -1363,9 +1376,8 @@ function getLoginErrorMessage(error) {
   if (error === "promo_invalid") return "Promo code non valido.";
   if (error === "promo_expired") return "Questo promo code è scaduto. Richiedi il nuovo codice.";
   if (error === "promo_unavailable") return "La promozione non è disponibile in questo momento.";
-  if (error === "promo_code_reused") return "Hai già utilizzato questo promo code. Attendi il nuovo codice.";
-  if (error === "promo_campaign_full") return "It's too late, follow our page to know for the next promo code, thanks.";
-  if (error === "promo_limit_reached") return "Hai già utilizzato 30 giorni promozionali. Scegli il tuo pacchetto.";
+  if (["promo_already_used", "promo_code_reused", "promo_limit_reached"].includes(error)) return "Hai già utilizzato la tua promozione gratuita.";
+  if (error === "promo_campaign_full") return "Gli 800 posti gratuiti di questa promozione sono terminati.";
   if (error === "promo_backend_not_ready") return "La promozione è in configurazione. Riprova più tardi.";
   if (error === "promo_host_forbidden") return "Promozione disponibile soltanto sul sito ufficiale.";
   if (error === "request_expired" || error === "request_replayed") return "Richiesta promozionale scaduta. Riprova.";
@@ -1502,6 +1514,7 @@ function showLandingScreen(options = {}) {
   document.getElementById("landing")?.classList.remove("hidden");
   const promoLandingError = document.getElementById("promoLandingError");
   if (promoLandingError) promoLandingError.textContent = "";
+  hidePromoAccessNextStep();
   setLoginFieldInvalid(document.getElementById("promoLandingPhone"), false);
   setLoginFieldInvalid(document.getElementById("promoLandingCode"), false);
   setChapterMode(false);
@@ -1530,6 +1543,45 @@ function updatePromoLandingButtonState() {
   button.setAttribute("aria-disabled", button.disabled ? "true" : "false");
 }
 
+function hidePromoAccessNextStep() {
+  const panel = document.getElementById("promoAccessNextStep");
+  if (!panel) return;
+  panel.classList.add("hidden");
+  panel.setAttribute("aria-hidden", "true");
+}
+
+function showPromoAccessNextStep(errorCode) {
+  const panel = document.getElementById("promoAccessNextStep");
+  const kicker = document.getElementById("promoAccessNextKicker");
+  const title = document.getElementById("promoAccessNextTitle");
+  const message = document.getElementById("promoAccessNextMessage");
+  const button = panel?.querySelector(".promo-access-packages-button");
+  if (!panel || !kicker || !title || !message) return;
+
+  const campaignFull = errorCode === "promo_campaign_full";
+  kicker.textContent = campaignFull ? "POSTI PROMO TERMINATI" : "PROMO GIÀ UTILIZZATA";
+  title.textContent = campaignFull
+    ? "Gli 800 posti gratuiti di questa promozione sono terminati."
+    : "Spero che ti sia piaciuta la nostra ultima promo.";
+  message.textContent = campaignFull
+    ? "Puoi continuare subito scegliendo il pacchetto MagicBook più adatto a te."
+    : "La promozione può essere utilizzata una sola volta. Scegli un pacchetto per continuare con MagicBook.";
+  panel.classList.remove("hidden");
+  panel.setAttribute("aria-hidden", "false");
+  requestAnimationFrame(() => button?.focus());
+}
+
+function openPromoPackages() {
+  hidePromoAccessNextStep();
+  showJoinScreen();
+  requestAnimationFrame(() => {
+    const heading = document.getElementById("joinPackagesTitle");
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    heading?.focus({ preventScroll: true });
+    heading?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
+  });
+}
+
 function setupPromoLandingUI() {
   const phoneInput = document.getElementById("promoLandingPhone");
   const codeInput = document.getElementById("promoLandingCode");
@@ -1542,6 +1594,7 @@ function setupPromoLandingUI() {
 
   phoneInput?.addEventListener("input", () => {
     if (error) error.textContent = "";
+    hidePromoAccessNextStep();
     setLoginFieldInvalid(phoneInput, false);
     updatePromoLandingButtonState();
   });
@@ -1549,6 +1602,7 @@ function setupPromoLandingUI() {
   codeInput?.addEventListener("input", () => {
     codeInput.value = codeInput.value.toUpperCase().replace(/\s+/g, "");
     if (error) error.textContent = "";
+    hidePromoAccessNextStep();
     setLoginFieldInvalid(codeInput, false);
     updatePromoLandingButtonState();
   });
@@ -5661,7 +5715,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-      .register("/service-worker.js?v=40-promo-code-return", { updateViaCache: "none" })
+      .register("/service-worker.js?v=41-promo-single-use", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });

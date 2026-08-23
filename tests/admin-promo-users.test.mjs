@@ -118,9 +118,9 @@ test("promo metadata gets enough time and never appears as a false empty result"
 });
 
 test("promo admin UI ships with fresh PWA assets", () => {
-  assert.match(page, /style\.css\?v=63-promo-code-return/u);
-  assert.match(page, /script\.js\?v=59-promo-code-return/u);
-  assert.match(worker, /magicbook-pwa-v126-promo-code-return/u);
-  assert.match(worker, /style\.css\?v=63-promo-code-return/u);
-  assert.match(worker, /script\.js\?v=59-promo-code-return/u);
+  assert.match(page, /style\.css\?v=64-promo-single-use/u);
+  assert.match(page, /script\.js\?v=60-promo-single-use/u);
+  assert.match(worker, /magicbook-pwa-v127-promo-single-use/u);
+  assert.match(worker, /style\.css\?v=64-promo-single-use/u);
+  assert.match(worker, /script\.js\?v=60-promo-single-use/u);
 });

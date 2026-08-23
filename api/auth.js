@@ -5,7 +5,7 @@ import {
   createPromoRedeemProof,
   isAllowedPromoHost,
   normalizePromoCode,
-  PROMO_MAX_DAYS,
+  PROMO_GRANT_DAYS,
   validatePromoCode
 } from "./promo-code.js";
 
@@ -40,6 +40,7 @@ const PUBLIC_PROMO_REDEMPTION_ERRORS = new Set([
   "active_access",
   "busy",
   "device_reset_required",
+  "promo_already_used",
   "promo_code_reused",
   "promo_expired",
   "promo_campaign_full",
@@ -633,8 +634,8 @@ export default async function handler(req, res) {
           authData = promoData;
           promoExtra = {
             promoGranted: true,
-            promoDaysUsed: Math.min(PROMO_MAX_DAYS, Number(promoData.promoDaysUsed) || 0),
-            promoRedemptions: Math.min(6, Number(promoData.promoRedemptions) || 0)
+            promoDaysUsed: Math.min(PROMO_GRANT_DAYS, Number(promoData.promoDaysUsed) || 0),
+            promoRedemptions: Math.min(1, Number(promoData.promoRedemptions) || 0)
           };
         } else if (promoError === "active_access") {
           authData = await callPromoAccessBackend("login", phone, deviceId, { registerDevice: true });

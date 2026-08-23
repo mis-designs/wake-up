@@ -19,8 +19,8 @@
  */
 
 var PROMO_GRANT_DAYS_ = 5;
-var PROMO_MAX_DAYS_ = 30;
-var PROMO_MAX_UNIQUE_USERS_ = 1500;
+var PROMO_MAX_UNIQUE_USERS_ = 800;
+var PROMO_RESERVATION_TTL_MS_ = 10 * 60 * 1000;
 var PROMO_REQUEST_MAX_AGE_MS_ = 2 * 60 * 1000;
 var PROMO_CODE_MAX_FUTURE_MS_ = (5 * 24 * 60 * 60 * 1000) + (10 * 60 * 1000);
 var PROMO_REDEMPTIONS_SHEET_ = 'PromoRedemptions';
@@ -74,9 +74,7 @@ function promoAdminUsers_(payload) {
       var hasExplicitPromoFlag = Boolean(columns.promoFlag)
         && explicitPromo !== ''
         && explicitPromo !== null;
-      var explicitPromoEnabled = explicitPromo === true
-        || String(explicitPromo || '').trim().toLowerCase() === 'true'
-        || String(explicitPromo || '').trim() === '1';
+      var explicitPromoEnabled = promoFlagIsTrue_(explicitPromo);
       var isPromo = !isPaid && (hasExplicitPromoFlag
         ? explicitPromoEnabled
         : accessSource === 'promo');
@@ -118,6 +116,7 @@ function promoAdminMarkPaid_(payload) {
 
     usersSheet.getRange(rowNumber, columns.accessSource).setValue('paid');
     if (columns.promoFlag) usersSheet.getRange(rowNumber, columns.promoFlag).setValue(false);
+    SpreadsheetApp.flush();
     return { success: true, phone: phone, accessSource: 'paid', isPromo: false };
   } catch (error) {
     console.error('[admin_mark_paid]', error && error.stack ? error.stack : error);
@@ -145,7 +144,6 @@ function promoRedeem_(payload) {
   if (!lock.tryLock(1200)) return { success: false, error: 'busy', retryAfterMs: 700 };
 
   var redemptionSheet = null;
-  var auditRow = null;
   var successResult = null;
 
   try {
@@ -167,45 +165,53 @@ function promoRedeem_(payload) {
       : new Array(lastColumn).fill('');
     var existingExpiry = promoReadDate_(rowValues[columns.expiry - 1]);
 
-    // Never shorten, replace or extend an access that is still valid.
+    // A retry must still log in a user whose access is already active, without
+    // shortening or extending it. This also makes a lost success response safe
+    // to retry after the grant was committed.
     if (existingExpiry && existingExpiry.getTime() > now.getTime()) {
+      if (promoRowHasPromoCode_(rowValues, columns, promoCodeId)) {
+        redemptionSheet = promoGetRedemptionSheet_(spreadsheet);
+        var activeCampaignRow = promoFindCampaignEntry_(redemptionSheet, promoCodeId, phone, 'reserved');
+        if (activeCampaignRow) {
+          var activeAuditValues = redemptionSheet
+            .getRange(activeCampaignRow, 5, 1, 3)
+            .getValues()[0];
+          activeAuditValues[0] = existingExpiry;
+          activeAuditValues[2] = 'granted';
+          redemptionSheet
+            .getRange(activeCampaignRow, 5, 1, 3)
+            .setValues([activeAuditValues]);
+          SpreadsheetApp.flush();
+        }
+      }
       return { success: false, error: 'active_access', expiry: existingExpiry.toISOString() };
     }
 
     redemptionSheet = promoGetRedemptionSheet_(spreadsheet);
+    promoReconcileStaleReservations_(
+      redemptionSheet,
+      usersSheet,
+      columns,
+      promoCodeId,
+      now
+    );
     var storedCodeIds = promoParseCodeIds_(rowValues[columns.promoUsedCodeIds - 1]);
     var history = storedCodeIds.length
       ? { daysUsed: 0, usedCodeIds: promoCodeIdMap_(storedCodeIds) }
       : promoReadHistory_(redemptionSheet, phone);
     var lastPromoCodeId = String(rowValues[columns.lastPromoCodeId - 1] || '').trim().toLowerCase();
     if (lastPromoCodeId) history.usedCodeIds[lastPromoCodeId] = true;
-    if (history.usedCodeIds[promoCodeId]) {
-      return { success: false, error: 'promo_code_reused' };
-    }
-
     var storedPromoDays = Number(rowValues[columns.promoDaysUsed - 1]) || 0;
     var promoDaysUsed = Math.max(storedPromoDays, history.daysUsed);
-    if (promoDaysUsed >= PROMO_MAX_DAYS_) {
-      return { success: false, error: 'promo_limit_reached', promoDaysUsed: PROMO_MAX_DAYS_ };
-    }
 
-    // The campaign cap applies to distinct phone numbers, not redemptions.
-    // Existing promo users may still redeem a later code, but a new promo
-    // user is admitted only while fewer than 1,500 unique users exist. This
-    // runs inside the script lock, so concurrent requests cannot pass the cap.
-    var isExistingPromoUser = promoRowHasPromoHistory_(rowValues, columns)
-      || history.daysUsed > 0;
-    if (!isExistingPromoUser
-        && promoCountUniqueUsers_(usersSheet, columns) >= PROMO_MAX_UNIQUE_USERS_) {
-      return {
-        success: false,
-        error: 'promo_campaign_full',
-        promoUserLimit: PROMO_MAX_UNIQUE_USERS_
-      };
-    }
-
-    if (!rowNumber) {
-      rowNumber = Math.max(2, usersSheet.getLastRow() + 1);
+    // A phone can receive promotional access only once, regardless of which
+    // code it used. Historical audit rows remain authoritative even if the
+    // user row was later converted to a paid account.
+    var hasPromoHistory = promoRowHasPromoHistory_(rowValues, columns)
+      || promoDaysUsed > 0
+      || Object.keys(history.usedCodeIds).length > 0;
+    if (hasPromoHistory) {
+      return { success: false, error: 'promo_already_used' };
     }
 
     var deviceResult = promoAuthorizeDeviceValues_(
@@ -215,9 +221,42 @@ function promoRedeem_(payload) {
     );
     if (!deviceResult.ok) return { success: false, error: deviceResult.error };
 
+    // Each promo code is a separate campaign with its own 800-user cap.
+    // Historical promo users were already rejected above, so only first-time
+    // promo users can consume one of the current campaign's available places.
+    // Reserve the phone in the durable ledger while holding the lock. The
+    // reservation survives deletion or conversion of the mutable user row and
+    // can be reused safely if a write fails and the same request is retried.
+    var campaignRow = promoFindCampaignEntry_(redemptionSheet, promoCodeId, phone);
+    if (!campaignRow) {
+      if (promoCountCampaignUsers_(redemptionSheet, promoCodeId)
+          >= PROMO_MAX_UNIQUE_USERS_) {
+        return {
+          success: false,
+          error: 'promo_campaign_full',
+          promoUserLimit: PROMO_MAX_UNIQUE_USERS_
+        };
+      }
+      redemptionSheet.appendRow([
+        now,
+        phone,
+        promoCodeId,
+        PROMO_GRANT_DAYS_,
+        '',
+        promoDeviceHash_(deviceId),
+        'reserved'
+      ]);
+      SpreadsheetApp.flush();
+      campaignRow = redemptionSheet.getLastRow();
+    }
+
+    if (!rowNumber) {
+      rowNumber = Math.max(2, usersSheet.getLastRow() + 1);
+    }
+
     var newExpiry = new Date(now.getTime() + PROMO_GRANT_DAYS_ * 24 * 60 * 60 * 1000);
-    var newPromoDaysUsed = Math.min(PROMO_MAX_DAYS_, promoDaysUsed + PROMO_GRANT_DAYS_);
-    var newPromoRedemptions = Math.floor(newPromoDaysUsed / PROMO_GRANT_DAYS_);
+    var newPromoDaysUsed = PROMO_GRANT_DAYS_;
+    var newPromoRedemptions = 1;
     var usedCodeIds = Object.keys(history.usedCodeIds).filter(function (codeId) {
       return /^[a-f0-9]{64}$/.test(codeId);
     });
@@ -238,8 +277,14 @@ function promoRedeem_(payload) {
     rowValues[columns.accessSource - 1] = 'promo';
     if (columns.promoFlag) rowValues[columns.promoFlag - 1] = true;
     usersSheet.getRange(rowNumber, 1, 1, lastColumn).setValues([rowValues]);
+    // Commit the access row while the global lock is still held. If flushing
+    // is uncertain, keep the reservation fail-closed for later reconciliation.
+    SpreadsheetApp.flush();
 
-    auditRow = [
+    // Mark the already-counted reservation as granted only after the access
+    // row is durable. If this final audit update fails, a retry returns the
+    // active access and the reservation still prevents the cap from growing.
+    redemptionSheet.getRange(campaignRow, 1, 1, 7).setValues([[
       now,
       phone,
       promoCodeId,
@@ -247,7 +292,8 @@ function promoRedeem_(payload) {
       newExpiry,
       promoDeviceHash_(deviceId),
       'granted'
-    ];
+    ]]);
+    SpreadsheetApp.flush();
 
     successResult = {
       success: true,
@@ -265,15 +311,6 @@ function promoRedeem_(payload) {
     lock.releaseLock();
   }
 
-  // The durable access state above is authoritative. Keep the append-only
-  // audit outside the critical section so it never delays another activation.
-  if (auditRow && redemptionSheet) {
-    try {
-      redemptionSheet.appendRow(auditRow);
-    } catch (auditError) {
-      console.error('[promo_redeem_audit]', auditError && auditError.stack ? auditError.stack : auditError);
-    }
-  }
   return successResult || { success: false, error: 'server_error' };
 }
 
@@ -348,6 +385,7 @@ function promoEnsureUserColumns_(sheet) {
   columns.promoUsedCodeIds = promoFindColumn_(map, ['promousedcodeids']) || promoAppendColumn_(sheet, map, 'promoUsedCodeIds');
   columns.accessSource = promoFindColumn_(map, ['accesssource']) || promoAppendColumn_(sheet, map, 'accessSource');
   columns.promoFlag = promoFindColumn_(map, ['ispromo', 'promo', 'promouser']);
+  SpreadsheetApp.flush();
   return columns;
 }
 
@@ -387,37 +425,123 @@ function promoRowHasPromoHistory_(rowValues, columns) {
     || (Number(rowValues[columns.promoRedemptions - 1]) || 0) > 0
     || Boolean(String(rowValues[columns.lastPromoCodeId - 1] || '').trim())
     || Boolean(String(rowValues[columns.promoUsedCodeIds - 1] || '').trim())
-    || Boolean(columns.promoFlag && rowValues[columns.promoFlag - 1])
+    || Boolean(columns.promoFlag && promoFlagIsTrue_(rowValues[columns.promoFlag - 1]))
     || String(rowValues[columns.accessSource - 1] || '').trim().toLowerCase() === 'promo';
 }
 
-function promoCountUniqueUsers_(sheet, columns) {
+function promoFlagIsTrue_(value) {
+  return value === true
+    || value === 1
+    || String(value === null || value === undefined ? '' : value).trim().toLowerCase() === 'true'
+    || String(value === null || value === undefined ? '' : value).trim() === '1';
+}
+
+function promoRowHasPromoCode_(rowValues, columns, promoCodeId) {
+  promoCodeId = String(promoCodeId || '').trim().toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(promoCodeId)) return false;
+  var lastPromoCodeId = String(rowValues[columns.lastPromoCodeId - 1] || '').trim().toLowerCase();
+  return lastPromoCodeId === promoCodeId
+    || promoParseCodeIds_(rowValues[columns.promoUsedCodeIds - 1]).indexOf(promoCodeId) !== -1;
+}
+
+function promoReadUserCodeMap_(sheet, columns) {
+  var result = {};
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return result;
+
+  var relevantColumns = [columns.phone, columns.lastPromoCodeId, columns.promoUsedCodeIds];
+  var firstColumn = Math.min.apply(null, relevantColumns);
+  var lastColumn = Math.max.apply(null, relevantColumns);
+  var rows = sheet
+    .getRange(2, firstColumn, lastRow - 1, lastColumn - firstColumn + 1)
+    .getValues();
+
+  rows.forEach(function (compactRow) {
+    var phone = promoNormalizePhone_(compactRow[columns.phone - firstColumn]);
+    if (!/^\d{6,15}$/.test(phone)) return;
+    var codeIds = promoParseCodeIds_(compactRow[columns.promoUsedCodeIds - firstColumn]);
+    var lastPromoCodeId = String(compactRow[columns.lastPromoCodeId - firstColumn] || '').trim().toLowerCase();
+    if (/^[a-f0-9]{64}$/.test(lastPromoCodeId)) codeIds.push(lastPromoCodeId);
+    if (!result[phone]) result[phone] = {};
+    codeIds.forEach(function (codeId) { result[phone][codeId] = true; });
+  });
+
+  return result;
+}
+
+function promoReconcileStaleReservations_(redemptionSheet, usersSheet, columns, promoCodeId, now) {
+  var lastRow = redemptionSheet.getLastRow();
+  if (lastRow < 2) return;
+
+  promoCodeId = String(promoCodeId || '').trim().toLowerCase();
+  var rows = redemptionSheet.getRange(2, 1, lastRow - 1, 7).getValues();
+  var statusValues = rows.map(function (rowValues) { return [rowValues[6]]; });
+  var userCodeMap = null;
+  var changed = false;
+
+  rows.forEach(function (rowValues, index) {
+    var rowCodeId = String(rowValues[2] || '').trim().toLowerCase();
+    var status = String(rowValues[6] || '').trim().toLowerCase();
+    if (rowCodeId !== promoCodeId || status !== 'reserved') return;
+
+    var reservedAt = promoReadDate_(rowValues[0]);
+    var reservationAge = reservedAt ? now.getTime() - reservedAt.getTime() : Infinity;
+    if (reservationAge >= 0 && reservationAge < PROMO_RESERVATION_TTL_MS_) return;
+
+    if (!userCodeMap) userCodeMap = promoReadUserCodeMap_(usersSheet, columns);
+    var phone = promoNormalizePhone_(rowValues[1]);
+    var wasGranted = Boolean(userCodeMap[phone] && userCodeMap[phone][promoCodeId]);
+    statusValues[index][0] = wasGranted ? 'granted' : 'failed';
+    changed = true;
+  });
+
+  // Apps Script recommends flushing sheet writes before releasing a lock, so
+  // a later invocation observes the reconciled state while it holds the lock.
+  if (changed) {
+    redemptionSheet.getRange(2, 7, statusValues.length, 1).setValues(statusValues);
+    SpreadsheetApp.flush();
+  }
+}
+
+function promoFindCampaignEntry_(sheet, promoCodeId, phone, requiredStatus) {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return 0;
 
-  var relevantColumns = [
-    columns.phone,
-    columns.promoDaysUsed,
-    columns.promoRedemptions,
-    columns.lastPromoCodeId,
-    columns.promoUsedCodeIds,
-    columns.accessSource
-  ];
-  if (columns.promoFlag) relevantColumns.push(columns.promoFlag);
-  var firstColumn = Math.min.apply(null, relevantColumns);
-  var lastColumn = Math.max.apply(null, relevantColumns);
-  var values = sheet
-    .getRange(2, firstColumn, lastRow - 1, lastColumn - firstColumn + 1)
-    .getValues();
+  promoCodeId = String(promoCodeId || '').trim().toLowerCase();
+  phone = promoNormalizePhone_(phone);
+  requiredStatus = String(requiredStatus || '').trim().toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(promoCodeId) || !/^\d{6,15}$/.test(phone)) return 0;
+
+  var rows = sheet.getRange(2, 2, lastRow - 1, 6).getValues();
+  for (var index = 0; index < rows.length; index += 1) {
+    var rowPhone = promoNormalizePhone_(rows[index][0]);
+    var rowCodeId = String(rows[index][1] || '').trim().toLowerCase();
+    var status = String(rows[index][5] || '').trim().toLowerCase();
+    if (rowPhone === phone
+        && rowCodeId === promoCodeId
+        && (!requiredStatus || status === requiredStatus)
+        && (status === 'reserved' || status === 'granted')) {
+      return index + 2;
+    }
+  }
+  return 0;
+}
+
+function promoCountCampaignUsers_(sheet, promoCodeId) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+
+  promoCodeId = String(promoCodeId || '').trim().toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(promoCodeId)) return 0;
+
+  var values = sheet.getRange(2, 2, lastRow - 1, 6).getValues();
   var uniquePhones = {};
 
-  values.forEach(function (compactRow) {
-    var rowValues = [];
-    relevantColumns.forEach(function (column) {
-      rowValues[column - 1] = compactRow[column - firstColumn];
-    });
-    if (!promoRowHasPromoHistory_(rowValues, columns)) return;
-    var phone = promoNormalizePhone_(rowValues[columns.phone - 1]);
+  values.forEach(function (rowValues) {
+    var phone = promoNormalizePhone_(rowValues[0]);
+    var rowCodeId = String(rowValues[1] || '').trim().toLowerCase();
+    var status = String(rowValues[5] || '').trim().toLowerCase();
+    if (rowCodeId !== promoCodeId || (status !== 'reserved' && status !== 'granted')) return;
     if (/^\d{6,15}$/.test(phone)) uniquePhones[phone] = true;
   });
 
@@ -443,6 +567,7 @@ function promoGetRedemptionSheet_(spreadsheet) {
     sheet = spreadsheet.insertSheet(PROMO_REDEMPTIONS_SHEET_);
     sheet.appendRow(['redeemedAt', 'phone', 'promoCodeId', 'daysGranted', 'expiry', 'deviceHash', 'status']);
     sheet.setFrozenRows(1);
+    SpreadsheetApp.flush();
   }
   return sheet;
 }
@@ -451,19 +576,17 @@ function promoReadHistory_(sheet, phone) {
   var result = { daysUsed: 0, usedCodeIds: {} };
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return result;
-  var matches = sheet.getRange(2, 2, lastRow - 1, 1)
-    .createTextFinder(phone)
-    .matchEntireCell(true)
-    .findAll();
-  matches.forEach(function (match) {
-    var row = sheet.getRange(match.getRow(), 1, 1, 7).getValues()[0];
-    if (String(row[6] || '') !== 'granted') return;
-    var codeId = String(row[2] || '').trim().toLowerCase();
-    var days = Number(row[3]) || 0;
+  phone = promoNormalizePhone_(phone);
+  var rows = sheet.getRange(2, 2, lastRow - 1, 6).getValues();
+  rows.forEach(function (row) {
+    if (promoNormalizePhone_(row[0]) !== phone) return;
+    if (String(row[5] || '').trim().toLowerCase() !== 'granted') return;
+    var codeId = String(row[1] || '').trim().toLowerCase();
+    var days = Number(row[2]) || 0;
     if (codeId) result.usedCodeIds[codeId] = true;
     if (days > 0 && days <= PROMO_GRANT_DAYS_) result.daysUsed += days;
   });
-  result.daysUsed = Math.min(PROMO_MAX_DAYS_, result.daysUsed);
+  result.daysUsed = Math.min(PROMO_GRANT_DAYS_, result.daysUsed);
   return result;
 }
 

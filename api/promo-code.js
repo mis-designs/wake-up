@@ -1,7 +1,6 @@
 import crypto from "crypto";
 
 export const PROMO_GRANT_DAYS = 5;
-export const PROMO_MAX_DAYS = 30;
 const PROMO_MAX_CODE_VALIDITY_MS = (5 * 24 * 60 * 60 * 1000) + (10 * 60 * 1000);
 
 export function normalizePromoCode(value) {

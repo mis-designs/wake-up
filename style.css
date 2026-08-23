@@ -1562,6 +1562,7 @@ a:focus-visible {
 
 .promo-access-submit:focus-visible,
 .promo-access-form input:focus-visible,
+.promo-access-packages-button:focus-visible,
 .promo-access-sources a:focus-visible {
     outline: 3px solid rgba(124, 255, 107, .45);
     outline-offset: 3px;
@@ -1605,6 +1606,73 @@ a:focus-visible {
     font-weight: 700;
     line-height: 1.35;
     text-align: center;
+}
+
+.promo-access-next-step {
+    margin-top: 9px;
+    padding: 14px;
+    border: 1px solid rgba(10, 130, 112, .18);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .78);
+    box-shadow: 0 10px 24px rgba(10, 130, 112, .08);
+    display: grid;
+    gap: 7px;
+    text-align: left;
+}
+
+.promo-access-next-step.hidden {
+    display: none;
+}
+
+.promo-access-next-kicker {
+    color: var(--promo-teal-dark);
+    font-size: .56rem;
+    font-weight: 850;
+    letter-spacing: .12em;
+}
+
+.promo-access-next-step strong {
+    color: var(--promo-ink);
+    font-size: .86rem;
+    line-height: 1.35;
+}
+
+.promo-access-next-step p {
+    margin: 0;
+    color: rgba(37, 41, 67, .7);
+    font-size: .7rem;
+    font-weight: 600;
+    line-height: 1.45;
+}
+
+.promo-access-packages-button {
+    min-height: 44px;
+    margin-top: 3px;
+    padding: 0 16px;
+    border: 1px solid var(--promo-teal);
+    border-radius: 12px;
+    background: var(--promo-teal);
+    color: #fff;
+    cursor: pointer;
+    font-family: "Rubik", "Inter", sans-serif;
+    font-size: .75rem;
+    font-weight: 800;
+    transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
+}
+
+.promo-access-packages-button:hover {
+    background: var(--promo-teal-dark);
+    box-shadow: 0 8px 18px rgba(10, 130, 112, .2);
+    transform: translateY(-1px);
+}
+
+.promo-access-packages-button:active {
+    transform: translateY(0) scale(.985);
+}
+
+.promo-access-packages-button:focus-visible {
+    outline-color: #075f55;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 5px #075f55;
 }
 
 .promo-access-sources {
