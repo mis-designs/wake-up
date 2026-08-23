@@ -10,7 +10,7 @@ const daisyBuild = readFileSync(new URL("../assets/daisyui.css", import.meta.url
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
 test("login uses locally compiled, scoped daisyUI components", () => {
-  assert.ok(page.indexOf("assets/daisyui.css?v=2-learning-shell") < page.indexOf("style.css?v=62-home-learning-layout"));
+  assert.ok(page.indexOf("assets/daisyui.css?v=2-learning-shell") < page.indexOf("style.css?v=63-promo-code-return"));
   assert.match(page, /id="login" data-theme="magicbook"/);
   assert.match(page, /class="login-pass d-card"/);
   assert.match(page, /class="login-form d-fieldset"/);
@@ -56,10 +56,12 @@ test("login form owns validation and exposes accessible field states", () => {
 
   assert.match(script, /function setLoginFieldInvalid\([\s\S]*?aria-invalid/);
   assert.match(script, /setLoginFieldInvalid\(phoneInput, true\);\s*phoneInput\?\.focus\(\)/);
+  assert.match(script, /setLoginFieldInvalid\(document\.getElementById\("promoCode"\), false\)/);
   assert.match(script, /setLoginButtonBusy\([\s\S]*?aria-busy/);
   assert.match(script, /setLoginButtonBusy\([\s\S]*?aria-disabled/);
   assert.match(styles, /#login \.login-submit\.is-loading::after[\s\S]*?content: none;[\s\S]*?display: none;/);
   assert.match(styles, /@media \(max-width: 800px\) and \(max-height: 720px\)[\s\S]*?#login \.login-greeting-cloud,[\s\S]*?#login \.login-road[\s\S]*?display: none;/);
+  assert.match(styles, /\.promo-access-form input\[aria-invalid="true"\][\s\S]*?border-color: #d85c55/);
   assert.match(script, /Nascondi password amministratore/);
 });
 
@@ -78,8 +80,9 @@ test("login fills the upper space with restrained multilingual greetings", () =>
   assert.match(styles, /prefers-reduced-motion: reduce[\s\S]*?login-greeting-cloud/);
 });
 
-test("login temporarily hides the expired promo-code controls", () => {
+test("login restores the accessible optional promo-code controls", () => {
   assert.ok(page.indexOf('id="user"') > 0);
-  assert.doesNotMatch(page, /id="promoCode"|promo-code-hint/);
+  assert.match(page, /class="login-input login-promo-input d-input d-input-lg" id="promoCode"/);
+  assert.match(page, /id="promoCodeHint"[^>]*>Con un codice valido ricevi 5 giorni/);
   assert.match(script, /promoCode: promoCode \|\| undefined/);
 });

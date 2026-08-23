@@ -30,23 +30,24 @@ test("legacy grading accepts only IDs issued in its signed quiz", () => {
   assert.equal(hasOnlyIssuedTrialQuestions([{ id: "q2-a", answer: 7 }], ids), false);
 });
 
-test("the public landing offers the seven-day trial without promo-code fields", () => {
+test("the public landing restores promo-code access instead of the guest trial", () => {
   const page = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   const main = readFileSync(new URL("../script.js", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../style.css", import.meta.url), "utf8");
   const landing = page.match(/<main class="public-landing[\s\S]*?<\/main>/)?.[0] || "";
 
-  assert.match(landing, /class="trial-card"/);
-  assert.match(landing, /data-trial-hours>168</);
-  assert.match(landing, /startGuestTrial\(\{ openChapter: 1 \}\)[\s\S]*?startGuestTrial\(\{ openChapter: 3 \}\)/);
-  assert.doesNotMatch(landing, /promo-access-card|promoLandingPhone|promoLandingCode|Login con Promo Code/);
-  assert.doesNotMatch(page, /id="promoCode"|promo-code-hint/);
-  assert.match(main, /FREE_TRIAL_DURATION_MS = 7 \* 24 \* 60 \* 60 \* 1000/);
-  assert.match(main, /setupTrialMarketing\(\);/);
-  assert.match(styles, /\.trial-card/);
+  assert.match(landing, /class="promo-access-card"/);
+  assert.match(landing, /id="promoLandingPhone"[\s\S]*?id="promoLandingCode"/);
+  assert.match(landing, /Login con Promo Code/);
+  assert.doesNotMatch(landing, /class="trial-card"|startGuestTrial\(/);
+  assert.match(page, /id="promoCode"[\s\S]*?promo-code-hint/);
+  assert.match(main, /PROMO_CAMPAIGN_DURATION_MS = 3 \* 24 \* 60 \* 60 \* 1000/);
+  assert.match(main, /setupPromoLandingUI\(\);[\s\S]*?void setupPromoCampaign\(\);/);
+  assert.doesNotMatch(main, /setupAdminUI\(\);\s*setupTrialMarketing\(\);/);
+  assert.match(styles, /\.promo-access-card/);
 });
 
-test("the guest trial can issue and consume restricted access", () => {
+test("the guest trial is disabled across routes and server endpoints", () => {
   const secret = "test-secret";
   const trialId = "trial_device_123456789";
   const issued = createGuestTrialToken(trialId, secret);
@@ -55,12 +56,12 @@ test("the guest trial can issue and consume restricted access", () => {
   const bookApi = readFileSync(new URL("../api/trialBook.js", import.meta.url), "utf8");
   const main = readFileSync(new URL("../script.js", import.meta.url), "utf8");
 
-  assert.equal(GUEST_TRIAL_ENABLED, true);
-  assert.equal(verifyGuestTrialToken(issued.token, trialId, secret)?.trialId, trialId);
+  assert.equal(GUEST_TRIAL_ENABLED, false);
+  assert.equal(verifyGuestTrialToken(issued.token, trialId, secret), null);
   assert.match(accessApi, /if \(!GUEST_TRIAL_ENABLED\) return res\.status\(410\)/);
   assert.match(quizApi, /if \(!GUEST_TRIAL_ENABLED\) return res\.status\(410\)/);
   assert.match(bookApi, /if \(!GUEST_TRIAL_ENABLED\) return res\.status\(410\)/);
-  assert.match(main, /path === "\/prova-gratis"\) return \{ screen: "trialHub" \}/);
+  assert.match(main, /path === "\/prova-gratis"[\s\S]{0,140}?return \{ screen: "welcome" \}/);
 });
 
 test("trial audio is a deterministic preview enforced by server and clients", () => {

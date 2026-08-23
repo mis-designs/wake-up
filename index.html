@@ -94,7 +94,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MagicBook">
 <link rel="stylesheet" href="assets/daisyui.css?v=2-learning-shell">
-<link rel="stylesheet" href="style.css?v=62-home-learning-layout">
+<link rel="stylesheet" href="style.css?v=63-promo-code-return">
 <link rel="stylesheet" href="homebg.css?v=3">
 <link rel="stylesheet" href="magic-dictionary.css?v=1.2.2">
 <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
@@ -143,25 +143,42 @@ gtag('config', 'G-C5JPY9HFHD', {
     <div class="public-logo public-logo-dark">
       <strong>MagicBook</strong>
     </div>
-    <section class="trial-card" aria-label="ম্যাজিকবুক ব্যবহার করে দেখুন">
-      <span class="trial-promo-burst" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
-      <span class="trial-promo-gift" aria-hidden="true"><i class="gift-lid"></i><i class="gift-box"></i><i class="gift-ribbon"></i><i class="gift-bow gift-bow-left"></i><i class="gift-bow gift-bow-right"></i></span>
-      <span class="trial-card-copy is-bangla" id="trialPromoCopy" lang="bn"><small data-trial-copy="kicker">৭ দিন বিনামূল্যে</small><strong data-trial-copy="title">ম্যাজিক বই</strong></span>
-      <div class="trial-countdown" data-trial-digital role="timer" aria-label="168 ore, 0 minuti e 0 secondi">
-        <span class="trial-countdown-units" aria-hidden="true">
-          <span><b data-trial-hours>168</b><i>ORE</i></span><em>:</em><span><b data-trial-minutes>00</b><i>MINUTI</i></span><em>:</em><span><b data-trial-seconds>00</b><i>SECONDI</i></span>
-        </span>
-        <span class="trial-countdown-progress" data-trial-progress style="--trial-progress:100%" aria-hidden="true"><i></i></span>
+    <section class="promo-access-card" id="promoAccessCard" aria-labelledby="promoAccessTitle">
+      <span class="promo-access-glow" aria-hidden="true"></span>
+      <header class="promo-access-heading">
+        <span class="promo-access-kicker"><i aria-hidden="true"></i> ACCESSO PROMO · 5 GIORNI</span>
+        <h2 id="promoAccessTitle">Login con Promo Code</h2>
+        <p>Prendi il Promo Code dalle nostre pagine e dai gruppi WhatsApp!</p>
+      </header>
+
+      <div class="promo-access-countdown" data-promo-countdown role="timer" aria-label="Scadenza Promo Code in caricamento">
+        <div class="promo-countdown-heading">
+          <span>IL PROMO CODE CAMBIA TRA</span>
+          <b data-promo-state>Sincronizzazione…</b>
+        </div>
+        <div class="promo-countdown-units" aria-hidden="true">
+          <span><b data-promo-days>--</b><i>GIORNI</i></span><em>:</em>
+          <span><b data-promo-hours>--</b><i>ORE</i></span><em>:</em>
+          <span><b data-promo-minutes>--</b><i>MIN</i></span><em>:</em>
+          <span><b data-promo-seconds>--</b><i>SEC</i></span>
+        </div>
+        <span class="promo-countdown-progress" data-promo-progress style="--promo-progress:0%" aria-hidden="true"><i></i></span>
       </div>
-      <div class="trial-chapter-actions" aria-label="Apri un capitolo gratuito">
-        <button class="trial-chapter-action is-chapter-one" type="button" onclick="startGuestTrial({ openChapter: 1 })" aria-label="Apri gratis il libro del capitolo 1">
-          <span class="trial-chapter-index" aria-hidden="true">01</span><span class="trial-chapter-details"><small>CAPITOLO 1</small><strong>Apri il libro</strong></span><span class="trial-chapter-status">GRATIS</span>
-        </button>
-        <button class="trial-chapter-action is-chapter-three" type="button" onclick="startGuestTrial({ openChapter: 3 })" aria-label="Apri gratis il libro del capitolo 3">
-          <span class="trial-chapter-index" aria-hidden="true">03</span><span class="trial-chapter-details"><small>CAPITOLO 3</small><strong>Apri il libro</strong></span><span class="trial-chapter-status">GRATIS</span>
-        </button>
-      </div>
-      <button class="trial-promo-cta" type="button" onclick="openTrialChapterPicker()"><span><small>LIBRO · AUDIO · QUIZ</small><strong>Scegli come iniziare</strong></span><b aria-hidden="true"></b></button>
+
+      <form class="promo-access-form" data-nosnippet novalidate onsubmit="event.preventDefault(); loginFromPromoCard();">
+        <label class="sr-only" for="promoLandingPhone">Numero di telefono</label>
+        <input id="promoLandingPhone" type="tel" placeholder="Numero di telefono" aria-label="Numero di telefono" autocomplete="tel" inputmode="tel" aria-describedby="promoLandingError" aria-required="true" aria-invalid="false">
+        <label class="sr-only" for="promoLandingCode">Promo Code</label>
+        <input id="promoLandingCode" class="promo-access-code" type="text" placeholder="Inserisci il Promo Code" aria-label="Promo Code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="64" aria-describedby="promoLandingError" aria-required="true" aria-invalid="false">
+        <button class="promo-access-submit" type="submit" disabled aria-disabled="true" aria-busy="false"><span>Entra con Promo Code</span><b aria-hidden="true">→</b></button>
+      </form>
+      <p class="promo-access-error" id="promoLandingError" data-nosnippet role="status" aria-live="polite"></p>
+
+      <nav class="promo-access-sources" aria-label="Dove trovare il Promo Code">
+        <span>NON HAI IL CODICE?</span>
+        <a href="https://www.facebook.com/TMMBanglaPatente/" target="_blank" rel="noopener noreferrer">Pagina Facebook</a>
+        <a href="https://chat.whatsapp.com/LBL1G7nvz2B3SThJj4uRxD" target="_blank" rel="noopener noreferrer">Gruppo WhatsApp</a>
+      </nav>
     </section>
     <div class="landing-actions" aria-label="Scegli accesso">
       <button class="landing-choice glass-button is-highlight" type="button" onclick="showLoginScreen()" aria-label="Login">
@@ -603,6 +620,18 @@ gtag('config', 'G-C5JPY9HFHD', {
             <input class="login-input d-input d-input-lg" id="user" type="tel" placeholder="320 123 4567" autocomplete="tel" inputmode="tel" aria-describedby="phoneHelp err" aria-required="true">
           </div>
           <p class="login-help" id="phoneHelp">Puoi scriverlo con o senza il prefisso +39.</p>
+        </div>
+
+        <div class="login-field">
+          <label class="login-label d-label" for="promoCode">Promo code (facoltativo)</label>
+          <div class="login-input-wrap">
+            <svg class="login-input-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M2 9a3 3 0 0 0 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 0 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M13 5v2M13 11v2M13 17v2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <input class="login-input login-promo-input d-input d-input-lg" id="promoCode" type="text" placeholder="Inserisci il promo code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="64" aria-describedby="promoCodeHint err" aria-invalid="false">
+          </div>
+          <p class="login-help promo-code-hint" id="promoCodeHint">Con un codice valido ricevi 5 giorni di accesso completo.</p>
         </div>
 
         <div class="login-field admin-password-group hidden" id="adminPasswordGroup">
@@ -1156,6 +1185,6 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script src="screen-protection.js?v=1.2.0"></script>
 <script src="learning-sync.js?v=2"></script>
 <script src="src/learning-insights.js?v=5-figure-explanation-ui&ui=6"></script>
-<script src="script.js?v=58-reader-continuation"></script>
+<script src="script.js?v=59-promo-code-return"></script>
 </body>
 </html>

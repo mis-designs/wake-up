@@ -116,6 +116,8 @@ test("GAS owns the five-day grant, thirty-day cap and atomic write", () => {
   assert.match(gasSource, /tryLock\(1200\)/);
   assert.match(gasSource, /existingExpiry[\s\S]*?error: 'active_access'[\s\S]*?newExpiry/);
   assert.match(gasSource, /history\.usedCodeIds\[promoCodeId\]/);
+  assert.match(gasSource, /newPromoDaysUsed = Math\.min\(PROMO_MAX_DAYS_, promoDaysUsed \+ PROMO_GRANT_DAYS_\)/);
+  assert.match(gasSource, /usedCodeIds\.push\(promoCodeId\)/);
   assert.match(gasSource, /promoUsedCodeIds/);
   assert.match(gasSource, /setValues\(\[rowValues\]\)/);
   assert.doesNotMatch(gasSource, /SpreadsheetApp\.flush\(\)/);
@@ -191,14 +193,18 @@ test("promo backend setup failures are normalized without leaking internal error
   assert.match(scriptSource, /Servizio promozionale momentaneamente non disponibile/);
 });
 
-test("login temporarily presents phone without promo-code controls", () => {
+test("login presents the optional promo-code field", () => {
   const phoneIndex = pageSource.indexOf('id="user"');
   assert.ok(phoneIndex > 0);
-  assert.doesNotMatch(pageSource, /id="promoCode"|promo-code-hint/);
+  assert.match(pageSource, /id="promoCode"[^>]*aria-describedby="promoCodeHint err"/);
+  assert.match(pageSource, /id="promoCodeHint"[^>]*>Con un codice valido ricevi 5 giorni/);
+  assert.match(scriptSource, /promoCode: promoCode \|\| undefined/);
 });
 
-test("landing hides expired promo controls without exposing environment values", () => {
-  assert.doesNotMatch(pageSource, /id="promoLandingCode"|id="promoLandingPhone"|loginFromPromoCard\(\)/);
-  assert.match(pageSource, /class="trial-card"/);
+test("landing renders the promo login without exposing environment values", () => {
+  assert.match(pageSource, /class="promo-access-card"/);
+  assert.match(pageSource, /id="promoLandingPhone"[\s\S]*?id="promoLandingCode"/);
+  assert.match(pageSource, /<form class="promo-access-form"[^>]*novalidate[^>]*loginFromPromoCard\(\)/);
+  assert.doesNotMatch(pageSource, /class="trial-card"/);
   assert.doesNotMatch(pageSource, /PROMO_CODE_5_DAYS|PROMO_CODE_5_DAYS_EXPIRES_AT/);
 });

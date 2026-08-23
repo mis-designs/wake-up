@@ -10,7 +10,7 @@ const ADMIN_API = "/api/admin";
 const PROMO_STATUS_API = "/api/promo-status";
 const APP_TITLE = "MagicBook";
 const EXPLANATION_FIGURES_CACHE_KEY = "magicbook_explanation_figures_v1";
-const PROMO_CAMPAIGN_DURATION_MS = 5 * 24 * 60 * 60 * 1000;
+const PROMO_CAMPAIGN_DURATION_MS = 3 * 24 * 60 * 60 * 1000;
 const FREE_TRIAL_CHAPTERS = Object.freeze([1, 3]);
 const FREE_TRIAL_CHAPTER_SET = new Set(FREE_TRIAL_CHAPTERS);
 const FREE_TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
@@ -93,9 +93,9 @@ function setAppRoute(state = {}, options = {}) {
 
 function getRouteStateFromLocation() {
   const path = normalizeRoutePath();
-  if (path === "/prova-gratis") return { screen: "trialHub" };
-  const trialBookMatch = path.match(/^\/prova-gratis\/libro-(1|3)$/);
-  if (trialBookMatch) return { screen: "trialBook", chapter: Number(trialBookMatch[1]) };
+  if (path === "/prova-gratis" || /^\/prova-gratis\/libro-(1|3)$/.test(path)) {
+    return { screen: "welcome" };
+  }
   const chapterMatch = path.match(/^\/magic-book\/capitolo-(\d{1,2})$/);
   if (chapterMatch) {
     return { screen: "viewer", chapter: clampChapter(Number(chapterMatch[1])) };
@@ -524,9 +524,10 @@ window.addEventListener("load", async () => {
   const wasReset = await forceGlobalAuthResetIfNeeded();
 
   setupLoginUI();
+  setupPromoLandingUI();
   setupProfileUI();
   setupAdminUI();
-  setupTrialMarketing();
+  void setupPromoCampaign();
 
   if (wasReset) {
     const publicRoute = getRouteStateFromLocation();
@@ -878,10 +879,8 @@ async function login(options = {}) {
 
   if (!isValidPhoneNumber(phoneInput?.value)) {
     if (err) err.textContent = "Inserisci un numero di telefono valido";
-    if (!fromPromoCard) {
-      setLoginFieldInvalid(phoneInput, true);
-      phoneInput?.focus();
-    }
+    setLoginFieldInvalid(phoneInput, true);
+    phoneInput?.focus();
     if (fromPromoCard) updatePromoLandingButtonState();
     else updateLoginButtonState();
     return;
@@ -889,6 +888,8 @@ async function login(options = {}) {
 
   if (fromPromoCard && promoCode.length < 6) {
     if (err) err.textContent = "Inserisci il Promo Code.";
+    setLoginFieldInvalid(promoCodeInput, true);
+    promoCodeInput?.focus();
     updatePromoLandingButtonState();
     return;
   }
@@ -899,14 +900,22 @@ async function login(options = {}) {
   if (loginButton) {
     loginButton.disabled = true;
     if (!fromPromoCard) setLoginButtonBusy(loginButton, true);
-    else loginButton.classList.add("is-loading");
+    else {
+      loginButton.classList.add("is-loading");
+      loginButton.setAttribute("aria-busy", "true");
+      loginButton.setAttribute("aria-disabled", "true");
+    }
     if (loginButtonLabel) loginButtonLabel.textContent = "Verifica...";
   }
 
   if (err) err.textContent = "";
   if (!fromPromoCard) {
     setLoginFieldInvalid(phoneInput, false);
+    setLoginFieldInvalid(promoCodeInput, false);
     setLoginFieldInvalid(adminPasswordInput, false);
+  } else {
+    setLoginFieldInvalid(phoneInput, false);
+    setLoginFieldInvalid(promoCodeInput, false);
   }
 
   try {
@@ -962,6 +971,10 @@ async function login(options = {}) {
         setLoginFieldInvalid(phoneInput, true);
         phoneInput?.focus();
       }
+      if (["promo_invalid", "promo_expired", "promo_code_reused", "promo_unavailable"].includes(loginError)) {
+        setLoginFieldInvalid(promoCodeInput, true);
+        promoCodeInput?.focus();
+      }
       return;
     }
 
@@ -972,7 +985,10 @@ async function login(options = {}) {
   } finally {
     if (loginButton) {
       if (!fromPromoCard) setLoginButtonBusy(loginButton, false);
-      else loginButton.classList.remove("is-loading");
+      else {
+        loginButton.classList.remove("is-loading");
+        loginButton.setAttribute("aria-busy", "false");
+      }
       if (loginButtonLabel) loginButtonLabel.textContent = originalText;
     }
     updateLoginButtonState();
@@ -1417,6 +1433,7 @@ function setupLoginUI() {
   promoCodeInput?.addEventListener("input", () => {
     promoCodeInput.value = promoCodeInput.value.toUpperCase().replace(/\s+/g, "");
     if (err) err.textContent = "";
+    setLoginFieldInvalid(promoCodeInput, false);
   });
 
   updateLoginButtonState();
@@ -1483,6 +1500,10 @@ function clearSessionData() {
 function showLandingScreen(options = {}) {
   hideAll();
   document.getElementById("landing")?.classList.remove("hidden");
+  const promoLandingError = document.getElementById("promoLandingError");
+  if (promoLandingError) promoLandingError.textContent = "";
+  setLoginFieldInvalid(document.getElementById("promoLandingPhone"), false);
+  setLoginFieldInvalid(document.getElementById("promoLandingCode"), false);
   setChapterMode(false);
   document.body.classList.add("public-mode");
   updateProfileUI(false);
@@ -1506,6 +1527,7 @@ function updatePromoLandingButtonState() {
   const validPhone = isValidPhoneNumber(phoneInput?.value);
   const validCode = String(codeInput?.value || "").trim().length >= 6;
   button.disabled = isLoading || promoCampaignActive === false || !validPhone || !validCode;
+  button.setAttribute("aria-disabled", button.disabled ? "true" : "false");
 }
 
 function setupPromoLandingUI() {
@@ -1520,12 +1542,14 @@ function setupPromoLandingUI() {
 
   phoneInput?.addEventListener("input", () => {
     if (error) error.textContent = "";
+    setLoginFieldInvalid(phoneInput, false);
     updatePromoLandingButtonState();
   });
 
   codeInput?.addEventListener("input", () => {
     codeInput.value = codeInput.value.toUpperCase().replace(/\s+/g, "");
     if (error) error.textContent = "";
+    setLoginFieldInvalid(codeInput, false);
     updatePromoLandingButtonState();
   });
 
@@ -2062,6 +2086,7 @@ function showLoginScreen(message = "", options = {}) {
   const err = document.getElementById("err");
   if (err) err.textContent = message;
   setLoginFieldInvalid(document.getElementById("user"), false);
+  setLoginFieldInvalid(document.getElementById("promoCode"), false);
   setLoginFieldInvalid(document.getElementById("adminPassword"), false);
   setLoginButtonBusy(document.querySelector("#login .login-submit"), false);
   updateProfileUI(false);
@@ -5636,7 +5661,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-      .register("/service-worker.js?v=39-free-trial-7d", { updateViaCache: "none" })
+      .register("/service-worker.js?v=40-promo-code-return", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });

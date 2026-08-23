@@ -1466,6 +1466,19 @@ a:focus-visible {
     transform: translateY(-1px);
 }
 
+.promo-access-form input[aria-invalid="true"] {
+    border-color: #d85c55;
+    background: #fffafa;
+    box-shadow: 0 0 0 3px rgba(216, 92, 85, .16);
+}
+
+.promo-access-form input[aria-invalid="true"]:focus,
+.promo-access-form input[aria-invalid="true"]:focus-visible {
+    border-color: #d85c55;
+    outline-color: rgba(216, 92, 85, .28);
+    box-shadow: 0 0 0 4px rgba(216, 92, 85, .16), 0 12px 27px rgba(216, 92, 85, .08);
+}
+
 .promo-access-form .promo-access-code {
     border-style: dashed;
     letter-spacing: .08em;
