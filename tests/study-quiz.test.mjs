@@ -65,6 +65,27 @@ test("study questions use the supplied audio icon and the complete explanation p
   assert.match(source, /changeExplanationSpeed\(controls\)/);
 });
 
+test("study explanation players reuse the supplied artwork with stable responsive geometry", () => {
+  const page = readFileSync(new URL("../study-quiz.html", import.meta.url), "utf8");
+  const source = readFileSync(new URL("../study-quiz.js", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../study-quiz.css", import.meta.url), "utf8");
+  const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
+
+  assert.match(source, /surface\.className = "study-explanation-media hidden"/u);
+  assert.match(source, /artwork\.className = "study-explanation-artwork"[\s\S]*?artwork\.src = "icons\/explain_quiz\.svg"[\s\S]*?artwork\.alt = ""[\s\S]*?aria-hidden[\s\S]*?artwork\.width = 50[\s\S]*?artwork\.height = 50[\s\S]*?artwork\.loading = "lazy"/u);
+  assert.match(source, /surface\.append\(artwork, root\)/u);
+  assert.match(source, /actions\.append\(italian, bangla, lockedExplanation \|\| explanation\.surface, help\)/u);
+  assert.match(source, /function setExplanationPlaying\(controls, isPlaying\)[\s\S]*?controls\?\.artwork\.classList\.toggle\("is-spinning", isPlaying\)/u);
+  assert.match(styles, /\.study-explanation-media\s*\{[^}]*flex:\s*0 1 368px[^}]*min-width:\s*0[^}]*gap:\s*8px/u);
+  assert.match(styles, /\.study-explanation-artwork\s*\{[^}]*width:\s*50px[^}]*height:\s*50px[^}]*animation-play-state:\s*paused/u);
+  assert.match(styles, /@media \(max-width: 430px\)[\s\S]*?\.study-explanation-artwork\s*\{[^}]*flex-basis:\s*44px[^}]*width:\s*44px[^}]*height:\s*44px/u);
+  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.study-explanation-artwork\s*\{\s*animation:\s*none/u);
+  assert.match(page, /study-quiz\.css\?v=17-explanation-artwork/u);
+  assert.match(page, /study-quiz\.js\?v=16-explanation-artwork/u);
+  assert.match(worker, /magicbook-pwa-v133-study-explanation-artwork/u);
+  assert.match(worker, /\/icons\/explain_quiz\.svg/u);
+});
+
 test("study chapter picker uses the layered performance-green visual system", () => {
   const page = readFileSync(new URL("../study-quiz.html", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../study-quiz.css", import.meta.url), "utf8");

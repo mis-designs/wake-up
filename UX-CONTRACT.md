@@ -9,7 +9,7 @@
 | Statistics workspace | `src/learning-insights.js` | Authenticated learning model | Empty, insufficient, ready, cached, refreshing | Data-state tests and 320–1920 browser verification |
 | Error recovery | `src/learning-insights.js` | Authenticated errors and plan | Five categories; empty/populated master-detail; recovered section | URL, interaction, focus, and responsive verification |
 | Shared controls | Learning JS/CSS + local daisyUI build | `d-btn` primitives with scoped geometry | Labelled refresh on wider screens; icon-only on narrow screens | Keyboard and 320/375/430/768/1024/1280/1440/1920 checks |
-| Quiz correction translations | `quiz.js` + `quiz-help.js` data service | `mystyle.css` visual owner; synchronized help and catalog data | Exclusive accordion at ≤767px; multiple or side-by-side panels on desktop | Dedicated result/help tests plus keyboard and responsive browser verification |
+| Quiz correction translations | `quiz.js` + `quiz-help.js` data service | `mystyle.css` visual owner; synchronized help and catalog data | One exclusive accordion across all viewports; the active desktop panel may sit beside its row | Dedicated result/help tests plus keyboard and responsive browser verification |
 
 ## Feature ownership
 
@@ -26,6 +26,7 @@
 | UI assets | Repository images/SVGs + authenticated figure endpoint | No Unicode glyphs as UI icons. Decorative CSS marks remain hidden from assistive technology. |
 | Promo conversion | `#promoAccessNextStep` + `openPromoPackages()` | A previous promo or a full campaign produces persistent inline guidance; the user chooses when to open `/join`, which focuses the packages heading. |
 | Quiz correction translations | `quiz.js`, `quiz-help.js`, `mystyle.css` | Each correction row owns one on-demand translation disclosure. `quiz-help.js` owns data resolution and caching; `quiz.js` owns row state and interaction; `mystyle.css` owns responsive presentation. |
+| Study explanation audio | `study-quiz.js`, `study-quiz.css`, `icons/explain_quiz.svg` | Each available explanation keeps the supplied artwork beside the player. The artwork is decorative, reserves stable geometry, mirrors play/pause state, and shrinks without displacing the controls on narrow screens. |
 
 ## Statistiche
 
@@ -51,9 +52,10 @@
 ## Correzione quiz
 
 - Every correction row can reveal the full Bangla translation of the Italian question, exactly two Italian context tags for chapter and topic, and keyword pairs with Italian and Bangla labels.
+- Keyword selection is owned by the shared All Books glossary resolver: isolated articles, prepositions, conjunctions, and auxiliary forms never render as teaching chips, while the same tokens remain valid inside a useful multi-word technical phrase. Phrase components are absorbed unless the central glossary explicitly marks a words-only exception. Magicph applies the same policy again at both V3 and V2 rendering boundaries.
 - Help resolves in this order: synchronized V3 data, catalog translation, then the protected automatic fallback only when no usable Bangla translation exists. Contextual Bangla copy is never substituted for the full question translation.
-- Translation data loads only after the learner opens a row. Opening the correction must not start help requests for all 30 rows; resolved and in-flight work is cached or deduplicated, and stale results cannot update a closed or different row.
-- At ≤767px, opening one translation closes the previously expanded row. On desktop, multiple panels may remain open and can sit beside the row content when width permits without changing semantic reading order.
+- The shared static catalog may prewarm once while the browser is idle. Per-question resolution and any protected automatic fallback start only after the learner opens that row; opening the correction must not fan out help requests across all 30 rows. Resolved and in-flight work is cached or deduplicated, and stale results cannot update a closed or different row.
+- Opening one translation closes the previously expanded row on every viewport. The active desktop panel may sit beside its row when width permits without changing semantic reading order.
 - The disclosure stays inside its correction row, preserves stable media and action geometry, and never hides the fixed result actions.
 
 ## Responsive behavior
@@ -62,7 +64,7 @@
 - 1280–1920: wide grouped surfaces use the viewport; Statistics is overview/action, chapter matrix/detail; Errori is explorer/plan with master-detail.
 - 768–1024: major regions stack only when necessary; chapter detail becomes sequential; no control is compressed below a usable target.
 - 320–430: one vertical flow, two-column chapter matrix, three-column category grid wrapping to two rows, sequential detail, plan before categories.
-- Quiz correction: at ≤767px translations use one exclusive inline accordion; from 768px, open help may remain multiple or use an adjacent panel when space permits. Italian tags, Bangla copy, and keyword pairs wrap without clipping or page-level horizontal overflow.
+- Quiz correction: translations use one exclusive accordion on every viewport. From 768px, the single active panel may use the adjacent column when space permits. Italian tags, Bangla copy, and keyword pairs wrap without clipping or page-level horizontal overflow.
 - Reading order is valid without CSS. Italian and Bangla copy wraps, actions remain visible, and page-level horizontal scrolling is forbidden.
 
 ## Navigation, async, and failure behavior

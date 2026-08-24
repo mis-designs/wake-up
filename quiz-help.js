@@ -134,6 +134,18 @@
       .find(candidate => normalizedQuestion.includes(` ${normalize(candidate)} `)) || canonical;
   }
 
+  function visibleKeywords(words = []) {
+    const grammar = window.PatenteGlossaryResolver;
+    if (!grammar?.isGrammarHidden) return words.filter(Boolean);
+    return words.filter(word => word && !grammar.isGrammarHidden({
+      canonical_italian: word.canonicalItalian || word.italian,
+      lemma: word.lemma || word.canonicalItalian || word.italian,
+      type: word.type || "word"
+    }, {
+      surface: word.italian || word.canonicalItalian
+    }));
+  }
+
   function usableBanglaTranslation(value = "") {
     const text = String(value || "").trim();
     return [...text].some(character => {
@@ -151,6 +163,7 @@
       );
       return {
         ...resolved,
+        words: visibleKeywords(resolved.words),
         questionBn,
         questionBnEasy: questionBn,
         questionBnStandard: questionBn
@@ -175,7 +188,7 @@
     const [quizId, chapterId, topicId, wordIds = [], contextBn = ""] = row;
     const chapter = data.chapters?.[chapterId] || [];
     const topic = data.topics?.[topicId] || [];
-    const words = wordIds.map(id => {
+    const words = visibleKeywords(wordIds.map(id => {
       const word = data.words?.[id];
       if (!Array.isArray(word)) return null;
       return {
@@ -186,7 +199,7 @@
         simpleBn: word[3] || "",
         ttsBn: word[5] || ""
       };
-    }).filter(Boolean);
+    }));
     return {
       quizId,
       contextBn: String(contextBn || "").trim(),
@@ -202,8 +215,10 @@
 
   async function resolveQuestionHelp(question, options = {}) {
     let help = null;
+    let libraryLoaded = false;
     try {
       const data = await loadLibrary();
+      libraryLoaded = true;
       help = decodeHelp(question, data);
     } catch (error) {
       console.warn("[Magic Book quiz help]", error?.message || error);
@@ -230,7 +245,9 @@
         const cacheKey = `${String(question?.id || fingerprint(question))}_bn_help`;
         const translated = await fetchBengaliAudio(question, cacheKey, { requireAudio: false });
         verifiedTranslation = usableBanglaTranslation(translated?.translation);
-        if (verifiedTranslation) translationSource = "automatic";
+        if (verifiedTranslation) {
+          translationSource = String(translated?.translationSource || "automatic");
+        }
       } catch (_) {
         verifiedTranslation = "";
       }
@@ -242,7 +259,8 @@
       translationSource,
       chapter: help?.chapter || null,
       topic: help?.topic || null,
-      words: Array.isArray(help?.words) ? help.words : []
+      words: Array.isArray(help?.words) ? help.words : [],
+      isPartial: !libraryLoaded || !verifiedTranslation
     };
   }
 
@@ -250,10 +268,15 @@
     const key = questionHelpKey(question);
     let request = questionHelpCache.get(key);
     if (!request) {
-      request = resolveQuestionHelp(question, options).catch(error => {
-        questionHelpCache.delete(key);
-        throw error;
-      });
+      request = resolveQuestionHelp(question, options)
+        .then(help => {
+          if (help?.isPartial) questionHelpCache.delete(key);
+          return help;
+        })
+        .catch(error => {
+          questionHelpCache.delete(key);
+          throw error;
+        });
       questionHelpCache.set(key, request);
     }
     return request;

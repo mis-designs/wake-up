@@ -415,8 +415,22 @@
   }
 
   function createExplanationPlayer(question, index) {
+    const surface = document.createElement("div");
+    surface.className = "study-explanation-media hidden";
+
+    const artwork = document.createElement("img");
+    artwork.className = "study-explanation-artwork";
+    artwork.src = "icons/explain_quiz.svg";
+    artwork.alt = "";
+    artwork.setAttribute("aria-hidden", "true");
+    artwork.width = 50;
+    artwork.height = 50;
+    artwork.loading = "lazy";
+    artwork.decoding = "async";
+    artwork.draggable = false;
+
     const root = document.createElement("div");
-    root.className = "study-explanation-player hidden";
+    root.className = "study-explanation-player";
     root.setAttribute("role", "group");
     root.setAttribute("aria-label", `Spiegazione audio della domanda ${index + 1}`);
 
@@ -441,7 +455,9 @@
     speed.setAttribute("aria-label", "Velocità 1x");
 
     const controls = {
+      surface,
       root,
+      artwork,
       play,
       progress,
       speed,
@@ -452,6 +468,7 @@
     progress.addEventListener("input", () => seekExplanation(controls));
     speed.addEventListener("click", () => changeExplanationSpeed(controls));
     root.append(play, progress, speed);
+    surface.append(artwork, root);
     return controls;
   }
 
@@ -529,10 +546,10 @@
     const help = actionButton("study-action-help", "Traduzione e parole chiave", "文");
     help.setAttribute("aria-expanded", "false");
     help.addEventListener("click", () => toggleHelp(question, card, help));
-    actions.append(italian, bangla, lockedExplanation || explanation.root, help);
+    actions.append(italian, bangla, lockedExplanation || explanation.surface, help);
     main.appendChild(actions);
     card.appendChild(main);
-    if (!TRIAL_MODE) observeAudioAvailability(card, question, explanation.root);
+    if (!TRIAL_MODE) observeAudioAvailability(card, question, explanation.surface);
     return card;
   }
 
@@ -608,6 +625,18 @@
       .find(candidate => normalizedQuestion.includes(` ${normalize(candidate)} `)) || canonical;
   }
 
+  function visibleKeywords(words = []) {
+    const grammar = window.PatenteGlossaryResolver;
+    if (!grammar?.isGrammarHidden) return words.filter(Boolean);
+    return words.filter(word => word && !grammar.isGrammarHidden({
+      canonical_italian: word.canonicalItalian || word.italian,
+      lemma: word.lemma || word.canonicalItalian || word.italian,
+      type: word.type || "word"
+    }, {
+      surface: word.italian || word.canonicalItalian
+    }));
+  }
+
   function usableBanglaTranslation(value = "") {
     const text = String(value || "").trim();
     return [...text].some(character => {
@@ -625,6 +654,7 @@
       );
       return {
         ...resolved,
+        words: visibleKeywords(resolved.words),
         translation,
         translationSource: translation ? "runtime_v3" : ""
       };
@@ -648,7 +678,7 @@
     const [quizId, chapterId, topicId, wordIds = [], contextBn = ""] = row;
     const chapter = data.chapters?.[chapterId] || [];
     const topic = data.topics?.[topicId] || [];
-    const words = wordIds.map(id => {
+    const words = visibleKeywords(wordIds.map(id => {
       const word = data.words?.[id];
       if (!Array.isArray(word)) return null;
       return {
@@ -659,7 +689,7 @@
         simpleBn: word[3] || "",
         ttsBn: word[5] || ""
       };
-    }).filter(Boolean);
+    }));
     return {
       quizId,
       translation: usableBanglaTranslation(question.question_bd || question.questionBD),
@@ -883,12 +913,18 @@
     if (activePlayback?.key === controls.key) activePlayback.audio.playbackRate = controls.speedValue;
   }
 
+  function setExplanationPlaying(controls, isPlaying) {
+    controls?.root.classList.toggle("is-playing", isPlaying);
+    controls?.artwork.classList.toggle("is-spinning", isPlaying);
+  }
+
   function stopPlayback() {
     if (!activePlayback) return;
     if (activePlayback.frame) cancelAnimationFrame(activePlayback.frame);
     activePlayback.audio.pause();
     activePlayback.button?.classList.remove("is-playing");
-    activePlayback.controls?.root.classList.remove("is-playing", "is-loading");
+    setExplanationPlaying(activePlayback.controls, false);
+    activePlayback.controls?.root.classList.remove("is-loading");
     if (activePlayback.controls) {
       activePlayback.controls.progress.value = "0";
       activePlayback.controls.progress.style.setProperty("--progress", "0%");
@@ -921,7 +957,7 @@
     audio.addEventListener("play", () => {
       if (activePlayback?.audio !== audio) return;
       button.classList.add("is-playing");
-      controls?.root.classList.add("is-playing");
+      setExplanationPlaying(controls, true);
       if (controls) {
         if (activePlayback.frame) cancelAnimationFrame(activePlayback.frame);
         activePlayback.frame = requestAnimationFrame(animateExplanationProgress);
@@ -930,7 +966,7 @@
     audio.addEventListener("pause", () => {
       if (activePlayback?.audio !== audio) return;
       button.classList.remove("is-playing");
-      controls?.root.classList.remove("is-playing");
+      setExplanationPlaying(controls, false);
       if (activePlayback.frame) cancelAnimationFrame(activePlayback.frame);
       activePlayback.frame = 0;
       paintExplanationProgress(activePlayback);
@@ -943,7 +979,7 @@
       if (activePlayback?.audio !== audio) return;
       if (activePlayback.frame) cancelAnimationFrame(activePlayback.frame);
       button.classList.remove("is-playing");
-      controls?.root.classList.remove("is-playing");
+      setExplanationPlaying(controls, false);
       if (controls) {
         controls.progress.value = "0";
         controls.progress.style.setProperty("--progress", "0%");
@@ -1227,7 +1263,7 @@
       const definitelyMissing = code === "quiz_audio_not_found" || code === "audio_blob_404";
       if (definitelyMissing) {
         audioStatusCache.set(audioStatusKey(question), false);
-        paintAudioAvailability(root, false);
+        paintAudioAvailability(controls.surface, false);
         showToast("Questa spiegazione audio non è disponibile.");
       } else {
         root.classList.add("is-error");

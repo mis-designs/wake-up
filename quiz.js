@@ -482,6 +482,7 @@ let isFinishing = false;
 let lastQuizSet = null;
 let isAdmin = false;
 let modalResolver = null;
+let modalFocusOrigin = null;
 let reviewTranslationGeneration = 0;
 let reviewTranslationRequestSequence = 0;
 let isTtsPlaying = false;
@@ -552,6 +553,7 @@ document.addEventListener("visibilitychange", () => {
 
 const modal = document.getElementById("custom-modal");
 const modalCard = modal.querySelector(".modal-card");
+const quizContainer = document.querySelector(".quiz-container");
 const modalBadge = modal.querySelector(".modal-badge");
 const modalTitle = document.getElementById("modal-title");
 const modalMessage = document.getElementById("modal-message");
@@ -569,7 +571,7 @@ const modalWrongCount    = document.getElementById("modal-wrong-count");
 const modalCorrectCount  = document.getElementById("modal-correct-count");
 const modalReview = document.getElementById("modal-review");
 const modalReviewList = document.getElementById("modal-review-list");
-const reviewCompactDisclosureMedia = window.matchMedia("(max-width: 767px)");
+const REVIEW_TRANSLATION_WAIT_MS = 5000;
 const loadingOverlay = document.getElementById("loading-overlay");
 const loadingText = document.getElementById("loading-text");
 const prevButton = document.getElementById("prev-btn");
@@ -1507,17 +1509,19 @@ async function fetchBengaliAudio(question, cacheKey, options = {}) {
   try {
     const questionId = String(question?.id || "");
     let synchronizedTranslation = "";
-    try {
-      const runtime = await window.QuizHelpRuntimeV3?.load?.();
-      const resolved = runtime?.resolver?.resolve(question);
-      const candidate = String(
-        resolved?.questionBnStandard || resolved?.questionBnEasy || resolved?.questionBn || ""
-      ).trim();
-      if ([...candidate].some(character => {
-        const codePoint = character.codePointAt(0);
-        return codePoint >= 0x0980 && codePoint <= 0x09ff;
-      })) synchronizedTranslation = candidate;
-    } catch (_) {}
+    if (options.skipRuntimeLookup !== true) {
+      try {
+        const runtime = await window.QuizHelpRuntimeV3?.load?.();
+        const resolved = runtime?.resolver?.resolve(question);
+        const candidate = String(
+          resolved?.questionBnStandard || resolved?.questionBnEasy || resolved?.questionBn || ""
+        ).trim();
+        if ([...candidate].some(character => {
+          const codePoint = character.codePointAt(0);
+          return codePoint >= 0x0980 && codePoint <= 0x09ff;
+        })) synchronizedTranslation = candidate;
+      } catch (_) {}
+    }
 
     if (!synchronizedTranslation) {
       const catalogCandidate = String(question?.question_bd || question?.questionBD || "").trim();
@@ -1546,7 +1550,9 @@ async function fetchBengaliAudio(question, cacheKey, options = {}) {
     const data = {
       ...res,
       translation: translatedText,
-      translationSource: automaticBackup ? "automatic" : "tmm_books"
+      translationSource: String(
+        res?.translationSource || (automaticBackup ? "automatic" : "tmm_books")
+      )
     };
     if (!data.audio && options.requireAudio !== false) throw new Error(data.error || "no audio in response");
     if (data.audio) bengaliAudioCache[cacheKey] = data;
@@ -1961,6 +1967,57 @@ function attachResultScroll() {
   };
 }
 
+const MODAL_FOCUSABLE_SELECTOR = [
+  "button:not([disabled])",
+  "[href]",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])'
+].join(",");
+
+function getModalFocusableElements() {
+  return Array.from(modalCard.querySelectorAll(MODAL_FOCUSABLE_SELECTOR))
+    .filter(element => !element.closest(".hidden") && element.getClientRects().length > 0);
+}
+
+function focusModalDialog() {
+  modalCard.setAttribute("tabindex", "-1");
+  try {
+    modalCard.focus({ preventScroll: true });
+  } catch (_) {
+    modalCard.focus();
+  }
+}
+
+function handleModalKeyboard(event) {
+  if (modal.classList.contains("hidden")) return;
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeModal(false);
+    return;
+  }
+  if (event.key !== "Tab") return;
+
+  const focusable = getModalFocusableElements();
+  if (!focusable.length) {
+    event.preventDefault();
+    focusModalDialog();
+    return;
+  }
+
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  const active = document.activeElement;
+  if (event.shiftKey && (active === modalCard || active === first || !modalCard.contains(active))) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && (active === last || !modalCard.contains(active))) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
 function resetModalState() {
   reviewTranslationGeneration += 1;
   if (_resultScrollCleanup) { _resultScrollCleanup(); _resultScrollCleanup = null; }
@@ -2075,6 +2132,11 @@ function openModal({
   badgeText = "Quiz",
   result = null
 }) {
+  if (modal.classList.contains("hidden")) {
+    modalFocusOrigin = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+  }
   resetModalState();
   modalTitle.innerText = title;
   modalMessage.innerText = message;
@@ -2178,6 +2240,8 @@ function openModal({
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
   document.body.classList.add("modal-open");
+  quizContainer?.setAttribute("inert", "");
+  requestAnimationFrame(focusModalDialog);
 
   if (result) {
     // Reset scroll position then attach hide-on-scroll for stats
@@ -2193,9 +2257,17 @@ function openModal({
 function closeModal(result) {
   stopResultVideo();
   resetReviewAudioPlayer();
+  reviewTranslationGeneration += 1;
   modal.classList.add("hidden");
   modal.setAttribute("aria-hidden", "true");
   document.body.classList.remove("modal-open");
+  quizContainer?.removeAttribute("inert");
+
+  const focusOrigin = modalFocusOrigin;
+  modalFocusOrigin = null;
+  if (focusOrigin?.isConnected) {
+    requestAnimationFrame(() => focusOrigin.focus({ preventScroll: true }));
+  }
 
   if (modalResolver) {
     modalResolver(result);
@@ -2411,9 +2483,13 @@ function hasBanglaText(value = "") {
 function closeReviewTranslation(button) {
   if (!button) return;
   const panel = document.getElementById(button.getAttribute("aria-controls") || "");
-  button.setAttribute("aria-expanded", "false");
-  panel?.classList.add("hidden");
-  button.closest(".modal-review-item")?.classList.remove("is-translation-open");
+  if (panel) {
+    setReviewTranslationExpanded(button, panel, false);
+  } else {
+    button.setAttribute("aria-expanded", "false");
+    if (button.dataset.expandLabel) button.setAttribute("aria-label", button.dataset.expandLabel);
+    button.closest(".modal-review-item")?.classList.remove("is-translation-open");
+  }
 }
 
 function closeOtherReviewTranslations(currentButton) {
@@ -2424,16 +2500,10 @@ function closeOtherReviewTranslations(currentButton) {
     });
 }
 
-function enforceCompactReviewTranslations() {
-  if (!reviewCompactDisclosureMedia.matches) return;
-  const openButtons = Array.from(
-    modalReviewList.querySelectorAll('.modal-review-translation-button[aria-expanded="true"]')
-  );
-  openButtons.slice(0, -1).forEach(closeReviewTranslation);
-}
-
 function setReviewTranslationExpanded(button, panel, expanded) {
   button.setAttribute("aria-expanded", String(expanded));
+  const actionLabel = expanded ? button.dataset.collapseLabel : button.dataset.expandLabel;
+  if (actionLabel) button.setAttribute("aria-label", actionLabel);
   panel.classList.toggle("hidden", !expanded);
   button.closest(".modal-review-item")?.classList.toggle("is-translation-open", expanded);
 }
@@ -2467,7 +2537,7 @@ function renderReviewTranslationLoading(panel) {
 
 function renderReviewTranslationPanel(panel, help = {}) {
   panel.replaceChildren();
-  panel.dataset.helpState = "ready";
+  panel.dataset.helpState = help?.isPartial ? "partial" : "ready";
   panel.removeAttribute("aria-busy");
 
   const translationGroup = document.createElement("div");
@@ -2499,20 +2569,20 @@ function renderReviewTranslationPanel(panel, help = {}) {
   const contextValues = [
     { label: "Capitolo", value: String(help?.chapter?.italian || "").trim() },
     { label: "Argomento", value: String(help?.topic?.italian || "").trim() }
-  ].filter(item => item.value);
-  if (contextValues.length) {
-    const context = document.createElement("div");
-    context.className = "modal-review-translation-context";
-    context.setAttribute("aria-label", "Capitolo e argomento");
-    contextValues.forEach(item => {
-      const tag = document.createElement("span");
-      tag.className = "modal-review-translation-tag";
-      tag.setAttribute("aria-label", `${item.label}: ${item.value}`);
-      tag.textContent = item.value;
-      context.appendChild(tag);
-    });
-    panel.appendChild(context);
-  }
+  ];
+  const context = document.createElement("div");
+  context.className = "modal-review-translation-context";
+  context.setAttribute("aria-label", "Capitolo e argomento");
+  contextValues.forEach(item => {
+    const tag = document.createElement("span");
+    const tagValue = item.value || `${item.label} non disponibile`;
+    tag.className = "modal-review-translation-tag";
+    tag.classList.toggle("is-missing", !item.value);
+    tag.setAttribute("aria-label", `${item.label}: ${item.value || "non disponibile"}`);
+    tag.textContent = tagValue;
+    context.appendChild(tag);
+  });
+  panel.appendChild(context);
 
   const wordsGroup = document.createElement("div");
   wordsGroup.className = "modal-review-translation-words-group";
@@ -2520,7 +2590,7 @@ function renderReviewTranslationPanel(panel, help = {}) {
   const words = document.createElement("div");
   words.className = "modal-review-translation-words";
   const wordItems = Array.isArray(help?.words)
-    ? help.words.filter(word => word?.italian || word?.bangla)
+    ? help.words.filter(word => String(word?.italian || "").trim() && hasBanglaText(word?.bangla))
     : [];
 
   if (!wordItems.length) {
@@ -2551,8 +2621,23 @@ function fallbackReviewTranslationHelp(item) {
   return {
     translation: hasBanglaText(translation) ? translation : "",
     translationSource: item?.helpQuestion?.questionTranslationSource || "catalog",
-    words: []
+    words: [],
+    isPartial: true
   };
+}
+
+function waitForReviewTranslation(request, fallback) {
+  let timeoutId = 0;
+  const deadline = new Promise(resolve => {
+    timeoutId = window.setTimeout(
+      () => resolve({ help: fallback, timedOut: true }),
+      REVIEW_TRANSLATION_WAIT_MS
+    );
+  });
+  return Promise.race([
+    Promise.resolve(request).then(help => ({ help, timedOut: false })),
+    deadline
+  ]).finally(() => window.clearTimeout(timeoutId));
 }
 
 async function toggleReviewTranslation(button, panel, item) {
@@ -2562,7 +2647,7 @@ async function toggleReviewTranslation(button, panel, item) {
     return;
   }
 
-  if (reviewCompactDisclosureMedia.matches) closeOtherReviewTranslations(button);
+  closeOtherReviewTranslations(button);
   setReviewTranslationExpanded(button, panel, true);
   if (["loading", "ready"].includes(panel.dataset.helpState)) return;
 
@@ -2571,11 +2656,17 @@ async function toggleReviewTranslation(button, panel, item) {
   panel.dataset.requestId = String(requestId);
   renderReviewTranslationLoading(panel);
 
-  let help = fallbackReviewTranslationHelp(item);
+  const fallbackHelp = fallbackReviewTranslationHelp(item);
+  let help = fallbackHelp;
+  let helpRequest = null;
+  let timedOut = false;
   try {
     const getQuestionHelp = window.QuizHelpData?.getQuestionHelp;
     if (typeof getQuestionHelp === "function") {
-      help = await getQuestionHelp(item.helpQuestion || item);
+      helpRequest = Promise.resolve(getQuestionHelp(item.helpQuestion || item));
+      const outcome = await waitForReviewTranslation(helpRequest, fallbackHelp);
+      help = outcome.help;
+      timedOut = outcome.timedOut;
     }
   } catch (error) {
     console.warn("[quiz] review translation unavailable", error?.message || error);
@@ -2593,6 +2684,38 @@ async function toggleReviewTranslation(button, panel, item) {
     return;
   }
   renderReviewTranslationPanel(panel, help);
+
+  if (timedOut && helpRequest) {
+    const renderLateHelp = lateHelp => {
+      if (
+        modalGeneration !== reviewTranslationGeneration
+        || panel.dataset.requestId !== String(requestId)
+        || !panel.isConnected
+        || button.getAttribute("aria-expanded") !== "true"
+      ) return;
+      renderReviewTranslationPanel(panel, lateHelp);
+    };
+
+    void helpRequest.then(renderLateHelp).catch(() => {});
+
+    if (!hasBanglaText(help?.translation)) {
+      const question = item.helpQuestion || item;
+      const cacheKey = `${String(question?.id || item.index)}_bn_help`;
+      void fetchBengaliAudio(question, cacheKey, {
+        requireAudio: false,
+        skipRuntimeLookup: true
+      }).then(translated => {
+        const translation = String(translated?.translation || "").trim();
+        if (!hasBanglaText(translation)) return;
+        renderLateHelp({
+          ...fallbackHelp,
+          translation,
+          translationSource: String(translated?.translationSource || "automatic"),
+          isPartial: true
+        });
+      }).catch(() => {});
+    }
+  }
 }
 
 function createReviewTranslationDisclosure(item) {
@@ -2607,10 +2730,9 @@ function createReviewTranslationDisclosure(item) {
   button.className = "modal-review-translation-button";
   button.setAttribute("aria-expanded", "false");
   button.setAttribute("aria-controls", panelId);
-  button.setAttribute(
-    "aria-label",
-    `Mostra traduzione Bangla e parole chiave della domanda ${item.index}`
-  );
+  button.dataset.expandLabel = `Mostra traduzione Bangla e parole chiave della domanda ${item.index}`;
+  button.dataset.collapseLabel = `Nascondi traduzione Bangla e parole chiave della domanda ${item.index}`;
+  button.setAttribute("aria-label", button.dataset.expandLabel);
 
   const icon = document.createElement("span");
   icon.className = "modal-review-translation-icon";
@@ -2637,15 +2759,6 @@ function createReviewTranslationDisclosure(item) {
   });
 
   return { tools, panel };
-}
-
-const handleReviewDisclosureViewportChange = event => {
-  if (event.matches) enforceCompactReviewTranslations();
-};
-if (typeof reviewCompactDisclosureMedia.addEventListener === "function") {
-  reviewCompactDisclosureMedia.addEventListener("change", handleReviewDisclosureViewportChange);
-} else {
-  reviewCompactDisclosureMedia.addListener(handleReviewDisclosureViewportChange);
 }
 
 function renderAnswerReview(items = []) {
@@ -2743,6 +2856,7 @@ modalRifai.addEventListener("click", () => closeModal("rifai"));
 modal.addEventListener("click", event => {
   if (event.target === modal) closeModal(false);
 });
+modal.addEventListener("keydown", handleModalKeyboard);
 explanationClose?.addEventListener("click", closeExplanation);
 explanationModal?.addEventListener("click", event => {
   if (event.target === explanationModal) closeExplanation();

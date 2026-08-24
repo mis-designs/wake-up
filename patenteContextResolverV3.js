@@ -1,8 +1,11 @@
 (function exposePatenteContextResolverV3(root, factory) {
-  const api = factory();
+  const glossaryResolver = typeof module === "object" && module.exports
+    ? require("./patenteGlossaryResolver.js")
+    : root?.PatenteGlossaryResolver;
+  const api = factory(glossaryResolver);
   if (typeof module === "object" && module.exports) module.exports = api;
   if (root) root.PatenteContextResolverV3 = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function createResolverApi() {
+})(typeof globalThis !== "undefined" ? globalThis : this, function createResolverApi(GlossaryResolver) {
   "use strict";
 
   function normalizeItalian(value = "") {
@@ -231,8 +234,12 @@
     if (!runtime?.quizzes || !runtime?.entries) {
       throw new Error("quiz_help_runtime_v3_invalid");
     }
+    if (!GlossaryResolver?.resolveVisibleEntries) {
+      throw new Error("patente_glossary_resolver_missing");
+    }
 
     const redirects = runtime.id_redirects || {};
+    const glossaryIndex = GlossaryResolver.createIndex(runtime.entries);
     const entryById = id => {
       let current = String(id || "");
       const visited = new Set();
@@ -276,32 +283,13 @@
         .map(entryById)
         .filter(isPublishableEntry);
 
-      const phraseMatches = findLongestPhraseMatches(questionText, linked);
-      const selectedIds = new Set(phraseMatches.map(match => match.entry.id));
-      const blockedTokens = new Set();
-      for (const match of phraseMatches) {
-        for (const term of match.entry.blocked_internal_terms || []) {
-          blockedTokens.add(normalizeItalian(term));
-        }
-      }
-
-      const words = dedupeSemanticEntries(linked.filter(entry => {
-        if (entry.type === "technical_phrase") return selectedIds.has(entry.id);
-        const normalized = normalizeItalian(displayForm(questionText, entry));
-        if (!String(entry.id || "").startsWith("ai_kw_") && blockedTokens.has(normalized)) return false;
-        return String(entry.id || "").startsWith("ai_kw_")
-          || !(entry.absorbed_by || []).some(phraseId => selectedIds.has(phraseId));
-      }), questionText);
-
-      words.sort((left, right) => {
-        const leftPhrase = left.type === "technical_phrase" ? 1 : 0;
-        const rightPhrase = right.type === "technical_phrase" ? 1 : 0;
-        if (leftPhrase !== rightPhrase) return rightPhrase - leftPhrase;
-        const leftPosition = normalizeForMatch(questionText).indexOf(normalizeForMatch(displayForm(questionText, left)));
-        const rightPosition = normalizeForMatch(questionText).indexOf(normalizeForMatch(displayForm(questionText, right)));
-        return (leftPosition < 0 ? Number.MAX_SAFE_INTEGER : leftPosition)
-          - (rightPosition < 0 ? Number.MAX_SAFE_INTEGER : rightPosition);
+      const glossary = GlossaryResolver.resolveVisibleEntries({
+        questionText,
+        linkedEntries: linked,
+        allEntries: runtime.entries,
+        index: glossaryIndex
       });
+      const words = glossary.entries;
 
       return {
         quizId,
@@ -311,17 +299,23 @@
         questionBnEasy: quiz.question_bn_easy || quiz.question_bn || "",
         questionBnStandard: quiz.question_bn_standard || quiz.question_bn || "",
         ttsBn: words.map(entry => entry.tts_bn || [entry.bn, entry.simple_bn].filter(Boolean).join("। ")).join(" "),
+        glossaryAudit: glossary.audit,
         words: words.map(entry => ({
           id: entry.id,
           meaningId: entry.meaning_id,
-          italian: displayForm(questionText, entry),
+          italian: entry.display_italian || displayForm(questionText, entry),
           canonicalItalian: entry.canonical_italian,
+          canonicalKey: entry.canonical_key || normalizeItalian(entry.canonical_italian),
+          learningKey: entry.learning_key || entry.id,
           bangla: shortBangla(entry),
           simpleIt: entry.simple_it || "",
           simpleBn: entry.simple_bn || "",
           ttsBn: entry.tts_bn || "",
           translationAuthority: entry.translation_authority || "",
           type: entry.type,
+          mode: entry.glossary_mode || "word",
+          position: Number(entry.display_start) || 0,
+          endPosition: Number(entry.display_end) || 0,
           hasMultipleMeanings: Boolean(entry.has_multiple_meanings),
           confidence: entry.confidence,
           status: entry.status
