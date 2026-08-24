@@ -482,6 +482,8 @@ let isFinishing = false;
 let lastQuizSet = null;
 let isAdmin = false;
 let modalResolver = null;
+let reviewTranslationGeneration = 0;
+let reviewTranslationRequestSequence = 0;
 let isTtsPlaying = false;
 let isBengaliPlaying = false;
 let italianAudioId = 0;
@@ -567,6 +569,7 @@ const modalWrongCount    = document.getElementById("modal-wrong-count");
 const modalCorrectCount  = document.getElementById("modal-correct-count");
 const modalReview = document.getElementById("modal-review");
 const modalReviewList = document.getElementById("modal-review-list");
+const reviewCompactDisclosureMedia = window.matchMedia("(max-width: 767px)");
 const loadingOverlay = document.getElementById("loading-overlay");
 const loadingText = document.getElementById("loading-text");
 const prevButton = document.getElementById("prev-btn");
@@ -1959,6 +1962,7 @@ function attachResultScroll() {
 }
 
 function resetModalState() {
+  reviewTranslationGeneration += 1;
   if (_resultScrollCleanup) { _resultScrollCleanup(); _resultScrollCleanup = null; }
   modal.classList.remove("modal-fullscreen");
   modalCard.classList.remove("modal-result", "modal-pass", "modal-fail");
@@ -1980,7 +1984,7 @@ function resetModalState() {
   modalIconFallback.classList.add("hidden");
   modalStats.classList.add("hidden");
   modalReview.classList.add("hidden");
-  modalReviewList.innerHTML = "";
+  modalReviewList.replaceChildren();
   modalRifai.style.display = "none";
   const oldBanner = document.getElementById("_result_stats_banner");
   if (oldBanner) oldBanner.remove();
@@ -2327,6 +2331,13 @@ function getServerReviewItems(result = {}) {
       audioQuestion: q?.audioQuestion || q?.question || `Domanda ${qi + 1}`,
       audioFigure:   q?.audioFigure ?? q?.figure ?? null,
       audioIdentityToken: q?.audioIdentityToken || "",
+      helpQuestion: {
+        id: q?.id ?? item.id ?? "",
+        question: q?.question || item.question || `Domanda ${qi + 1}`,
+        figure: q?.figure ?? item.figure ?? null,
+        question_bd: q?.question_bd ?? q?.questionBD ?? item.question_bd ?? item.questionBD ?? "",
+        questionTranslationSource: q?.questionTranslationSource || item.questionTranslationSource || ""
+      },
       userAnswer,
       correctAnswer,
       isCorrect
@@ -2357,6 +2368,13 @@ function buildAnswerReview(result = {}) {
       audioQuestion: question.audioQuestion || question.question || `Domanda ${index + 1}`,
       audioFigure:   question.audioFigure ?? question.figure ?? null,
       audioIdentityToken: question.audioIdentityToken || "",
+      helpQuestion: {
+        id: question.id ?? "",
+        question: question.question || `Domanda ${index + 1}`,
+        figure: question.figure ?? null,
+        question_bd: question.question_bd ?? question.questionBD ?? "",
+        questionTranslationSource: question.questionTranslationSource || ""
+      },
       userAnswer,
       correctAnswer,
       isCorrect
@@ -2364,9 +2382,275 @@ function buildAnswerReview(result = {}) {
   });
 }
 
+const REVIEW_TRANSLATION_ICON_PATH = "M5.80688 18.5304C5.82459 18.5005 5.84273 18.4709 5.8613 18.4413C7.2158 16.2881 7.99991 13.7418 7.99991 11C7.99991 8.79086 9.79077 7 11.9999 7C14.209 7 15.9999 8.79086 15.9999 11C15.9999 12.017 15.9307 13.0186 15.7966 14M13.6792 20.8436C14.2909 19.6226 14.7924 18.3369 15.1707 17M19.0097 18.132C19.6547 15.8657 20 13.4732 20 11C20 6.58172 16.4183 3 12 3C10.5429 3 9.17669 3.38958 8 4.07026M3 15.3641C3.64066 14.0454 4 12.5646 4 11C4 9.54285 4.38958 8.17669 5.07026 7M11.9999 11C11.9999 14.5172 10.9911 17.7988 9.24707 20.5712";
+
+function createReviewTranslationIcon() {
+  const namespace = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(namespace, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  const path = document.createElementNS(namespace, "path");
+  path.setAttribute("d", REVIEW_TRANSLATION_ICON_PATH);
+  path.setAttribute("stroke", "currentColor");
+  path.setAttribute("stroke-width", "2");
+  path.setAttribute("stroke-linecap", "round");
+  path.setAttribute("stroke-linejoin", "round");
+  svg.appendChild(path);
+  return svg;
+}
+
+function hasBanglaText(value = "") {
+  return [...String(value || "")].some(character => {
+    const codePoint = character.codePointAt(0);
+    return codePoint >= 0x0980 && codePoint <= 0x09ff;
+  });
+}
+
+function closeReviewTranslation(button) {
+  if (!button) return;
+  const panel = document.getElementById(button.getAttribute("aria-controls") || "");
+  button.setAttribute("aria-expanded", "false");
+  panel?.classList.add("hidden");
+  button.closest(".modal-review-item")?.classList.remove("is-translation-open");
+}
+
+function closeOtherReviewTranslations(currentButton) {
+  modalReviewList
+    .querySelectorAll('.modal-review-translation-button[aria-expanded="true"]')
+    .forEach(button => {
+      if (button !== currentButton) closeReviewTranslation(button);
+    });
+}
+
+function enforceCompactReviewTranslations() {
+  if (!reviewCompactDisclosureMedia.matches) return;
+  const openButtons = Array.from(
+    modalReviewList.querySelectorAll('.modal-review-translation-button[aria-expanded="true"]')
+  );
+  openButtons.slice(0, -1).forEach(closeReviewTranslation);
+}
+
+function setReviewTranslationExpanded(button, panel, expanded) {
+  button.setAttribute("aria-expanded", String(expanded));
+  panel.classList.toggle("hidden", !expanded);
+  button.closest(".modal-review-item")?.classList.toggle("is-translation-open", expanded);
+}
+
+function createReviewHelpLabel(text) {
+  const label = document.createElement("span");
+  label.className = "modal-review-translation-label";
+  label.textContent = text;
+  return label;
+}
+
+function renderReviewTranslationLoading(panel) {
+  panel.replaceChildren();
+  panel.dataset.helpState = "loading";
+  panel.setAttribute("aria-busy", "true");
+
+  const status = document.createElement("p");
+  status.className = "modal-review-translation-loading";
+  status.setAttribute("role", "status");
+  status.textContent = "Carico traduzione e parole chiave…";
+
+  const skeleton = document.createElement("div");
+  skeleton.className = "modal-review-translation-skeleton";
+  skeleton.setAttribute("aria-hidden", "true");
+  for (let index = 0; index < 3; index += 1) {
+    const line = document.createElement("span");
+    skeleton.appendChild(line);
+  }
+  panel.append(status, skeleton);
+}
+
+function renderReviewTranslationPanel(panel, help = {}) {
+  panel.replaceChildren();
+  panel.dataset.helpState = "ready";
+  panel.removeAttribute("aria-busy");
+
+  const translationGroup = document.createElement("div");
+  translationGroup.className = "modal-review-translation-group";
+  translationGroup.appendChild(createReviewHelpLabel("TRADUZIONE BANGLA"));
+
+  const translation = document.createElement("p");
+  const translationText = String(help?.translation || "").trim();
+  const hasTranslation = hasBanglaText(translationText);
+  translation.className = "modal-review-translation-text";
+  translation.classList.toggle("is-missing", !hasTranslation);
+  if (hasTranslation) {
+    translation.lang = "bn";
+    translation.setAttribute("translate", "no");
+  }
+  translation.textContent = hasTranslation
+    ? translationText
+    : "Traduzione non disponibile al momento.";
+  translationGroup.appendChild(translation);
+
+  if (hasTranslation && help?.translationSource === "automatic") {
+    const note = document.createElement("small");
+    note.className = "modal-review-translation-note";
+    note.textContent = "Traduzione automatica di supporto.";
+    translationGroup.appendChild(note);
+  }
+  panel.appendChild(translationGroup);
+
+  const contextValues = [
+    { label: "Capitolo", value: String(help?.chapter?.italian || "").trim() },
+    { label: "Argomento", value: String(help?.topic?.italian || "").trim() }
+  ].filter(item => item.value);
+  if (contextValues.length) {
+    const context = document.createElement("div");
+    context.className = "modal-review-translation-context";
+    context.setAttribute("aria-label", "Capitolo e argomento");
+    contextValues.forEach(item => {
+      const tag = document.createElement("span");
+      tag.className = "modal-review-translation-tag";
+      tag.setAttribute("aria-label", `${item.label}: ${item.value}`);
+      tag.textContent = item.value;
+      context.appendChild(tag);
+    });
+    panel.appendChild(context);
+  }
+
+  const wordsGroup = document.createElement("div");
+  wordsGroup.className = "modal-review-translation-words-group";
+  wordsGroup.appendChild(createReviewHelpLabel("PAROLE CHIAVE"));
+  const words = document.createElement("div");
+  words.className = "modal-review-translation-words";
+  const wordItems = Array.isArray(help?.words)
+    ? help.words.filter(word => word?.italian || word?.bangla)
+    : [];
+
+  if (!wordItems.length) {
+    const empty = document.createElement("p");
+    empty.className = "modal-review-translation-empty";
+    empty.textContent = "Parole chiave non disponibili per questa domanda.";
+    words.appendChild(empty);
+  } else {
+    wordItems.forEach(word => {
+      const chip = document.createElement("span");
+      chip.className = "modal-review-translation-word";
+      const italian = document.createElement("strong");
+      italian.textContent = String(word.italian || "").trim();
+      const bangla = document.createElement("span");
+      bangla.lang = "bn";
+      bangla.setAttribute("translate", "no");
+      bangla.textContent = String(word.bangla || "").trim();
+      chip.append(italian, bangla);
+      words.appendChild(chip);
+    });
+  }
+  wordsGroup.appendChild(words);
+  panel.appendChild(wordsGroup);
+}
+
+function fallbackReviewTranslationHelp(item) {
+  const translation = String(item?.helpQuestion?.question_bd || "").trim();
+  return {
+    translation: hasBanglaText(translation) ? translation : "",
+    translationSource: item?.helpQuestion?.questionTranslationSource || "catalog",
+    words: []
+  };
+}
+
+async function toggleReviewTranslation(button, panel, item) {
+  const isExpanded = button.getAttribute("aria-expanded") === "true";
+  if (isExpanded) {
+    closeReviewTranslation(button);
+    return;
+  }
+
+  if (reviewCompactDisclosureMedia.matches) closeOtherReviewTranslations(button);
+  setReviewTranslationExpanded(button, panel, true);
+  if (["loading", "ready"].includes(panel.dataset.helpState)) return;
+
+  const modalGeneration = reviewTranslationGeneration;
+  const requestId = ++reviewTranslationRequestSequence;
+  panel.dataset.requestId = String(requestId);
+  renderReviewTranslationLoading(panel);
+
+  let help = fallbackReviewTranslationHelp(item);
+  try {
+    const getQuestionHelp = window.QuizHelpData?.getQuestionHelp;
+    if (typeof getQuestionHelp === "function") {
+      help = await getQuestionHelp(item.helpQuestion || item);
+    }
+  } catch (error) {
+    console.warn("[quiz] review translation unavailable", error?.message || error);
+  }
+
+  if (
+    modalGeneration !== reviewTranslationGeneration
+    || panel.dataset.requestId !== String(requestId)
+    || !panel.isConnected
+  ) return;
+  if (button.getAttribute("aria-expanded") !== "true") {
+    panel.dataset.helpState = "idle";
+    panel.removeAttribute("aria-busy");
+    panel.replaceChildren();
+    return;
+  }
+  renderReviewTranslationPanel(panel, help);
+}
+
+function createReviewTranslationDisclosure(item) {
+  const panelId = `modal-review-translation-${item.index}`;
+  const buttonId = `${panelId}-button`;
+  const tools = document.createElement("div");
+  tools.className = "modal-review-tools";
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.id = buttonId;
+  button.className = "modal-review-translation-button";
+  button.setAttribute("aria-expanded", "false");
+  button.setAttribute("aria-controls", panelId);
+  button.setAttribute(
+    "aria-label",
+    `Mostra traduzione Bangla e parole chiave della domanda ${item.index}`
+  );
+
+  const icon = document.createElement("span");
+  icon.className = "modal-review-translation-icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.appendChild(createReviewTranslationIcon());
+  const label = document.createElement("span");
+  label.className = "modal-review-translation-button-label";
+  label.lang = "bn";
+  label.setAttribute("translate", "no");
+  label.textContent = "বাংলা";
+  button.append(icon, label);
+  tools.appendChild(button);
+
+  const panel = document.createElement("section");
+  panel.id = panelId;
+  panel.className = "modal-review-translation-panel hidden";
+  panel.dataset.helpState = "idle";
+  panel.setAttribute("role", "region");
+  panel.setAttribute("aria-labelledby", buttonId);
+  panel.setAttribute("translate", "no");
+  button.addEventListener("click", event => {
+    event.stopPropagation();
+    void toggleReviewTranslation(button, panel, item);
+  });
+
+  return { tools, panel };
+}
+
+const handleReviewDisclosureViewportChange = event => {
+  if (event.matches) enforceCompactReviewTranslations();
+};
+if (typeof reviewCompactDisclosureMedia.addEventListener === "function") {
+  reviewCompactDisclosureMedia.addEventListener("change", handleReviewDisclosureViewportChange);
+} else {
+  reviewCompactDisclosureMedia.addListener(handleReviewDisclosureViewportChange);
+}
+
 function renderAnswerReview(items = []) {
   resetReviewAudioPlayer();
-  modalReviewList.innerHTML = "";
+  modalReviewList.replaceChildren();
 
   if (!items.length) {
     modalReview.classList.add("hidden");
@@ -2396,7 +2680,8 @@ function renderAnswerReview(items = []) {
       ? `Non risposta | Corretta: ${answerLabel(item.correctAnswer)}`
       : `La tua risposta: ${answerLabel(item.userAnswer)} | Corretta: ${answerLabel(item.correctAnswer)}`;
 
-    row.append(status, title, answersText);
+    const translationDisclosure = createReviewTranslationDisclosure(item);
+    row.append(status, title, answersText, translationDisclosure.tools);
 
     let reviewAudioControl = null;
     if (stateClass === "is-wrong") {
@@ -2442,6 +2727,8 @@ function renderAnswerReview(items = []) {
     } else if (reviewAudioControl) {
       row.appendChild(reviewAudioControl);
     }
+
+    row.appendChild(translationDisclosure.panel);
 
     fragment.appendChild(row);
   });

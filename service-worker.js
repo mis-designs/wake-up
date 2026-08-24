@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v128-promo-desktop-layout";
+const CACHE_NAME = "magicbook-pwa-v129-review-translations";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -11,15 +11,15 @@ const STATIC_ASSETS = [
   "/src/learning-insights.css?v=9-card-spacing&ui=10",
   "/src/learning-insights.js?v=5-figure-explanation-ui&ui=6",
   "/homebg.css?v=3",
-  "/mystyle.css?v=43-answer-label-contrast",
+  "/mystyle.css?v=44-review-translations",
   "/script.js?v=61-promo-desktop-layout",
   "/study-quiz.html",
   "/study-quiz.css?v=16-trial-audio-preview",
   "/study-quiz.js?v=14-trial-audio-preview",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=65-learning-sync",
-  "/quiz-help.css?v=20260714-magic-help-v4",
-  "/quiz-help.js?v=20260812-automatic-translation-backup",
+  "/quiz.js?v=66-review-translations",
+  "/quiz-help.css?v=20260801-readable-text",
+  "/quiz-help.js?v=20260824-review-translations",
   "/patenteGlossaryResolver.js?v=1.0.0",
   "/patenteContextResolverV3.js?v=3.0.1-keywords-fix",
   "/quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity",

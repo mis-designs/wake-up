@@ -1928,3 +1928,337 @@ html[data-reader-size="xlarge"] #question { font-size: clamp(1.38rem, 3.9vw, 1.5
 .audio-toast.is-visible {
   opacity: 1;
 }
+
+/* RESULT REVIEW · inline Bangla translation */
+.modal-card.modal-result {
+  --review-bangla: #08755e;
+  --review-bangla-soft: #f2f8f6;
+  --review-bangla-line: #d7e7e1;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.modal-review-item.is-wrong:not(.has-figure) {
+  padding-right: 16px;
+}
+
+.modal-review-item.is-wrong:not(.has-figure) > .modal-review-status,
+.modal-review-item.is-wrong:not(.has-figure) > .modal-review-question,
+.modal-review-item.is-wrong:not(.has-figure) > .modal-review-answer,
+.modal-review-item.is-wrong:not(.has-figure) > .modal-review-tools {
+  margin-right: 66px;
+}
+
+.modal-review-tools {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.modal-review-translation-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 13px;
+  border: 1px solid rgba(37, 41, 67, 0.14);
+  border-radius: 999px;
+  background: #fff;
+  color: #1f2943;
+  box-shadow: 0 3px 10px rgba(37, 41, 67, 0.06);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.modal-review-translation-button:hover {
+  border-color: rgba(8, 117, 94, 0.38);
+  color: var(--review-bangla);
+  box-shadow: 0 6px 15px rgba(8, 117, 94, 0.1);
+  transform: translateY(-1px);
+}
+
+.modal-review-translation-button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.modal-review-translation-button:focus-visible {
+  outline: 3px solid rgba(58, 78, 251, 0.72);
+  outline-offset: 3px;
+}
+
+.modal-review-translation-button[aria-expanded="true"] {
+  border-color: rgba(8, 117, 94, 0.32);
+  background: #e9f5f1;
+  color: #075f4e;
+  box-shadow: 0 0 0 3px rgba(8, 117, 94, 0.07);
+}
+
+.modal-review-translation-icon {
+  display: grid;
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+  place-items: center;
+}
+
+.modal-review-translation-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.modal-review-translation-button-label {
+  font-family: "Noto Sans Bengali", "Hind Siliguri", "UN Bangla", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.modal-review-translation-panel {
+  min-width: 0;
+  grid-column: 1 / -1;
+  margin: 4px -16px -14px;
+  padding: 18px 16px 19px;
+  overflow: hidden;
+  border-top: 1px solid var(--review-bangla-line);
+  border-radius: 0 0 16px 16px;
+  background: var(--review-bangla-soft);
+  color: #19243a;
+  text-align: left;
+}
+
+.modal-review-translation-group,
+.modal-review-translation-words-group {
+  min-width: 0;
+}
+
+.modal-review-translation-label {
+  display: block;
+  margin-bottom: 9px;
+  color: #08715b;
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.11em;
+  line-height: 1.25;
+}
+
+.modal-card.modal-result .modal-review-translation-text,
+.modal-card.modal-result .modal-review-translation-empty,
+.modal-card.modal-result .modal-review-translation-loading {
+  margin: 0;
+  text-align: left;
+  white-space: normal;
+  opacity: 1;
+}
+
+.modal-card.modal-result .modal-review-translation-text {
+  color: #17233a;
+  font-family: "Noto Sans Bengali", "Hind Siliguri", "UN Bangla", sans-serif;
+  font-size: clamp(1.04rem, 2.2vw, 1.16rem);
+  font-weight: 600;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.modal-card.modal-result .modal-review-translation-text.is-missing,
+.modal-card.modal-result .modal-review-translation-empty,
+.modal-card.modal-result .modal-review-translation-loading {
+  color: #6d788b;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.modal-review-translation-note {
+  display: block;
+  margin-top: 7px;
+  color: #647386;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.modal-review-translation-context {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 13px;
+}
+
+.modal-review-translation-tag {
+  max-width: 100%;
+  padding: 7px 10px;
+  border: 1px solid rgba(8, 117, 94, 0.06);
+  border-radius: 999px;
+  background: #e6f3eb;
+  color: #245e38;
+  font-size: 0.68rem;
+  font-weight: 750;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.modal-review-translation-tag:first-child {
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.modal-review-translation-words-group {
+  margin-top: 19px;
+}
+
+.modal-review-translation-words {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.modal-review-translation-word {
+  min-width: 0;
+  max-width: 100%;
+  display: grid;
+  gap: 3px;
+  padding: 9px 11px;
+  border: 1px solid #d8e1ea;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(37, 41, 67, 0.03);
+  overflow-wrap: anywhere;
+}
+
+.modal-review-translation-word strong,
+.modal-review-translation-word span {
+  display: block;
+}
+
+.modal-review-translation-word strong {
+  color: #283653;
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.modal-review-translation-word span {
+  color: var(--review-bangla);
+  font-family: "Noto Sans Bengali", "Hind Siliguri", "UN Bangla", sans-serif;
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.modal-review-translation-skeleton {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.modal-review-translation-skeleton span {
+  display: block;
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  background: #dfe9e5;
+  animation: reviewTranslationPulse 1.2s ease-in-out infinite alternate;
+}
+
+.modal-review-translation-skeleton span:nth-child(2) {
+  width: 82%;
+}
+
+.modal-review-translation-skeleton span:nth-child(3) {
+  width: 58%;
+}
+
+@keyframes reviewTranslationPulse {
+  to { opacity: 0.46; }
+}
+
+@media (min-width: 960px) {
+  .modal-review {
+    width: min(100%, 1180px);
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  #_result_stats_banner {
+    width: min(100%, 760px);
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .modal-review-question {
+    max-width: 78ch;
+  }
+
+  .modal-review-item.is-translation-open {
+    grid-template-columns: minmax(0, 1.12fr) minmax(340px, 0.88fr);
+    column-gap: 0;
+    align-items: start;
+  }
+
+  .modal-review-item.is-translation-open > :not(.modal-review-translation-panel) {
+    grid-column: 1;
+  }
+
+  .modal-review-item.is-translation-open > .modal-review-translation-panel {
+    grid-column: 2;
+    grid-row: 1 / span 8;
+    align-self: stretch;
+    min-height: calc(100% + 28px);
+    margin: -14px -16px -14px 22px;
+    padding: 19px 20px 20px;
+    border-top: 0;
+    border-left: 1px solid var(--review-bangla-line);
+    border-radius: 0 18px 18px 0;
+  }
+}
+
+@media (max-width: 430px) {
+  .modal-review-translation-panel {
+    padding: 16px 14px 18px;
+  }
+
+  .modal-review-translation-words {
+    gap: 7px;
+  }
+
+  .modal-review-translation-word {
+    padding: 8px 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-review-translation-button {
+    transition: none;
+  }
+
+  .modal-review-translation-button:hover,
+  .modal-review-translation-button:active {
+    transform: none;
+  }
+
+  .modal-review-translation-skeleton span {
+    animation: none;
+    opacity: 0.65;
+  }
+}
+
+@media (forced-colors: active) {
+  .modal-review-translation-button,
+  .modal-review-translation-panel,
+  .modal-review-translation-tag,
+  .modal-review-translation-word {
+    border: 1px solid CanvasText;
+  }
+}

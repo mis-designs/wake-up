@@ -9,6 +9,7 @@
 | Statistics workspace | `src/learning-insights.js` | Authenticated learning model | Empty, insufficient, ready, cached, refreshing | Data-state tests and 320–1920 browser verification |
 | Error recovery | `src/learning-insights.js` | Authenticated errors and plan | Five categories; empty/populated master-detail; recovered section | URL, interaction, focus, and responsive verification |
 | Shared controls | Learning JS/CSS + local daisyUI build | `d-btn` primitives with scoped geometry | Labelled refresh on wider screens; icon-only on narrow screens | Keyboard and 320/375/430/768/1024/1280/1440/1920 checks |
+| Quiz correction translations | `quiz.js` + `quiz-help.js` data service | `mystyle.css` visual owner; synchronized help and catalog data | Exclusive accordion at ≤767px; multiple or side-by-side panels on desktop | Dedicated result/help tests plus keyboard and responsive browser verification |
 
 ## Feature ownership
 
@@ -24,6 +25,7 @@
 | Async status | `#learningInsightsStatus` | Polite live region for refresh, offline cache, and retry results. |
 | UI assets | Repository images/SVGs + authenticated figure endpoint | No Unicode glyphs as UI icons. Decorative CSS marks remain hidden from assistive technology. |
 | Promo conversion | `#promoAccessNextStep` + `openPromoPackages()` | A previous promo or a full campaign produces persistent inline guidance; the user chooses when to open `/join`, which focuses the packages heading. |
+| Quiz correction translations | `quiz.js`, `quiz-help.js`, `mystyle.css` | Each correction row owns one on-demand translation disclosure. `quiz-help.js` owns data resolution and caching; `quiz.js` owns row state and interaction; `mystyle.css` owns responsive presentation. |
 
 ## Statistiche
 
@@ -46,12 +48,21 @@
 - Figure items load the real authenticated media lazily; word items keep the dictionary action; related quiz and chapter actions reuse existing destinations.
 - `Il tuo ripasso` contains at most three actions, shows total minutes, and moves before category exploration on mobile.
 
+## Correzione quiz
+
+- Every correction row can reveal the full Bangla translation of the Italian question, exactly two Italian context tags for chapter and topic, and keyword pairs with Italian and Bangla labels.
+- Help resolves in this order: synchronized V3 data, catalog translation, then the protected automatic fallback only when no usable Bangla translation exists. Contextual Bangla copy is never substituted for the full question translation.
+- Translation data loads only after the learner opens a row. Opening the correction must not start help requests for all 30 rows; resolved and in-flight work is cached or deduplicated, and stale results cannot update a closed or different row.
+- At ≤767px, opening one translation closes the previously expanded row. On desktop, multiple panels may remain open and can sit beside the row content when width permits without changing semantic reading order.
+- The disclosure stays inside its correction row, preserves stable media and action geometry, and never hides the fixed result actions.
+
 ## Responsive behavior
 
 - Public promo landing: from 1024px the access pass uses two columns — campaign title and timer on the left, labelled phone/code form on the right — with Login/Join/About in one compact row below. Below 1024px the semantic vertical order remains heading, timer, form, feedback, sources, then access switcher.
 - 1280–1920: wide grouped surfaces use the viewport; Statistics is overview/action, chapter matrix/detail; Errori is explorer/plan with master-detail.
 - 768–1024: major regions stack only when necessary; chapter detail becomes sequential; no control is compressed below a usable target.
 - 320–430: one vertical flow, two-column chapter matrix, three-column category grid wrapping to two rows, sequential detail, plan before categories.
+- Quiz correction: at ≤767px translations use one exclusive inline accordion; from 768px, open help may remain multiple or use an adjacent panel when space permits. Italian tags, Bangla copy, and keyword pairs wrap without clipping or page-level horizontal overflow.
 - Reading order is valid without CSS. Italian and Bangla copy wraps, actions remain visible, and page-level horizontal scrolling is forbidden.
 
 ## Navigation, async, and failure behavior
@@ -68,5 +79,6 @@
 - Route entry focuses the screen heading; background refresh does not steal focus.
 - Category tabs implement Left/Right/Home/End and link selected tab to its tabpanel.
 - Expanded chapter/error controls expose `aria-expanded` and `aria-controls`; rerender restores focus to a stable trigger or pane.
+- Each quiz-correction translation uses a native button with `aria-expanded` and `aria-controls`; opening or closing it does not move focus, and its touch target is at least 44px. Bangla content declares `lang="bn"` and remains readable at zoom.
 - Status is always textual as well as colored. Icon-only controls have accessible names; decorative images use empty alternatives.
 - Reduced-motion removes spin/pulse duration, forced-colors preserves selected state, and touch targets remain at least 40–44px.

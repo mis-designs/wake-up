@@ -57,6 +57,7 @@
   let activeWordPlayback = null;
   let wordAudioRequestId = 0;
   const wordAudioCache = new Map();
+  const questionHelpCache = new Map();
 
   // Make the existing click-to-open help discoverable on the first question,
   // including the free-trial route, without covering or replacing the question.
@@ -195,6 +196,71 @@
     };
   }
 
+  function questionHelpKey(question) {
+    return `${String(question?.id || "").trim()}|${fingerprint(question)}`;
+  }
+
+  async function resolveQuestionHelp(question, options = {}) {
+    let help = null;
+    try {
+      const data = await loadLibrary();
+      help = decodeHelp(question, data);
+    } catch (error) {
+      console.warn("[Magic Book quiz help]", error?.message || error);
+    }
+
+    const synchronizedTranslation = usableBanglaTranslation(
+      help?.questionBnStandard
+      || help?.questionBnEasy
+      || help?.questionBn
+      || ""
+    );
+    let verifiedTranslation = synchronizedTranslation || usableBanglaTranslation(
+      question.question_bd || question.questionBD || ""
+    );
+    let translationSource = synchronizedTranslation
+      ? "runtime_v3"
+      : verifiedTranslation
+        ? String(question?.questionTranslationSource || "catalog")
+        : "";
+
+    if (!verifiedTranslation && typeof fetchBengaliAudio === "function") {
+      options.onAutomaticBackup?.();
+      try {
+        const cacheKey = `${String(question?.id || fingerprint(question))}_bn_help`;
+        const translated = await fetchBengaliAudio(question, cacheKey, { requireAudio: false });
+        verifiedTranslation = usableBanglaTranslation(translated?.translation);
+        if (verifiedTranslation) translationSource = "automatic";
+      } catch (_) {
+        verifiedTranslation = "";
+      }
+    }
+
+    return {
+      ...(help || {}),
+      translation: verifiedTranslation,
+      translationSource,
+      chapter: help?.chapter || null,
+      topic: help?.topic || null,
+      words: Array.isArray(help?.words) ? help.words : []
+    };
+  }
+
+  function getQuestionHelp(question, options = {}) {
+    const key = questionHelpKey(question);
+    let request = questionHelpCache.get(key);
+    if (!request) {
+      request = resolveQuestionHelp(question, options).catch(error => {
+        questionHelpCache.delete(key);
+        throw error;
+      });
+      questionHelpCache.set(key, request);
+    }
+    return request;
+  }
+
+  window.QuizHelpData = Object.freeze({ getQuestionHelp });
+
   function stopWordAudio() {
     wordAudioRequestId += 1;
     const playback = activeWordPlayback;
@@ -331,38 +397,22 @@
 
     let help = null;
     try {
-      const data = await loadLibrary();
-      if (ownRequest !== requestId) return;
-      help = decodeHelp(question, data);
+      help = await getQuestionHelp(question, {
+        onAutomaticBackup: () => {
+          if (ownRequest === requestId) {
+            translationStatus.textContent = "Creo la traduzione automatica di backup…";
+          }
+        }
+      });
     } catch (error) {
       if (ownRequest !== requestId) return;
-      console.warn("[Magic Book quiz help]", error.message);
-    }
-
-    let verifiedTranslation = usableBanglaTranslation(
-      help?.questionBnStandard
-      || help?.questionBnEasy
-      || help?.questionBn
-      || question.question_bd
-      || question.questionBD
-      || ""
-    );
-    let automaticBackup = false;
-    if (!verifiedTranslation && typeof fetchBengaliAudio === "function") {
-      translationStatus.textContent = "Creo la traduzione automatica di backup…";
-      try {
-        const cacheKey = `${String(question?.id || current)}_bn`;
-        const translated = await fetchBengaliAudio(question, cacheKey, { requireAudio: false });
-        verifiedTranslation = usableBanglaTranslation(translated?.translation);
-        automaticBackup = verifiedTranslation && translated?.translationSource === "automatic";
-      } catch (_) {
-        verifiedTranslation = "";
-      }
+      console.warn("[Magic Book quiz help]", error?.message || error);
     }
     if (ownRequest !== requestId) return;
+    const verifiedTranslation = usableBanglaTranslation(help?.translation);
     translationText.textContent = verifiedTranslation;
     translationStatus.textContent = verifiedTranslation
-      ? (automaticBackup ? "Traduzione automatica di backup." : "")
+      ? (help?.translationSource === "automatic" ? "Traduzione automatica di backup." : "")
       : "Traduzione non disponibile al momento.";
     renderContext(help);
     renderWords(help?.words || []);
