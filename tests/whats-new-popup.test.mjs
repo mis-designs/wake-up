@@ -37,7 +37,7 @@ test("the popup coordinates with existing blocking dialogs and ships in the PWA 
   assert.match(script, /document\.getElementById\("whatsNewPopupOverlay"\)/u);
   assert.match(index, /style\.css\?v=65-promo-desktop-layout/u);
   assert.match(index, /script\.js\?v=61-promo-desktop-layout/u);
-  assert.match(worker, /magicbook-pwa-v137-hadi-title-ekushey-study-text/u);
+  assert.match(worker, /magicbook-pwa-v139-adorsho-font-library/u);
   assert.match(worker, /script\.js\?v=61-promo-desktop-layout/u);
   assert.match(worker, /\/icons\/ui%20mobile\.svg/u);
 });

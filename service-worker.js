@@ -1,8 +1,11 @@
-const CACHE_NAME = "magicbook-pwa-v137-hadi-title-ekushey-study-text";
+const CACHE_NAME = "magicbook-pwa-v139-adorsho-font-library";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
+  "/libreria-font.html",
+  "/libreria-font.css?v=1-three-fonts",
+  "/assets/fonts/magicbook-bangla-fonts.css?v=1-adorsho",
   "/assets/daisyui.css?v=2-learning-shell",
   "/style.css?v=65-promo-desktop-layout",
   "/magic-dictionary.css?v=1.2.2",
@@ -14,7 +17,7 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=45-review-translations",
   "/script.js?v=61-promo-desktop-layout",
   "/study-quiz.html",
-  "/study-quiz.css?v=21-hadi-title-ekushey-study-text",
+  "/study-quiz.css?v=23-adorsho-study-text",
   "/study-quiz.js?v=16-explanation-artwork",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=68-review-exclusive-accordion",
@@ -39,6 +42,7 @@ const STATIC_ASSETS = [
   "/icons/intro01.jpg?v=20260701",
   "/assets/images/study_quiz_section_cover.png",
   "/assets/fonts/hadi-rounded/hadi-rounded-regular.woff2?v=1",
+  "/assets/fonts/adorsho-lipi/adorsho-lipi-regular.woff2?v=1",
   "/assets/fonts/ekushey-lal-sabuj/ekushey-lal-sabuj-regular.woff2?v=1"
 ];
 
@@ -75,11 +79,13 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  const fallbackPage = url.pathname.startsWith("/studia-quiz")
-    ? "/study-quiz.html"
-    : url.pathname.startsWith("/quiz")
-      ? "/quiz.html"
-      : "/index.html";
+  const fallbackPage = url.pathname.startsWith("/libreria-font")
+    ? "/libreria-font.html"
+    : url.pathname.startsWith("/studia-quiz")
+      ? "/study-quiz.html"
+      : url.pathname.startsWith("/quiz")
+        ? "/quiz.html"
+        : "/index.html";
 
   // The admin recorder must always receive the current Permissions-Policy
   // header. Never serve or store an older cached copy of this page.

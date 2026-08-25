@@ -1,34 +1,9 @@
-@font-face {
-  font-family: "Hadi Rounded";
-  src: url("/assets/fonts/hadi-rounded/hadi-rounded-regular.woff2?v=1") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+0964-0965, U+0980-09FF, U+200C-200D;
-}
-
-@font-face {
-  font-family: "Hadi Rounded";
-  src: url("/assets/fonts/hadi-rounded/hadi-rounded-regular.woff2?v=1") format("woff2");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+0964-0965, U+0980-09FF, U+200C-200D;
-}
-
-@font-face {
-  font-family: "Ekushey Lal Sabuj";
-  src: url("/assets/fonts/ekushey-lal-sabuj/ekushey-lal-sabuj-regular.woff2?v=1") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+0964-0965, U+0980-09FF, U+200C-200D;
-}
-
 :root {
   --font-ui: Inter, Arial, sans-serif;
-  --font-bangla: "Ekushey Lal Sabuj", "Hadi Rounded", "Noto Sans Bengali", "Hind Siliguri", sans-serif;
-  --font-bangla-title: "Hadi Rounded", "Noto Sans Bengali", "Hind Siliguri", sans-serif;
+  --font-bangla: var(--font-bn-support);
+  --font-bangla-title: var(--font-bn-title);
+  --text-bangla-support: clamp(1.15rem, calc(1.1rem + .15vw), 1.2rem);
+  --text-bangla-compact: clamp(.86rem, calc(.83rem + .1vw), .92rem);
   --ink: #102419;
   --muted: #647269;
   --line: #dce8df;
@@ -46,7 +21,7 @@
 
 * { box-sizing: border-box; }
 html { min-height: 100%; background: #f4f8f4; }
-body { min-width: 320px; min-height: 100vh; margin: 0; color: var(--ink); background-color: #f4f8f4; background-image: linear-gradient(rgba(16, 91, 39, .025) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 91, 39, .025) 1px, transparent 1px), radial-gradient(circle at 10% 2%, rgba(95, 245, 40, .10), transparent 27rem), radial-gradient(circle at 92% 10%, rgba(10, 137, 48, .10), transparent 25rem); background-size: 68px 68px, 68px 68px, auto, auto; font-family: "Ekushey Lal Sabuj", "Hadi Rounded", Inter, Arial, sans-serif; font-weight: 400; font-style: normal; }
+body { min-width: 320px; min-height: 100vh; margin: 0; color: var(--ink); background-color: #f4f8f4; background-image: linear-gradient(rgba(16, 91, 39, .025) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 91, 39, .025) 1px, transparent 1px), radial-gradient(circle at 10% 2%, rgba(95, 245, 40, .10), transparent 27rem), radial-gradient(circle at 92% 10%, rgba(10, 137, 48, .10), transparent 25rem); background-size: 68px 68px, 68px 68px, auto, auto; font-family: "Adorsho Lipi", "Ekushey Lal Sabuj", "Hadi Rounded", Inter, Arial, sans-serif; font-weight: 400; font-style: normal; }
 [lang="bn"] { font-family: var(--font-bangla); font-style: normal; }
 button, input { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
@@ -128,6 +103,7 @@ body.study-trial-mode .study-header{border-bottom-color:rgba(217,155,22,.35);box
 .study-action:hover:not(:disabled), .study-action:focus-visible { border-color: #8bce84; outline: none; background: #f0faed; transform: translateY(-1px); }
 .study-action:hover:not(:disabled) { box-shadow: 0 6px 16px rgba(72, 62, 137, .10); }
 .study-action:disabled { cursor: wait; opacity: .58; }
+.study-action-bangla { font-size: var(--text-bangla-compact); font-weight: 400; line-height: 1.35; }
 .study-action-icon { display: inline-grid; width: 18px; height: 18px; place-items: center; font-size: 1rem; line-height: 1; }
 .study-action-icon img { display: block; width: 18px; height: 18px; object-fit: contain; border-radius: 5px; }
 .study-action-icon svg { display: block; width: 18px; height: 18px; }
@@ -154,7 +130,7 @@ body.study-trial-mode .study-header{border-bottom-color:rgba(217,155,22,.35);box
 .study-help { position: relative; padding: clamp(18px, 4vw, 27px); background: radial-gradient(circle at 100% 0, rgba(103, 245, 40, .07), transparent 38%), #f7faf7; }
 .study-help-section + .study-help-section { margin-top: 19px; }
 .study-help-label { display: block; margin-bottom: 8px; color: var(--purple); font-size: .63rem; font-weight: 900; letter-spacing: .12em; }
-.study-translation { margin: 0; color: #19243a; font-family: var(--font-bangla); font-size: 1.05rem; font-weight: 400; line-height: 1.75; }
+.study-translation { margin: 0; color: #19243a; font-family: var(--font-bangla); font-size: var(--text-bangla-support); font-weight: 400; line-height: 1.65; }
 .study-translation.is-missing { color: #7b8799; font-family: Inter, Arial, sans-serif; font-size: .82rem; font-weight: 650; font-style: italic; }
 .study-context { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .study-context span { border-radius: 10px; padding: 7px 9px; background: rgba(31, 157, 54, .08); color: #275f34; font-size: .68rem; font-weight: 750; }
@@ -163,11 +139,11 @@ body.study-trial-mode .study-header{border-bottom-color:rgba(217,155,22,.35);box
 .study-word:hover, .study-word:focus-visible { border-color: #b7a9f2; outline: none; background: #fbfaff; box-shadow: 0 6px 15px rgba(76, 59, 158, .08); }
 .study-word strong, .study-word span { display: block; }
 .study-word strong { color: #283653; font-size: .76rem; }
-.study-word span { margin-top: 3px; color: #08755e; font-family: var(--font-bangla); font-size: .78rem; }
+.study-word span { margin-top: 3px; color: #08755e; font-family: var(--font-bangla); font-size: var(--text-bangla-compact); line-height: 1.35; }
 .study-word-detail { margin-top: 10px; border: 1px solid #dce5ed; border-radius: 16px; padding: 13px; background: rgba(255, 255, 255, .8); }
 .study-word-detail strong { font-size: .82rem; }
 .study-word-detail p { margin: 7px 0 0; color: #5a6980; font-size: .75rem; line-height: 1.55; }
-.study-word-detail p[lang="bn"] { font-family: var(--font-bangla); }
+.study-word-detail p[lang="bn"] { font-family: var(--font-bangla); font-size: var(--text-bangla-compact); line-height: 1.55; }
 .study-word-listen { margin-top: 9px; border: 0; border-radius: 999px; padding: 7px 11px; background: #e6f6f1; color: #08755e; font-size: .7rem; font-weight: 850; cursor: pointer; }
 .study-help-empty { margin: 0; color: var(--muted); font-size: .78rem; }
 .study-help-skeleton { height: 68px; border-radius: 14px; background: linear-gradient(90deg, #eceff5 25%, #f8f9fc 50%, #eceff5 75%); background-size: 200% 100%; animation: studyShimmer 1.2s infinite linear; }

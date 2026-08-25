@@ -1,0 +1,43 @@
+@font-face {
+  font-family: "Hadi Rounded";
+  src: url("/assets/fonts/hadi-rounded/hadi-rounded-regular.woff2?v=1") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0964-0965, U+0980-09FF, U+200C-200D;
+}
+
+@font-face {
+  font-family: "Hadi Rounded";
+  src: url("/assets/fonts/hadi-rounded/hadi-rounded-regular.woff2?v=1") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0964-0965, U+0980-09FF, U+200C-200D;
+}
+
+@font-face {
+  font-family: "Adorsho Lipi";
+  src: url("/assets/fonts/adorsho-lipi/adorsho-lipi-regular.woff2?v=1") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0964-0965, U+0980-09FF, U+200C-200D;
+}
+
+@font-face {
+  font-family: "Ekushey Lal Sabuj";
+  src: url("/assets/fonts/ekushey-lal-sabuj/ekushey-lal-sabuj-regular.woff2?v=1") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0964-0965, U+0980-09FF, U+200C-200D;
+}
+
+:root {
+  --font-bn-hadi: "Hadi Rounded", "Noto Sans Bengali", "Hind Siliguri", sans-serif;
+  --font-bn-adorsho: "Adorsho Lipi", "Ekushey Lal Sabuj", "Hadi Rounded", "Noto Sans Bengali", "Hind Siliguri", sans-serif;
+  --font-bn-ekushey: "Ekushey Lal Sabuj", "Adorsho Lipi", "Hadi Rounded", "Noto Sans Bengali", "Hind Siliguri", sans-serif;
+  --font-bn-title: var(--font-bn-hadi);
+  --font-bn-support: var(--font-bn-adorsho);
+}

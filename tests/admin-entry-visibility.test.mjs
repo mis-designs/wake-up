@@ -29,5 +29,5 @@ test("leaving the admin panel restores the entry and ships the new script versio
   assert.match(hideAll, /adminPanel[\s\S]*?classList\.add\("hidden"\)[\s\S]*?updateAdminEntryVisibility\(\)/);
   assert.match(htmlSource, /script\.js\?v=61-promo-desktop-layout/);
   assert.match(workerSource, /script\.js\?v=61-promo-desktop-layout/);
-  assert.match(workerSource, /CACHE_NAME = "magicbook-pwa-v137-hadi-title-ekushey-study-text"/);
+  assert.match(workerSource, /CACHE_NAME = "magicbook-pwa-v139-adorsho-font-library"/);
 });

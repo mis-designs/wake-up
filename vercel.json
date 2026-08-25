@@ -79,6 +79,32 @@
       ]
     },
     {
+      "source": "/libreria-font",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noimageindex"
+        }
+      ]
+    },
+    {
+      "source": "/libreria-font.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noimageindex"
+        }
+      ]
+    },
+    {
       "source": "/study-quiz",
       "headers": [
         {
@@ -232,6 +258,10 @@
     {
       "source": "/admin",
       "destination": "/"
+    },
+    {
+      "source": "/libreria-font",
+      "destination": "/libreria-font.html"
     },
     {
       "source": "/aggiungi-spiegazioni",

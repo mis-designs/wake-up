@@ -8,12 +8,14 @@ canonical_ui:
     - src/daisyui.css
     - assets/daisyui.css
     - src/learning-insights.css
+    - assets/fonts/magicbook-bangla-fonts.css
     - study-quiz.css
+    - libreria-font.css
   notes: Existing application tokens remain canonical. Locally compiled, d-prefixed daisyUI controls provide interaction primitives; the scoped learning stylesheet owns layout and visual hierarchy.
 design_context:
   owner: Magic Book
   last_updated: 2026-08-25
-  revision_notes: Reserved self-hosted Hadi Rounded for the large Bengali study title and applied Ekushey Lal Sabuj to all smaller Bengali study and quiz text.
+  revision_notes: Added a shared local Bengali font library; Hadi Rounded remains the study title face, Adorsho Lipi now owns subtitles and smaller quiz text, and Ekushey Lal Sabuj remains available as an alternate and fallback.
 ---
 
 # Magic Book design context
@@ -39,7 +41,7 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 - Ink/navy: `#17233a` / `#12315f`.
 - Positive: `--li-teal: #138f86`; attention: `--li-coral: #c84f4b`; limited data: `--li-amber: #a96c16`.
 - Page/surface/line: `#f3f6fb`, `#ffffff`, `#d9e2ee`.
-- Type: Inter/system sans for Italian UI. The large study-mode Bengali hero title uses self-hosted Hadi Rounded 400/700. All smaller Bengali study and quiz text—including the last-chapter subtitle, translations, controls, keyword chips, and word details—uses self-hosted Ekushey Lal Sabuj 400. Both faces are limited to the Bengali Unicode range, with Hadi, Noto Sans Bengali, and Hind Siliguri providing ordered fallbacks; other catalog surfaces retain their established Bengali families.
+- Type: Inter/system sans for Italian UI. The large study-mode Bengali hero title uses self-hosted Hadi Rounded 400/700. All smaller Bengali study and quiz text—including the last-chapter subtitle, translations, controls, keyword chips, and word details—uses self-hosted Adorsho Lipi 400. Full translations use a fluid 1.15–1.2rem support scale; compact Bangla controls, keyword lines, and word details use .86–.92rem. Ekushey Lal Sabuj 400 remains locally available as the first alternate/fallback and as a specimen in the font library. All three faces are limited to the Bengali Unicode range, with Hadi, Noto Sans Bengali, and Hind Siliguri completing the ordered fallback chain; other catalog surfaces retain their established Bengali families.
 - Radius: 16px learning cards, 8px controls, and 9999px status/action pills.
 - Focus: 3px cobalt outline with 3px offset.
 - Learning-route UI contract: Inter for display and body copy; JetBrains Mono or
@@ -61,6 +63,7 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 ## Components and behavior
 
 - Shared component base: locally compiled daisyUI 5 with the `d-` prefix. Header, route, primary, secondary, category, and pagination controls use these primitives; the scoped stylesheet remains the visual owner.
+- Font library: `/libreria-font` is an Admin-linked static reference page. One bordered specimen sheet contains three divided rows—Hadi Rounded, Adorsho Lipi, and Ekushey Lal Sabuj—and renders the same live Bengali sentence in each face for an honest comparison without image previews.
 - Learning shell: back, brand, labelled/icon-only responsive refresh, Statistics/Errori route switcher, freshness note, and one polite live status. Legacy fixed chrome is suppressed while this route owns the viewport.
 - Statistics overview: answers correct, quizzes done, chapters started, items to review, and the real percentage from the recent window. Comparison copy is plain and threshold-based.
 - Immediate action: exactly one useful action in the first viewport. Empty and insufficient histories get a quiz action; ready users get the first real plan action or a positive continue state.

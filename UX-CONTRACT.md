@@ -24,6 +24,7 @@
 | Pagination | `src/learning-insights.js` | Eight initial items; `Mostra altri` appends without losing stable focus. |
 | Async status | `#learningInsightsStatus` | Polite live region for refresh, offline cache, and retry results. |
 | UI assets | Repository images/SVGs + authenticated figure endpoint | No Unicode glyphs as UI icons. Decorative CSS marks remain hidden from assistive technology. |
+| Font library | `libreria-font.html`, `libreria-font.css`, `assets/fonts/magicbook-bangla-fonts.css` | Admin links to `/libreria-font`; the static page compares the three locally hosted Bengali faces with identical live text and returns to `/admin`. |
 | Promo conversion | `#promoAccessNextStep` + `openPromoPackages()` | A previous promo or a full campaign produces persistent inline guidance; the user chooses when to open `/join`, which focuses the packages heading. |
 | Quiz correction translations | `quiz.js`, `quiz-help.js`, `mystyle.css` | Each correction row owns one on-demand translation disclosure. `quiz-help.js` owns data resolution and caching; `quiz.js` owns row state and interaction; `mystyle.css` owns responsive presentation. |
 | Study explanation audio | `study-quiz.js`, `study-quiz.css`, `icons/explain_quiz.svg` | Each available explanation keeps the supplied artwork beside the player. The artwork is decorative, reserves stable geometry, mirrors play/pause state, and shrinks without displacing the controls on narrow screens. |
@@ -70,6 +71,7 @@
 ## Navigation, async, and failure behavior
 
 - Home entries and the Statistics/Errori switcher push real routes. Lens selection replaces only `tipo`; invalid values fall back to `figure` and normalize the URL.
+- The Admin utility row links to `/libreria-font`. The font library has its own localized document title, a real back link to `/admin`, a clean static route, and a dedicated offline fallback page.
 - Initial load renders a skeleton matching the overview/action/matrix geometry.
 - Valid cached data appears immediately with its update time while a background refresh runs online.
 - Pending local answers are sent only to the authenticated Vercel endpoint, validated, and merged by event ID.
