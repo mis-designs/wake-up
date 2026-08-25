@@ -1,4 +1,24 @@
+@font-face {
+  font-family: "Hadi Rounded";
+  src: url("/assets/fonts/hadi-rounded/hadi-rounded-regular.woff2?v=1") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0964-0965, U+0980-09FF, U+200C-200D;
+}
+
+@font-face {
+  font-family: "Hadi Rounded";
+  src: url("/assets/fonts/hadi-rounded/hadi-rounded-regular.woff2?v=1") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0964-0965, U+0980-09FF, U+200C-200D;
+}
+
 :root {
+  --font-ui: Inter, Arial, sans-serif;
+  --font-bangla: "Hadi Rounded", "Noto Sans Bengali", "Hind Siliguri", sans-serif;
   --ink: #102419;
   --muted: #647269;
   --line: #dce8df;
@@ -11,12 +31,13 @@
   --surface: #ffffff;
   --shadow: 0 17px 46px rgba(15, 67, 31, .12);
   color-scheme: light;
-  font-family: Inter, Arial, sans-serif;
+  font-family: var(--font-ui);
 }
 
 * { box-sizing: border-box; }
 html { min-height: 100%; background: #f4f8f4; }
-body { min-width: 320px; min-height: 100vh; margin: 0; color: var(--ink); background-color: #f4f8f4; background-image: linear-gradient(rgba(16, 91, 39, .025) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 91, 39, .025) 1px, transparent 1px), radial-gradient(circle at 10% 2%, rgba(95, 245, 40, .10), transparent 27rem), radial-gradient(circle at 92% 10%, rgba(10, 137, 48, .10), transparent 25rem); background-size: 68px 68px, 68px 68px, auto, auto; font-family: "Hadi Rounded", sans-serif; font-weight: 400; font-style: normal; }
+body { min-width: 320px; min-height: 100vh; margin: 0; color: var(--ink); background-color: #f4f8f4; background-image: linear-gradient(rgba(16, 91, 39, .025) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 91, 39, .025) 1px, transparent 1px), radial-gradient(circle at 10% 2%, rgba(95, 245, 40, .10), transparent 27rem), radial-gradient(circle at 92% 10%, rgba(10, 137, 48, .10), transparent 25rem); background-size: 68px 68px, 68px 68px, auto, auto; font-family: "Hadi Rounded", Inter, Arial, sans-serif; font-weight: 400; font-style: normal; }
+[lang="bn"] { font-family: var(--font-bangla); font-style: normal; }
 button, input { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 .hidden { display: none !important; }
@@ -39,11 +60,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .study-intro::before { content: ""; position: absolute; z-index: 0; inset: 0; background: linear-gradient(90deg, rgba(0, 12, 7, .82) 0%, rgba(0, 15, 8, .58) 34%, rgba(0, 12, 7, .12) 68%, transparent 84%), linear-gradient(0deg, rgba(0, 9, 5, .68), transparent 48%); }
 .study-intro::after { content: ""; position: absolute; z-index: 1; inset: 0; border: 1px solid rgba(255, 255, 255, .15); border-radius: inherit; box-shadow: 0 1px 0 rgba(255, 255, 255, .12) inset; pointer-events: none; }
 .study-intro > div { position: relative; z-index: 2; }
-.study-intro-copy { min-width: 0; max-width: 720px; font-family: "Anek Bangla", "Noto Sans Bengali", sans-serif; }
+.study-intro-copy { min-width: 0; max-width: 720px; font-family: var(--font-bangla); }
 .study-intro span, .study-reader-toolbar > div > span { color: #78ff38; font-size: .67rem; font-weight: 900; letter-spacing: .16em; }
 .study-intro > div:first-child > span { display: inline-flex; align-items: center; gap: 9px; }
 .study-intro > div:first-child > span::before { content: ""; width: 20px; height: 2px; border-radius: 9px; background: currentColor; box-shadow: 0 0 12px rgba(120, 255, 56, .72); }
-.study-intro h2 { max-width: 760px; margin: 0 0 14px; font-family: "Anek Bangla", "Noto Sans Bengali", sans-serif; font-size: clamp(2rem, 5vw, 3.35rem); font-weight: 500; font-style: normal; line-height: 1.12; letter-spacing: 0; text-shadow: 0 3px 5px rgba(0, 0, 0, .7), 0 10px 34px rgba(0, 0, 0, .55); }
+.study-intro h2 { max-width: 760px; margin: 0 0 14px; font-family: inherit; font-size: clamp(2rem, 5vw, 3.35rem); font-weight: 400; font-style: normal; line-height: 1.12; letter-spacing: 0; text-shadow: 0 3px 5px rgba(0, 0, 0, .7), 0 10px 34px rgba(0, 0, 0, .55); }
 .study-intro h2 em { color: #78ff38; font-style: normal; font-weight: inherit; }
 .study-intro p { width: fit-content; max-width: 680px; margin: 0; border: 1px solid rgba(120, 255, 56, .28); border-radius: 999px; padding: 8px 13px; background: rgba(1, 24, 8, .62); color: rgba(255, 255, 255, .95); font-family: inherit; font-size: clamp(1rem, 2vw, 1.2rem); font-weight: 400; line-height: 1.45; text-shadow: 0 2px 4px rgba(0, 0, 0, .9), 0 7px 20px rgba(0, 0, 0, .72); backdrop-filter: blur(7px); }
 
@@ -122,7 +143,7 @@ body.study-trial-mode .study-header{border-bottom-color:rgba(217,155,22,.35);box
 .study-help { position: relative; padding: clamp(18px, 4vw, 27px); background: radial-gradient(circle at 100% 0, rgba(103, 245, 40, .07), transparent 38%), #f7faf7; }
 .study-help-section + .study-help-section { margin-top: 19px; }
 .study-help-label { display: block; margin-bottom: 8px; color: var(--purple); font-size: .63rem; font-weight: 900; letter-spacing: .12em; }
-.study-translation { margin: 0; color: #19243a; font-family: "Noto Sans Bengali", "Hind Siliguri", sans-serif; font-size: 1.05rem; font-weight: 600; line-height: 1.75; }
+.study-translation { margin: 0; color: #19243a; font-family: var(--font-bangla); font-size: 1.05rem; font-weight: 400; line-height: 1.75; }
 .study-translation.is-missing { color: #7b8799; font-family: Inter, Arial, sans-serif; font-size: .82rem; font-weight: 650; font-style: italic; }
 .study-context { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .study-context span { border-radius: 10px; padding: 7px 9px; background: rgba(31, 157, 54, .08); color: #275f34; font-size: .68rem; font-weight: 750; }
@@ -131,11 +152,11 @@ body.study-trial-mode .study-header{border-bottom-color:rgba(217,155,22,.35);box
 .study-word:hover, .study-word:focus-visible { border-color: #b7a9f2; outline: none; background: #fbfaff; box-shadow: 0 6px 15px rgba(76, 59, 158, .08); }
 .study-word strong, .study-word span { display: block; }
 .study-word strong { color: #283653; font-size: .76rem; }
-.study-word span { margin-top: 3px; color: #08755e; font-family: "Noto Sans Bengali", "Hind Siliguri", sans-serif; font-size: .78rem; }
+.study-word span { margin-top: 3px; color: #08755e; font-family: var(--font-bangla); font-size: .78rem; }
 .study-word-detail { margin-top: 10px; border: 1px solid #dce5ed; border-radius: 16px; padding: 13px; background: rgba(255, 255, 255, .8); }
 .study-word-detail strong { font-size: .82rem; }
 .study-word-detail p { margin: 7px 0 0; color: #5a6980; font-size: .75rem; line-height: 1.55; }
-.study-word-detail p[lang="bn"] { font-family: "Noto Sans Bengali", "Hind Siliguri", sans-serif; }
+.study-word-detail p[lang="bn"] { font-family: var(--font-bangla); }
 .study-word-listen { margin-top: 9px; border: 0; border-radius: 999px; padding: 7px 11px; background: #e6f6f1; color: #08755e; font-size: .7rem; font-weight: 850; cursor: pointer; }
 .study-help-empty { margin: 0; color: var(--muted); font-size: .78rem; }
 .study-help-skeleton { height: 68px; border-radius: 14px; background: linear-gradient(90deg, #eceff5 25%, #f8f9fc 50%, #eceff5 75%); background-size: 200% 100%; animation: studyShimmer 1.2s infinite linear; }

@@ -8,11 +8,12 @@ canonical_ui:
     - src/daisyui.css
     - assets/daisyui.css
     - src/learning-insights.css
+    - study-quiz.css
   notes: Existing application tokens remain canonical. Locally compiled, d-prefixed daisyUI controls provide interaction primitives; the scoped learning stylesheet owns layout and visual hierarchy.
 design_context:
   owner: Magic Book
-  last_updated: 2026-08-22
-  revision_notes: Replaced the Roadbook metaphor with an adaptive study workspace, plain Italian labels, a 25-chapter matrix, a compact recovery workflow, and a flat surface rhythm for mobile and desktop.
+  last_updated: 2026-08-25
+  revision_notes: Added a self-hosted Hadi Rounded face for Bengali study content while retaining the established Italian UI typography and responsive study layout.
 ---
 
 # Magic Book design context
@@ -38,7 +39,7 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 - Ink/navy: `#17233a` / `#12315f`.
 - Positive: `--li-teal: #138f86`; attention: `--li-coral: #c84f4b`; limited data: `--li-amber: #a96c16`.
 - Page/surface/line: `#f3f6fb`, `#ffffff`, `#d9e2ee`.
-- Type: Inter/system sans for Italian UI; existing Bengali font support remains available for catalog copy.
+- Type: Inter/system sans for Italian UI. Study-mode Bengali glyphs use self-hosted Hadi Rounded 400/700 faces limited to the Bengali Unicode range, then Noto Sans Bengali and Hind Siliguri as fallbacks; other catalog surfaces retain their established Bengali families.
 - Radius: 16px learning cards, 8px controls, and 9999px status/action pills.
 - Focus: 3px cobalt outline with 3px offset.
 - Learning-route UI contract: Inter for display and body copy; JetBrains Mono or

@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v133-study-explanation-artwork";
+const CACHE_NAME = "magicbook-pwa-v134-hadi-rounded";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -14,7 +14,7 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=45-review-translations",
   "/script.js?v=61-promo-desktop-layout",
   "/study-quiz.html",
-  "/study-quiz.css?v=17-explanation-artwork",
+  "/study-quiz.css?v=18-hadi-rounded-local",
   "/study-quiz.js?v=16-explanation-artwork",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=68-review-exclusive-accordion",
@@ -37,7 +37,8 @@ const STATIC_ASSETS = [
   "/icons/mg_logo.png",
   "/icons/ui%20mobile.svg",
   "/icons/intro01.jpg?v=20260701",
-  "/assets/images/study_quiz_section_cover.png"
+  "/assets/images/study_quiz_section_cover.png",
+  "/assets/fonts/hadi-rounded/hadi-rounded-regular.woff2?v=1"
 ];
 
 self.addEventListener("install", event => {
