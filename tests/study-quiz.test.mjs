@@ -81,9 +81,9 @@ test("study explanation players reuse the supplied artwork with stable responsiv
   assert.match(styles, /\.study-explanation-artwork\s*\{[^}]*width:\s*50px[^}]*height:\s*50px[^}]*animation-play-state:\s*paused/u);
   assert.match(styles, /@media \(max-width: 430px\)[\s\S]*?\.study-explanation-artwork\s*\{[^}]*flex-basis:\s*44px[^}]*width:\s*44px[^}]*height:\s*44px/u);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.study-explanation-artwork\s*\{\s*animation:\s*none/u);
-  assert.match(page, /study-quiz\.css\?v=18-hadi-rounded-local/u);
+  assert.match(page, /study-quiz\.css\?v=19-ekushey-lal-sabuj-local/u);
   assert.match(page, /study-quiz\.js\?v=16-explanation-artwork/u);
-  assert.match(worker, /magicbook-pwa-v134-hadi-rounded/u);
+  assert.match(worker, /magicbook-pwa-v135-ekushey-lal-sabuj/u);
   assert.match(worker, /\/icons\/explain_quiz\.svg/u);
 });
 
@@ -99,28 +99,27 @@ test("study chapter picker uses the layered performance-green visual system", ()
   assert.doesNotMatch(styles, /\.study-intro\s*\{[^}]*background:\s*#[0-9a-f]{3,8}\s*;/i);
 });
 
-test("the study intro uses Hadi Rounded and recalls the last chapter after five minutes", () => {
+test("the study intro uses Ekushey Lal Sabuj and recalls the last chapter after five minutes", () => {
   const page = readFileSync(new URL("../study-quiz.html", import.meta.url), "utf8");
   const source = readFileSync(new URL("../study-quiz.js", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../study-quiz.css", import.meta.url), "utf8");
-  const font = readFileSync(new URL("../assets/fonts/hadi-rounded/hadi-rounded-regular.woff2", import.meta.url));
+  const font = readFileSync(new URL("../assets/fonts/ekushey-lal-sabuj/ekushey-lal-sabuj-regular.woff2", import.meta.url));
   const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
   const routes = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8"));
   const policy = routes.headers[0].headers.find(header => header.key === "Content-Security-Policy")?.value || "";
 
-  assert.match(page, /rel="preload" as="font" type="font\/woff2" href="\/assets\/fonts\/hadi-rounded\/hadi-rounded-regular\.woff2\?v=1" crossorigin/u);
-  assert.doesNotMatch(page, /banglawebfonts\.pages\.dev\/css\/hadi-rounded/u);
+  assert.match(page, /rel="preload" as="font" type="font\/woff2" href="\/assets\/fonts\/ekushey-lal-sabuj\/ekushey-lal-sabuj-regular\.woff2\?v=1" crossorigin/u);
+  assert.doesNotMatch(page, /banglawebfonts\.pages\.dev\/css\/ekushey-lal-sabuj/u);
   assert.match(page, /id="study-last-chapter" class="hidden"/u);
-  assert.match(styles, /@font-face\s*\{[^}]*font-family:\s*"Hadi Rounded";[^}]*hadi-rounded-regular\.woff2\?v=1[^}]*font-weight:\s*400;[^}]*font-display:\s*swap;[^}]*unicode-range:\s*U\+0964-0965, U\+0980-09FF, U\+200C-200D;/su);
-  assert.match(styles, /@font-face\s*\{[^}]*font-family:\s*"Hadi Rounded";[^}]*hadi-rounded-regular\.woff2\?v=1[^}]*font-weight:\s*700;[^}]*font-display:\s*swap;[^}]*unicode-range:\s*U\+0964-0965, U\+0980-09FF, U\+200C-200D;/su);
-  assert.match(styles, /body\s*\{[^}]*font-family:\s*"Hadi Rounded", Inter, Arial, sans-serif;[^}]*font-weight:\s*400;[^}]*font-style:\s*normal;/su);
+  assert.match(styles, /@font-face\s*\{[^}]*font-family:\s*"Ekushey Lal Sabuj";[^}]*ekushey-lal-sabuj-regular\.woff2\?v=1[^}]*font-weight:\s*400;[^}]*font-display:\s*swap;[^}]*unicode-range:\s*U\+0964-0965, U\+0980-09FF, U\+200C-200D;/su);
+  assert.match(styles, /body\s*\{[^}]*font-family:\s*"Ekushey Lal Sabuj", Inter, Arial, sans-serif;[^}]*font-weight:\s*400;[^}]*font-style:\s*normal;/su);
   assert.doesNotMatch(page, /family=Anek\+Bangla/u);
   assert.match(styles, /\.study-intro-copy\s*\{[^}]*font-family:\s*var\(--font-bangla\);/su);
   assert.match(styles, /\.study-intro h2\s*\{[^}]*font-family:\s*inherit;[^}]*font-weight:\s*400;[^}]*font-style:\s*normal;/su);
   assert.equal(font.subarray(0, 4).toString("ascii"), "wOF2");
   assert.ok(font.length > 50_000);
-  assert.equal(createHash("sha256").update(font).digest("hex"), "195701ac3bef5f5eedbd9768cbab55fef14a7d1a02c8d059edeabb7f053165e4");
-  assert.match(worker, /\/assets\/fonts\/hadi-rounded\/hadi-rounded-regular\.woff2\?v=1/u);
+  assert.equal(createHash("sha256").update(font).digest("hex"), "bdb7955ae89c44de417b9f894d0e09ba59a3ffe1a646c36a9b2bac7d6770b7a7");
+  assert.match(worker, /\/assets\/fonts\/ekushey-lal-sabuj\/ekushey-lal-sabuj-regular\.woff2\?v=1/u);
   assert.match(source, /STUDY_RETURN_DELAY_MS\s*=\s*5 \* 60 \* 1000/u);
   assert.match(source, /শেষবার আপনি পড়েছিলেন অধ্যায়/u);
   assert.match(source, /BANGLA_DIGITS\s*=\s*\["০", "১", "২", "৩", "৪", "৫"/u);

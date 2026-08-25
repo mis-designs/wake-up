@@ -15,6 +15,6 @@ test("selected answer labels use dark text on the bright accent background", () 
 
 test("the answer contrast fix ships with a fresh stylesheet cache key", () => {
   assert.match(page, /mystyle\.css\?v=45-review-translations/u);
-  assert.match(worker, /magicbook-pwa-v134-hadi-rounded/u);
+  assert.match(worker, /magicbook-pwa-v135-ekushey-lal-sabuj/u);
   assert.match(worker, /mystyle\.css\?v=45-review-translations/u);
 });

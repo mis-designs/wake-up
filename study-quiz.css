@@ -1,16 +1,7 @@
 @font-face {
-  font-family: "Hadi Rounded";
-  src: url("/assets/fonts/hadi-rounded/hadi-rounded-regular.woff2?v=1") format("woff2");
+  font-family: "Ekushey Lal Sabuj";
+  src: url("/assets/fonts/ekushey-lal-sabuj/ekushey-lal-sabuj-regular.woff2?v=1") format("woff2");
   font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+0964-0965, U+0980-09FF, U+200C-200D;
-}
-
-@font-face {
-  font-family: "Hadi Rounded";
-  src: url("/assets/fonts/hadi-rounded/hadi-rounded-regular.woff2?v=1") format("woff2");
-  font-weight: 700;
   font-style: normal;
   font-display: swap;
   unicode-range: U+0964-0965, U+0980-09FF, U+200C-200D;
@@ -18,7 +9,7 @@
 
 :root {
   --font-ui: Inter, Arial, sans-serif;
-  --font-bangla: "Hadi Rounded", "Noto Sans Bengali", "Hind Siliguri", sans-serif;
+  --font-bangla: "Ekushey Lal Sabuj", "Noto Sans Bengali", "Hind Siliguri", sans-serif;
   --ink: #102419;
   --muted: #647269;
   --line: #dce8df;
@@ -36,7 +27,7 @@
 
 * { box-sizing: border-box; }
 html { min-height: 100%; background: #f4f8f4; }
-body { min-width: 320px; min-height: 100vh; margin: 0; color: var(--ink); background-color: #f4f8f4; background-image: linear-gradient(rgba(16, 91, 39, .025) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 91, 39, .025) 1px, transparent 1px), radial-gradient(circle at 10% 2%, rgba(95, 245, 40, .10), transparent 27rem), radial-gradient(circle at 92% 10%, rgba(10, 137, 48, .10), transparent 25rem); background-size: 68px 68px, 68px 68px, auto, auto; font-family: "Hadi Rounded", Inter, Arial, sans-serif; font-weight: 400; font-style: normal; }
+body { min-width: 320px; min-height: 100vh; margin: 0; color: var(--ink); background-color: #f4f8f4; background-image: linear-gradient(rgba(16, 91, 39, .025) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 91, 39, .025) 1px, transparent 1px), radial-gradient(circle at 10% 2%, rgba(95, 245, 40, .10), transparent 27rem), radial-gradient(circle at 92% 10%, rgba(10, 137, 48, .10), transparent 25rem); background-size: 68px 68px, 68px 68px, auto, auto; font-family: "Ekushey Lal Sabuj", Inter, Arial, sans-serif; font-weight: 400; font-style: normal; }
 [lang="bn"] { font-family: var(--font-bangla); font-style: normal; }
 button, input { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }

@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v134-hadi-rounded";
+const CACHE_NAME = "magicbook-pwa-v135-ekushey-lal-sabuj";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -14,7 +14,7 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=45-review-translations",
   "/script.js?v=61-promo-desktop-layout",
   "/study-quiz.html",
-  "/study-quiz.css?v=18-hadi-rounded-local",
+  "/study-quiz.css?v=19-ekushey-lal-sabuj-local",
   "/study-quiz.js?v=16-explanation-artwork",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=68-review-exclusive-accordion",
@@ -38,7 +38,7 @@ const STATIC_ASSETS = [
   "/icons/ui%20mobile.svg",
   "/icons/intro01.jpg?v=20260701",
   "/assets/images/study_quiz_section_cover.png",
-  "/assets/fonts/hadi-rounded/hadi-rounded-regular.woff2?v=1"
+  "/assets/fonts/ekushey-lal-sabuj/ekushey-lal-sabuj-regular.woff2?v=1"
 ];
 
 self.addEventListener("install", event => {

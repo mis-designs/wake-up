@@ -35,6 +35,6 @@ test("the dictionary entry keeps its badge and bilingual copy separated", () => 
 
 test("the desktop home layout ships in a fresh PWA build", () => {
   assert.match(page, /style\.css\?v=65-promo-desktop-layout/u);
-  assert.match(worker, /magicbook-pwa-v134-hadi-rounded/u);
+  assert.match(worker, /magicbook-pwa-v135-ekushey-lal-sabuj/u);
   assert.match(worker, /style\.css\?v=65-promo-desktop-layout/u);
 });
