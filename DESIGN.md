@@ -13,7 +13,7 @@ canonical_ui:
 design_context:
   owner: Magic Book
   last_updated: 2026-08-25
-  revision_notes: Restored self-hosted Hadi Rounded for Bengali study titles and content, with Ekushey Lal Sabuj reserved for the last-chapter subtitle.
+  revision_notes: Reserved self-hosted Hadi Rounded for the large Bengali study title and applied Ekushey Lal Sabuj to all smaller Bengali study and quiz text.
 ---
 
 # Magic Book design context
@@ -39,7 +39,7 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 - Ink/navy: `#17233a` / `#12315f`.
 - Positive: `--li-teal: #138f86`; attention: `--li-coral: #c84f4b`; limited data: `--li-amber: #a96c16`.
 - Page/surface/line: `#f3f6fb`, `#ffffff`, `#d9e2ee`.
-- Type: Inter/system sans for Italian UI. Study-mode titles and default Bengali content use self-hosted Hadi Rounded 400/700; the last-chapter subtitle uses self-hosted Ekushey Lal Sabuj 400. Both faces are limited to the Bengali Unicode range, with Noto Sans Bengali and Hind Siliguri as fallbacks; other catalog surfaces retain their established Bengali families.
+- Type: Inter/system sans for Italian UI. The large study-mode Bengali hero title uses self-hosted Hadi Rounded 400/700. All smaller Bengali study and quiz text—including the last-chapter subtitle, translations, controls, keyword chips, and word details—uses self-hosted Ekushey Lal Sabuj 400. Both faces are limited to the Bengali Unicode range, with Hadi, Noto Sans Bengali, and Hind Siliguri providing ordered fallbacks; other catalog surfaces retain their established Bengali families.
 - Radius: 16px learning cards, 8px controls, and 9999px status/action pills.
 - Focus: 3px cobalt outline with 3px offset.
 - Learning-route UI contract: Inter for display and body copy; JetBrains Mono or

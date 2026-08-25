@@ -7,7 +7,7 @@
 - SHA-256: `195701AC3BEF5F5EEDBD9768CBAB55FEF14A7D1A02C8D059EDEABB7F053165E4`
 - Retrieved: 2026-08-25
 
-The regular WOFF2 file is hosted locally so the Bengali study title and supporting content do not depend on a third-party font request and can be precached for installed and offline use.
+The regular WOFF2 file is hosted locally for the large Bengali study hero title and as a fallback for smaller Bengali text, so the experience does not depend on a third-party font request and can be precached for installed and offline use.
 
 On the retrieval date, the provider's regular and bold URLs returned identical 59,436-byte payloads with the same SHA-256. The local CSS therefore maps this single cached file to the source's 400 and 700 faces instead of shipping the same binary twice.
 

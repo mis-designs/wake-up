@@ -27,8 +27,8 @@
 
 :root {
   --font-ui: Inter, Arial, sans-serif;
-  --font-bangla: "Hadi Rounded", "Noto Sans Bengali", "Hind Siliguri", sans-serif;
-  --font-bangla-subtitle: "Ekushey Lal Sabuj", "Hadi Rounded", "Noto Sans Bengali", "Hind Siliguri", sans-serif;
+  --font-bangla: "Ekushey Lal Sabuj", "Hadi Rounded", "Noto Sans Bengali", "Hind Siliguri", sans-serif;
+  --font-bangla-title: "Hadi Rounded", "Noto Sans Bengali", "Hind Siliguri", sans-serif;
   --ink: #102419;
   --muted: #647269;
   --line: #dce8df;
@@ -46,7 +46,7 @@
 
 * { box-sizing: border-box; }
 html { min-height: 100%; background: #f4f8f4; }
-body { min-width: 320px; min-height: 100vh; margin: 0; color: var(--ink); background-color: #f4f8f4; background-image: linear-gradient(rgba(16, 91, 39, .025) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 91, 39, .025) 1px, transparent 1px), radial-gradient(circle at 10% 2%, rgba(95, 245, 40, .10), transparent 27rem), radial-gradient(circle at 92% 10%, rgba(10, 137, 48, .10), transparent 25rem); background-size: 68px 68px, 68px 68px, auto, auto; font-family: "Hadi Rounded", Inter, Arial, sans-serif; font-weight: 400; font-style: normal; }
+body { min-width: 320px; min-height: 100vh; margin: 0; color: var(--ink); background-color: #f4f8f4; background-image: linear-gradient(rgba(16, 91, 39, .025) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 91, 39, .025) 1px, transparent 1px), radial-gradient(circle at 10% 2%, rgba(95, 245, 40, .10), transparent 27rem), radial-gradient(circle at 92% 10%, rgba(10, 137, 48, .10), transparent 25rem); background-size: 68px 68px, 68px 68px, auto, auto; font-family: "Ekushey Lal Sabuj", "Hadi Rounded", Inter, Arial, sans-serif; font-weight: 400; font-style: normal; }
 [lang="bn"] { font-family: var(--font-bangla); font-style: normal; }
 button, input { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
@@ -74,10 +74,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .study-intro span, .study-reader-toolbar > div > span { color: #78ff38; font-size: .67rem; font-weight: 900; letter-spacing: .16em; }
 .study-intro > div:first-child > span { display: inline-flex; align-items: center; gap: 9px; }
 .study-intro > div:first-child > span::before { content: ""; width: 20px; height: 2px; border-radius: 9px; background: currentColor; box-shadow: 0 0 12px rgba(120, 255, 56, .72); }
-.study-intro h2 { max-width: 760px; margin: 0 0 14px; font-family: inherit; font-size: clamp(2rem, 5vw, 3.35rem); font-weight: 400; font-style: normal; line-height: 1.12; letter-spacing: 0; text-shadow: 0 3px 5px rgba(0, 0, 0, .7), 0 10px 34px rgba(0, 0, 0, .55); }
+.study-intro h2 { max-width: 760px; margin: 0 0 14px; font-family: var(--font-bangla-title); font-size: clamp(2rem, 5vw, 3.35rem); font-weight: 400; font-style: normal; line-height: 1.12; letter-spacing: 0; text-shadow: 0 3px 5px rgba(0, 0, 0, .7), 0 10px 34px rgba(0, 0, 0, .55); }
 .study-intro h2 em { color: #78ff38; font-style: normal; font-weight: inherit; }
 .study-intro p { width: fit-content; max-width: 680px; margin: 0; border: 1px solid rgba(120, 255, 56, .28); border-radius: 999px; padding: 8px 13px; background: rgba(1, 24, 8, .62); color: rgba(255, 255, 255, .95); font-family: inherit; font-size: clamp(1rem, 2vw, 1.2rem); font-weight: 400; line-height: 1.45; text-shadow: 0 2px 4px rgba(0, 0, 0, .9), 0 7px 20px rgba(0, 0, 0, .72); backdrop-filter: blur(7px); }
-#study-last-chapter { font-family: var(--font-bangla-subtitle); }
+#study-last-chapter { font-family: var(--font-bangla); }
 
 .study-chapter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 15px; }
 .study-chapter { position: relative; isolation: isolate; display: grid; grid-template-columns: 54px minmax(0, 1fr) 26px; gap: 13px; align-items: center; min-height: 112px; padding: 17px; overflow: hidden; border: 1px solid rgba(31, 100, 49, .15); border-radius: 22px; background: radial-gradient(circle at 100% 0, rgba(103, 245, 40, .075), transparent 43%), linear-gradient(145deg, rgba(255, 255, 255, .98), rgba(246, 251, 247, .96)); color: var(--ink); text-align: left; cursor: pointer; box-shadow: 0 8px 27px rgba(15, 67, 31, .065); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease; }

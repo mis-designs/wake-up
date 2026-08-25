@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v136-hadi-title-ekushey-subtitle";
+const CACHE_NAME = "magicbook-pwa-v137-hadi-title-ekushey-study-text";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -14,7 +14,7 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=45-review-translations",
   "/script.js?v=61-promo-desktop-layout",
   "/study-quiz.html",
-  "/study-quiz.css?v=20-hadi-title-ekushey-subtitle",
+  "/study-quiz.css?v=21-hadi-title-ekushey-study-text",
   "/study-quiz.js?v=16-explanation-artwork",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=68-review-exclusive-accordion",

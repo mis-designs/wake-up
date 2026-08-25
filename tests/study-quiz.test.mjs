@@ -81,9 +81,9 @@ test("study explanation players reuse the supplied artwork with stable responsiv
   assert.match(styles, /\.study-explanation-artwork\s*\{[^}]*width:\s*50px[^}]*height:\s*50px[^}]*animation-play-state:\s*paused/u);
   assert.match(styles, /@media \(max-width: 430px\)[\s\S]*?\.study-explanation-artwork\s*\{[^}]*flex-basis:\s*44px[^}]*width:\s*44px[^}]*height:\s*44px/u);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.study-explanation-artwork\s*\{\s*animation:\s*none/u);
-  assert.match(page, /study-quiz\.css\?v=20-hadi-title-ekushey-subtitle/u);
+  assert.match(page, /study-quiz\.css\?v=21-hadi-title-ekushey-study-text/u);
   assert.match(page, /study-quiz\.js\?v=16-explanation-artwork/u);
-  assert.match(worker, /magicbook-pwa-v136-hadi-title-ekushey-subtitle/u);
+  assert.match(worker, /magicbook-pwa-v137-hadi-title-ekushey-study-text/u);
   assert.match(worker, /\/icons\/explain_quiz\.svg/u);
 });
 
@@ -99,7 +99,7 @@ test("study chapter picker uses the layered performance-green visual system", ()
   assert.doesNotMatch(styles, /\.study-intro\s*\{[^}]*background:\s*#[0-9a-f]{3,8}\s*;/i);
 });
 
-test("the study intro keeps Hadi Rounded on the title and uses Ekushey Lal Sabuj only on the subtitle", () => {
+test("the study intro keeps Hadi Rounded only on the large title and uses Ekushey Lal Sabuj for smaller Bangla text", () => {
   const page = readFileSync(new URL("../study-quiz.html", import.meta.url), "utf8");
   const source = readFileSync(new URL("../study-quiz.js", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../study-quiz.css", import.meta.url), "utf8");
@@ -116,13 +116,19 @@ test("the study intro keeps Hadi Rounded on the title and uses Ekushey Lal Sabuj
   assert.match(styles, /@font-face\s*\{[^}]*font-family:\s*"Hadi Rounded";[^}]*hadi-rounded-regular\.woff2\?v=1[^}]*font-weight:\s*400;[^}]*font-display:\s*swap;[^}]*unicode-range:\s*U\+0964-0965, U\+0980-09FF, U\+200C-200D;/su);
   assert.match(styles, /@font-face\s*\{[^}]*font-family:\s*"Hadi Rounded";[^}]*hadi-rounded-regular\.woff2\?v=1[^}]*font-weight:\s*700;[^}]*font-display:\s*swap;[^}]*unicode-range:\s*U\+0964-0965, U\+0980-09FF, U\+200C-200D;/su);
   assert.match(styles, /@font-face\s*\{[^}]*font-family:\s*"Ekushey Lal Sabuj";[^}]*ekushey-lal-sabuj-regular\.woff2\?v=1[^}]*font-weight:\s*400;[^}]*font-display:\s*swap;[^}]*unicode-range:\s*U\+0964-0965, U\+0980-09FF, U\+200C-200D;/su);
-  assert.match(styles, /--font-bangla:\s*"Hadi Rounded", "Noto Sans Bengali", "Hind Siliguri", sans-serif;/u);
-  assert.match(styles, /--font-bangla-subtitle:\s*"Ekushey Lal Sabuj", "Hadi Rounded", "Noto Sans Bengali", "Hind Siliguri", sans-serif;/u);
-  assert.match(styles, /body\s*\{[^}]*font-family:\s*"Hadi Rounded", Inter, Arial, sans-serif;[^}]*font-weight:\s*400;[^}]*font-style:\s*normal;/su);
+  assert.match(styles, /--font-bangla:\s*"Ekushey Lal Sabuj", "Hadi Rounded", "Noto Sans Bengali", "Hind Siliguri", sans-serif;/u);
+  assert.match(styles, /--font-bangla-title:\s*"Hadi Rounded", "Noto Sans Bengali", "Hind Siliguri", sans-serif;/u);
+  assert.match(styles, /body\s*\{[^}]*font-family:\s*"Ekushey Lal Sabuj", "Hadi Rounded", Inter, Arial, sans-serif;[^}]*font-weight:\s*400;[^}]*font-style:\s*normal;/su);
   assert.doesNotMatch(page, /family=Anek\+Bangla/u);
+  assert.match(styles, /\[lang="bn"\]\s*\{[^}]*font-family:\s*var\(--font-bangla\);/su);
   assert.match(styles, /\.study-intro-copy\s*\{[^}]*font-family:\s*var\(--font-bangla\);/su);
-  assert.match(styles, /\.study-intro h2\s*\{[^}]*font-family:\s*inherit;[^}]*font-weight:\s*400;[^}]*font-style:\s*normal;/su);
-  assert.match(styles, /#study-last-chapter\s*\{[^}]*font-family:\s*var\(--font-bangla-subtitle\);/su);
+  assert.match(styles, /\.study-intro h2\s*\{[^}]*font-family:\s*var\(--font-bangla-title\);[^}]*font-weight:\s*400;[^}]*font-style:\s*normal;/su);
+  assert.match(styles, /#study-last-chapter\s*\{[^}]*font-family:\s*var\(--font-bangla\);/su);
+  assert.match(styles, /\.study-translation\s*\{[^}]*font-family:\s*var\(--font-bangla\);/su);
+  assert.match(styles, /\.study-word span\s*\{[^}]*font-family:\s*var\(--font-bangla\);/su);
+  assert.match(styles, /\.study-word-detail p\[lang="bn"\]\s*\{[^}]*font-family:\s*var\(--font-bangla\);/su);
+  assert.match(source, /bangla\.lang = "bn"/u);
+  assert.match(source, /translation\.lang = "bn"/u);
   assert.equal(titleFont.subarray(0, 4).toString("ascii"), "wOF2");
   assert.equal(subtitleFont.subarray(0, 4).toString("ascii"), "wOF2");
   assert.ok(titleFont.length > 50_000);
