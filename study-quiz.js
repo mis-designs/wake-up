@@ -66,18 +66,41 @@
   let currentChapter = null;
   let questions = [];
   let quizSessionToken = "";
+  let quizSessionTokenExpiresAt = 0;
+  let quizSessionRefreshPromise = null;
   let helpPromise = null;
   let helpIdIndex = null;
   let activePlayback = null;
   let toastTimer = 0;
   let loadRequestId = 0;
   let wordTtsRequestId = 0;
+  let ttsRequest = null;
+  const QUIZ_SESSION_REFRESH_SKEW_MS = 90 * 1000;
   const STUDY_AUDIO_STATUS_DELAY_MS = 400;
   const STUDY_AUDIO_REQUEST_TIMEOUT_MS = 12000;
-  const ttsCache = new Map();
+  const ttsCache = createBoundedCache(48);
   const helpCache = new Map();
   const audioStatusCache = new Map();
   const pendingAudioStatusChecks = new Map();
+
+  function createBoundedCache(maxEntries = 48) {
+    const entries = new Map();
+    return {
+      get(key) {
+        if (!entries.has(key)) return undefined;
+        const value = entries.get(key);
+        entries.delete(key);
+        entries.set(key, value);
+        return value;
+      },
+      set(key, value) {
+        entries.delete(key);
+        entries.set(key, value);
+        while (entries.size > maxEntries) entries.delete(entries.keys().next().value);
+      },
+      clear() { entries.clear(); }
+    };
+  }
 
   function parseSession(raw) {
     if (!raw) return null;
@@ -141,16 +164,20 @@
 
   function accessToken() {
     if (TRIAL_MODE) return "";
-    return String(localStorage.getItem("accessToken") || session.accessToken || "");
+    try {
+      return String(localStorage.getItem("accessToken") || session.accessToken || "");
+    } catch (_) {
+      return session.accessToken || "";
+    }
   }
 
   function saveAccessToken(token, expiresAt) {
     if (TRIAL_MODE) return;
     if (!token || !expiresAt) return;
     session.accessToken = token;
-    localStorage.setItem("accessToken", token);
-    localStorage.setItem("accessTokenExpiresAt", String(expiresAt));
     try {
+      localStorage.setItem("accessToken", token);
+      localStorage.setItem("accessTokenExpiresAt", String(expiresAt));
       const stored = JSON.parse(localStorage.getItem("user_session") || "{}");
       if (stored?.phone) {
         stored.accessToken = token;
@@ -193,6 +220,113 @@
       throw new Error(code);
     }
     if (!response.ok) throw new Error(data.error || `study_api_${response.status}`);
+    return data;
+  }
+
+  function quizApiAction(url) {
+    try {
+      return new URL(url, window.location.origin).searchParams.get("action") || "";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function isQuizSessionProtectedAction(action) {
+    return ["getItalianAudio", "getBengaliAudio", "getTTS"].includes(String(action || ""));
+  }
+
+  async function refreshQuizSession() {
+    if (TRIAL_MODE) return { ok: false, error: new Error("trial_session_refresh_not_needed") };
+    if (quizSessionRefreshPromise) return quizSessionRefreshPromise;
+
+    quizSessionRefreshPromise = (async () => {
+      const response = await fetch(API, {
+        method: "POST",
+        headers: authHeaders({ withQuizSession: true, json: true }),
+        body: JSON.stringify({
+          action: "refreshQuizSession",
+          phone: session.phone,
+          deviceId: session.deviceId,
+          chapters: String(currentChapter || ""),
+          mode: ""
+        })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(String(data?.error || `study_session_refresh_${response.status}`));
+        error.status = response.status;
+        throw error;
+      }
+      if (!data?.quizSessionToken || !data?.quizSessionTokenExpiresAt) {
+        throw new Error("invalid_quiz_session_refresh");
+      }
+      saveAccessToken(data.accessToken, data.accessTokenExpiresAt);
+      quizSessionToken = String(data.quizSessionToken);
+      quizSessionTokenExpiresAt = Number(data.quizSessionTokenExpiresAt) || 0;
+      return { ok: true };
+    })()
+      .then(result => result)
+      .catch(error => ({ ok: false, error }))
+      .finally(() => { quizSessionRefreshPromise = null; });
+
+    return quizSessionRefreshPromise;
+  }
+
+  async function ensureFreshQuizSession() {
+    if (TRIAL_MODE || !quizSessionToken || !quizSessionTokenExpiresAt) return { ok: true };
+    if (quizSessionTokenExpiresAt > Date.now() + QUIZ_SESSION_REFRESH_SKEW_MS) return { ok: true };
+    return refreshQuizSession();
+  }
+
+  async function fetchStudyJson(url, options = {}) {
+    const { allowSessionRefresh = true, ...fetchOptions } = options;
+    const action = quizApiAction(url);
+    if (allowSessionRefresh && !TRIAL_MODE && isQuizSessionProtectedAction(action)) {
+      const freshSession = await ensureFreshQuizSession();
+      if (!freshSession.ok && [401, 403].includes(Number(freshSession.error?.status))) {
+        clearSessionAndExit();
+        throw freshSession.error;
+      }
+    }
+
+    const requestHeaders = new Headers(fetchOptions.headers || {});
+    if (!TRIAL_MODE && isQuizSessionProtectedAction(action)) {
+      const currentAuthHeaders = authHeaders({ withQuizSession: true });
+      if (currentAuthHeaders.has("Authorization")) {
+        requestHeaders.set("Authorization", currentAuthHeaders.get("Authorization"));
+      } else {
+        requestHeaders.delete("Authorization");
+      }
+      if (currentAuthHeaders.has("X-Quiz-Session")) {
+        requestHeaders.set("X-Quiz-Session", currentAuthHeaders.get("X-Quiz-Session"));
+      } else {
+        requestHeaders.delete("X-Quiz-Session");
+      }
+    }
+
+    const response = await fetch(url, { ...fetchOptions, headers: requestHeaders });
+    const data = await response.json().catch(() => ({}));
+    const error = String(data?.error || "");
+    if (
+      allowSessionRefresh
+      && !TRIAL_MODE
+      && isQuizSessionProtectedAction(action)
+      && (error === "quiz_session_expired" || error === "token_expired")
+    ) {
+      const refreshed = await refreshQuizSession();
+      if (refreshed.ok) return fetchStudyJson(url, { ...fetchOptions, allowSessionRefresh: false });
+      if ([401, 403].includes(Number(refreshed.error?.status))) clearSessionAndExit();
+      throw new Error("quiz_session_refresh_unavailable");
+    }
+    if (!response.ok) {
+      if ([401, 403].includes(response.status)) {
+        if (["expired", "not_found", "device_replaced", "device_mismatch", "unauthorized", "invalid_guest_key", "trial_session_expired"].includes(error)) {
+          clearSessionAndExit();
+        }
+        throw new Error(error || "unauthorized");
+      }
+      throw new Error(error || `study_api_${response.status}`);
+    }
     return data;
   }
 
@@ -357,14 +491,14 @@
         deviceId: session.deviceId,
         chapters: String(chapter)
       });
-      const response = await fetch(`${API}?${query}`, {
+      const data = await fetchStudyJson(`${API}?${query}`, {
         headers: authHeaders(),
         cache: "no-store"
       });
-      const data = await readApiResponse(response);
       if (ownRequest !== loadRequestId) return;
       saveAccessToken(data.accessToken, data.accessTokenExpiresAt);
       quizSessionToken = String((TRIAL_MODE ? data.trialToken : data.quizSessionToken) || "");
+      quizSessionTokenExpiresAt = Number((TRIAL_MODE ? data.trialTokenExpiresAt : data.quizSessionTokenExpiresAt) || 0);
       questions = Array.isArray(data.quiz) ? data.quiz : [];
       renderQuestions();
       rememberStudyChapter(chapter);
@@ -719,11 +853,10 @@
       questionId: String(question.id || ""),
       text: String(question.question || "")
     });
-    const response = await fetch(`${API}?${query}`, {
+    const data = await fetchStudyJson(`${API}?${query}`, {
       headers: authHeaders({ withQuizSession: true }),
       cache: "no-store"
     });
-    const data = await readApiResponse(response);
     const translation = usableBanglaTranslation(data?.translation);
     if (!translation) throw new Error("translation_not_available");
     const translated = { ...data, translation, translationSource: "automatic" };
@@ -919,6 +1052,7 @@
   }
 
   function stopPlayback() {
+    cancelTtsRequest();
     if (!activePlayback) return;
     if (activePlayback.frame) cancelAnimationFrame(activePlayback.frame);
     activePlayback.audio.pause();
@@ -933,11 +1067,37 @@
     activePlayback = null;
   }
 
+  const MAX_INLINE_TTS_BYTES = 3 * 1024 * 1024;
+
   function base64AudioUrl(base64, mimeType = "audio/mpeg") {
-    const binary = atob(base64);
+    const encoded = String(base64 || "").replace(/^data:[^,]+,/, "");
+    if (!encoded || encoded.length > Math.ceil(MAX_INLINE_TTS_BYTES * 4 / 3) + 16) {
+      throw new Error("audio_payload_too_large");
+    }
+    const binary = atob(encoded);
+    if (binary.length > MAX_INLINE_TTS_BYTES) throw new Error("audio_payload_too_large");
     const bytes = new Uint8Array(binary.length);
     for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
     return URL.createObjectURL(new Blob([bytes], { type: mimeType }));
+  }
+
+  function cancelTtsRequest() {
+    ttsRequest?.controller.abort();
+    ttsRequest = null;
+  }
+
+  function requestTtsData(key, work) {
+    if (ttsRequest?.key === key) return ttsRequest.promise;
+    cancelTtsRequest();
+    const controller = new AbortController();
+    const request = { key, controller, promise: null };
+    request.promise = Promise.resolve()
+      .then(() => work(controller.signal))
+      .finally(() => {
+        if (ttsRequest === request) ttsRequest = null;
+      });
+    ttsRequest = request;
+    return request.promise;
   }
 
   async function startAudio(url, button, key, controls = null, durationHint = 0) {
@@ -1004,7 +1164,7 @@
       window.location.href = trialOfferUrl(language === "bn" ? "Audio Bengali completo" : "Audio italiano completo");
       return;
     }
-    wordTtsRequestId += 1;
+    const ownRequest = ++wordTtsRequestId;
     const key = `${language}:${question.id || fingerprint(question)}`;
     if (activePlayback?.key === key) {
       await startAudio(activePlayback.url, button, key).catch(() => showToast("Audio non disponibile al momento."));
@@ -1015,25 +1175,25 @@
     try {
       let data = ttsCache.get(key);
       if (!data) {
-        let preferredTranslation = "";
-        let preferredTranslationSource = "";
-        let automaticBackup = false;
-        if (language === "bn") {
-          const help = await getQuestionHelp(question);
-          preferredTranslation = usableBanglaTranslation(help?.translation);
-          preferredTranslationSource = String(help?.translationSource || "runtime_v3");
-          const trialCatalogTranslation = TRIAL_MODE
-            ? usableBanglaTranslation(question.question_bd || question.questionBD)
-            : "";
-          if (trialCatalogTranslation) {
-            preferredTranslation = trialCatalogTranslation;
-            preferredTranslationSource = String(question.questionTranslationSource || "catalog");
+        data = await requestTtsData(key, async signal => {
+          let preferredTranslation = "";
+          let preferredTranslationSource = "";
+          let automaticBackup = false;
+          if (language === "bn") {
+            const help = await getQuestionHelp(question);
+            preferredTranslation = usableBanglaTranslation(help?.translation);
+            preferredTranslationSource = String(help?.translationSource || "runtime_v3");
+            const trialCatalogTranslation = TRIAL_MODE
+              ? usableBanglaTranslation(question.question_bd || question.questionBD)
+              : "";
+            if (trialCatalogTranslation) {
+              preferredTranslation = trialCatalogTranslation;
+              preferredTranslationSource = String(question.questionTranslationSource || "catalog");
+            }
+            automaticBackup = preferredTranslationSource === "automatic";
+            if (!preferredTranslation) throw new Error("translation_not_available");
           }
-          automaticBackup = preferredTranslationSource === "automatic";
-          data = ttsCache.get(key);
-          if (!preferredTranslation) throw new Error("translation_not_available");
-        }
-        if (!data) {
+          if (signal.aborted) throw new DOMException("The TTS request was aborted", "AbortError");
           const action = language === "bn"
             ? (automaticBackup ? "getBengaliAudio" : "getTTS")
             : "getItalianAudio";
@@ -1053,21 +1213,23 @@
             questionId: String(question.id || ""),
             text: requestText
           });
-          const response = await fetch(`${API}?${query}`, {
-            headers: authHeaders({ withQuizSession: true })
+          const data = await fetchStudyJson(`${API}?${query}`, {
+            headers: authHeaders({ withQuizSession: true }),
+            signal
           });
-          data = await readApiResponse(response);
           if (!data.audio) throw new Error("audio_not_available");
           if (preferredTranslation && !automaticBackup) {
-            data = {
+            return {
               ...data,
               translation: preferredTranslation,
               translationSource: preferredTranslationSource
             };
           }
-          ttsCache.set(key, data);
-        }
+          return data;
+        });
+        ttsCache.set(key, data);
       }
+      if (ownRequest !== wordTtsRequestId) return;
       const safeTranslation = language === "bn" ? usableBanglaTranslation(data.translation) : "";
       if (safeTranslation) {
         const translation = card.querySelector(".study-translation");
@@ -1079,6 +1241,7 @@
       }
       await startAudio(base64AudioUrl(data.audio), button, key);
     } catch (error) {
+      if (error?.name === "AbortError" || ownRequest !== wordTtsRequestId) return;
       const missingTranslation = error?.message === "translation_not_available";
       showToast(language === "bn"
         ? (missingTranslation ? "Traduzione non disponibile al momento." : "Audio bangla non disponibile.")
@@ -1113,22 +1276,26 @@
     try {
       let data = ttsCache.get(key);
       if (!data) {
-        const query = new URLSearchParams({
-          action: "getTTS",
-          phone: session.phone,
-          deviceId: session.deviceId,
-          text: value
+        data = await requestTtsData(key, async signal => {
+          const query = new URLSearchParams({
+            action: "getTTS",
+            phone: session.phone,
+            deviceId: session.deviceId,
+            text: value
+          });
+          const result = await fetchStudyJson(`${API}?${query}`, {
+            headers: authHeaders({ withQuizSession: true }),
+            signal
+          });
+          if (!result.audio) throw new Error("audio_not_available");
+          return result;
         });
-        const response = await fetch(`${API}?${query}`, {
-          headers: authHeaders({ withQuizSession: true })
-        });
-        data = await readApiResponse(response);
-        if (!data.audio) throw new Error("audio_not_available");
         ttsCache.set(key, data);
       }
       if (ownRequest !== wordTtsRequestId) return;
       await startAudio(base64AudioUrl(data.audio), button, key);
-    } catch (_) {
+    } catch (error) {
+      if (error?.name === "AbortError" || ownRequest !== wordTtsRequestId) return;
       showToast("Audio parola non disponibile.");
     } finally {
       button.disabled = false;
@@ -1244,6 +1411,7 @@
 
   async function playExplanation(question, controls) {
     wordTtsRequestId += 1;
+    cancelTtsRequest();
     const { root, play: button, key } = controls;
     if (activePlayback?.key === key) {
       await startAudio(activePlayback.url, button, key, controls, activePlayback.durationHint)

@@ -122,6 +122,33 @@ test("quiz loading and grading complete without a quiz upstream request", async 
     assert.equal(studyResponse.statusCode, 200, JSON.stringify(studyResponse.body));
     assert.equal(studyResponse.body.quiz.length, 72);
 
+    const refreshResponse = responseRecorder();
+    await handler({
+      method: "POST",
+      query: {},
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        "x-quiz-session": quizResponse.body.quizSessionToken
+      },
+      body: {
+        action: "refreshQuizSession",
+        phone,
+        deviceId,
+        mode: "exam30"
+      }
+    }, refreshResponse);
+
+    assert.equal(refreshResponse.statusCode, 200, JSON.stringify(refreshResponse.body));
+    assert.equal(refreshResponse.body.ok, true);
+    assert.ok(refreshResponse.body.quizSessionToken);
+    assert.notEqual(refreshResponse.body.quizSessionToken, quizResponse.body.quizSessionToken);
+    assert.equal(refreshResponse.headers["Cache-Control"], "no-store");
+
+    const malformedResponse = responseRecorder();
+    await handler({ method: "POST", query: {}, headers: {}, body: "{" }, malformedResponse);
+    assert.equal(malformedResponse.statusCode, 400);
+    assert.equal(malformedResponse.body.error, "invalid_json");
+
     const first = quizResponse.body.quiz[0];
     const expected = LOCAL_MAGIC_BOOK_ROWS.find(question => question.id === first.id).correct;
     const gradeResponse = responseRecorder();

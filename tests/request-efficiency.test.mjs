@@ -34,3 +34,19 @@ test("figure requests and study audio checks require a short dwell", () => {
   assert.match(studySource, /pendingAudioStatusChecks/);
   assert.match(studySource, /audioStatusCache\s*=\s*new Map\(\)/);
 });
+
+test("repeated TTS clicks stay bounded and release cancelled audio work", () => {
+  assert.match(quizSource, /QUIZ_SESSION_REFRESH_SKEW_MS\s*=\s*90 \* 1000/);
+  assert.match(quizSource, /refreshQuizSession\(\)/);
+  assert.match(quizSource, /allowSessionRefresh:\s*false/);
+  assert.match(quizSource, /italianAudioCache\s*=\s*createBoundedCache\(36\)/);
+  assert.match(quizSource, /bengaliAudioCache\s*=\s*createBoundedCache\(36\)/);
+  assert.match(quizSource, /cancelQuizTtsRequest\("it"\)/);
+  assert.match(quizSource, /cancelQuizTtsRequest\("bn"\)/);
+  assert.match(quizSource, /URL\.revokeObjectURL\(blobUrl\)/);
+  assert.match(studySource, /ttsCache\s*=\s*createBoundedCache\(48\)/);
+  assert.match(studySource, /requestTtsData\(key/);
+  assert.match(studySource, /cancelTtsRequest\(\)/);
+  assert.match(studySource, /ownRequest\s*!==\s*wordTtsRequestId/);
+  assert.match(studySource, /currentAuthHeaders\.get\("X-Quiz-Session"\)/);
+});

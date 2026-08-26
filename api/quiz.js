@@ -641,6 +641,17 @@ function normalizePhoneNumber(phone) {
   return normalized;
 }
 
+const ADMIN_PHONE_NUMBERS = new Set(
+  (process.env.ADMIN_PHONE_NUMBERS || "")
+    .split(/[\s,;]+/)
+    .map(normalizePhoneNumber)
+    .filter(Boolean)
+);
+
+function isAdminPhone(phone) {
+  return ADMIN_PHONE_NUMBERS.has(normalizePhoneNumber(phone));
+}
+
 function isConfigured() {
   return ACCESS_GAS_URL && ACCESS_GAS_SECRET && SESSION_SECRET;
 }
@@ -696,10 +707,16 @@ function createSignedToken({ phone, deviceId, purpose, ttlMs, role = "user", cla
 function verifySignedToken(token, { phone, deviceId, purpose }) {
   if (!token || !phone || !deviceId) return { ok: false, error: "unauthorized" };
 
-  const parts = String(token).split(".");
+  const serializedToken = String(token);
+  if (serializedToken.length > 4096) return { ok: false, error: "unauthorized" };
+
+  const parts = serializedToken.split(".");
   if (parts.length !== 2) return { ok: false, error: "unauthorized" };
 
   const [encodedPayload, signature] = parts;
+  if (encodedPayload.length > 3072 || signature.length > 128) {
+    return { ok: false, error: "unauthorized" };
+  }
   const expectedSignature = signTokenPayload(encodedPayload);
   const provided = Buffer.from(signature);
   const expected = Buffer.from(expectedSignature);
@@ -720,7 +737,12 @@ function verifySignedToken(token, { phone, deviceId, purpose }) {
   }
 
   if (!payload.exp || payload.exp <= Date.now()) {
-    return { ok: false, error: purpose === "quiz" ? "quiz_session_expired" : "token_expired" };
+    return {
+      ok: false,
+      error: purpose === "quiz" ? "quiz_session_expired" : "token_expired",
+      signatureValid: true,
+      payload
+    };
   }
 
   return { ok: true, payload };
@@ -742,18 +764,26 @@ async function ensureAccess({ phone, deviceId, accessToken, forceValidate = fals
     return { ok: true, usedAccessToken: true, role: tokenStatus.payload.role || "user" };
   }
 
+  // An expired token with a valid signature can preserve the admin role only
+  // while the phone is still in the server-side admin allow-list. Forged,
+  // mismatched, and ordinary user tokens always renew as users.
+  const renewedRole = tokenStatus.signatureValid
+    && tokenStatus.payload?.role === "admin"
+    && isAdminPhone(phone)
+    ? "admin"
+    : "user";
   const access = createSignedToken({
     phone,
     deviceId,
     purpose: "access",
     ttlMs: ACCESS_TOKEN_TTL_MS,
-    role: "user"
+    role: renewedRole
   });
 
   return {
     ok: true,
     usedAccessToken: false,
-    role: "user",
+    role: renewedRole,
     accessToken: access.token,
     accessTokenExpiresAt: access.expiresAt
   };
@@ -798,7 +828,21 @@ async function readJsonResponse(response) {
 
 function getRequestData(req) {
   const query = req.query || {};
-  const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+  let body = req.body || {};
+  if (typeof req.body === "string") {
+    try {
+      body = JSON.parse(req.body || "{}");
+    } catch {
+      const error = new Error("invalid_json");
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    const error = new Error("invalid_request");
+    error.statusCode = 400;
+    throw error;
+  }
   const authorization = String(req.headers?.authorization || "");
   const bearerMatch = authorization.match(/^Bearer\s+(.+)$/i);
   const headerAccessToken = bearerMatch?.[1] || "";
@@ -827,13 +871,15 @@ function getRequestData(req) {
   };
 }
 
-function hasValidRequestShape({ phone, deviceId, text, chapters, question, figure }) {
+function hasValidRequestShape({ phone, deviceId, text, chapters, question, figure, questionId, accessToken, quizSessionToken, audioIdentityToken }) {
   if (!/^\d{6,15}$/.test(String(phone || "").replace(/\D/g, ""))) return false;
   if (!/^[A-Za-z0-9_-]{8,128}$/.test(String(deviceId || ""))) return false;
   if (String(text || "").length > 500) return false;
   if (String(chapters || "").length > 200) return false;
   if (String(question || "").length > 1_500) return false;
   if (String(figure || "").length > 120) return false;
+  if (String(questionId || "").length > 128) return false;
+  if ([accessToken, quizSessionToken, audioIdentityToken].some(value => String(value || "").length > 4096)) return false;
   return true;
 }
 
@@ -967,8 +1013,46 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "missing_action" });
     }
 
-    if (!hasValidRequestShape({ phone, deviceId, text, chapters, question, figure })) {
+    if (!hasValidRequestShape({
+      phone,
+      deviceId,
+      text,
+      chapters,
+      question,
+      figure,
+      questionId,
+      accessToken,
+      quizSessionToken,
+      audioIdentityToken
+    })) {
       return res.status(400).json({ error: "invalid_request" });
+    }
+
+    if (req.method === "POST" && action === "refreshQuizSession") {
+      res.setHeader("Cache-Control", "no-store");
+      const access = await ensureAccess({ phone, deviceId, accessToken });
+      if (!access.ok) {
+        return res.status(access.statusCode || 401).json({ error: access.error || "unauthorized" });
+      }
+
+      const modeConfig = getExamModeConfig(mode);
+      const quizSession = createSignedToken({
+        phone,
+        deviceId,
+        purpose: "quiz",
+        ttlMs: modeConfig?.sessionTtlMs || QUIZ_SESSION_TOKEN_TTL_MS,
+        role: access.role === "admin" ? "admin" : "user"
+      });
+
+      return res.status(200).json({
+        ok: true,
+        quizSessionToken: quizSession.token,
+        quizSessionTokenExpiresAt: quizSession.expiresAt,
+        ...(access.accessToken ? {
+          accessToken: access.accessToken,
+          accessTokenExpiresAt: access.accessTokenExpiresAt
+        } : {})
+      });
     }
 
     if (req.method === "GET" && action === "getExplanationFigures") {

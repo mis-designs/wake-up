@@ -306,17 +306,21 @@ function getQuizDeviceId() {
 }
 
 function getQuizAccessToken() {
-  return localStorage.getItem("accessToken") || QUIZ_SESSION.accessToken || "";
+  try {
+    return localStorage.getItem("accessToken") || QUIZ_SESSION.accessToken || "";
+  } catch {
+    return QUIZ_SESSION.accessToken || "";
+  }
 }
 
 function saveQuizAccessToken(accessToken, accessTokenExpiresAt) {
   if (!accessToken || !accessTokenExpiresAt) return;
   QUIZ_SESSION.accessToken = accessToken;
   QUIZ_SESSION.accessTokenExpiresAt = accessTokenExpiresAt;
-  localStorage.setItem("accessToken", accessToken);
-  localStorage.setItem("accessTokenExpiresAt", String(accessTokenExpiresAt));
 
   try {
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("accessTokenExpiresAt", String(accessTokenExpiresAt));
     const raw = localStorage.getItem("user_session");
     const session = raw ? JSON.parse(raw) : {};
     if (session?.phone) {
@@ -331,9 +335,94 @@ function saveQuizAccessToken(accessToken, accessTokenExpiresAt) {
 
 let quizSessionToken = "";
 let quizSessionTokenExpiresAt = 0;
+const QUIZ_SESSION_REFRESH_SKEW_MS = 90 * 1000;
+let quizSessionRefreshPromise = null;
 
 function getQuizSessionToken() {
   return quizSessionToken;
+}
+
+function isQuizSessionProtectedAction(action) {
+  return ["getItalianAudio", "getBengaliAudio", "getTTS", "checkQuiz"].includes(String(action || ""));
+}
+
+function quizApiAction(url) {
+  try {
+    return new URL(url, window.location.origin).searchParams.get("action") || "";
+  } catch {
+    return "";
+  }
+}
+
+async function refreshQuizSession() {
+  if (TRIAL_MODE) return { ok: false, error: new Error("trial_session_refresh_not_needed") };
+  if (quizSessionRefreshPromise) return quizSessionRefreshPromise;
+
+  quizSessionRefreshPromise = (async () => {
+    const routeInfo = getQuizRouteInfo();
+    const response = await fetch(QUIZ_API, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(getQuizAccessToken() ? { Authorization: `Bearer ${getQuizAccessToken()}` } : {}),
+        ...(quizSessionToken ? { "X-Quiz-Session": quizSessionToken } : {})
+      },
+      body: JSON.stringify({
+        action: "refreshQuizSession",
+        phone: getQuizPhone(),
+        deviceId: getQuizDeviceId(),
+        chapters: routeInfo.chapters,
+        mode: getRequestedQuizMode()
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(String(data?.error || `quiz_session_refresh_${response.status}`));
+      error.status = response.status;
+      throw error;
+    }
+    if (!data?.quizSessionToken || !data?.quizSessionTokenExpiresAt) {
+      throw new Error("invalid_quiz_session_refresh");
+    }
+
+    if (data.accessToken && data.accessTokenExpiresAt) {
+      saveQuizAccessToken(data.accessToken, data.accessTokenExpiresAt);
+    }
+    quizSessionToken = String(data.quizSessionToken);
+    quizSessionTokenExpiresAt = Number(data.quizSessionTokenExpiresAt) || 0;
+    return { ok: true };
+  })()
+    .then(result => result)
+    .catch(error => ({ ok: false, error }))
+    .finally(() => { quizSessionRefreshPromise = null; });
+
+  return quizSessionRefreshPromise;
+}
+
+async function ensureFreshQuizSession() {
+  if (TRIAL_MODE || !quizSessionToken || !quizSessionTokenExpiresAt) return { ok: true };
+  if (quizSessionTokenExpiresAt > Date.now() + QUIZ_SESSION_REFRESH_SKEW_MS) return { ok: true };
+  return refreshQuizSession();
+}
+
+function createBoundedCache(maxEntries = 36) {
+  const entries = new Map();
+  return {
+    get(key) {
+      if (!entries.has(key)) return undefined;
+      const value = entries.get(key);
+      entries.delete(key);
+      entries.set(key, value);
+      return value;
+    },
+    set(key, value) {
+      entries.delete(key);
+      entries.set(key, value);
+      while (entries.size > maxEntries) entries.delete(entries.keys().next().value);
+    },
+    delete(key) { entries.delete(key); },
+    clear() { entries.clear(); }
+  };
 }
 
 function createQuizDrawId() {
@@ -437,7 +526,17 @@ async function handleQuizAccessError(error) {
 }
 
 async function fetchQuizJson(url, options = {}) {
-  const headers = new Headers(options.headers || {});
+  const { allowSessionRefresh = true, ...fetchOptions } = options;
+  const action = quizApiAction(url);
+  if (allowSessionRefresh && !TRIAL_MODE && isQuizSessionProtectedAction(action)) {
+    const freshSession = await ensureFreshQuizSession();
+    if (!freshSession.ok && [401, 403].includes(Number(freshSession.error?.status))) {
+      await handleQuizAccessError(freshSession.error?.message || "unauthorized");
+      throw freshSession.error;
+    }
+  }
+
+  const headers = new Headers(fetchOptions.headers || {});
   if (!TRIAL_MODE) {
     const accessToken = getQuizAccessToken();
     const activeQuizToken = getQuizSessionToken();
@@ -445,7 +544,7 @@ async function fetchQuizJson(url, options = {}) {
     if (activeQuizToken) headers.set("X-Quiz-Session", activeQuizToken);
   }
 
-  const response = await fetch(url, { ...options, headers });
+  const response = await fetch(url, { ...fetchOptions, headers });
 
   let data = null;
   try {
@@ -455,6 +554,22 @@ async function fetchQuizJson(url, options = {}) {
   }
 
   const error = data?.error;
+  if (
+    allowSessionRefresh
+    && !TRIAL_MODE
+    && isQuizSessionProtectedAction(action)
+    && (error === "quiz_session_expired" || error === "token_expired")
+  ) {
+    const refreshed = await refreshQuizSession();
+    if (refreshed.ok) {
+      return fetchQuizJson(url, { ...fetchOptions, allowSessionRefresh: false });
+    }
+    if ([401, 403].includes(Number(refreshed.error?.status))) {
+      await handleQuizAccessError(refreshed.error?.message || "unauthorized");
+    }
+    throw new Error("quiz_session_refresh_unavailable");
+  }
+
   if (response.status === 401 || response.status === 403 || isQuizAccessError(error)) {
     await handleQuizAccessError(error || "unauthorized");
     throw new Error(error || "unauthorized");
@@ -491,8 +606,12 @@ let italianAudioId = 0;
 let banglaAudioId = 0;
 let googleItalianAudio = null;
 let googleTTSAudio = null;
-const italianAudioCache = {};
-const bengaliAudioCache = {};
+let googleItalianAudioUrl = "";
+let googleTTSAudioUrl = "";
+let italianTtsRequest = null;
+let bengaliTtsRequest = null;
+const italianAudioCache = createBoundedCache(36);
+const bengaliAudioCache = createBoundedCache(36);
 
 function getLearningQuizMode() {
   if (isExamQuizMode()) return "simulation";
@@ -1378,19 +1497,51 @@ function showAudioUnavailableToast(message = "Audio non disponibile") {
   _audioToastTimer = setTimeout(() => toast.classList.remove("is-visible"), 2800);
 }
 
+const MAX_INLINE_TTS_BYTES = 3 * 1024 * 1024;
+
+function audioUrlFromBase64(value, mimeType = "audio/mpeg") {
+  const encoded = String(value || "").replace(/^data:[^,]+,/, "");
+  if (!encoded || encoded.length > Math.ceil(MAX_INLINE_TTS_BYTES * 4 / 3) + 16) {
+    throw new Error("audio_payload_too_large");
+  }
+  const binary = atob(encoded);
+  if (binary.length > MAX_INLINE_TTS_BYTES) throw new Error("audio_payload_too_large");
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return URL.createObjectURL(new Blob([bytes], { type: mimeType }));
+}
+
+function cancelQuizTtsRequest(kind) {
+  const request = kind === "it" ? italianTtsRequest : bengaliTtsRequest;
+  request?.controller.abort();
+  if (kind === "it") italianTtsRequest = null;
+  else bengaliTtsRequest = null;
+}
+
+function disposeGeneratedAudio(player, objectUrl) {
+  if (player) {
+    player.pause();
+    player.removeAttribute("src");
+    player.load();
+  }
+  if (objectUrl) URL.revokeObjectURL(objectUrl);
+}
+
 function stopAllAudio() {
   italianAudioId++;
   banglaAudioId++;
+  cancelQuizTtsRequest("it");
+  cancelQuizTtsRequest("bn");
   window.stopQuizHelpAudio?.();
   if (googleItalianAudio) {
-    googleItalianAudio.pause();
-    googleItalianAudio.src = "";
+    disposeGeneratedAudio(googleItalianAudio, googleItalianAudioUrl);
     googleItalianAudio = null;
+    googleItalianAudioUrl = "";
   }
   if (googleTTSAudio) {
-    googleTTSAudio.pause();
-    googleTTSAudio.src = "";
+    disposeGeneratedAudio(googleTTSAudio, googleTTSAudioUrl);
     googleTTSAudio = null;
+    googleTTSAudioUrl = "";
   }
   isTtsPlaying = false;
   isBengaliPlaying = false;
@@ -1421,25 +1572,32 @@ function updateTrialAudioButtons(question) {
 }
 
 async function fetchItalianAudio(text, cacheKey, questionId) {
-  if (italianAudioCache[cacheKey]) return italianAudioCache[cacheKey];
+  const cached = italianAudioCache.get(cacheKey);
+  if (cached) return cached;
+  if (italianTtsRequest?.key === cacheKey) return italianTtsRequest.promise;
+  cancelQuizTtsRequest("it");
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-  try {
-    const res = await fetchQuizJson(
-      buildQuizApiUrl("getItalianAudio", { text, questionId: String(questionId || "") }),
-      { signal: controller.signal }
-    );
-    clearTimeout(timeoutId);
-    const data = res;
-    if (!data.audio) throw new Error(data.error || "no audio in response");
-    italianAudioCache[cacheKey] = data;
-    return data;
-  } catch (err) {
-    clearTimeout(timeoutId);
-    throw err;
-  }
+  const request = { key: cacheKey, controller, promise: null };
+  request.promise = (async () => {
+    try {
+      const res = await fetchQuizJson(
+        buildQuizApiUrl("getItalianAudio", { text, questionId: String(questionId || "") }),
+        { signal: controller.signal }
+      );
+      const data = res;
+      if (!data.audio) throw new Error(data.error || "no audio in response");
+      italianAudioCache.set(cacheKey, data);
+      return data;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  })().finally(() => {
+    if (italianTtsRequest === request) italianTtsRequest = null;
+  });
+  italianTtsRequest = request;
+  return request.promise;
 }
 
 function speakItalian() {
@@ -1467,17 +1625,16 @@ function speakItalian() {
       if (italianAudioId !== myId) return;
       italianAudioBtn?.classList.remove("is-loading");
 
-      const binary = atob(data.audio);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blobUrl = URL.createObjectURL(new Blob([bytes], { type: "audio/mpeg" }));
+      const blobUrl = audioUrlFromBase64(data.audio);
 
       const audio = new Audio(blobUrl);
       googleItalianAudio = audio;
+      googleItalianAudioUrl = blobUrl;
       isTtsPlaying = true;
       italianAudioBtn?.classList.add("is-playing");
 
       const done = () => {
+        if (googleItalianAudioUrl === blobUrl) googleItalianAudioUrl = "";
         URL.revokeObjectURL(blobUrl);
         if (italianAudioId !== myId) return;
         googleItalianAudio = null;
@@ -1501,66 +1658,75 @@ function speakItalian() {
 // automatic translator only when no catalog translation exists.
 // Returns { audio: base64_mp3, translation: bengaliText }.
 async function fetchBengaliAudio(question, cacheKey, options = {}) {
-  if (bengaliAudioCache[cacheKey]) return bengaliAudioCache[cacheKey];
+  const cached = bengaliAudioCache.get(cacheKey);
+  if (cached) return cached;
+  const requestKey = `${cacheKey}:${options.requireAudio === false ? "translation" : "audio"}`;
+  if (bengaliTtsRequest?.key === requestKey) return bengaliTtsRequest.promise;
+  cancelQuizTtsRequest("bn");
 
   const controller = new AbortController();
   const timeoutId  = setTimeout(() => controller.abort(), 15000);
 
-  try {
-    const questionId = String(question?.id || "");
-    let synchronizedTranslation = "";
-    if (options.skipRuntimeLookup !== true) {
-      try {
-        const runtime = await window.QuizHelpRuntimeV3?.load?.();
-        const resolved = runtime?.resolver?.resolve(question);
-        const candidate = String(
-          resolved?.questionBnStandard || resolved?.questionBnEasy || resolved?.questionBn || ""
-        ).trim();
-        if ([...candidate].some(character => {
+  const request = { key: requestKey, controller, promise: null };
+  request.promise = (async () => {
+    try {
+      const questionId = String(question?.id || "");
+      let synchronizedTranslation = "";
+      if (options.skipRuntimeLookup !== true) {
+        try {
+          const runtime = await window.QuizHelpRuntimeV3?.load?.();
+          const resolved = runtime?.resolver?.resolve(question);
+          const candidate = String(
+            resolved?.questionBnStandard || resolved?.questionBnEasy || resolved?.questionBn || ""
+          ).trim();
+          if ([...candidate].some(character => {
+            const codePoint = character.codePointAt(0);
+            return codePoint >= 0x0980 && codePoint <= 0x09ff;
+          })) synchronizedTranslation = candidate;
+        } catch (_) {}
+      }
+
+      if (!synchronizedTranslation) {
+        const catalogCandidate = String(question?.question_bd || question?.questionBD || "").trim();
+        if ([...catalogCandidate].some(character => {
           const codePoint = character.codePointAt(0);
           return codePoint >= 0x0980 && codePoint <= 0x09ff;
-        })) synchronizedTranslation = candidate;
-      } catch (_) {}
-    }
+        })) synchronizedTranslation = catalogCandidate;
+      }
 
-    if (!synchronizedTranslation) {
-      const catalogCandidate = String(question?.question_bd || question?.questionBD || "").trim();
-      if ([...catalogCandidate].some(character => {
+      const automaticBackup = !synchronizedTranslation;
+      const res = await fetchQuizJson(
+        buildQuizApiUrl(automaticBackup ? "getBengaliAudio" : "getTTS", {
+          text: automaticBackup ? String(question?.question || "") : synchronizedTranslation,
+          questionId
+        }),
+        { signal: controller.signal }
+      );
+      const translatedText = automaticBackup
+        ? String(res?.translation || "").trim()
+        : synchronizedTranslation;
+      if (![...translatedText].some(character => {
         const codePoint = character.codePointAt(0);
         return codePoint >= 0x0980 && codePoint <= 0x09ff;
-      })) synchronizedTranslation = catalogCandidate;
+      })) throw new Error("translation_not_available");
+      const data = {
+        ...res,
+        translation: translatedText,
+        translationSource: String(
+          res?.translationSource || (automaticBackup ? "automatic" : "tmm_books")
+        )
+      };
+      if (!data.audio && options.requireAudio !== false) throw new Error(data.error || "no audio in response");
+      if (data.audio) bengaliAudioCache.set(cacheKey, data);
+      return data;
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    const automaticBackup = !synchronizedTranslation;
-    const res = await fetchQuizJson(
-      buildQuizApiUrl(automaticBackup ? "getBengaliAudio" : "getTTS", {
-        text: automaticBackup ? String(question?.question || "") : synchronizedTranslation,
-        questionId
-      }),
-      { signal: controller.signal }
-    );
-    clearTimeout(timeoutId);
-    const translatedText = automaticBackup
-      ? String(res?.translation || "").trim()
-      : synchronizedTranslation;
-    if (![...translatedText].some(character => {
-      const codePoint = character.codePointAt(0);
-      return codePoint >= 0x0980 && codePoint <= 0x09ff;
-    })) throw new Error("translation_not_available");
-    const data = {
-      ...res,
-      translation: translatedText,
-      translationSource: String(
-        res?.translationSource || (automaticBackup ? "automatic" : "tmm_books")
-      )
-    };
-    if (!data.audio && options.requireAudio !== false) throw new Error(data.error || "no audio in response");
-    if (data.audio) bengaliAudioCache[cacheKey] = data;
-    return data;
-  } catch (err) {
-    clearTimeout(timeoutId);
-    throw err;
-  }
+  })().finally(() => {
+    if (bengaliTtsRequest === request) bengaliTtsRequest = null;
+  });
+  bengaliTtsRequest = request;
+  return request.promise;
 }
 
 // Bengali TTS — single reliable path via GAS proxy.
@@ -1592,17 +1758,16 @@ function playBanglaAudio() {
       banglaAudioBtn?.classList.remove("is-loading");
       console.log("[Bengali TTS] Translation:", data.translation);
 
-      const binary = atob(data.audio);
-      const bytes  = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blobUrl = URL.createObjectURL(new Blob([bytes], { type: "audio/mpeg" }));
+      const blobUrl = audioUrlFromBase64(data.audio);
 
       const audio = new Audio(blobUrl);
       googleTTSAudio = audio;
+      googleTTSAudioUrl = blobUrl;
       isBengaliPlaying = true;
       banglaAudioBtn?.classList.add("is-playing");
 
       const done = () => {
+        if (googleTTSAudioUrl === blobUrl) googleTTSAudioUrl = "";
         URL.revokeObjectURL(blobUrl);
         if (banglaAudioId !== myId) return;
         googleTTSAudio = null;

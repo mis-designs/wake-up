@@ -148,5 +148,5 @@ test("the synchronized resolver and cache versions are deployed together", () =>
   }
   assert.match(worker, /magicbook-pwa-v139-adorsho-font-library/u);
   assert.match(worker, /quiz-help\.js\?v=20260824-keyword-glossary/u);
-  assert.match(worker, /study-quiz\.js\?v=16-explanation-artwork/u);
+  assert.match(worker, /study-quiz\.js\?v=17-tts-session-recovery/u);
 });
