@@ -26,6 +26,7 @@ const STATIC_ASSETS = [
   "/patenteGlossaryResolver.js?v=1.0.0",
   "/patenteContextResolverV3.js?v=4.0.0-glossary-display",
   "/quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity",
+  "/quiz-help-preview.js?v=1-personal-bangla-preview",
   "/magic-dictionary.js?v=1.2.4",
   "/screen-protection.js?v=1.2.0",
   "/icons/explain_quiz.svg",

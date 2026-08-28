@@ -319,3 +319,32 @@ body {
   .audio-admin-review-intro .audio-admin-player { width: 100%; min-width: 0; flex-basis: auto; }
   .audio-admin-review-candidates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+.audio-admin-help-toggle { display: inline-flex; width: fit-content; max-width: 100%; min-height: 44px; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border: 1px solid #cfc5ff; border-radius: 12px; background: #f7f4ff; color: #4934bf; font: inherit; font-size: .82rem; font-weight: 850; text-align: left; cursor: pointer; transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, color .16s ease; }
+.audio-admin-help-toggle:hover, .audio-admin-help-toggle:focus-visible { border-color: #7658e8; background: #eeeaff; color: #3926aa; outline: none; box-shadow: 0 0 0 3px rgba(123, 97, 255, .14); }
+.audio-admin-help-toggle-marker { width: 8px; height: 8px; flex: 0 0 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .16s ease; }
+.audio-admin-help-toggle[aria-expanded="true"] .audio-admin-help-toggle-marker { transform: rotate(225deg) translate(-1px, -1px); }
+.audio-admin-question.is-help-open { border-color: #b9a9ff; }
+.audio-admin-help-panel { display: grid; grid-column: 1 / -1; gap: 10px; min-width: 0; margin-top: 2px; padding: 14px 16px; border: 1px solid #d7cdfd; border-radius: 15px; background: linear-gradient(135deg, #fbfaff, #f2fbf9); }
+.audio-admin-help-label, .audio-admin-help-section-title { color: #7658e8; font-size: .7rem; font-weight: 950; letter-spacing: .12em; }
+.audio-admin-help-translation { margin: 0; color: #17233a; font-family: var(--font-bengali, "Noto Sans Bengali", "Hind Siliguri", sans-serif); font-size: 1.05rem; line-height: 1.72; overflow-wrap: anywhere; }
+.audio-admin-help-translation.is-missing, .audio-admin-help-status { color: #60718a; font-size: .88rem; line-height: 1.5; }
+.audio-admin-help-context { display: flex; flex-wrap: wrap; gap: 7px; }
+.audio-admin-help-context span { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 6px 9px; border-radius: 9px; background: #e7f7f2; color: #225b58; font-size: .8rem; font-weight: 700; }
+.audio-admin-help-context span span, .audio-admin-help-word-bn, .audio-admin-help-word-note { font-family: var(--font-bengali, "Noto Sans Bengali", "Hind Siliguri", sans-serif); }
+.audio-admin-help-words { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+.audio-admin-help-word { display: grid; gap: 3px; min-width: 0; padding: 9px 11px; border: 1px solid #dce6ef; border-radius: 11px; background: #fff; }
+.audio-admin-help-word strong { color: #233653; overflow-wrap: anywhere; }
+.audio-admin-help-word-bn { color: #087e72; font-size: .98rem; line-height: 1.5; overflow-wrap: anywhere; }
+.audio-admin-help-word-note { color: #526982; font-size: .8rem; line-height: 1.45; overflow-wrap: anywhere; }
+.audio-admin-help-status { margin: 0; }
+.audio-admin-help-status.is-error { color: #b12c39; }
+@media (max-width: 699px) {
+  .audio-admin-help-toggle { width: 100%; }
+  .audio-admin-help-panel { padding: 13px; }
+  .audio-admin-help-words { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .audio-admin-help-toggle, .audio-admin-help-toggle-marker { transition: none; }
+}
+.audio-admin-help-toggle { grid-column: 1 / -1; }

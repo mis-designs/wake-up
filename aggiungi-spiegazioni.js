@@ -29,7 +29,9 @@ const state = {
   activeQuestionId: null,
   playing: null,
   playbackRequestId: 0,
-  italianAudioCache: new Map()
+  italianAudioCache: new Map(),
+  activeHelpKey: null,
+  helpRequestId: 0
 };
 let dialogResolver = null;
 const DRAFT_DB = "magicph-quiz-audio-drafts";
@@ -305,13 +307,13 @@ function renderChapters() {
 }
 
 function openChapter(index) {
-  state.selected = index; state.reviewOpen = false; state.query = ""; state.filter = "all"; state.activeQuestionId = null; closeInline();
+  resetQuestionHelp(); state.selected = index; state.reviewOpen = false; state.query = ""; state.filter = "all"; state.activeQuestionId = null; closeInline();
   $("audioAdminLegacyReview").classList.add("hidden"); $("audioAdminChapters").classList.add("hidden"); $("audioAdminQuestions").classList.remove("hidden"); renderChapter();
   history.replaceState({}, "", `/aggiungi-spiegazioni?capitolo=${index + 1}`);
 }
 
 function closeChapter() {
-  state.selected = null; state.reviewOpen = false; state.activeQuestionId = null; closeInline();
+  resetQuestionHelp(); state.selected = null; state.reviewOpen = false; state.activeQuestionId = null; closeInline();
   $("audioAdminLegacyReview").classList.add("hidden"); $("audioAdminQuestions").classList.add("hidden"); $("audioAdminChapters").classList.remove("hidden");
   renderChapters(); history.replaceState({}, "", "/aggiungi-spiegazioni");
 }
@@ -367,21 +369,212 @@ function createFilterMenu() {
   wrapper.append(trigger, menu); return wrapper;
 }
 
+function resetQuestionHelp() {
+  state.activeHelpKey = null;
+  state.helpRequestId += 1;
+}
+
+function helpPanelId(key) {
+  const safe = String(key || "question").replace(/[^a-z0-9_-]+/gi, "-").replace(/^-+|-+$/g, "") || "question";
+  return `audio-admin-help-${safe}`;
+}
+
+function renderHelpLoading(panel) {
+  panel.replaceChildren();
+  panel.dataset.helpState = "loading";
+  panel.setAttribute("aria-busy", "true");
+  const status = document.createElement("p");
+  status.className = "audio-admin-help-status";
+  status.setAttribute("role", "status");
+  status.textContent = "Caricamento della traduzione personale…";
+  panel.append(status);
+}
+
+function renderHelpError(panel) {
+  panel.replaceChildren();
+  panel.dataset.helpState = "error";
+  panel.setAttribute("aria-busy", "false");
+  const status = document.createElement("p");
+  status.className = "audio-admin-help-status is-error";
+  status.textContent = "Traduzioni non disponibili in questo momento. Riprova tra poco.";
+  panel.append(status);
+}
+
+function appendHelpContext(context, label, value) {
+  const italian = String(value?.italian || "").trim();
+  const bangla = String(value?.bangla || "").trim();
+  if (!italian && !bangla) return;
+  const item = document.createElement("span");
+  const title = document.createElement("strong");
+  title.textContent = `${label}:`;
+  item.append(title);
+  if (italian) item.append(document.createTextNode(` ${italian}`));
+  if (bangla) {
+    const translated = document.createElement("span");
+    translated.lang = "bn";
+    translated.textContent = ` · ${bangla}`;
+    item.append(translated);
+  }
+  context.append(item);
+}
+
+function renderQuestionHelp(panel, help) {
+  panel.replaceChildren();
+  panel.dataset.helpState = "ready";
+  panel.setAttribute("aria-busy", "false");
+
+  const label = document.createElement("span");
+  label.className = "audio-admin-help-label";
+  label.textContent = "FONTE PERSONALE DI TRADUZIONE";
+  panel.append(label);
+
+  const translation = document.createElement("p");
+  translation.className = "audio-admin-help-translation";
+  translation.lang = "bn";
+  if (help?.translation) {
+    translation.textContent = help.translation;
+  } else {
+    translation.classList.add("is-missing");
+    translation.textContent = "Traduzione completa non disponibile per questa domanda.";
+  }
+  panel.append(translation);
+
+  const context = document.createElement("div");
+  context.className = "audio-admin-help-context";
+  appendHelpContext(context, "Capitolo", help?.chapter);
+  appendHelpContext(context, "Argomento", help?.topic);
+  if (context.children.length) panel.append(context);
+
+  const title = document.createElement("span");
+  title.className = "audio-admin-help-section-title";
+  title.textContent = "PAROLE CHIAVE";
+  panel.append(title);
+
+  const words = document.createElement("div");
+  words.className = "audio-admin-help-words";
+  if (!help?.words?.length) {
+    const empty = document.createElement("p");
+    empty.className = "audio-admin-help-status";
+    empty.textContent = "Parole chiave non disponibili per questa domanda.";
+    words.append(empty);
+  } else {
+    help.words.forEach(word => {
+      const item = document.createElement("div");
+      item.className = "audio-admin-help-word";
+      const italian = document.createElement("strong");
+      italian.textContent = word.italian;
+      const bangla = document.createElement("span");
+      bangla.className = "audio-admin-help-word-bn";
+      bangla.lang = "bn";
+      bangla.textContent = word.bangla;
+      item.append(italian, bangla);
+      if (word.simpleBn && word.simpleBn !== word.bangla) {
+        const note = document.createElement("small");
+        note.className = "audio-admin-help-word-note";
+        note.lang = "bn";
+        note.textContent = `Spiegazione: ${word.simpleBn}`;
+        item.append(note);
+      }
+      words.append(item);
+    });
+  }
+  panel.append(words);
+}
+
+function closeOtherQuestionHelp(exceptKey = "") {
+  const root = $("audioAdminQuestions");
+  root?.querySelectorAll(".audio-admin-help-toggle[aria-expanded='true']").forEach(button => {
+    if (button.dataset.helpKey === exceptKey) return;
+    button.setAttribute("aria-expanded", "false");
+  });
+  root?.querySelectorAll(".audio-admin-help-panel:not([hidden])").forEach(panel => {
+    if (panel.dataset.helpKey === exceptKey) return;
+    panel.hidden = true;
+  });
+  root?.querySelectorAll(".audio-admin-question.is-help-open").forEach(row => {
+    if (row.dataset.helpKey !== exceptKey) row.classList.remove("is-help-open");
+  });
+}
+
+async function loadQuestionHelp(question, key, panel) {
+  const requestId = ++state.helpRequestId;
+  renderHelpLoading(panel);
+  try {
+    if (!window.QuizHelpPreview?.getQuestionHelp) throw new Error("quiz_help_preview_missing");
+    const help = await window.QuizHelpPreview.getQuestionHelp(question);
+    if (requestId !== state.helpRequestId || state.activeHelpKey !== key || !document.body.contains(panel)) return;
+    renderQuestionHelp(panel, help);
+  } catch (_) {
+    if (requestId !== state.helpRequestId || state.activeHelpKey !== key || !document.body.contains(panel)) return;
+    renderHelpError(panel);
+  }
+}
+
+function toggleQuestionHelp(question, key, button, panel, row) {
+  const open = button.getAttribute("aria-expanded") === "true";
+  if (open) {
+    state.activeHelpKey = null;
+    state.helpRequestId += 1;
+    button.setAttribute("aria-expanded", "false");
+    panel.hidden = true;
+    row.classList.remove("is-help-open");
+    return;
+  }
+  closeOtherQuestionHelp(key);
+  state.activeHelpKey = key;
+  button.setAttribute("aria-expanded", "true");
+  panel.hidden = false;
+  row.classList.add("is-help-open");
+  void loadQuestionHelp(question, key, panel);
+}
+
+function createQuestionHelpDisclosure(question, key, row) {
+  const panelId = helpPanelId(key);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "audio-admin-help-toggle";
+  button.dataset.helpKey = key;
+  button.setAttribute("aria-expanded", String(state.activeHelpKey === key));
+  button.setAttribute("aria-controls", panelId);
+  const label = document.createElement("span");
+  label.textContent = "Traduzione Bangla e parole chiave";
+  const marker = document.createElement("span");
+  marker.className = "audio-admin-help-toggle-marker";
+  marker.setAttribute("aria-hidden", "true");
+  button.append(label, marker);
+
+  const panel = document.createElement("section");
+  panel.id = panelId;
+  panel.className = "audio-admin-help-panel";
+  panel.dataset.helpKey = key;
+  panel.setAttribute("aria-label", "Traduzione Bangla e parole chiave");
+  panel.hidden = state.activeHelpKey !== key;
+  button.addEventListener("click", () => toggleQuestionHelp(question, key, button, panel, row));
+  if (state.activeHelpKey === key) {
+    row.classList.add("is-help-open");
+    void loadQuestionHelp(question, key, panel);
+  }
+  return { button, panel };
+}
+
 function questionRow(question, position) {
   const row = document.createElement("article"); row.className = "audio-admin-question";
   const copy = document.createElement("div"); copy.className = "audio-admin-question-copy";
   const text = document.createElement("strong"); text.textContent = `${position + 1}. ${question.question}`; copy.append(text);
   const imageSource = figureUrl(question.figure);
   if (imageSource) { const image = document.createElement("img"); image.src = imageSource; image.alt = "Figura della domanda"; image.loading = "lazy"; image.onerror = () => image.remove(); copy.append(image); }
-  const actions = document.createElement("div"); actions.className = "audio-admin-actions";
   const activeId = `chapter-${state.selected}-quiz-${question.id}`;
+  const help = createQuestionHelpDisclosure(question, activeId, row);
+  copy.append(help.button);
+  const actions = document.createElement("div"); actions.className = "audio-admin-actions";
   const italianPlayer = createItalianQuestionPlayer(question);
   if (isIdentityAvailable(question.identity)) {
     const player = createAudioPlayer(question); const edit = iconButton("renew", "Registra di nuovo", RENEW_ICON); edit.addEventListener("click", () => beginInline(question, activeId)); actions.append(italianPlayer, player, answerBadge(question.correct), edit);
   } else {
     const add = iconButton("add", "Aggiungi spiegazione", ADD_ICON); add.addEventListener("click", () => beginInline(question, activeId)); actions.append(italianPlayer, answerBadge(question.correct), add);
   }
-  row.append(copy, actions);
+  row.dataset.helpKey = activeId;
+  row.append(copy, actions, help.panel);
   if (state.activeQuestionId === activeId) row.append(inlineRecorder());
   return row;
 }
@@ -748,6 +941,7 @@ function createLegacyReviewEntry() {
 function showLegacyReviews(updateHistory = true) {
   if (!legacyReviewGroups().length) return closeChapter();
   closeInline();
+  resetQuestionHelp();
   state.selected = null;
   state.reviewOpen = true;
   $("audioAdminChapters").classList.add("hidden");

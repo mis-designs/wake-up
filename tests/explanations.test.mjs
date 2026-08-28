@@ -63,7 +63,7 @@ test("the admin explanations page uses the supplied full-page background", () =>
   const htmlSource = fs.readFileSync(new URL("../aggiungi-spiegazioni.html", import.meta.url), "utf8");
   const cssSource = fs.readFileSync(new URL("../aggiungi-spiegazioni.css", import.meta.url), "utf8");
 
-  assert.match(htmlSource, /aggiungi-spiegazioni\.css\?v=8-page-background/u);
+  assert.match(htmlSource, /aggiungi-spiegazioni\.css\?v=9-admin-bangla-help/u);
   assert.match(cssSource, /url\("icons\/sec_explain_bg_image\.png"\)/u);
   assert.match(cssSource, /background-size:\s*cover/u);
   assert.match(cssSource, /background-attachment:\s*fixed/u);
