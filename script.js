@@ -219,6 +219,7 @@ let otpResendTimer = null;
 let otpRetryAtMs = 0;
 let otpResendLoading = false;
 let adminPasswordRequired = false;
+let pendingPromoLoginCode = "";
 
 function getClientAuthResetVersion() {
   try {
@@ -811,8 +812,6 @@ function completeLogin(phone, deviceId, data) {
 
   const err = document.getElementById("err");
   if (err) err.textContent = "";
-  const promoCodeInput = document.getElementById("promoCode");
-  if (promoCodeInput) promoCodeInput.value = "";
   const promoLandingCodeInput = document.getElementById("promoLandingCode");
   if (promoLandingCodeInput) promoLandingCodeInput.value = "";
   const promoLandingError = document.getElementById("promoLandingError");
@@ -868,14 +867,14 @@ function setLoginButtonBusy(button, isBusy) {
 async function login(options = {}) {
   const fromPromoCard = options.source === "promo-card";
   const phoneInput = document.getElementById(fromPromoCard ? "promoLandingPhone" : "user");
-  const promoCodeInput = document.getElementById(fromPromoCard ? "promoLandingCode" : "promoCode");
+  const promoCodeInput = fromPromoCard ? document.getElementById("promoLandingCode") : null;
   const adminPasswordInput = document.getElementById("adminPassword");
   const err = document.getElementById(fromPromoCard ? "promoLandingError" : "err");
   const loginButton = document.querySelector(fromPromoCard ? ".promo-access-submit" : "#login .login-submit");
   const loginButtonLabel = loginButton?.querySelector("span") || loginButton;
 
   const phone = normalizePhone(phoneInput?.value);
-  const promoCode = String(promoCodeInput?.value || "").trim();
+  const promoCode = fromPromoCard ? String(promoCodeInput?.value || "").trim() : "";
 
   if (!isValidPhoneNumber(phoneInput?.value)) {
     if (err) err.textContent = "Inserisci un numero di telefono valido";
@@ -911,7 +910,6 @@ async function login(options = {}) {
   if (err) err.textContent = "";
   if (!fromPromoCard) {
     setLoginFieldInvalid(phoneInput, false);
-    setLoginFieldInvalid(promoCodeInput, false);
     setLoginFieldInvalid(adminPasswordInput, false);
   } else {
     setLoginFieldInvalid(phoneInput, false);
@@ -923,7 +921,9 @@ async function login(options = {}) {
       action: "login",
       phone,
       deviceId,
-      promoCode: promoCode || undefined,
+      ...(fromPromoCard || (adminPasswordRequired && pendingPromoLoginCode)
+        ? { promoCode: (fromPromoCard ? promoCode : pendingPromoLoginCode) || undefined }
+        : {}),
       adminPassword: adminPasswordRequired ? String(adminPasswordInput?.value || "") : undefined
     };
     const data = fromPromoCard
@@ -936,10 +936,9 @@ async function login(options = {}) {
       if ((data?.error || data?.status) === "admin_password_required") {
         if (fromPromoCard) {
           const mainPhoneInput = document.getElementById("user");
-          const mainPromoInput = document.getElementById("promoCode");
           if (mainPhoneInput) mainPhoneInput.value = phoneInput?.value || "";
-          if (mainPromoInput) mainPromoInput.value = promoCode;
-          showLoginScreen("Inserisci la password amministratore.");
+          pendingPromoLoginCode = promoCode;
+          showLoginScreen("Inserisci la password amministratore.", { preservePromoCode: true });
         }
         showAdminPasswordUI();
         if (err) err.textContent = "Inserisci la password amministratore.";
@@ -984,7 +983,7 @@ async function login(options = {}) {
         setLoginFieldInvalid(phoneInput, true);
         phoneInput?.focus();
       }
-      if (["promo_invalid", "promo_expired", "promo_unavailable"].includes(loginError)) {
+      if (fromPromoCard && ["promo_invalid", "promo_expired", "promo_unavailable"].includes(loginError)) {
         setLoginFieldInvalid(promoCodeInput, true);
         promoCodeInput?.focus();
       }
@@ -1427,7 +1426,6 @@ function setupLoginUI() {
   ensureAdminPasswordUI();
 
   const phoneInput = document.getElementById("user");
-  const promoCodeInput = document.getElementById("promoCode");
   const loginButton = document.querySelector("#login .login-submit");
   const err = document.getElementById("err");
 
@@ -1437,15 +1435,10 @@ function setupLoginUI() {
 
   phoneInput?.addEventListener("input", () => {
     hideAdminPasswordUI();
+    pendingPromoLoginCode = "";
     if (err) err.textContent = "";
     setLoginFieldInvalid(phoneInput, false);
     updateLoginButtonState();
-  });
-
-  promoCodeInput?.addEventListener("input", () => {
-    promoCodeInput.value = promoCodeInput.value.toUpperCase().replace(/\s+/g, "");
-    if (err) err.textContent = "";
-    setLoginFieldInvalid(promoCodeInput, false);
   });
 
   updateLoginButtonState();
@@ -2133,6 +2126,7 @@ function updateLoginTimeGreeting(now = new Date()) {
 function showLoginScreen(message = "", options = {}) {
   hideAll();
   pendingOtpLogin = null;
+  if (options.preservePromoCode !== true) pendingPromoLoginCode = "";
   hideOtpUI();
   document.getElementById("login")?.classList.remove("hidden");
   updateLoginTimeGreeting();
@@ -2140,7 +2134,6 @@ function showLoginScreen(message = "", options = {}) {
   const err = document.getElementById("err");
   if (err) err.textContent = message;
   setLoginFieldInvalid(document.getElementById("user"), false);
-  setLoginFieldInvalid(document.getElementById("promoCode"), false);
   setLoginFieldInvalid(document.getElementById("adminPassword"), false);
   setLoginButtonBusy(document.querySelector("#login .login-submit"), false);
   updateProfileUI(false);

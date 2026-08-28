@@ -33,13 +33,24 @@ test("every MagicBook image is watermarked by the backend before delivery", asyn
   assert.match(trialBookApi, /watermarkMagicBookPage\(object\.buffer\)/u);
 });
 
+test("book watermarking accepts PNG bytes stored under JPG page keys", async () => {
+  const input = await sharp({
+    create: { width: 320, height: 480, channels: 3, background: "#ffffff" }
+  }).png().toBuffer();
+  const output = await watermarkMagicBookPage(input);
+  const metadata = await sharp(output).metadata();
+  assert.equal(metadata.format, "jpeg");
+  assert.equal(metadata.width, 320);
+  assert.equal(metadata.height, 480);
+});
+
 test("the watermark exists only inside book images and not as a page overlay", () => {
   assert.doesNotMatch(script, /drawMagicBookPageWatermark|getMagicBookPageWatermarkText/u);
   assert.doesNotMatch(readFileSync(new URL("../screen-protection.js", import.meta.url), "utf8"), /watermark|TMM MAGICBOOK/u);
 });
 
 test("the PWA requests the private-book reader build", () => {
-  assert.match(index, /script\.js\?v=61-promo-desktop-layout/u);
-  assert.match(worker, /magicbook-pwa-v139-adorsho-font-library/u);
-  assert.match(worker, /script\.js\?v=61-promo-desktop-layout/u);
+  assert.match(index, /script\.js\?v=62-remove-promo-code/u);
+  assert.match(worker, /magicbook-pwa-v140-remove-promo-code/u);
+  assert.match(worker, /script\.js\?v=62-remove-promo-code/u);
 });

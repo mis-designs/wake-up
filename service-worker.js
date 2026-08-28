@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v139-adorsho-font-library";
+const CACHE_NAME = "magicbook-pwa-v140-remove-promo-code";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -15,7 +15,7 @@ const STATIC_ASSETS = [
   "/src/learning-insights.js?v=5-figure-explanation-ui&ui=6",
   "/homebg.css?v=3",
   "/mystyle.css?v=45-review-translations",
-  "/script.js?v=61-promo-desktop-layout",
+  "/script.js?v=62-remove-promo-code",
   "/study-quiz.html",
   "/study-quiz.css?v=23-adorsho-study-text",
   "/study-quiz.js?v=17-tts-session-recovery",

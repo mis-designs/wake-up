@@ -56,7 +56,7 @@ test("login form owns validation and exposes accessible field states", () => {
 
   assert.match(script, /function setLoginFieldInvalid\([\s\S]*?aria-invalid/);
   assert.match(script, /setLoginFieldInvalid\(phoneInput, true\);\s*phoneInput\?\.focus\(\)/);
-  assert.match(script, /setLoginFieldInvalid\(document\.getElementById\("promoCode"\), false\)/);
+  assert.doesNotMatch(script, /document\.getElementById\("promoCode"\)/);
   assert.match(script, /setLoginButtonBusy\([\s\S]*?aria-busy/);
   assert.match(script, /setLoginButtonBusy\([\s\S]*?aria-disabled/);
   assert.match(styles, /#login \.login-submit\.is-loading::after[\s\S]*?content: none;[\s\S]*?display: none;/);
@@ -80,9 +80,10 @@ test("login fills the upper space with restrained multilingual greetings", () =>
   assert.match(styles, /prefers-reduced-motion: reduce[\s\S]*?login-greeting-cloud/);
 });
 
-test("login restores the accessible optional promo-code controls", () => {
+test("main login no longer presents the finished optional promo-code field", () => {
   assert.ok(page.indexOf('id="user"') > 0);
-  assert.match(page, /class="login-input login-promo-input d-input d-input-lg" id="promoCode"/);
-  assert.match(page, /id="promoCodeHint"[^>]*>Con un codice valido ricevi 5 giorni/);
-  assert.match(script, /promoCode: promoCode \|\| undefined/);
+  assert.doesNotMatch(page, /id="promoCode"|id="promoCodeHint"|login-promo-input|promo-code-hint/);
+  assert.doesNotMatch(script, /document\.getElementById\("promoCode"\)/);
+  assert.match(page, /id="promoLandingCode"/);
+  assert.match(script, /promoLandingCode/);
 });

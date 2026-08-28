@@ -31,7 +31,10 @@ export async function watermarkMagicBookPage(input) {
   }).autoOrient();
   const metadata = await image.metadata();
 
-  if (metadata.format !== "jpeg" || !metadata.width || !metadata.height) {
+  // Some book pages are stored as PNG bytes even though their object key ends
+  // in `.jpg` (notably page 2 of chapters 22 and 24). Sharp can decode them
+  // safely, and the pipeline below always emits a protected JPEG anyway.
+  if (!["jpeg", "png"].includes(metadata.format) || !metadata.width || !metadata.height) {
     const error = new Error("invalid_private_book_image");
     error.statusCode = 500;
     throw error;

@@ -309,12 +309,16 @@ test("promo backend setup failures are normalized without leaking internal error
   assert.match(scriptSource, /Servizio promozionale momentaneamente non disponibile/);
 });
 
-test("login presents the optional promo-code field", () => {
+test("main login no longer presents the finished optional promo-code field", () => {
   const phoneIndex = pageSource.indexOf('id="user"');
   assert.ok(phoneIndex > 0);
-  assert.match(pageSource, /id="promoCode"[^>]*aria-describedby="promoCodeHint err"/);
-  assert.match(pageSource, /id="promoCodeHint"[^>]*>Con un codice valido ricevi 5 giorni/);
-  assert.match(scriptSource, /promoCode: promoCode \|\| undefined/);
+  const loginStart = pageSource.indexOf('<div class="card hidden" id="login"');
+  const loginEnd = pageSource.indexOf('<!-- HOME', loginStart);
+  const loginMarkup = pageSource.slice(loginStart, loginEnd > loginStart ? loginEnd : undefined);
+  assert.doesNotMatch(loginMarkup, /promoCode|Promo code \(facoltativo\)|promo-code-hint/);
+  assert.doesNotMatch(scriptSource, /document\.getElementById\("promoCode"\)/);
+  assert.doesNotMatch(scriptSource, /login-promo-input|promo-code-hint/);
+  assert.match(scriptSource, /promoCode: \(fromPromoCard \? promoCode : pendingPromoLoginCode\) \|\| undefined/);
 });
 
 test("landing renders the promo login without exposing environment values", () => {

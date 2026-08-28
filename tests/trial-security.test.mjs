@@ -40,7 +40,7 @@ test("the public landing restores promo-code access instead of the guest trial",
   assert.match(landing, /id="promoLandingPhone"[\s\S]*?id="promoLandingCode"/);
   assert.match(landing, /Login con <span>Promo Code<\/span>/);
   assert.doesNotMatch(landing, /class="trial-card"|startGuestTrial\(/);
-  assert.match(page, /id="promoCode"[\s\S]*?promo-code-hint/);
+  assert.doesNotMatch(page, /<div class="card hidden" id="login"[\s\S]*?id="promoCode"/);
   assert.match(main, /PROMO_CAMPAIGN_DURATION_MS = 3 \* 24 \* 60 \* 60 \* 1000/);
   assert.match(main, /setupPromoLandingUI\(\);[\s\S]*?void setupPromoCampaign\(\);/);
   assert.doesNotMatch(main, /setupAdminUI\(\);\s*setupTrialMarketing\(\);/);

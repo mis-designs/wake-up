@@ -4583,31 +4583,6 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     background: #ffffff;
 }
 
-#login .login-promo-input {
-    border-style: dashed;
-    border-color: rgba(10, 130, 112, 0.34);
-    background:
-        linear-gradient(#f9fcfb, #f9fcfb) padding-box,
-        linear-gradient(100deg, rgba(10, 130, 112, 0.38), rgba(124, 255, 107, 0.5)) border-box;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-#login .login-promo-input::placeholder {
-    letter-spacing: 0;
-    text-transform: none;
-}
-
-#login .promo-code-hint {
-    width: 100%;
-    margin: -3px 0 1px;
-    color: rgba(10, 111, 96, 0.72);
-    font-size: 0.7rem;
-    font-weight: 650;
-    line-height: 1.35;
-    text-align: center;
-}
-
 .promo-login-toast {
     position: fixed;
     top: max(18px, env(safe-area-inset-top));
