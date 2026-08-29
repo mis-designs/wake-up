@@ -2961,30 +2961,26 @@ function renderAnswerReview(items = []) {
     const translationDisclosure = createReviewTranslationDisclosure(item);
     row.append(status, title, answersText, translationDisclosure.tools);
 
-    let reviewAudioControl = null;
-    if (stateClass === "is-wrong") {
-      const audioButton = document.createElement("button");
-      audioButton.type = "button";
-      audioButton.className = "modal-review-audio-button";
-      audioButton.classList.toggle("is-trial-locked", TRIAL_MODE);
-      audioButton.dataset.audioLabel = `Ascolta la spiegazione audio della domanda ${item.index}`;
-      setReviewAudioButtonState(audioButton, "idle");
+    const reviewAudioControl = document.createElement("button");
+    reviewAudioControl.type = "button";
+    reviewAudioControl.className = "modal-review-audio-button";
+    reviewAudioControl.classList.toggle("is-trial-locked", TRIAL_MODE);
+    reviewAudioControl.dataset.audioLabel = `Ascolta la spiegazione audio della domanda ${item.index}`;
+    setReviewAudioButtonState(reviewAudioControl, "idle");
 
-      const explainIcon = document.createElement("img");
-      explainIcon.className = "modal-review-explain-icon";
-      explainIcon.src = "icons/explain_quiz.svg";
-      explainIcon.alt = "";
-      explainIcon.setAttribute("aria-hidden", "true");
-      explainIcon.loading = "lazy";
-      explainIcon.decoding = "async";
-      audioButton.appendChild(explainIcon);
-      audioButton.addEventListener("click", event => {
-        event.stopPropagation();
-        if (TRIAL_MODE) openTrialAudioOffer("Spiegazioni audio");
-        else toggleReviewAudio(audioButton, item);
-      });
-      reviewAudioControl = audioButton;
-    }
+    const explainIcon = document.createElement("img");
+    explainIcon.className = "modal-review-explain-icon";
+    explainIcon.src = "icons/explain_quiz.svg";
+    explainIcon.alt = "";
+    explainIcon.setAttribute("aria-hidden", "true");
+    explainIcon.loading = "lazy";
+    explainIcon.decoding = "async";
+    reviewAudioControl.appendChild(explainIcon);
+    reviewAudioControl.addEventListener("click", event => {
+      event.stopPropagation();
+      if (TRIAL_MODE) openTrialAudioOffer("Spiegazioni audio");
+      else toggleReviewAudio(reviewAudioControl, item);
+    });
 
     // Show question image if present
     const figVal = String(item.figure ?? "").trim().toLowerCase();
@@ -3000,9 +2996,9 @@ function renderAnswerReview(items = []) {
       img.src = buildFigureImageUrl(item.figure);
       img.onerror = function () { this.remove(); };
       figureShell.appendChild(img);
-      if (reviewAudioControl) figureShell.appendChild(reviewAudioControl);
+      figureShell.appendChild(reviewAudioControl);
       row.appendChild(figureShell);
-    } else if (reviewAudioControl) {
+    } else {
       row.appendChild(reviewAudioControl);
     }
 
@@ -3102,7 +3098,10 @@ function updateAdminCorrectDots(question) {
   wrappers.forEach(wrapper => {
     const slot = wrapper.querySelector(".admin-correct-dot-slot");
     if (!slot) return;
-    slot.innerHTML = "";
+    slot.replaceChildren();
+    slot.classList.remove("is-visible");
+    slot.removeAttribute("role");
+    slot.removeAttribute("aria-label");
 
     const optionValue = normalizeAnswerValue(wrapper.dataset.answerValue);
     if (!isAdmin || correctAnswer === null || optionValue !== correctAnswer) return;
@@ -3111,6 +3110,9 @@ function updateAdminCorrectDots(question) {
     dot.className = "admin-correct-dot";
     dot.classList.add(optionValue === 1 ? "admin-correct-dot--true" : "admin-correct-dot--false");
     dot.setAttribute("aria-hidden", "true");
+    slot.classList.add("is-visible");
+    slot.setAttribute("role", "note");
+    slot.setAttribute("aria-label", `Risposta corretta per Admin: ${answerLabel(optionValue)}`);
     slot.appendChild(dot);
   });
 }

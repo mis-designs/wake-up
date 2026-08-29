@@ -24,8 +24,8 @@
     <link rel="preload" as="font" type="font/woff2" href="https://banglawebfonts.pages.dev/fonts/tiro-bangla/tiro-bangla-regular.woff2" crossorigin="anonymous">
     <style>@import url('https://banglawebfonts.pages.dev/css/un-bangla.css');</style>
     <link href="https://banglawebfonts.pages.dev/css/tiro-bangla.css" rel="stylesheet">
-    <link rel="stylesheet" href="mystyle.css?v=45-review-translations">
-    <link rel="stylesheet" href="quiz-help.css?v=20260801-readable-text">
+    <link rel="stylesheet" href="mystyle.css?v=47-review-audio-control">
+    <link rel="stylesheet" href="quiz-help.css?v=20260829-single-card">
     <link rel="stylesheet" href="magic-dictionary.css?v=1.2.5-settings-layout">
     <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
 </head>
@@ -111,7 +111,8 @@
                 <img id="figure" alt="">
             </div>
             <!-- Il testo ufficiale del quiz deve restare in italiano anche con la traduzione del browser. -->
-            <p id="question" class="notranslate" translate="no" lang="it"></p>
+            <button id="question" type="button" class="notranslate" translate="no" lang="it" aria-haspopup="dialog" aria-controls="quiz-help-workspace" aria-describedby="quiz-help-trigger-description"></button>
+            <span id="quiz-help-trigger-description" class="sr-only">Apri la traduzione Bangla e le parole chiave.</span>
             <div class="quiz-click-hint" aria-hidden="true">
                 <span class="quiz-click-hint-hand">👆</span>
                 <span class="quiz-click-hint-copy">
@@ -242,27 +243,19 @@
 
     <div id="quiz-help-workspace" class="quiz-help-workspace hidden" aria-hidden="true">
         <div class="quiz-help-shell" role="dialog" aria-modal="true" aria-labelledby="quiz-help-title">
-            <header class="quiz-help-topbar">
-                <strong id="quiz-help-title">Aiuto del quiz</strong>
-                <button class="quiz-help-close" type="button" data-help-close aria-label="Chiudi">×</button>
-            </header>
-            <div class="quiz-help-tabs" role="tablist" aria-label="Traduzione e parole chiave">
-                <button class="quiz-help-tab is-active" type="button" role="tab" data-help-tab aria-selected="true">Traduzione</button>
-                <button class="quiz-help-tab" type="button" role="tab" data-help-tab aria-selected="false">Parole chiave</button>
-            </div>
-            <div class="quiz-help-slides">
-                <section class="quiz-help-slide is-active" data-help-slide>
+            <h2 id="quiz-help-title" class="sr-only">Traduzione e parole chiave</h2>
+            <button class="quiz-help-close quiz-help-shell-close" type="button" data-help-close aria-label="Chiudi traduzione e parole chiave">×</button>
+            <div class="quiz-help-slides" data-help-swipe-zone>
+                <section id="quiz-help-translation-panel" class="quiz-help-slide is-active" data-help-slide role="tabpanel" aria-labelledby="quiz-help-translation-tab" aria-hidden="false" tabindex="0">
                     <header class="quiz-help-card-header">
                         <div><span class="quiz-help-kicker" lang="bn">বাংলা</span><h3>Traduzione del quiz</h3></div>
-                        <button class="quiz-help-close" type="button" data-help-close aria-label="Chiudi traduzione">×</button>
                     </header>
                     <p id="quiz-help-translation-text" class="quiz-help-translation-text notranslate" translate="no" lang="bn"></p>
                     <p id="quiz-help-translation-status" class="quiz-help-status" role="status"></p>
                 </section>
-                <section class="quiz-help-slide" data-help-slide>
+                <section id="quiz-help-keywords-panel" class="quiz-help-slide" data-help-slide role="tabpanel" aria-labelledby="quiz-help-keywords-tab" aria-hidden="true" tabindex="-1" inert>
                     <header class="quiz-help-card-header">
                         <div><span class="quiz-help-kicker">KEY WORDS</span><h3>Parole chiave</h3></div>
-                        <button class="quiz-help-close" type="button" data-help-close aria-label="Chiudi parole chiave">×</button>
                     </header>
                     <div id="quiz-help-context" class="quiz-help-context hidden notranslate" translate="no">
                         <div><small>CAPITOLO</small><strong id="quiz-help-chapter-it"></strong><span id="quiz-help-chapter-bn" lang="bn"></span></div>
@@ -272,6 +265,11 @@
                     <div id="quiz-help-word-detail" class="quiz-help-word-detail hidden notranslate" translate="no"></div>
                 </section>
             </div>
+            <div class="quiz-help-tabs" role="tablist" aria-label="Contenuto della card">
+                <button id="quiz-help-translation-tab" class="quiz-help-tab is-active" type="button" role="tab" data-help-tab aria-selected="true" aria-controls="quiz-help-translation-panel" tabindex="0"><span class="sr-only">Traduzione</span></button>
+                <button id="quiz-help-keywords-tab" class="quiz-help-tab" type="button" role="tab" data-help-tab aria-selected="false" aria-controls="quiz-help-keywords-panel" tabindex="-1"><span class="sr-only">Parole chiave</span></button>
+            </div>
+            <p id="quiz-help-swipe-status" class="sr-only" aria-live="polite">Pagina 1 di 2: Traduzione</p>
         </div>
     </div>
 
@@ -286,8 +284,8 @@
     <script src="magic-dictionary.js?v=1.2.4"></script>
     <script src="screen-protection.js?v=1.2.0"></script>
     <script src="learning-sync.js?v=2"></script>
-    <script src="quiz.js?v=69-tts-session-recovery"></script>
-    <script src="quiz-help.js?v=20260824-keyword-glossary"></script>
+    <script src="quiz.js?v=71-review-audio-control"></script>
+    <script src="quiz-help.js?v=20260829-single-card"></script>
 </body>
 
 </html>

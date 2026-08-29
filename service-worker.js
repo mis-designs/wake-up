@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v142-admin-control-pills";
+const CACHE_NAME = "magicbook-pwa-v144-review-audio-control";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -14,15 +14,15 @@ const STATIC_ASSETS = [
   "/src/learning-insights.css?v=9-card-spacing&ui=10",
   "/src/learning-insights.js?v=5-figure-explanation-ui&ui=6",
   "/homebg.css?v=3",
-  "/mystyle.css?v=45-review-translations",
+  "/mystyle.css?v=47-review-audio-control",
   "/script.js?v=64-admin-control-pills",
   "/study-quiz.html",
   "/study-quiz.css?v=23-adorsho-study-text",
   "/study-quiz.js?v=17-tts-session-recovery",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=69-tts-session-recovery",
-  "/quiz-help.css?v=20260801-readable-text",
-  "/quiz-help.js?v=20260824-keyword-glossary",
+  "/quiz.js?v=71-review-audio-control",
+  "/quiz-help.css?v=20260829-single-card",
+  "/quiz-help.js?v=20260829-single-card",
   "/patenteGlossaryResolver.js?v=1.0.0",
   "/patenteContextResolverV3.js?v=4.0.0-glossary-display",
   "/quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity",

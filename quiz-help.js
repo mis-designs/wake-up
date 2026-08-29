@@ -47,13 +47,18 @@
   const topicBn = document.getElementById("quiz-help-topic-bn");
   const wordsList = document.getElementById("quiz-help-words");
   const wordDetail = document.getElementById("quiz-help-word-detail");
+  const shell = workspace?.querySelector(".quiz-help-shell");
+  const slideViewport = workspace?.querySelector("[data-help-swipe-zone]");
+  const swipeStatus = document.getElementById("quiz-help-swipe-status");
+  const quizSurface = document.querySelector(".quiz-container");
   const slides = Array.from(document.querySelectorAll("[data-help-slide]"));
   const tabs = Array.from(document.querySelectorAll("[data-help-tab]"));
   let libraryPromise = null;
   let quizIdIndex = null;
   let requestId = 0;
   let activeSlide = 0;
-  let cardLayer = 1;
+  let helpFocusOrigin = null;
+  let swipeStart = null;
   let activeWordPlayback = null;
   let wordAudioRequestId = 0;
   const wordAudioCache = new Map();
@@ -443,20 +448,39 @@
 
   function setSlide(index) {
     activeSlide = index === 1 ? 1 : 0;
-    slides.forEach((slide, slideIndex) => slide.classList.toggle("is-active", slideIndex === activeSlide));
+    shell?.style.setProperty("--quiz-help-slide-index", String(activeSlide));
+    slides.forEach((slide, slideIndex) => {
+      const active = slideIndex === activeSlide;
+      slide.classList.toggle("is-active", active);
+      slide.setAttribute("aria-hidden", String(!active));
+      slide.toggleAttribute("inert", !active);
+      slide.tabIndex = active ? 0 : -1;
+      if (active) slide.scrollTop = 0;
+    });
     tabs.forEach((tab, tabIndex) => {
       const active = tabIndex === activeSlide;
       tab.classList.toggle("is-active", active);
       tab.setAttribute("aria-selected", String(active));
+      tab.tabIndex = active ? 0 : -1;
     });
+    if (swipeStatus) {
+      swipeStatus.textContent = activeSlide === 0
+        ? "Pagina 1 di 2: Traduzione"
+        : "Pagina 2 di 2: Parole chiave";
+    }
   }
 
   function open() {
+    helpFocusOrigin = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : questionText;
     workspace.classList.remove("hidden");
     workspace.setAttribute("aria-hidden", "false");
     document.body.classList.add("quiz-help-open");
+    quizSurface?.setAttribute("inert", "");
     setSlide(0);
     render();
+    window.requestAnimationFrame(() => workspace.querySelector("[data-help-close]")?.focus());
   }
 
   function close() {
@@ -464,79 +488,85 @@
     workspace.classList.add("hidden");
     workspace.setAttribute("aria-hidden", "true");
     document.body.classList.remove("quiz-help-open");
+    quizSurface?.removeAttribute("inert");
     stopWordAudio();
-  }
-
-  function bringCardToFront(card) {
-    cardLayer = cardLayer >= 8 ? 2 : cardLayer + 1;
-    slides.forEach(item => {
-      if (item !== card && Number(item.style.zIndex || 0) >= cardLayer) item.style.zIndex = "1";
-    });
-    card.style.zIndex = String(cardLayer);
-  }
-
-  function clampCard(card) {
-    if (window.innerWidth <= 720 || !card || workspace.classList.contains("hidden")) return;
-    const margin = 10;
-    const rect = card.getBoundingClientRect();
-    const left = Math.min(Math.max(margin, rect.left), Math.max(margin, window.innerWidth - rect.width - margin));
-    const top = Math.min(Math.max(margin, rect.top), Math.max(margin, window.innerHeight - rect.height - margin));
-    card.style.left = `${left}px`;
-    card.style.top = `${top}px`;
-    card.style.transform = "none";
-  }
-
-  function makeCardDraggable(card) {
-    const handle = card.querySelector(".quiz-help-card-header");
-    if (!handle) return;
-    card.addEventListener("pointerdown", () => bringCardToFront(card));
-    handle.addEventListener("pointerdown", event => {
-      if (window.innerWidth <= 720 || event.target.closest("button")) return;
-      event.preventDefault();
-      bringCardToFront(card);
-      const rect = card.getBoundingClientRect();
-      const offsetX = event.clientX - rect.left;
-      const offsetY = event.clientY - rect.top;
-      card.style.left = `${rect.left}px`;
-      card.style.top = `${rect.top}px`;
-      card.style.transform = "none";
-      card.classList.add("is-dragging");
-      handle.setPointerCapture(event.pointerId);
-
-      const move = moveEvent => {
-        const margin = 10;
-        const left = Math.min(Math.max(margin, moveEvent.clientX - offsetX), Math.max(margin, window.innerWidth - card.offsetWidth - margin));
-        const top = Math.min(Math.max(margin, moveEvent.clientY - offsetY), Math.max(margin, window.innerHeight - card.offsetHeight - margin));
-        card.style.left = `${left}px`;
-        card.style.top = `${top}px`;
-      };
-      const stop = () => {
-        card.classList.remove("is-dragging");
-        handle.removeEventListener("pointermove", move);
-        handle.removeEventListener("pointerup", stop);
-        handle.removeEventListener("pointercancel", stop);
-      };
-      handle.addEventListener("pointermove", move);
-      handle.addEventListener("pointerup", stop);
-      handle.addEventListener("pointercancel", stop);
-    });
+    const focusTarget = helpFocusOrigin?.isConnected ? helpFocusOrigin : questionText;
+    helpFocusOrigin = null;
+    window.requestAnimationFrame(() => focusTarget?.focus());
   }
 
   questionArea?.addEventListener("click", event => {
-    if (event.target.closest("button, a")) return;
+    const questionTrigger = event.target.closest("#question");
+    if (event.target.closest("button, a") && !questionTrigger) return;
     questionArea.classList.remove("quiz-help-discoverable");
     clickHint?.classList.add("is-dismissed");
     open();
   });
   document.querySelectorAll("[data-help-close]").forEach(button => button.addEventListener("click", close));
-  tabs.forEach((tab, index) => tab.addEventListener("click", () => setSlide(index)));
-  slides.forEach(makeCardDraggable);
-  window.addEventListener("resize", () => slides.forEach(clampCard));
+  tabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => setSlide(index));
+    tab.addEventListener("keydown", event => {
+      let nextIndex = null;
+      if (event.key === "ArrowLeft") nextIndex = (index - 1 + tabs.length) % tabs.length;
+      if (event.key === "ArrowRight") nextIndex = (index + 1) % tabs.length;
+      if (event.key === "Home") nextIndex = 0;
+      if (event.key === "End") nextIndex = tabs.length - 1;
+      if (nextIndex === null) return;
+      event.preventDefault();
+      setSlide(nextIndex);
+      tabs[nextIndex]?.focus();
+    });
+  });
+
+  slideViewport?.addEventListener("pointerdown", event => {
+    if (!event.isPrimary || !["touch", "pen"].includes(event.pointerType)) return;
+    if (event.target.closest("button, a, input")) return;
+    swipeStart = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY
+    };
+    slideViewport.setPointerCapture?.(event.pointerId);
+  });
+
+  slideViewport?.addEventListener("pointerup", event => {
+    if (!swipeStart || swipeStart.pointerId !== event.pointerId) return;
+    const deltaX = event.clientX - swipeStart.x;
+    const deltaY = event.clientY - swipeStart.y;
+    swipeStart = null;
+    slideViewport.releasePointerCapture?.(event.pointerId);
+    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.2) return;
+    setSlide(deltaX < 0 ? 1 : 0);
+  });
+
+  slideViewport?.addEventListener("pointercancel", () => {
+    swipeStart = null;
+  });
+
   workspace?.addEventListener("click", event => {
     if (event.target === workspace) close();
   });
   document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && !workspace.classList.contains("hidden")) close();
+    if (workspace.classList.contains("hidden")) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      close();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const focusable = Array.from(shell?.querySelectorAll(
+      'button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    ) || []).filter(element => !element.closest("[inert]") && element.getClientRects().length > 0);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   });
   new MutationObserver(() => {
     if (!workspace.classList.contains("hidden")) render();

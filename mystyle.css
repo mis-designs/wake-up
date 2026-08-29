@@ -491,9 +491,27 @@ body.loading-open {
 }
 
 #question {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
   font-size: clamp(1.1rem, 3.1vw, 1.22rem);
+  font-weight: inherit;
   line-height: 1.48;
   color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+#question:hover {
+  color: #1d2d68;
+}
+
+#question:focus-visible {
+  outline: 3px solid #263bd4;
+  outline-offset: 6px;
+  border-radius: 8px;
 }
 
 /* CONTROLS — unified single row: Prev | Vero | Falso | Next */
@@ -576,29 +594,33 @@ body.loading-open {
 }
 
 .admin-correct-dot-slot {
-  height: 10px;
-  margin-top: 15px;
-  display: flex;
+  height: 8px;
+  margin-top: 13px;
+  display: none;
   align-items: center;
   justify-content: center;
   pointer-events: none;
 }
 
+.admin-correct-dot-slot.is-visible {
+  display: flex;
+}
+
 .admin-correct-dot {
-  width: 4px;
-  height: 4px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
   pointer-events: none;
 }
 
 .admin-correct-dot--true {
   background: #22c55e;
-  box-shadow: none;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, .14);
 }
 
 .admin-correct-dot--false {
   background: #ef4444;
-  box-shadow: none;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, .13);
 }
 
 .controls button img {
@@ -1079,7 +1101,7 @@ body.loading-open {
   touch-action: manipulation;
 }
 
-.modal-review-item.is-wrong:not(.has-figure) {
+.modal-review-item:not(.has-figure) {
   padding-right: 82px;
 }
 
@@ -1587,8 +1609,8 @@ body.loading-open {
   }
 
   .quiz-command-bar .admin-correct-dot-slot {
-    height: 5px;
-    margin-top: 6px;
+    height: 8px;
+    margin-top: 8px;
   }
 }
 

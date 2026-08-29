@@ -11,8 +11,8 @@ const iconUrl = new URL("../icons/explain_quiz.svg", import.meta.url);
 test("explanation artwork is rendered beside the shared audio player", () => {
   assert.equal(existsSync(iconUrl), true);
   assert.match(html, /id="quiz-audio-artwork"[^>]+src="icons\/explain_quiz\.svg"/u);
-  assert.match(html, /mystyle\.css\?v=45-review-translations/u);
-  assert.match(html, /quiz\.js\?v=69-tts-session-recovery/u);
+  assert.match(html, /mystyle\.css\?v=47-review-audio-control/u);
+  assert.match(html, /quiz\.js\?v=71-review-audio-control/u);
   assert.match(worker, /\/icons\/explain_quiz\.svg/u);
 });
 
@@ -25,12 +25,14 @@ test("artwork spins only while shared audio is playing and pauses in place", () 
   assert.match(script, /sharedAudio\.addEventListener\("ended", \(\) => \{ setSharedAudioPlaying\(false\)/u);
 });
 
-test("wrong-answer review cards receive a clickable audio control", () => {
-  assert.match(script, /if \(stateClass === "is-wrong"\)[\s\S]*?audioButton\.className = "modal-review-audio-button";[\s\S]*?explainIcon\.src = "icons\/explain_quiz\.svg";/u);
-  assert.match(script, /audioButton\.addEventListener\("click",[\s\S]*?toggleReviewAudio\(audioButton, item\)/u);
+test("every correction card receives the clickable person audio control", () => {
+  assert.match(script, /items\.forEach\(item => \{[\s\S]*?reviewAudioControl\.className = "modal-review-audio-button";[\s\S]*?explainIcon\.src = "icons\/explain_quiz\.svg";/u);
+  assert.doesNotMatch(script, /if \(stateClass === "is-wrong"\)[\s\S]*?modal-review-audio-button/u);
+  assert.match(script, /reviewAudioControl\.addEventListener\("click",[\s\S]*?toggleReviewAudio\(reviewAudioControl, item\)/u);
   assert.match(script, /async function toggleReviewAudio\(button, question\)[\s\S]*?requestSharedAudioBlob\(question\)[\s\S]*?reviewAudio\.play\(\)/u);
   assert.match(script, /reviewAudio\.addEventListener\("play", \(\) => setReviewAudioButtonState\(reviewAudioButton, "playing"\)\)/u);
   assert.match(script, /function closeModal\(result\) \{[\s\S]*?resetReviewAudioPlayer\(\)/u);
+  assert.match(styles, /\.modal-review-item:not\(\.has-figure\)\s*\{[\s\S]*?padding-right:\s*82px;/u);
   assert.match(styles, /\.modal-review-figure-shell \.modal-review-audio-button\s*\{[\s\S]*?right:\s*-11px;[\s\S]*?transform:\s*translateY\(-50%\)/u);
   assert.match(styles, /\.modal-review-audio-button\.is-playing \.modal-review-explain-icon\s*\{\s*animation-play-state:\s*running;/u);
 });
