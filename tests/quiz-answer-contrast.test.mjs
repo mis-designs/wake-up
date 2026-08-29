@@ -15,6 +15,6 @@ test("selected answer labels use dark text on the bright accent background", () 
 
 test("the answer contrast fix ships with a fresh stylesheet cache key", () => {
   assert.match(page, /mystyle\.css\?v=47-review-audio-control/u);
-  assert.match(worker, /magicbook-pwa-v144-review-audio-control/u);
+  assert.match(worker, /magicbook-pwa-v145-mobile-help-layout/u);
   assert.match(worker, /mystyle\.css\?v=47-review-audio-control/u);
 });

@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v144-review-audio-control";
+const CACHE_NAME = "magicbook-pwa-v145-mobile-help-layout";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -21,7 +21,7 @@ const STATIC_ASSETS = [
   "/study-quiz.js?v=17-tts-session-recovery",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=71-review-audio-control",
-  "/quiz-help.css?v=20260829-single-card",
+  "/quiz-help.css?v=20260829-mobile-card-layout",
   "/quiz-help.js?v=20260829-single-card",
   "/patenteGlossaryResolver.js?v=1.0.0",
   "/patenteContextResolverV3.js?v=4.0.0-glossary-display",

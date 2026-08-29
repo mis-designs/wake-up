@@ -26,7 +26,10 @@ test("live quiz help uses one card with two dot-selected panels on every viewpor
   assert.match(page, /id="quiz-help-translation-tab"[^>]*aria-controls="quiz-help-translation-panel"/u);
   assert.match(page, /id="quiz-help-keywords-tab"[^>]*aria-controls="quiz-help-keywords-panel"/u);
   assert.match(helpStyles, /\.quiz-help-shell\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*minmax\(0, 1fr\) 48px;/u);
+  assert.match(helpStyles, /\.quiz-help-workspace \.sr-only\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?width:\s*1px;[\s\S]*?clip-path:\s*inset\(50%\);/u);
   assert.match(helpStyles, /\.quiz-help-slides\s*\{[\s\S]*?display:\s*flex;[\s\S]*?translate3d\(calc\(var\(--quiz-help-slide-index\) \* -100%\)/u);
+  assert.match(helpStyles, /\.quiz-help-slides\s*\{[\s\S]*?grid-row:\s*1;[\s\S]*?grid-column:\s*1;/u);
+  assert.match(helpStyles, /\.quiz-help-tabs\s*\{[\s\S]*?grid-row:\s*2;[\s\S]*?grid-column:\s*1;/u);
   assert.match(helpStyles, /\.quiz-help-tab\s*\{[\s\S]*?width:\s*44px;[\s\S]*?height:\s*44px;/u);
   assert.match(helpStyles, /\.quiz-help-tab::before\s*\{[\s\S]*?width:\s*9px;[\s\S]*?border-radius:\s*50%;/u);
   assert.doesNotMatch(helpStyles, /\.quiz-help-slide\s*\{[^}]*position:\s*fixed;/u);
@@ -72,11 +75,11 @@ test("the correct-answer marker is private to signed Admin quiz sessions", () =>
 test("the bilingual card and Admin marker ship through fresh PWA assets", () => {
   assert.match(page, /mystyle\.css\?v=47-review-audio-control/u);
   assert.match(page, /quiz\.js\?v=71-review-audio-control/u);
-  assert.match(page, /quiz-help\.css\?v=20260829-single-card/u);
+  assert.match(page, /quiz-help\.css\?v=20260829-mobile-card-layout/u);
   assert.match(page, /quiz-help\.js\?v=20260829-single-card/u);
-  assert.match(worker, /magicbook-pwa-v144-review-audio-control/u);
+  assert.match(worker, /magicbook-pwa-v145-mobile-help-layout/u);
   assert.match(worker, /mystyle\.css\?v=47-review-audio-control/u);
   assert.match(worker, /quiz\.js\?v=71-review-audio-control/u);
-  assert.match(worker, /quiz-help\.css\?v=20260829-single-card/u);
+  assert.match(worker, /quiz-help\.css\?v=20260829-mobile-card-layout/u);
   assert.match(worker, /quiz-help\.js\?v=20260829-single-card/u);
 });
