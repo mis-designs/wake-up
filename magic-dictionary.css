@@ -5,6 +5,16 @@
   --magic-purple-deep: #210b52;
   --magic-cyan: #0f9eb2;
   --magic-line: rgba(76, 29, 149, 0.13);
+  --magic-dictionary-bangla-font: "Tiro Bangla", "Noto Sans Bengali", "Hind Siliguri", serif;
+}
+
+#magicDictionaryScreen [lang="bn"],
+#magicDictionaryScreen [lang="bn"] *,
+#magicWordGate [lang="bn"],
+#magicWordGate [lang="bn"] * {
+  font-family: var(--magic-dictionary-bangla-font);
+  font-weight: 400;
+  font-style: normal;
 }
 
 #home .home-actions {

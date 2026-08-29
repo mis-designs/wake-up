@@ -146,6 +146,7 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   const quiz = fs.readFileSync(path.join(root, "quiz.html"), "utf8");
   const studyQuiz = fs.readFileSync(path.join(root, "study-quiz.html"), "utf8");
   const worker = fs.readFileSync(path.join(root, "service-worker.js"), "utf8");
+  const dictionaryCss = fs.readFileSync(path.join(root, "magic-dictionary.css"), "utf8");
   const vercel = JSON.parse(fs.readFileSync(path.join(root, "vercel.json"), "utf8"));
   const redirects = fs.readFileSync(path.join(root, "_redirects"), "utf8");
 
@@ -156,11 +157,18 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(index, /magic-dictionary\.js\?v=1\.2\.4/u);
   assert.match(quiz, /magic-dictionary\.js\?v=1\.2\.4/u);
   assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.2\.4/u);
+  for (const html of [index, quiz, studyQuiz]) {
+    assert.match(html, /https:\/\/banglawebfonts\.pages\.dev\/css\/tiro-bangla\.css/u);
+    assert.match(html, /https:\/\/banglawebfonts\.pages\.dev\/fonts\/tiro-bangla\/tiro-bangla-regular\.woff2/u);
+    assert.match(html, /magic-dictionary\.css\?v=1\.2\.3-tiro-bangla/u);
+  }
+  assert.match(dictionaryCss, /--magic-dictionary-bangla-font:\s*"Tiro Bangla"/u);
+  assert.match(dictionaryCss, /#magicDictionaryScreen \[lang="bn"\][\s\S]*font-family:\s*var\(--magic-dictionary-bangla-font\);[\s\S]*font-weight:\s*400;/u);
   assert.match(script, /state\.screen === "dictionary"/u);
   assert.match(script, /MagicDictionaryFeature\?\.onAuthenticated/u);
   assert.match(worker, /magicbook-pwa-v140-remove-promo-code/u);
   assert.match(worker, /magic-dictionary\.js\?v=1\.2\.4/u);
-  assert.match(worker, /magic-dictionary\.css\?v=1\.2\.2/u);
+  assert.match(worker, /magic-dictionary\.css\?v=1\.2\.3-tiro-bangla/u);
   assert.ok(vercel.rewrites.some(route => route.source === "/dizionario" && route.destination === "/"));
   assert.match(redirects, /^\/dizionario \/index\.html 200$/mu);
   assert.match(source, /magic-word-unlock/u);

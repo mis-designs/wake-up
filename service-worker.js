@@ -8,7 +8,7 @@ const STATIC_ASSETS = [
   "/assets/fonts/magicbook-bangla-fonts.css?v=1-adorsho",
   "/assets/daisyui.css?v=2-learning-shell",
   "/style.css?v=65-promo-desktop-layout",
-  "/magic-dictionary.css?v=1.2.2",
+  "/magic-dictionary.css?v=1.2.3-tiro-bangla",
   "/screen-protection.css?v=1.1.0",
   "/learning-sync.js?v=2",
   "/src/learning-insights.css?v=9-card-spacing&ui=10",
