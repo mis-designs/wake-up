@@ -12,6 +12,7 @@
 | Quiz correction translations | `quiz.js` + `quiz-help.js` data service | `mystyle.css` visual owner; synchronized help and catalog data | One exclusive accordion across all viewports; the active desktop panel may sit beside its row | Dedicated result/help tests plus keyboard and responsive browser verification |
 | Live quiz bilingual help | `quiz-help.js`, `quiz-help.css`, `#quiz-help-workspace` | Synchronized help resolver and authenticated quiz question | One dialog card; translation and keywords are two dot-selected panels | Swipe, keyboard tabs, focus trap, narrow viewport, and reduced-motion tests |
 | Admin quiz answer marker | `api/quiz.js`, `api/local-quiz-bank.mjs`, `quiz.js`, `mystyle.css` | Signed Admin role and private local answer bank | Green under Vero or red under Falso according to the correct value | Authorization, public-payload, client-visibility, and contrast tests |
+| Quiz timer | `quiz.js`, `#timer` | Signed Admin role returned by `api/quiz.js` | Normal countdown; Admin elapsed overtime | Boundary, authorization, elapsed-time, and cache-version tests |
 
 ## Feature ownership
 
@@ -32,6 +33,7 @@
 | Quiz correction audio | `quiz.js`, `mystyle.css`, `icons/explain_quiz.svg` | Every correct, wrong, and unanswered row exposes the same labelled person-artwork audio control. Audio is fetched only after activation, only one review audio plays at a time, and missing audio uses the established unavailable message. |
 | Live quiz bilingual help | `quiz-help.js`, `quiz-help.css` | Clicking the current Italian question opens one modal card. Translation and keywords share the same frame and switch through dot tabs, touch swipe, or tab keyboard navigation. The dialog traps focus, closes with Escape/backdrop/close, and restores focus to the question. |
 | Admin correct-answer cue | `api/quiz.js`, `api/local-quiz-bank.mjs`, `quiz.js`, `mystyle.css` | The server attaches `admin_correct_answer` only after signed Admin authorization. The client renders exactly one low marker under the matching Vero/Falso control, exposes a text equivalent, and leaves no marker space for ordinary users. |
+| Admin quiz overtime | `api/quiz.js`, `quiz.js`, `#timer` | Only the server-returned signed Admin role enables overtime. At the normal limit the display changes from `0:00` to `+0:00`, counts upward, and never auto-submits; ordinary users still finish automatically. Manual Admin completion reports the full elapsed time. |
 | Study explanation audio | `study-quiz.js`, `study-quiz.css`, `icons/explain_quiz.svg` | Each available explanation keeps the supplied artwork beside the player. The artwork is decorative, reserves stable geometry, mirrors play/pause state, and shrinks without displacing the controls on narrow screens. |
 | Admin user loading | `script.js`, `api/admin.js` | Opening Admin requests only the 10 newest users. Phone search uses the authenticated server action after a 300 ms debounce and ignores stale results. The complete list is requested only through `Carica tutti gli utenti`; Promo and Duplicati explain that they require that complete scope. Dataset filters expose tab state and support Left/Right/Home/End keyboard movement. |
 
@@ -73,6 +75,7 @@
 - A horizontal touch or pen swipe of at least 48px switches panels only when horizontal intent exceeds vertical movement, so keyword scrolling remains usable.
 - Opening the card makes the quiz surface inert, moves focus to the close control, traps Tab inside, and supports Escape, backdrop close, and focus restoration to the Italian question.
 - Only a signed Admin quiz response may contain the correct answer. The low green/red marker is absent for learners and cannot be inferred from empty reserved layout space.
+- Only a signed Admin quiz response may continue beyond the normal timer limit. At zero the timer exposes a textual `Tempo supplementare Admin` state and counts upward from `+0:00`; all other roles keep the existing automatic finish.
 
 ## Responsive behavior
 

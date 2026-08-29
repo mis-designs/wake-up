@@ -61,8 +61,8 @@
 }
 body.quiz-help-open { overflow: hidden; }
 
-/* quiz.html does not load style.css, so the dialog owns its accessible-only utility. */
-.quiz-help-workspace .sr-only {
+/* quiz.html does not load style.css, so this page bundle owns its accessible-only utility. */
+.sr-only {
   position: absolute;
   width: 1px;
   height: 1px;

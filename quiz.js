@@ -227,6 +227,19 @@ function formatTimer(totalSeconds) {
   return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
 }
 
+function getQuizTimerPresentation(remainingSeconds, adminMode = false) {
+  const normalizedSeconds = Math.trunc(Number(remainingSeconds) || 0);
+  const isOvertime = adminMode && normalizedSeconds <= 0;
+  const displayedTime = formatTimer(isOvertime ? Math.abs(normalizedSeconds) : normalizedSeconds);
+  return {
+    text: isOvertime ? `+${displayedTime}` : displayedTime,
+    ariaLabel: isOvertime
+      ? `Tempo supplementare Admin: ${displayedTime}`
+      : "Tempo rimanente",
+    isOvertime
+  };
+}
+
 function parseStoredQuizSession(rawSession) {
   if (!rawSession) return null;
 
@@ -3194,19 +3207,31 @@ let timerInterval = null;
 
 function getElapsedQuizSeconds() {
   const maxSeconds = quizDurationMinutes * 60;
-  if (!quizStartedAt) return Math.max(0, maxSeconds - time);
-  return Math.min(maxSeconds, Math.max(0, Math.floor((Date.now() - quizStartedAt) / 1000)));
+  const elapsedSeconds = !quizStartedAt
+    ? Math.max(0, maxSeconds - time)
+    : Math.max(0, Math.floor((Date.now() - quizStartedAt) / 1000));
+  return isAdmin ? elapsedSeconds : Math.min(maxSeconds, elapsedSeconds);
+}
+
+function paintQuizTimer() {
+  const timer = document.getElementById("timer");
+  if (!timer) return;
+  const presentation = getQuizTimerPresentation(time, isAdmin);
+  timer.innerText = presentation.text;
+  timer.setAttribute("aria-label", presentation.ariaLabel);
+  timer.classList.toggle("is-overtime", presentation.isOvertime);
 }
 
 function startTimer() {
   clearInterval(timerInterval);
   time = quizDurationMinutes * 60;
   quizStartedAt = Date.now();
-  document.getElementById("timer").innerText = formatTimer(time);
+  paintQuizTimer();
   timerInterval = setInterval(() => {
-    time--;
-    document.getElementById("timer").innerText = formatTimer(time);
-    if (time <= 0) {
+    const elapsedSeconds = Math.max(0, Math.floor((Date.now() - quizStartedAt) / 1000));
+    time = quizDurationMinutes * 60 - elapsedSeconds;
+    paintQuizTimer();
+    if (time <= 0 && !isAdmin) {
       clearInterval(timerInterval);
       finishQuiz(true);
     }
