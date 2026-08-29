@@ -160,15 +160,19 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   for (const html of [index, quiz, studyQuiz]) {
     assert.match(html, /https:\/\/banglawebfonts\.pages\.dev\/css\/tiro-bangla\.css/u);
     assert.match(html, /https:\/\/banglawebfonts\.pages\.dev\/fonts\/tiro-bangla\/tiro-bangla-regular\.woff2/u);
-    assert.match(html, /magic-dictionary\.css\?v=1\.2\.3-tiro-bangla/u);
+    assert.match(html, /magic-dictionary\.css\?v=1\.2\.5-settings-layout/u);
   }
   assert.match(dictionaryCss, /--magic-dictionary-bangla-font:\s*"Tiro Bangla"/u);
   assert.match(dictionaryCss, /#magicDictionaryScreen \[lang="bn"\][\s\S]*font-family:\s*var\(--magic-dictionary-bangla-font\);[\s\S]*font-weight:\s*400;/u);
+  assert.match(dictionaryCss, /\.magic-dictionary-word \[lang="bn"\] strong,[\s\S]*font-weight:\s*700;[\s\S]*font-synthesis:\s*weight;/u);
+  assert.match(dictionaryCss, /\.magic-dictionary-settings\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) auto;/u);
+  assert.match(dictionaryCss, /\.magic-dictionary-settings > div\s*\{\s*min-width:\s*0;/u);
+  assert.match(dictionaryCss, /\.magic-dictionary-settings button\s*\{[\s\S]*width:\s*auto;[\s\S]*justify-self:\s*end;[\s\S]*white-space:\s*nowrap;/u);
   assert.match(script, /state\.screen === "dictionary"/u);
   assert.match(script, /MagicDictionaryFeature\?\.onAuthenticated/u);
   assert.match(worker, /magicbook-pwa-v140-remove-promo-code/u);
   assert.match(worker, /magic-dictionary\.js\?v=1\.2\.4/u);
-  assert.match(worker, /magic-dictionary\.css\?v=1\.2\.3-tiro-bangla/u);
+  assert.match(worker, /magic-dictionary\.css\?v=1\.2\.5-settings-layout/u);
   assert.ok(vercel.rewrites.some(route => route.source === "/dizionario" && route.destination === "/"));
   assert.match(redirects, /^\/dizionario \/index\.html 200$/mu);
   assert.match(source, /magic-word-unlock/u);

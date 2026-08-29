@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
-const SAMPLE = "আজকে কোন অধ্যায়টি পড়তে চাচ্ছেন? শেষবার আপনি পড়েছিলেন অধ্যায় ৬।";
+const SAMPLE = "ম্যাজিক বুক, ইতালিয়ান ড্রাইভিং লাইসেন্স প্রস্তুতির সেরা বই . ৭৮৬টি গুরুত্বপূর্ণ কুইজ.";
 const read = relativePath => readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
 
 test("the Admin exposes a clean, static Bengali font library route", () => {
@@ -13,7 +13,7 @@ test("the Admin exposes a clean, static Bengali font library route", () => {
   const headers = read("_headers");
   const routes = JSON.parse(read("vercel.json"));
 
-  assert.match(index, /<a class="admin-new-btn" href="\/libreria-font">Libreria font<\/a>/u);
+  assert.match(index, /<a class="admin-new-btn admin-action-pill admin-action-pill--font" href="\/libreria-font">/u);
   assert.ok(routes.rewrites.some(route => route.source === "/libreria-font" && route.destination === "/libreria-font.html"));
   assert.ok(routes.headers.some(entry => entry.source === "/libreria-font"));
   assert.ok(routes.headers.some(entry => entry.source === "/libreria-font.html"));

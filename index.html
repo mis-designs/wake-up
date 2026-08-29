@@ -96,9 +96,9 @@ gtag('config', 'G-C5JPY9HFHD', {
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MagicBook">
 <link rel="stylesheet" href="assets/daisyui.css?v=2-learning-shell">
-<link rel="stylesheet" href="style.css?v=65-promo-desktop-layout">
+<link rel="stylesheet" href="style.css?v=66-admin-action-pills">
 <link rel="stylesheet" href="homebg.css?v=3">
-<link rel="stylesheet" href="magic-dictionary.css?v=1.2.3-tiro-bangla">
+<link rel="stylesheet" href="magic-dictionary.css?v=1.2.5-settings-layout">
 <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
 <link rel="stylesheet" href="src/learning-insights.css?v=9-card-spacing&ui=10">
 </head>
@@ -763,9 +763,32 @@ gtag('config', 'G-C5JPY9HFHD', {
             <button id="adminSearchClear" class="admin-search-clear hidden" type="button" aria-label="Svuota ricerca">&times;</button>
           </span>
         </label>
-        <button class="admin-new-btn" type="button" onclick="adminOpenUserModal('create')">Nuovo utente</button>
-        <a class="admin-new-btn" href="/aggiungi-spiegazioni">Aggiungi spiegazioni audio</a>
-        <a class="admin-new-btn" href="/libreria-font">Libreria font</a>
+        <div class="admin-utility-actions" role="group" aria-label="Azioni amministrative">
+          <button class="admin-new-btn admin-action-pill admin-action-pill--user" type="button" onclick="adminOpenUserModal('create')">
+            <span class="admin-action-pill__icon" aria-hidden="true">
+              <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
+                <path d="M12 15.5H7.5C6.10444 15.5 5.40665 15.5 4.83886 15.6722C3.56045 16.06 2.56004 17.0605 2.17224 18.3389C2 18.9067 2 19.6044 2 21M19 21V15M16 18H22M14.5 7.5C14.5 9.98528 12.4853 12 10 12C7.51472 12 5.5 9.98528 5.5 7.5C5.5 5.01472 7.51472 3 10 3C12.4853 3 14.5 5.01472 14.5 7.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span class="admin-action-pill__label">Nuovo utente</span>
+          </button>
+          <a class="admin-new-btn admin-action-pill admin-action-pill--audio" href="/aggiungi-spiegazioni">
+            <span class="admin-action-pill__icon" aria-hidden="true">
+              <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
+                <path d="M20 12V13C20 17.4183 16.4183 21 12 21C7.58172 21 4 17.4183 4 13V12M12 17C9.79086 17 8 15.2091 8 13V7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7V13C16 15.2091 14.2091 17 12 17Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span class="admin-action-pill__label">Aggiungi spiegazioni audio</span>
+          </a>
+          <a class="admin-new-btn admin-action-pill admin-action-pill--font" href="/libreria-font">
+            <span class="admin-action-pill__icon" aria-hidden="true">
+              <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
+                <path d="M18.5 8V3M5.5 21V16M16 5.5H21M3 18.5H8M6.5 2L5.71554 3.56892C5.45005 4.09989 5.31731 4.36538 5.13997 4.59545C4.98261 4.79959 4.79959 4.98261 4.59545 5.13997C4.36538 5.31731 4.0999 5.45005 3.56892 5.71554L2 6.5L3.56892 7.28446C4.0999 7.54995 4.36538 7.68269 4.59545 7.86003C4.79959 8.01739 4.98261 8.20041 5.13997 8.40455C5.31731 8.63462 5.45005 8.9001 5.71554 9.43108L6.5 11L7.28446 9.43108C7.54995 8.9001 7.68269 8.63462 7.86003 8.40455C8.01739 8.20041 8.20041 8.01739 8.40455 7.86003C8.63462 7.68269 8.9001 7.54995 9.43108 7.28446L11 6.5L9.43108 5.71554C8.9001 5.45005 8.63462 5.31731 8.40455 5.13997C8.20041 4.98261 8.01739 4.79959 7.86003 4.59545C7.68269 4.36538 7.54995 4.0999 7.28446 3.56892L6.5 2ZM17 12L16.0489 13.9022C15.7834 14.4332 15.6506 14.6987 15.4733 14.9288C15.3159 15.1329 15.1329 15.3159 14.9288 15.4733C14.6987 15.6506 14.4332 15.7834 13.9023 16.0489L12 17L13.9023 17.9511C14.4332 18.2166 14.6987 18.3494 14.9288 18.5267C15.1329 18.6841 15.3159 18.8671 15.4733 19.0712C15.6506 19.3013 15.7834 19.5668 16.0489 20.0977L17 22L17.9511 20.0978C18.2166 19.5668 18.3494 19.3013 18.5267 19.0712C18.6841 18.8671 18.8671 18.6841 19.0712 18.5267C19.3013 18.3494 19.5668 18.2166 20.0977 17.9511L22 17L20.0977 16.0489C19.5668 15.7834 19.3013 15.6506 19.0712 15.4733C18.8671 15.3159 18.6841 15.1329 18.5267 14.9288C18.3494 14.6987 18.2166 14.4332 17.9511 13.9023L17 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span class="admin-action-pill__label">Libreria font</span>
+          </a>
+        </div>
       </div>
     </section>
 
