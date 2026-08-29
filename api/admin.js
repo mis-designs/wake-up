@@ -5,8 +5,10 @@ const GAS_ACCESS_URL = process.env.GAS_ACCESS_URL;
 const GAS_SECRET = process.env.GAS_SECRET;
 const GAS_ADMIN_KEY = process.env.GAS_ADMIN_KEY || process.env.ADMIN_KEY || "";
 const SESSION_SECRET = process.env.SESSION_SECRET;
+const ADMIN_RECENT_LIMIT = 10;
 
 const ADMIN_ACTIONS = new Set([
+  "recent",
   "list",
   "promo_users",
   "create",
@@ -107,6 +109,7 @@ async function callGasAdmin(action, fields = {}, timeoutMs = 12_000) {
 }
 
 function getGasAction(action) {
+  if (action === "recent") return "admin_list";
   if (action === "list") return "admin_list";
   if (action === "promo_users") return "admin_promo_users";
   if (action === "create") return "admin_add";
@@ -130,6 +133,11 @@ function sanitizeAdminFields(action, body) {
 
   if (!isValidExpiry(expiry)) return { error: "bad_expiry" };
 
+  if (action === "recent") {
+    fields.limit = ADMIN_RECENT_LIMIT;
+    fields.order = "registration_desc";
+  }
+
   if (["create", "update", "renew", "delete", "reset_devices", "search"].includes(action)) {
     if (!isValidPhone(phone)) return { error: "bad_phone" };
     fields.phone = phone;
@@ -151,6 +159,55 @@ function sanitizeAdminFields(action, body) {
   }
 
   return { fields };
+}
+
+function getAdminRegistrationTime(user) {
+  const value = user?.registration_date
+    ?? user?.registrationDate
+    ?? user?.created_at
+    ?? user?.createdAt;
+  const date = value ? new Date(value) : null;
+  return date && !Number.isNaN(date.getTime()) ? date.getTime() : 0;
+}
+
+export function selectRecentAdminUsers(users, limit = ADMIN_RECENT_LIMIT) {
+  const list = Array.isArray(users) ? users : [];
+  const safeLimit = Math.max(1, Math.min(Number(limit) || ADMIN_RECENT_LIMIT, ADMIN_RECENT_LIMIT));
+  const indexed = list.map((user, index) => ({ user, index, time: getAdminRegistrationTime(user) }));
+  const hasRegistrationDates = indexed.some(item => item.time > 0);
+
+  if (!hasRegistrationDates) {
+    return indexed
+      .slice(-safeLimit)
+      .reverse()
+      .map(item => item.user);
+  }
+
+  return indexed
+    .sort((left, right) => right.time - left.time || right.index - left.index)
+    .slice(0, safeLimit)
+    .map(item => item.user);
+}
+
+function prepareRecentAdminResponse(data) {
+  const upstreamList = Array.isArray(data?.list) ? data.list : [];
+  const declaredTotal = Number(data?.total ?? data?.stats?.total);
+  const response = {
+    ...data,
+    list: selectRecentAdminUsers(upstreamList),
+    scope: "recent",
+    limit: ADMIN_RECENT_LIMIT
+  };
+
+  if (Number.isFinite(declaredTotal) && declaredTotal >= 0) {
+    response.total = declaredTotal;
+  } else if (upstreamList.length > ADMIN_RECENT_LIMIT) {
+    response.total = upstreamList.length;
+  } else {
+    delete response.total;
+  }
+
+  return response;
 }
 
 export default async function handler(req, res) {
@@ -186,9 +243,13 @@ export default async function handler(req, res) {
     if (sanitized.error) return res.status(400).json({ success: false, error: sanitized.error });
 
     const timeoutMs = action === "promo_users" ? 20_000 : 12_000;
-    const data = await callGasAdmin(getGasAction(action), sanitized.fields, timeoutMs);
+    let data = await callGasAdmin(getGasAction(action), sanitized.fields, timeoutMs);
     if (data?.success !== true) {
       return res.status(200).json({ success: false, error: readAdminError(data) });
+    }
+
+    if (action === "recent") {
+      data = prepareRecentAdminResponse(data);
     }
 
     if (action === "renew" && sanitized.fields.accessSource === "paid") {

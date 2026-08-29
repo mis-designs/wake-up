@@ -15,7 +15,7 @@ canonical_ui:
 design_context:
   owner: Magic Book
   last_updated: 2026-08-29
-  revision_notes: Added a shared icon-led pill treatment for Admin utility actions, with distinct emerald, coral, and violet palettes; the local Bengali font library now compares its faces using the approved Magic Book sentence.
+  revision_notes: Added a shared icon-led pill treatment for Admin utility actions, with distinct emerald, coral, and violet palettes; the local Bengali font library now compares its faces using the approved Magic Book sentence. Admin now opens with the 10 most recent users, searches remotely by phone, and loads the complete list only after an explicit action. The Admin search and dataset filters now share the same compact pill geometry and semantic palette as the utility actions.
 ---
 
 # Magic Book design context
@@ -64,6 +64,8 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 
 - Shared component base: locally compiled daisyUI 5 with the `d-` prefix. Header, route, primary, secondary, category, and pagination controls use these primitives; the scoped stylesheet remains the visual owner.
 - Admin utility actions: `Nuovo utente`, `Aggiungi spiegazioni audio`, and `Libreria font` share one compact icon-led pill component. Emerald, coral, and violet distinguish the three destinations without replacing their text labels; links remain links and the create action remains a button.
+- Admin search and filters: the phone field is an emerald icon-led pill with no visible placeholder, while retaining a programmatic Italian name and explicit clear control. Users, Promo, In scadenza, Scaduti, and Duplicati use the same pill radius with green, violet, amber, red, and slate state accents; runtime values are owned by `style.css` under `.admin-toolbar` and consumed by the search, tabs, and utility actions.
+- Admin user dataset: entry loads at most the 10 newest registrations. A labelled scope bar explains whether the current data is recent, searched, or complete; exact phone lookup stays remote, while `Carica tutti gli utenti` is the explicit opt-in for full-list filters such as Promo and Duplicati.
 - Font library: `/libreria-font` is an Admin-linked static reference page. One bordered specimen sheet contains three divided rows—Hadi Rounded, Adorsho Lipi, and Ekushey Lal Sabuj—and renders the same live Bengali sentence in each face for an honest comparison without image previews.
 - Learning shell: back, brand, labelled/icon-only responsive refresh, Statistics/Errori route switcher, freshness note, and one polite live status. Legacy fixed chrome is suppressed while this route owns the viewport.
 - Statistics overview: answers correct, quizzes done, chapters started, items to review, and the real percentage from the recent window. Comparison copy is plain and threshold-based.
@@ -79,7 +81,7 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 
 ## Data, states, and trust
 
-- API, Google Apps Script, Sheets, IndexedDB, local outbox, synchronization, routing, authentication, calculations, and event collection remain unchanged.
+- Admin authentication and device-bound authorization remain unchanged. Its read flow uses a bounded recent-list request, remote phone search, and an explicit complete-list request; the server still validates and normalizes phone data before forwarding it upstream.
 - Empty, insufficient, ready, cached, refreshing, offline-cached, no-cache offline, expired access, timeout, and generic failure are distinct states.
 - Empty/insufficient views stay compact and tell the learner exactly which quiz action is available.
 - Cached data renders first; online data replaces it only after validation. Pending local responses remain identified without blocking the UI.

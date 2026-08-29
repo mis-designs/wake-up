@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v140-remove-promo-code";
+const CACHE_NAME = "magicbook-pwa-v142-admin-control-pills";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -7,7 +7,7 @@ const STATIC_ASSETS = [
   "/libreria-font.css?v=1-three-fonts",
   "/assets/fonts/magicbook-bangla-fonts.css?v=1-adorsho",
   "/assets/daisyui.css?v=2-learning-shell",
-  "/style.css?v=66-admin-action-pills",
+  "/style.css?v=68-admin-control-pills",
   "/magic-dictionary.css?v=1.2.5-settings-layout",
   "/screen-protection.css?v=1.1.0",
   "/learning-sync.js?v=2",
@@ -15,7 +15,7 @@ const STATIC_ASSETS = [
   "/src/learning-insights.js?v=5-figure-explanation-ui&ui=6",
   "/homebg.css?v=3",
   "/mystyle.css?v=45-review-translations",
-  "/script.js?v=62-remove-promo-code",
+  "/script.js?v=64-admin-control-pills",
   "/study-quiz.html",
   "/study-quiz.css?v=23-adorsho-study-text",
   "/study-quiz.js?v=17-tts-session-recovery",

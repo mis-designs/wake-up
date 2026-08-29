@@ -100,27 +100,28 @@ test("admin list merges protected promo metadata without losing normal user fiel
   assert.match(promoGas, /promoVerifyAdminRequest_\(payload\)/u);
 });
 
-test("promo metadata gets enough time and never appears as a false empty result", () => {
+test("promo metadata is lazy, gets enough time and never appears as a false empty result", () => {
   const loadUsers = readFunction("adminLoadUsers", "adminLoadPromoUsers");
   const loadPromoUsers = readFunction("adminLoadPromoUsers", "adminRetryPromoUsers");
   const renderUsers = readFunction("renderAdminUsers", "adminOpenUserModal");
 
-  assert.match(loadUsers, /adminRequest\("list"\)[\s\S]*?renderAdminUsers\(\);[\s\S]*?void adminLoadPromoUsers\(loadVersion\)/u);
+  assert.match(loadUsers, /const action = mode === "all" \? "list" : mode === "search" \? "search" : "recent"/u);
+  assert.match(loadUsers, /mode === "all" && adminState\.tab === "promo"[\s\S]*?adminLoadPromoUsers\(loadVersion\)/u);
   assert.match(loadPromoUsers, /adminRequest\("promo_users"\)/u);
   assert.match(loadPromoUsers, /promoLoading = true[\s\S]*?promoLoaded = true/u);
   assert.match(loadPromoUsers, /catch \(error\)[\s\S]*?promoError = getAdminErrorMessage/u);
   assert.match(renderUsers, /adminState\.tab === "promo" && adminState\.promoLoading[\s\S]*?Caricamento utenti promo/u);
   assert.match(renderUsers, /adminState\.tab === "promo" && adminState\.promoError[\s\S]*?adminRetryPromoUsers\(\)/u);
-  assert.match(script, /readOnlyAction = action === "list" \|\| action === "search" \|\| action === "promo_users"/u);
+  assert.match(script, /readOnlyAction = action === "recent" \|\| action === "list" \|\| action === "search" \|\| action === "promo_users"/u);
   assert.match(adminApi, /action === "promo_users" \? 20_000 : 12_000/u);
   assert.match(style, /\.admin-promo-state[\s\S]*?\.admin-promo-spinner[\s\S]*?@keyframes adminPromoSpin/u);
   assert.doesNotMatch(adminApi, /if \(action === "list"\) \{[\s\S]*?admin_promo_users/u);
 });
 
 test("promo admin UI ships with fresh PWA assets", () => {
-  assert.match(page, /style\.css\?v=66-admin-action-pills/u);
-  assert.match(page, /script\.js\?v=62-remove-promo-code/u);
-  assert.match(worker, /magicbook-pwa-v140-remove-promo-code/u);
-  assert.match(worker, /style\.css\?v=66-admin-action-pills/u);
-  assert.match(worker, /script\.js\?v=62-remove-promo-code/u);
+  assert.match(page, /style\.css\?v=68-admin-control-pills/u);
+  assert.match(page, /script\.js\?v=64-admin-control-pills/u);
+  assert.match(worker, /magicbook-pwa-v142-admin-control-pills/u);
+  assert.match(worker, /style\.css\?v=68-admin-control-pills/u);
+  assert.match(worker, /script\.js\?v=64-admin-control-pills/u);
 });

@@ -28,6 +28,7 @@
 | Promo conversion | `#promoAccessNextStep` + `openPromoPackages()` | A previous promo or a full campaign produces persistent inline guidance; the user chooses when to open `/join`, which focuses the packages heading. |
 | Quiz correction translations | `quiz.js`, `quiz-help.js`, `mystyle.css` | Each correction row owns one on-demand translation disclosure. `quiz-help.js` owns data resolution and caching; `quiz.js` owns row state and interaction; `mystyle.css` owns responsive presentation. |
 | Study explanation audio | `study-quiz.js`, `study-quiz.css`, `icons/explain_quiz.svg` | Each available explanation keeps the supplied artwork beside the player. The artwork is decorative, reserves stable geometry, mirrors play/pause state, and shrinks without displacing the controls on narrow screens. |
+| Admin user loading | `script.js`, `api/admin.js` | Opening Admin requests only the 10 newest users. Phone search uses the authenticated server action after a 300 ms debounce and ignores stale results. The complete list is requested only through `Carica tutti gli utenti`; Promo and Duplicati explain that they require that complete scope. Dataset filters expose tab state and support Left/Right/Home/End keyboard movement. |
 
 ## Statistiche
 
@@ -72,6 +73,7 @@
 
 - Home entries and the Statistics/Errori switcher push real routes. Lens selection replaces only `tipo`; invalid values fall back to `figure` and normalize the URL.
 - The Admin utility row links to `/libreria-font`. The font library has its own localized document title, a real back link to `/admin`, a clean static route, and a dedicated offline fallback page.
+- Admin entry, refresh, search clearing, and successful mutations preserve an explicit data scope: recent, searched, or complete. Promo metadata is lazy and is never fetched during the initial recent-user load.
 - Initial load renders a skeleton matching the overview/action/matrix geometry.
 - Valid cached data appears immediately with its update time while a background refresh runs online.
 - Pending local answers are sent only to the authenticated Vercel endpoint, validated, and merged by event ID.

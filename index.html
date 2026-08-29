@@ -96,7 +96,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MagicBook">
 <link rel="stylesheet" href="assets/daisyui.css?v=2-learning-shell">
-<link rel="stylesheet" href="style.css?v=66-admin-action-pills">
+<link rel="stylesheet" href="style.css?v=68-admin-control-pills">
 <link rel="stylesheet" href="homebg.css?v=3">
 <link rel="stylesheet" href="magic-dictionary.css?v=1.2.5-settings-layout">
 <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
@@ -741,7 +741,7 @@ gtag('config', 'G-C5JPY9HFHD', {
         <small>MagicBook accessi</small>
       </div>
     </div>
-    <button class="admin-icon-btn" type="button" onclick="adminLoadUsers(true)" aria-label="Aggiorna">
+    <button class="admin-icon-btn" type="button" onclick="adminRefreshUsers()" aria-label="Aggiorna la lista corrente">
       <img src="assets/admin/update.png" alt="">
     </button>
   </header>
@@ -749,20 +749,29 @@ gtag('config', 'G-C5JPY9HFHD', {
   <main class="admin-shell">
     <section class="admin-toolbar">
       <div class="admin-tabs" role="tablist" aria-label="Filtri utenti">
-        <button class="admin-tab is-active" type="button" data-admin-tab="users">Users</button>
-        <button class="admin-tab" type="button" data-admin-tab="promo">Promo Users</button>
-        <button class="admin-tab" type="button" data-admin-tab="expiring">In scadenza</button>
-        <button class="admin-tab" type="button" data-admin-tab="expired">Scaduti</button>
-        <button class="admin-tab" type="button" data-admin-tab="duplicates">Duplicati</button>
+        <button id="adminTabUsers" class="admin-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="adminUserList" tabindex="0" data-admin-tab="users">Users</button>
+        <button id="adminTabPromo" class="admin-tab" type="button" role="tab" aria-selected="false" aria-controls="adminUserList" tabindex="-1" data-admin-tab="promo">Promo Users</button>
+        <button id="adminTabExpiring" class="admin-tab" type="button" role="tab" aria-selected="false" aria-controls="adminUserList" tabindex="-1" data-admin-tab="expiring">In scadenza</button>
+        <button id="adminTabExpired" class="admin-tab" type="button" role="tab" aria-selected="false" aria-controls="adminUserList" tabindex="-1" data-admin-tab="expired">Scaduti</button>
+        <button id="adminTabDuplicates" class="admin-tab" type="button" role="tab" aria-selected="false" aria-controls="adminUserList" tabindex="-1" data-admin-tab="duplicates">Duplicati</button>
       </div>
       <div class="admin-tools-row">
-        <label class="admin-search">
-          <span>Cerca</span>
-          <span class="admin-search-box">
-            <input id="adminSearchInput" type="tel" placeholder="Telefono" inputmode="tel">
-            <button id="adminSearchClear" class="admin-search-clear hidden" type="button" aria-label="Svuota ricerca">&times;</button>
-          </span>
-        </label>
+        <div class="admin-search" role="search">
+          <div class="admin-search-box">
+            <span class="admin-search-icon" aria-hidden="true">
+              <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
+                <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+                <path d="M16.25 16.25L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <input id="adminSearchInput" type="tel" inputmode="tel" autocomplete="off" aria-label="Cerca per numero di telefono">
+            <button id="adminSearchClear" class="admin-search-clear hidden" type="button" aria-label="Svuota ricerca">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                <path d="M7 7L17 17M17 7L7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
         <div class="admin-utility-actions" role="group" aria-label="Azioni amministrative">
           <button class="admin-new-btn admin-action-pill admin-action-pill--user" type="button" onclick="adminOpenUserModal('create')">
             <span class="admin-action-pill__icon" aria-hidden="true">
@@ -792,9 +801,17 @@ gtag('config', 'G-C5JPY9HFHD', {
       </div>
     </section>
 
-    <section class="admin-stats" aria-label="Statistiche utenti">
+    <section class="admin-dataset-bar" aria-labelledby="adminDatasetTitle">
+      <div class="admin-dataset-copy">
+        <strong id="adminDatasetTitle">Ultimi 10 utenti aggiunti</strong>
+        <span id="adminDatasetCaption">La schermata iniziale carica solo i 10 utenti più recenti.</span>
+      </div>
+      <button id="adminLoadAllUsers" class="admin-secondary-btn admin-load-all-btn" type="button">Carica tutti gli utenti</button>
+    </section>
+
+    <section class="admin-stats" aria-label="Statistiche degli utenti caricati">
       <div class="admin-stat-card">
-        <span>Totale</span>
+        <span id="adminStatTotalLabel">Caricati</span>
         <strong id="adminStatTotal">0</strong>
       </div>
       <div class="admin-stat-card">
@@ -816,7 +833,7 @@ gtag('config', 'G-C5JPY9HFHD', {
     </section>
 
     <div id="adminMessage" class="admin-message hidden" role="status" aria-live="polite"></div>
-    <section id="adminUserList" class="admin-user-list" aria-live="polite"></section>
+    <section id="adminUserList" class="admin-user-list" role="tabpanel" aria-labelledby="adminTabUsers" aria-live="polite"></section>
   </main>
 </div>
 
@@ -1218,6 +1235,6 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script src="screen-protection.js?v=1.2.0"></script>
 <script src="learning-sync.js?v=2"></script>
 <script src="src/learning-insights.js?v=5-figure-explanation-ui&ui=6"></script>
-<script src="script.js?v=62-remove-promo-code"></script>
+<script src="script.js?v=64-admin-control-pills"></script>
 </body>
 </html>

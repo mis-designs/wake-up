@@ -20,11 +20,12 @@ test("Admin utility actions use semantic icon pills with three distinct palettes
   assert.match(page, /M18\.5 8V3M5\.5 21V16/u);
 
   assert.match(styles, /\.admin-action-pill\s*\{[\s\S]*?display:\s*inline-flex;[\s\S]*?border-radius:\s*999px;/u);
-  assert.match(styles, /\.admin-action-pill--user\s*\{[\s\S]*?--admin-action-mid:\s*#10b981;/u);
+  assert.match(styles, /\.admin-toolbar\s*\{[\s\S]*?--admin-user-mid:\s*#10b981;/u);
+  assert.match(styles, /\.admin-action-pill--user\s*\{[\s\S]*?--admin-action-mid:\s*var\(--admin-user-mid\);/u);
   assert.match(styles, /\.admin-action-pill--audio\s*\{[\s\S]*?--admin-action-mid:\s*#ef4444;/u);
   assert.match(styles, /\.admin-action-pill--font\s*\{[\s\S]*?--admin-action-mid:\s*#8b5cf6;/u);
   assert.match(styles, /\.admin-action-pill:focus-visible\s*\{[\s\S]*?outline:\s*3px solid #263bd4;/u);
   assert.match(styles, /@media \(max-width: 520px\)[\s\S]*?\.admin-action-pill\s*\{\s*width:\s*100%;/u);
-  assert.match(page, /style\.css\?v=66-admin-action-pills/u);
-  assert.match(worker, /style\.css\?v=66-admin-action-pills/u);
+  assert.match(page, /style\.css\?v=68-admin-control-pills/u);
+  assert.match(worker, /style\.css\?v=68-admin-control-pills/u);
 });

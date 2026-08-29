@@ -4739,12 +4739,19 @@ function startMultiQuiz() {
  * ADMIN PANEL
  ***********************/
 const ADMIN_EXPIRING_DAYS = 16;
+const ADMIN_RECENT_LIMIT = 10;
+const ADMIN_SEARCH_DEBOUNCE_MS = 300;
+const ADMIN_SEARCH_MIN_DIGITS = 6;
 const adminState = {
   users: [],
   tab: "users",
   query: "",
+  mode: "recent",
+  totalAvailable: null,
   loading: false,
   loadVersion: 0,
+  searchTimer: null,
+  searchComposing: false,
   promoLoading: false,
   promoLoaded: false,
   promoError: "",
@@ -4831,7 +4838,11 @@ function getAdminDuplicatePhones(users = adminState.users) {
 }
 
 function getAdminRegistrationTime(user) {
-  const date = user?.registration_date ? new Date(user.registration_date) : null;
+  const value = user?.registration_date
+    ?? user?.registrationDate
+    ?? user?.created_at
+    ?? user?.createdAt;
+  const date = value ? new Date(value) : null;
   return date && !isNaN(date.getTime()) ? date.getTime() : 0;
 }
 
@@ -4931,7 +4942,7 @@ async function adminRequest(action, fields = {}, retryToken = true, transientAtt
   const hasToken = await ensureAccessToken({ force: !isAccessTokenUsable() });
   if (!hasToken && !getCurrentAccessToken()) throw new Error("unauthorized");
 
-  const readOnlyAction = action === "list" || action === "search" || action === "promo_users";
+  const readOnlyAction = action === "recent" || action === "list" || action === "search" || action === "promo_users";
   const maxTransientAttempts = action === "promo_users" ? 1 : 2;
   let response;
   try {
@@ -4973,34 +4984,58 @@ async function adminRequest(action, fields = {}, retryToken = true, transientAtt
 }
 
 function setupAdminUI() {
-  document.querySelectorAll(".admin-tab").forEach(tab => {
+  const adminTabs = Array.from(document.querySelectorAll(".admin-tab"));
+  adminTabs.forEach((tab, index) => {
     tab.addEventListener("click", () => {
-      adminState.tab = tab.dataset.adminTab || "users";
-      document.querySelectorAll(".admin-tab").forEach(btn => {
-        btn.classList.toggle("is-active", btn === tab);
-      });
+      setAdminTab(tab.dataset.adminTab || "users");
       renderAdminUsers();
-      if (adminState.tab === "promo" && !adminState.promoLoaded && !adminState.promoLoading) {
+      if (adminState.tab === "promo"
+          && adminState.mode === "all"
+          && !adminState.promoLoaded
+          && !adminState.promoLoading) {
         void adminLoadPromoUsers(adminState.loadVersion);
       }
+    });
+
+    tab.addEventListener("keydown", event => {
+      const key = event.key;
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(key)) return;
+      event.preventDefault();
+      const nextIndex = key === "Home"
+        ? 0
+        : key === "End"
+          ? adminTabs.length - 1
+          : key === "ArrowRight"
+            ? (index + 1) % adminTabs.length
+            : (index - 1 + adminTabs.length) % adminTabs.length;
+      adminTabs[nextIndex]?.focus();
+      adminTabs[nextIndex]?.click();
     });
   });
 
   const search = document.getElementById("adminSearchInput");
   const clearSearch = document.getElementById("adminSearchClear");
+  search?.addEventListener("compositionstart", () => {
+    adminState.searchComposing = true;
+  });
+  search?.addEventListener("compositionend", () => {
+    adminState.searchComposing = false;
+    scheduleAdminPhoneSearch(search.value || "");
+  });
   search?.addEventListener("input", () => {
-    adminState.query = search.value || "";
-    clearSearch?.classList.toggle("hidden", !adminState.query);
-    renderAdminUsers();
+    if (!adminState.searchComposing) scheduleAdminPhoneSearch(search.value || "");
+  });
+  search?.addEventListener("keydown", event => {
+    if (event.key !== "Enter" || event.isComposing || adminState.searchComposing) return;
+    event.preventDefault();
+    scheduleAdminPhoneSearch(search.value || "", { immediate: true });
   });
 
   clearSearch?.addEventListener("click", () => {
-    if (search) search.value = "";
-    adminState.query = "";
-    clearSearch.classList.add("hidden");
-    renderAdminUsers();
-    search?.focus();
+    clearAdminPhoneSearch({ focus: true });
   });
+
+  document.getElementById("adminLoadAllUsers")?.addEventListener("click", adminLoadAllUsers);
 
   document.getElementById("adminUserList")?.addEventListener("click", event => {
     const button = event.target.closest("[data-admin-action]");
@@ -5041,33 +5076,154 @@ async function showAdminPanel() {
   currentScreen = "admin";
   updateAdminEntryVisibility();
   setAppRoute({ screen: "admin" });
-  await adminLoadUsers();
+  await adminLoadUsers(false, "recent");
 }
 
-async function adminLoadUsers(force = false) {
+function getAdminResponseUsers(data) {
+  if (Array.isArray(data?.list)) return data.list;
+  if (data?.user && typeof data.user === "object") return [data.user];
+  if (data?.result && typeof data.result === "object") return [data.result];
+  return [];
+}
+
+function scheduleAdminPhoneSearch(value, { immediate = false } = {}) {
+  if (adminState.searchTimer) clearTimeout(adminState.searchTimer);
+  adminState.searchTimer = null;
+  adminState.loadVersion += 1;
+  adminState.loading = false;
+  adminState.query = String(value || "");
+
+  const digits = normalizeAdminSearch(adminState.query);
+  document.getElementById("adminSearchClear")?.classList.toggle("hidden", !digits);
+
+  if (!digits) {
+    void adminLoadUsers(true, "recent");
+    return;
+  }
+
+  setAdminTab("users");
+  adminState.mode = "search-pending";
+  adminState.users = [];
+  adminState.totalAvailable = null;
+  adminState.promoLoaded = false;
+  adminState.promoLoading = false;
+  adminState.promoError = "";
+  setAdminMessage(digits.length < ADMIN_SEARCH_MIN_DIGITS
+    ? `Inserisci almeno ${ADMIN_SEARCH_MIN_DIGITS} cifre del telefono.`
+    : "Ricerca utente...");
+  renderAdminUsers();
+
+  if (digits.length < ADMIN_SEARCH_MIN_DIGITS) return;
+  adminState.searchTimer = setTimeout(() => {
+    adminState.searchTimer = null;
+    void adminLoadUsers(true, "search");
+  }, immediate ? 0 : ADMIN_SEARCH_DEBOUNCE_MS);
+}
+
+function clearAdminPhoneSearch({ focus = false } = {}) {
+  const search = document.getElementById("adminSearchInput");
+  if (adminState.searchTimer) clearTimeout(adminState.searchTimer);
+  adminState.searchTimer = null;
+  if (search) search.value = "";
+  adminState.query = "";
+  document.getElementById("adminSearchClear")?.classList.add("hidden");
+  void adminLoadUsers(true, "recent");
+  if (focus) search?.focus();
+}
+
+function adminLoadAllUsers() {
+  const search = document.getElementById("adminSearchInput");
+  if (adminState.searchTimer) clearTimeout(adminState.searchTimer);
+  adminState.searchTimer = null;
+  adminState.query = "";
+  if (search) search.value = "";
+  document.getElementById("adminSearchClear")?.classList.add("hidden");
+  void adminLoadUsers(true, "all");
+}
+
+function adminRefreshUsers() {
+  const requestedMode = adminState.mode === "all"
+    ? "all"
+    : adminState.mode === "search" && normalizeAdminSearch(adminState.query).length >= ADMIN_SEARCH_MIN_DIGITS
+      ? "search"
+      : "recent";
+  return adminLoadUsers(true, requestedMode);
+}
+
+async function adminLoadUsers(force = false, requestedMode = "") {
   if (!isCurrentSessionAdmin()) return;
   if (adminState.loading && !force) return;
 
+  const mode = ["recent", "all", "search"].includes(requestedMode)
+    ? requestedMode
+    : adminState.mode === "all"
+      ? "all"
+      : adminState.mode === "search"
+        ? "search"
+        : "recent";
+  const phone = mode === "search" ? adminState.query : "";
+  if (mode === "search" && normalizeAdminSearch(phone).length < ADMIN_SEARCH_MIN_DIGITS) return;
+  if (mode !== "search") {
+    adminState.query = "";
+    const search = document.getElementById("adminSearchInput");
+    if (search) search.value = "";
+    document.getElementById("adminSearchClear")?.classList.add("hidden");
+  }
+
   const loadVersion = ++adminState.loadVersion;
   adminState.loading = true;
+  adminState.mode = mode;
   renderAdminLoading();
-  setAdminMessage("Caricamento utenti...");
+  setAdminMessage(mode === "all"
+    ? "Caricamento di tutti gli utenti..."
+    : mode === "search"
+      ? "Ricerca utente..."
+      : "Caricamento ultimi utenti...");
 
   try {
-    const data = await adminRequest("list");
-    adminState.users = (Array.isArray(data.list) ? data.list : [])
+    const action = mode === "all" ? "list" : mode === "search" ? "search" : "recent";
+    const data = await adminRequest(action, mode === "search" ? { phone } : {});
+    if (loadVersion !== adminState.loadVersion) return;
+
+    adminState.users = getAdminResponseUsers(data)
       .sort((a, b) => getAdminRegistrationTime(b) - getAdminRegistrationTime(a));
+    const total = data?.total;
+    adminState.totalAvailable = total !== undefined && total !== null && Number.isFinite(Number(total))
+      ? Math.max(0, Number(total))
+      : null;
     adminState.promoLoaded = false;
-    adminState.promoLoading = true;
+    adminState.promoLoading = false;
     adminState.promoError = "";
-    setAdminMessage("Lista aggiornata.", "success");
+    setAdminMessage(mode === "all"
+      ? `${adminState.users.length} utenti caricati.`
+      : mode === "search"
+        ? adminState.users.length
+          ? `${adminState.users.length} utente trovato.`
+          : "Nessun utente trovato."
+        : "Ultimi 10 utenti aggiornati.", "success");
     renderAdminUsers();
-    void adminLoadPromoUsers(loadVersion);
+    if (mode === "all" && adminState.tab === "promo") {
+      void adminLoadPromoUsers(loadVersion);
+    }
   } catch (err) {
+    if (loadVersion !== adminState.loadVersion) return;
+    if (mode === "search" && err.message === "not_found") {
+      adminState.users = [];
+      adminState.totalAvailable = 0;
+      adminState.promoLoaded = false;
+      adminState.promoLoading = false;
+      adminState.promoError = "";
+      setAdminMessage("Nessun utente trovato.");
+      renderAdminUsers();
+      return;
+    }
     setAdminMessage(getAdminErrorMessage(err.message), "error");
     renderAdminUsers();
   } finally {
-    adminState.loading = false;
+    if (loadVersion === adminState.loadVersion) {
+      adminState.loading = false;
+      updateAdminDatasetControls();
+    }
   }
 }
 
@@ -5098,7 +5254,54 @@ function adminRetryPromoUsers() {
   void adminLoadPromoUsers(adminState.loadVersion);
 }
 
+function updateAdminDatasetControls() {
+  const title = document.getElementById("adminDatasetTitle");
+  const caption = document.getElementById("adminDatasetCaption");
+  const loadAll = document.getElementById("adminLoadAllUsers");
+  const totalLabel = document.getElementById("adminStatTotalLabel");
+  const list = document.getElementById("adminUserList");
+  const count = adminState.users.length;
+  let titleText = "Ultimi 10 utenti aggiunti";
+  let captionText = adminState.totalAvailable !== null && adminState.totalAvailable > count
+    ? `${count} caricati su ${adminState.totalAvailable}. Ricerca per telefono oppure carica l'elenco completo.`
+    : "La schermata iniziale carica solo i 10 utenti più recenti.";
+
+  if (adminState.mode === "all") {
+    titleText = "Tutti gli utenti";
+    captionText = adminState.loading
+      ? "Caricamento dell'elenco completo in corso..."
+      : `${count} utenti caricati. Statistiche e filtri ora usano l'elenco completo.`;
+  } else if (adminState.mode === "search") {
+    titleText = "Risultati della ricerca";
+    captionText = adminState.loading
+      ? "Ricerca nel database in corso..."
+      : count
+        ? `Risultati per ${normalizeAdminSearch(adminState.query)}. Non è stato caricato l'elenco completo.`
+        : `Nessun risultato per ${normalizeAdminSearch(adminState.query)}.`;
+  } else if (adminState.mode === "search-pending") {
+    titleText = "Cerca per numero di telefono";
+    captionText = `Inserisci almeno ${ADMIN_SEARCH_MIN_DIGITS} cifre; la ricerca avviene senza caricare tutti gli utenti.`;
+  } else if (adminState.loading) {
+    captionText = "Caricamento dei 10 utenti più recenti in corso...";
+  }
+
+  if (title) title.textContent = titleText;
+  if (caption) caption.textContent = captionText;
+  if (totalLabel) totalLabel.textContent = adminState.mode === "all" ? "Totale" : "Caricati";
+  if (loadAll) {
+    const allLoaded = adminState.mode === "all" && !adminState.loading;
+    loadAll.disabled = adminState.loading || allLoaded;
+    loadAll.textContent = adminState.loading && adminState.mode === "all"
+      ? "Caricamento..."
+      : allLoaded
+        ? "Tutti gli utenti caricati"
+        : "Carica tutti gli utenti";
+  }
+  list?.setAttribute("aria-busy", adminState.loading ? "true" : "false");
+}
+
 function renderAdminLoading() {
+  updateAdminDatasetControls();
   const list = document.getElementById("adminUserList");
   if (list) list.innerHTML = '<div class="admin-loading">Caricamento...</div>';
 }
@@ -5192,9 +5395,22 @@ function renderAdminUserCard(user, duplicatePhones = getAdminDuplicatePhones()) 
 }
 
 function renderAdminUsers() {
+  updateAdminDatasetControls();
   updateAdminStats();
   const list = document.getElementById("adminUserList");
   if (!list) return;
+
+  if ((adminState.tab === "promo" || adminState.tab === "duplicates") && adminState.mode !== "all") {
+    const sectionName = adminState.tab === "promo" ? "tutti gli utenti promo" : "tutti i duplicati";
+    list.innerHTML = `
+      <div class="admin-requires-all" role="status">
+        <strong>Carica l'elenco completo</strong>
+        <small>Per vedere ${sectionName} servono tutti i record.</small>
+        <button class="admin-secondary-btn" type="button" onclick="adminLoadAllUsers()">Carica tutti gli utenti</button>
+      </div>
+    `;
+    return;
+  }
 
   if (adminState.tab === "promo" && adminState.promoLoading) {
     list.innerHTML = `
@@ -5220,7 +5436,11 @@ function renderAdminUsers() {
 
   const users = getFilteredAdminUsers();
   if (!users.length) {
-    const emptyText = adminState.tab === "promo" ? "Nessun utente promo trovato." : "Nessun utente trovato.";
+    const emptyText = adminState.mode === "search-pending"
+      ? `Inserisci almeno ${ADMIN_SEARCH_MIN_DIGITS} cifre del telefono.`
+      : adminState.tab === "promo"
+        ? "Nessun utente promo trovato."
+        : "Nessun utente trovato.";
     list.innerHTML = `<div class="admin-empty">${emptyText}</div>`;
     return;
   }
@@ -5332,7 +5552,13 @@ function getExistingAdminUser(phone) {
 function setAdminTab(tabName) {
   adminState.tab = tabName;
   document.querySelectorAll(".admin-tab").forEach(btn => {
-    btn.classList.toggle("is-active", btn.dataset.adminTab === tabName);
+    const isActive = btn.dataset.adminTab === tabName;
+    btn.classList.toggle("is-active", isActive);
+    btn.setAttribute("aria-selected", isActive ? "true" : "false");
+    btn.tabIndex = isActive ? 0 : -1;
+    if (isActive && btn.id) {
+      document.getElementById("adminUserList")?.setAttribute("aria-labelledby", btn.id);
+    }
   });
 }
 
