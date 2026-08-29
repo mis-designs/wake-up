@@ -20,6 +20,7 @@ test("admin explanations expose the personal Bangla help disclosure", () => {
   assert.match(client, /QuizHelpPreview\?\.getQuestionHelp/u);
   assert.match(client, /requestId !== state\.helpRequestId/u);
   assert.match(styles, /audio-admin-help-panel/u);
+  assert.match(styles, /audio-admin-help-panel\[hidden\]\s*\{\s*display:\s*none/u);
   assert.match(styles, /prefers-reduced-motion/u);
 });
 

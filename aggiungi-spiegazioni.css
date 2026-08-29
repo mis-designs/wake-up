@@ -326,6 +326,7 @@ body {
 .audio-admin-help-toggle[aria-expanded="true"] .audio-admin-help-toggle-marker { transform: rotate(225deg) translate(-1px, -1px); }
 .audio-admin-question.is-help-open { border-color: #b9a9ff; }
 .audio-admin-help-panel { display: grid; grid-column: 1 / -1; gap: 10px; min-width: 0; margin-top: 2px; padding: 14px 16px; border: 1px solid #d7cdfd; border-radius: 15px; background: linear-gradient(135deg, #fbfaff, #f2fbf9); }
+.audio-admin-help-panel[hidden] { display: none; }
 .audio-admin-help-label, .audio-admin-help-section-title { color: #7658e8; font-size: .7rem; font-weight: 950; letter-spacing: .12em; }
 .audio-admin-help-translation { margin: 0; color: #17233a; font-family: var(--font-bengali, "Noto Sans Bengali", "Hind Siliguri", sans-serif); font-size: 1.05rem; line-height: 1.72; overflow-wrap: anywhere; }
 .audio-admin-help-translation.is-missing, .audio-admin-help-status { color: #60718a; font-size: .88rem; line-height: 1.5; }
