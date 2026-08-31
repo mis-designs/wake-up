@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v150-promo-ui-disabled";
+const CACHE_NAME = "magicbook-pwa-v151-audio-player-pill";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -18,12 +18,13 @@ const STATIC_ASSETS = [
   "/src/learning-insights.js?v=5-figure-explanation-ui&ui=7-shared-gif-loader",
   "/homebg.css?v=3",
   "/mystyle.css?v=49-single-surface-loader",
+  "/audio-player-ui.css?v=1-admin-pill",
   "/script.js?v=67-promo-ui-disabled",
   "/study-quiz.html",
   "/study-quiz.css?v=24-shared-gif-loader",
-  "/study-quiz.js?v=18-shared-gif-loader",
+  "/study-quiz.js?v=19-audio-player-pill",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=74-single-surface-loader",
+  "/quiz.js?v=75-audio-player-pill",
   "/quiz-help.css?v=20260829-a11y-trigger-label",
   "/quiz-help.js?v=20260831-shared-gif-loader",
   "/patenteGlossaryResolver.js?v=1.0.0",

@@ -1053,6 +1053,8 @@
 
   function setExplanationPlaying(controls, isPlaying) {
     controls?.root.classList.toggle("is-playing", isPlaying);
+    controls?.play.classList.toggle("is-playing", isPlaying);
+    controls?.play.setAttribute("aria-label", isPlaying ? "Metti in pausa la spiegazione" : "Riproduci spiegazione");
     controls?.artwork.classList.toggle("is-spinning", isPlaying);
   }
 

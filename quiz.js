@@ -753,6 +753,8 @@ function setSharedAudioVisibility(isVisible) {
 
 function setSharedAudioPlaying(isPlaying) {
   sharedAudioPlay?.classList.toggle("is-playing", isPlaying);
+  sharedAudioPlay?.setAttribute("aria-label", isPlaying ? "Metti in pausa la spiegazione" : "Riproduci spiegazione");
+  sharedAudioPlayer?.classList.toggle("is-playing", isPlaying);
   sharedAudioArtwork?.classList.toggle("is-spinning", isPlaying);
 }
 
