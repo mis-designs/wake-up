@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v148-shared-gif-loader";
+const CACHE_NAME = "magicbook-pwa-v149-whatsapp-loader-polish";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -8,7 +8,7 @@ const STATIC_ASSETS = [
   "/assets/fonts/magicbook-bangla-fonts.css?v=1-adorsho",
   "/assets/daisyui.css?v=2-learning-shell",
   "/loading-ui.css?v=1-shared-gif-loader",
-  "/style.css?v=69-shared-gif-loader",
+  "/style.css?v=70-whatsapp-dialog",
   "/magic-dictionary.css?v=1.2.5-settings-layout",
   "/screen-protection.css?v=1.1.0",
   "/offline-notice.css?v=1.0.0",
@@ -17,13 +17,13 @@ const STATIC_ASSETS = [
   "/src/learning-insights.css?v=9-card-spacing&ui=10",
   "/src/learning-insights.js?v=5-figure-explanation-ui&ui=7-shared-gif-loader",
   "/homebg.css?v=3",
-  "/mystyle.css?v=48-shared-gif-loader",
-  "/script.js?v=65-shared-gif-loader",
+  "/mystyle.css?v=49-single-surface-loader",
+  "/script.js?v=66-whatsapp-dialog",
   "/study-quiz.html",
   "/study-quiz.css?v=24-shared-gif-loader",
   "/study-quiz.js?v=18-shared-gif-loader",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=73-shared-gif-loader",
+  "/quiz.js?v=74-single-surface-loader",
   "/quiz-help.css?v=20260829-a11y-trigger-label",
   "/quiz-help.js?v=20260831-shared-gif-loader",
   "/patenteGlossaryResolver.js?v=1.0.0",

@@ -12,6 +12,7 @@ const page = read("index.html");
 const script = read("script.js");
 const quizPage = read("quiz.html");
 const quiz = read("quiz.js");
+const quizStyle = read("mystyle.css");
 const quizHelp = read("quiz-help.js");
 const studyPage = read("study-quiz.html");
 const study = read("study-quiz.js");
@@ -56,7 +57,13 @@ test("main, Admin, book, dictionary and learning operations expose truthful GIF 
 
 test("quiz, study and explanation operations reuse the same busy-control contract", () => {
   assert.match(quizPage, /quiz-loading-figure[\s\S]*?icons\/loading\.gif/u);
+  assert.match(quizPage, /id="loading-text" class="sr-only"/u);
+  assert.match(quizStyle, /\.loading-overlay\s*\{[\s\S]*?background:\s*#ffffff;/u);
+  assert.match(quizStyle, /\.loading-card\s*\{\s*display:\s*contents;/u);
+  assert.match(quizStyle, /\.quiz-loading-figure\s*\{[\s\S]*?border:\s*0;[\s\S]*?box-shadow:\s*none;/u);
+  assert.doesNotMatch(quizStyle, /#loading-text\s*\{[\s\S]*?font-weight/u);
   assert.doesNotMatch(quiz, /QUIZ_LOADING_FIGURES/u);
+  assert.match(quiz, /"Risultato non disponibile"[\s\S]*?"Non siamo riusciti a controllare il risultato\. Verifica la connessione e riprova\."/u);
   assert.match(quiz, /modal-review-translation-loading magic-loading-indicator[\s\S]*?icons\/loading\.gif/u);
   assert.match(quiz, /modal-review-audio-button magic-loading-control/u);
   assert.match(quizHelp, /quiz-help-word-audio magic-loading-control/u);
@@ -71,13 +78,13 @@ test("quiz, study and explanation operations reuse the same busy-control contrac
 });
 
 test("the shared loader and all changed consumers ship in one fresh PWA cache", () => {
-  assert.match(worker, /magicbook-pwa-v148-shared-gif-loader/u);
+  assert.match(worker, /magicbook-pwa-v149-whatsapp-loader-polish/u);
   assert.match(worker, /loading-ui\.css\?v=1-shared-gif-loader/u);
   assert.match(worker, /icons\/loading\.gif/u);
-  assert.match(worker, /style\.css\?v=69-shared-gif-loader/u);
-  assert.match(worker, /script\.js\?v=65-shared-gif-loader/u);
-  assert.match(worker, /mystyle\.css\?v=48-shared-gif-loader/u);
-  assert.match(worker, /quiz\.js\?v=73-shared-gif-loader/u);
+  assert.match(worker, /style\.css\?v=70-whatsapp-dialog/u);
+  assert.match(worker, /script\.js\?v=66-whatsapp-dialog/u);
+  assert.match(worker, /mystyle\.css\?v=49-single-surface-loader/u);
+  assert.match(worker, /quiz\.js\?v=74-single-surface-loader/u);
   assert.match(worker, /quiz-help\.js\?v=20260831-shared-gif-loader/u);
   assert.match(worker, /study-quiz\.js\?v=18-shared-gif-loader/u);
   assert.match(worker, /magic-dictionary\.js\?v=1\.2\.5-shared-gif-loader/u);

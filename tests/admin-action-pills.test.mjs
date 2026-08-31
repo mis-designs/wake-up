@@ -26,6 +26,6 @@ test("Admin utility actions use semantic icon pills with three distinct palettes
   assert.match(styles, /\.admin-action-pill--font\s*\{[\s\S]*?--admin-action-mid:\s*#8b5cf6;/u);
   assert.match(styles, /\.admin-action-pill:focus-visible\s*\{[\s\S]*?outline:\s*3px solid #263bd4;/u);
   assert.match(styles, /@media \(max-width: 520px\)[\s\S]*?\.admin-action-pill\s*\{\s*width:\s*100%;/u);
-  assert.match(page, /style\.css\?v=69-shared-gif-loader/u);
-  assert.match(worker, /style\.css\?v=69-shared-gif-loader/u);
+  assert.match(page, /style\.css\?v=70-whatsapp-dialog/u);
+  assert.match(worker, /style\.css\?v=70-whatsapp-dialog/u);
 });

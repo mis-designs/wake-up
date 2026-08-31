@@ -15,6 +15,7 @@
 | Quiz timer | `quiz.js`, `#timer` | Signed Admin role returned by `api/quiz.js` | Normal countdown; Admin elapsed overtime | Boundary, authorization, elapsed-time, and cache-version tests |
 | Global connectivity alert | `offline-notice.js`, `offline-notice.css` | `navigator.onLine` plus browser `online` and `offline` events | Initial offline; connection lost; automatic recovery | Shared static test plus browser offline/online verification |
 | Loading indicator | `loading-ui.css`, `icons/loading.gif` | Shared async-state contract | Page, panel, inline status, busy control; static reduced-motion fallback | Asset/cache, busy-state, layout-stability, and reduced-motion tests |
+| WhatsApp group dialog | `script.js`, `style.css` | Authenticated Home invitation state | Bangla default; Italian alternate; join or defer | Focus trap/restoration, locale, responsive, reduced-motion, and cache tests |
 
 ## Feature ownership
 
@@ -29,6 +30,8 @@
 | Pagination | `src/learning-insights.js` | Eight initial items; `Mostra altri` appends without losing stable focus. |
 | Async status | `#learningInsightsStatus` | Polite live region for refresh, offline cache, and retry results. |
 | Shared loading feedback | `loading-ui.css`, `icons/loading.gif` | User-visible initial loads, panel requests, and button operations use the same GIF with truthful Italian status copy and `aria-busy`. Busy mutations disable duplicate activation without changing control dimensions. Background refresh preserves current content and uses its existing subtle status instead of a blocking overlay. Reduced-motion replaces the animated image with a static system-operable mark. |
+| Quiz blocking loading | `quiz.html`, `quiz.js`, `mystyle.css` | Initial quiz load and result checking use a seamless white full-viewport state with only the centered shared GIF visible. Status text remains available to assistive technology. Failure closes the loader and presents plain Italian recovery copy without backend details. |
+| WhatsApp group invitation | `script.js`, `style.css`, local Bengali font assets | Home may show one modal invitation after authentication and outside other blocking overlays. Bangla is the default; the learner can switch to Italian, join, defer for seven days, close with Escape/backdrop, and receive trigger-focus restoration. Background content is inert while the dialog is open. |
 | UI assets | Repository images/SVGs + authenticated figure endpoint | No Unicode glyphs as UI icons. Decorative CSS marks remain hidden from assistive technology. |
 | Font library | `libreria-font.html`, `libreria-font.css`, `assets/fonts/magicbook-bangla-fonts.css` | Admin links to `/libreria-font`; the static page compares the three locally hosted Bengali faces with identical live text and returns to `/admin`. |
 | Promo conversion | `#promoAccessNextStep` + `openPromoPackages()` | A previous promo or a full campaign produces persistent inline guidance; the user chooses when to open `/join`, which focuses the packages heading. |

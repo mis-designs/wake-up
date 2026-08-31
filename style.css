@@ -16,6 +16,8 @@
     --color-soft-shadow: 0 22px 48px rgba(37, 41, 67, 0.2);
     --gradient-main: linear-gradient(135deg, #3a4efb 0%, #33a4fa 100%);
     --gradient-dark: linear-gradient(135deg, #252943 0%, #303659 100%);
+    --layer-dialog-backdrop: 999998;
+    --layer-dialog: 999999;
 }
 
 * {
@@ -37,6 +39,361 @@
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+}
+
+/* WHATSAPP GROUP DIALOG */
+@keyframes whatsappGroupBackdropIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes whatsappGroupDialogIn {
+    from { opacity: 0; transform: translateY(18px) scale(0.975); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+body.whatsapp-group-popup-open {
+    overflow: hidden;
+}
+
+#whatsappGroupPopupOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--layer-dialog-backdrop);
+    display: grid;
+    place-items: center;
+    padding:
+        max(16px, env(safe-area-inset-top, 0px))
+        max(14px, env(safe-area-inset-right, 0px))
+        max(16px, env(safe-area-inset-bottom, 0px))
+        max(14px, env(safe-area-inset-left, 0px));
+    background: rgba(8, 25, 29, 0.76);
+    backdrop-filter: blur(14px) saturate(112%);
+    -webkit-backdrop-filter: blur(14px) saturate(112%);
+    animation: whatsappGroupBackdropIn 180ms ease-out both;
+}
+
+#whatsappGroupPopupCard {
+    position: relative;
+    z-index: var(--layer-dialog);
+    width: min(100%, 448px);
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
+    overflow: auto;
+    overscroll-behavior: contain;
+    border: 1px solid rgba(167, 243, 208, 0.72);
+    border-radius: 28px;
+    background: #ffffff;
+    color: #17233a;
+    box-shadow: 0 34px 88px rgba(0, 0, 0, 0.34);
+    scrollbar-gutter: stable;
+    isolation: isolate;
+    animation: whatsappGroupDialogIn 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.wgp-accent {
+    height: 5px;
+    background: linear-gradient(90deg, #059669 0%, #25d366 58%, #a7f3d0 100%);
+}
+
+.wgp-content {
+    padding: 17px 20px 22px;
+    text-align: center;
+}
+
+.wgp-topbar {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.wgp-close {
+    position: relative;
+    display: inline-grid;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    place-items: center;
+    border: 1px solid rgba(5, 150, 105, 0.17);
+    border-radius: 50%;
+    background: rgba(236, 253, 245, 0.82);
+    color: #426052;
+    box-shadow: 0 8px 20px rgba(5, 150, 105, 0.09);
+    cursor: pointer;
+    transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.wgp-close::before,
+.wgp-close::after {
+    content: "";
+    position: absolute;
+    width: 15px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+}
+
+.wgp-close::before { transform: rotate(45deg); }
+.wgp-close::after { transform: rotate(-45deg); }
+
+.wgp-lang {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    gap: 3px;
+    padding: 4px;
+    border: 1px solid rgba(5, 150, 105, 0.2);
+    border-radius: 999px;
+    background: rgba(236, 253, 245, 0.78);
+    box-shadow: 0 8px 20px rgba(5, 150, 105, 0.08);
+}
+
+.wgp-lang button {
+    min-width: 56px;
+    min-height: 36px;
+    padding: 5px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #43715b;
+    font: 800 0.75rem/1 "Inter", Arial, sans-serif;
+    cursor: pointer;
+    transition: color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.wgp-lang button:first-child {
+    font-family: var(--font-bn-support);
+    font-size: 0.92rem;
+    font-weight: 400;
+}
+
+.wgp-lang button.is-active {
+    background: linear-gradient(135deg, #059669, #22c55e);
+    color: #ffffff;
+    box-shadow: 0 7px 16px rgba(5, 150, 105, 0.24);
+}
+
+.wgp-icon {
+    display: grid;
+    width: 74px;
+    height: 74px;
+    margin: 18px auto 16px;
+    place-items: center;
+    border-radius: 23px;
+    background: radial-gradient(100% 100% at 50% 0%, #57e889 0%, #25d366 58%, #079447 100%);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.68), 0 15px 34px rgba(5, 150, 105, 0.28);
+}
+
+.wgp-icon img {
+    display: block;
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+}
+
+.wgp-title {
+    max-width: 390px;
+    margin: 0 auto 10px;
+    color: #10251a;
+    font: 800 clamp(1.35rem, 5.5vw, 1.65rem)/1.2 "Inter", Arial, sans-serif;
+    text-wrap: balance;
+}
+
+.wgp-message {
+    max-width: 370px;
+    margin: 0 auto;
+    color: #53685d;
+    font: 500 0.97rem/1.58 "Inter", Arial, sans-serif;
+    text-wrap: pretty;
+}
+
+#whatsappGroupPopupCard[lang="bn"] .wgp-title {
+    font-family: var(--font-bn-title);
+    font-weight: 700;
+    line-height: 1.34;
+}
+
+#whatsappGroupPopupCard[lang="bn"] .wgp-message,
+#whatsappGroupPopupCard[lang="bn"] .wgp-action-label,
+#whatsappGroupPopupCard[lang="bn"] .wgp-note {
+    font-family: var(--font-bn-support);
+    font-weight: 400;
+}
+
+#whatsappGroupPopupCard[lang="bn"] .wgp-message {
+    font-size: 1.05rem;
+    line-height: 1.7;
+}
+
+.wgp-actions {
+    display: grid;
+    gap: 10px;
+    margin-top: 21px;
+}
+
+.wgp-action-pill {
+    --wgp-action-tint: rgba(100, 116, 139, 0.06);
+    --wgp-action-line: rgba(71, 85, 105, 0.15);
+    --wgp-action-shadow: rgba(71, 85, 105, 0.14);
+    --wgp-action-glow: rgba(71, 85, 105, 0.24);
+    --wgp-action-start: #94a3b8;
+    --wgp-action-mid: #64748b;
+    --wgp-action-end: #475569;
+    display: inline-flex;
+    width: 100%;
+    min-height: 58px;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 7px 18px 7px 7px;
+    border: 1px solid var(--wgp-action-line);
+    border-radius: 999px;
+    background: linear-gradient(180deg, #ffffff, var(--wgp-action-tint));
+    color: #17233a;
+    box-shadow: 0 8px 20px rgba(30, 41, 59, 0.08);
+    font: 800 0.96rem/1.2 "Inter", Arial, sans-serif;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.wgp-primary {
+    --wgp-action-tint: rgba(16, 185, 129, 0.09);
+    --wgp-action-line: rgba(5, 150, 105, 0.22);
+    --wgp-action-shadow: rgba(5, 150, 105, 0.2);
+    --wgp-action-glow: rgba(16, 185, 129, 0.34);
+    --wgp-action-start: #4ade80;
+    --wgp-action-mid: #22c55e;
+    --wgp-action-end: #059669;
+    color: #075f3d;
+}
+
+.wgp-action-icon {
+    position: relative;
+    display: inline-grid;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    place-items: center;
+    border-radius: 50%;
+    background: radial-gradient(100% 100% at 50% 0%, var(--wgp-action-start) 0%, var(--wgp-action-mid) 60%, var(--wgp-action-end) 100%);
+    color: #ffffff;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.7), 0 6px 18px var(--wgp-action-glow);
+}
+
+.wgp-action-icon img {
+    display: block;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+.wgp-action-icon--later::before {
+    content: "";
+    width: 17px;
+    height: 17px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+}
+
+.wgp-action-icon--later::after {
+    content: "";
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    border-left: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: translate(1px, -2px);
+}
+
+.wgp-action-label {
+    min-width: 0;
+    flex: 1;
+    text-align: center;
+}
+
+.wgp-action-pill::after {
+    content: "";
+    width: 42px;
+    flex: 0 0 42px;
+}
+
+.wgp-action-pill:hover {
+    border-color: var(--wgp-action-line);
+    background: #ffffff;
+    box-shadow: 0 14px 30px var(--wgp-action-shadow);
+    transform: translateY(-2px);
+}
+
+.wgp-action-pill:active,
+.wgp-close:active {
+    transform: translateY(0) scale(0.99);
+}
+
+.wgp-close:hover {
+    border-color: rgba(5, 150, 105, 0.3);
+    background: #ffffff;
+    box-shadow: 0 12px 24px rgba(5, 150, 105, 0.14);
+    transform: translateY(-1px);
+}
+
+.wgp-close:focus-visible,
+.wgp-lang button:focus-visible,
+.wgp-action-pill:focus-visible {
+    outline: 3px solid #263bd4;
+    outline-offset: 3px;
+}
+
+.wgp-note {
+    margin: 14px 4px 0;
+    color: #7c9085;
+    font: 500 0.82rem/1.45 "Inter", Arial, sans-serif;
+}
+
+@media (max-width: 380px) {
+    .wgp-content { padding: 14px 14px 18px; }
+    .wgp-lang button { min-width: 50px; padding-inline: 9px; }
+    .wgp-icon { width: 66px; height: 66px; margin-top: 14px; border-radius: 20px; }
+    .wgp-icon img { width: 39px; height: 39px; }
+    .wgp-title { font-size: 1.28rem; }
+    .wgp-message { font-size: 0.92rem; }
+    #whatsappGroupPopupCard[lang="bn"] .wgp-message { font-size: 1rem; }
+}
+
+@media (max-height: 620px) {
+    .wgp-content { padding-top: 12px; padding-bottom: 15px; }
+    .wgp-icon { width: 58px; height: 58px; margin: 10px auto 11px; border-radius: 18px; }
+    .wgp-icon img { width: 34px; height: 34px; }
+    .wgp-title { margin-bottom: 6px; font-size: 1.22rem; }
+    .wgp-message { line-height: 1.42; }
+    #whatsappGroupPopupCard[lang="bn"] .wgp-message { line-height: 1.52; }
+    .wgp-actions { margin-top: 14px; }
+    .wgp-action-pill { min-height: 52px; }
+    .wgp-action-icon { width: 38px; height: 38px; flex-basis: 38px; }
+    .wgp-action-pill::after { width: 38px; flex-basis: 38px; }
+    .wgp-note { margin-top: 9px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #whatsappGroupPopupOverlay,
+    #whatsappGroupPopupCard {
+        animation: none;
+    }
+
+    .wgp-close,
+    .wgp-lang button,
+    .wgp-action-pill {
+        transition: none;
+    }
+
+    .wgp-close:hover,
+    .wgp-action-pill:hover,
+    .wgp-action-pill:active,
+    .wgp-close:active {
+        transform: none;
+    }
 }
 
 /* WHAT'S NEW */
@@ -8698,5 +9055,19 @@ body.qms-open { overflow: hidden; }
     #login .login-input:focus-visible,
     #login .login-password-toggle:focus-visible {
         outline-color: Highlight;
+    }
+}
+
+@media (forced-colors: active) {
+    #whatsappGroupPopupCard,
+    .wgp-close,
+    .wgp-lang,
+    .wgp-lang button,
+    .wgp-action-pill,
+    .wgp-action-icon {
+        border: 1px solid ButtonText;
+        background: ButtonFace;
+        color: ButtonText;
+        box-shadow: none;
     }
 }

@@ -2868,17 +2868,17 @@ const WHATSAPP_GROUP_DISMISS_MS = 7 * 24 * 60 * 60 * 1000;
 const WHATSAPP_GROUP_POPUP_TEXT = {
   bn: {
     title: "MagicBook WhatsApp গ্রুপে যোগ দিন",
-    message: "সাপোর্ট, আপডেট এবং অ্যাপ ব্যবহারের সাহায্যের জন্য আমাদের অফিসিয়াল WhatsApp গ্রুপে যোগ দিন।",
+    message: "অ্যাপের খবর, সাহায্য ও নতুন আপডেট পেতে আমাদের অফিসিয়াল WhatsApp গ্রুপে যোগ দিন।",
     primary: "গ্রুপে যোগ দিন",
-    secondary: "এখন না",
-    note: "আপনি চাইলে পরে আবার যোগ দিতে পারবেন।"
+    secondary: "এখন নয়",
+    note: "পরে চাইলে আবার যোগ দিতে পারবেন।"
   },
   it: {
     title: "Unisciti al gruppo WhatsApp MagicBook",
-    message: "Entra nel gruppo ufficiale per supporto, aggiornamenti e aiuto sull’utilizzo dell’app.",
+    message: "Ricevi aggiornamenti e aiuto per usare l’app nel gruppo WhatsApp ufficiale.",
     primary: "Unisciti al gruppo",
     secondary: "Non ora",
-    note: "Puoi unirti anche più tardi."
+    note: "Potrai unirti più tardi."
   }
 };
 
@@ -2938,260 +2938,45 @@ function openWhatsAppGroupLink() {
   openExternalUrl(normalLink);
 }
 
-function injectWhatsAppGroupPopupStyles() {
-  if (document.getElementById("whatsappGroupPopupStyles")) return;
-
-  const style = document.createElement("style");
-  style.id = "whatsappGroupPopupStyles";
-  style.textContent = `
-    @keyframes whatsappGroupFadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    @keyframes whatsappGroupSlideUp {
-      from { opacity: 0; transform: translateY(24px) scale(0.96); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    #whatsappGroupPopupOverlay {
-      position: fixed;
-      inset: 0;
-      z-index: 999998;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
-      background:
-        linear-gradient(180deg, rgba(4, 13, 16, 0.58), rgba(6, 18, 20, 0.76)),
-        rgba(6, 18, 20, 0.68);
-      backdrop-filter: blur(16px) saturate(118%);
-      -webkit-backdrop-filter: blur(16px) saturate(118%);
-      animation: whatsappGroupFadeIn 0.22s ease-out both;
-    }
-    #whatsappGroupPopupCard {
-      position: relative;
-      width: 100%;
-      max-width: 432px;
-      overflow: hidden;
-      border-radius: 28px;
-      border: 1px solid rgba(255, 255, 255, 0.78);
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(245, 255, 250, 0.98) 100%);
-      box-shadow:
-        0 34px 90px rgba(0, 0, 0, 0.34),
-        0 2px 0 rgba(255, 255, 255, 0.72) inset;
-      font-family: 'Hind Siliguri', 'Noto Sans Bengali', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      isolation: isolate;
-      animation: whatsappGroupSlideUp 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
-    }
-    #whatsappGroupPopupCard::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      background:
-        linear-gradient(135deg, rgba(34, 197, 94, 0.14), transparent 38%),
-        linear-gradient(315deg, rgba(20, 184, 166, 0.12), transparent 42%);
-      pointer-events: none;
-    }
-    .wgp-accent {
-      height: 6px;
-      background: linear-gradient(90deg, #0f9f4a 0%, #25d366 46%, #9af5bd 100%);
-    }
-    .wgp-content {
-      padding: 23px 22px 22px;
-      text-align: center;
-    }
-    .wgp-lang {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      display: inline-flex;
-      gap: 2px;
-      padding: 2px;
-      border-radius: 999px;
-      background: rgba(237, 253, 244, 0.92);
-      border: 1px solid rgba(165, 243, 192, 0.9);
-      box-shadow: 0 10px 26px rgba(15, 118, 61, 0.12);
-      z-index: 2;
-    }
-    .wgp-lang button {
-      min-width: 42px;
-      height: 28px;
-      border: 0;
-      border-radius: 999px;
-      background: transparent;
-      color: #12833d;
-      font: 800 11px/1 Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      letter-spacing: 0.02em;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .wgp-lang button.is-active {
-      background: linear-gradient(135deg, #119948, #22c55e);
-      color: #ffffff;
-      box-shadow: 0 8px 18px rgba(22, 163, 74, 0.26);
-    }
-    .wgp-close {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      width: 34px;
-      height: 34px;
-      border: 1px solid rgba(209, 250, 229, 0.9);
-      border-radius: 999px;
-      background: rgba(247, 255, 251, 0.84);
-      color: #4f6f5d;
-      font: 800 18px/1 Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      cursor: pointer;
-      box-shadow: 0 10px 24px rgba(15, 118, 61, 0.1);
-      -webkit-tap-highlight-color: transparent;
-    }
-    .wgp-close::before,
-    .wgp-close::after {
-      content: "";
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 14px;
-      height: 2px;
-      border-radius: 999px;
-      background: currentColor;
-    }
-    .wgp-close::before {
-      transform: translate(-50%, -50%) rotate(45deg);
-    }
-    .wgp-close::after {
-      transform: translate(-50%, -50%) rotate(-45deg);
-    }
-    .wgp-close:focus-visible,
-    .wgp-lang button:focus-visible,
-    .wgp-primary:focus-visible,
-    .wgp-secondary:focus-visible {
-      outline: 3px solid rgba(37, 211, 102, 0.28);
-      outline-offset: 3px;
-    }
-    .wgp-icon {
-      width: 72px;
-      height: 72px;
-      margin: 40px auto 17px;
-      border-radius: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(145deg, #78f2a4 0%, #25d366 52%, #099143 100%);
-      color: #ffffff;
-      font-size: 36px;
-      box-shadow:
-        0 18px 36px rgba(22, 163, 74, 0.3),
-        0 1px 0 rgba(255, 255, 255, 0.48) inset;
-    }
-    .wgp-icon img {
-      width: 44px;
-      height: 44px;
-      object-fit: contain;
-    }
-    .wgp-title {
-      margin: 0 auto 10px;
-      max-width: 372px;
-      color: #10251a;
-      font-size: clamp(21px, 5.2vw, 24px);
-      font-weight: 800;
-      line-height: 1.16;
-      letter-spacing: 0;
-      text-wrap: balance;
-    }
-    .wgp-message {
-      margin: 0 auto 18px;
-      max-width: 352px;
-      color: #506259;
-      font-size: 15px;
-      line-height: 1.48;
-      text-wrap: pretty;
-    }
-    .wgp-actions {
-      display: grid;
-      gap: 10px;
-      margin-top: 18px;
-    }
-    .wgp-primary,
-    .wgp-secondary {
-      min-height: 48px;
-      border-radius: 16px;
-      border: 0;
-      font: 800 15px/1.2 'Hind Siliguri', 'Noto Sans Bengali', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      cursor: pointer;
-      transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .wgp-primary {
-      color: #ffffff;
-      background: linear-gradient(135deg, #0f9f4a 0%, #25d366 100%);
-      box-shadow:
-        0 16px 30px rgba(22, 163, 74, 0.3),
-        0 1px 0 rgba(255, 255, 255, 0.3) inset;
-    }
-    .wgp-secondary {
-      color: #27533a;
-      background: rgba(239, 252, 245, 0.9);
-      border: 1px solid rgba(190, 242, 208, 0.9);
-    }
-    .wgp-close:active,
-    .wgp-primary:active,
-    .wgp-secondary:active {
-      transform: scale(0.985);
-    }
-    .wgp-note {
-      margin: 13px 0 0;
-      color: #789083;
-      font-size: 12.5px;
-      line-height: 1.35;
-    }
-    @media (max-width: 380px) {
-      #whatsappGroupPopupOverlay { padding-left: 14px; padding-right: 14px; }
-      .wgp-content { padding: 22px 16px 18px; }
-      .wgp-title { font-size: 20px; max-width: 310px; }
-      .wgp-message { font-size: 14px; }
-      .wgp-lang { top: 12px; right: 12px; }
-      .wgp-lang button { min-width: 36px; height: 26px; font-size: 10px; }
-      .wgp-close { top: 12px; left: 12px; width: 32px; height: 32px; }
-      .wgp-icon { margin-top: 38px; }
-    }
-  `;
-  document.head.appendChild(style);
-}
-
 function showWhatsAppGroupPopup() {
   if (!isWhatsAppGroupPopupAllowed()) return;
 
-  injectWhatsAppGroupPopupStyles();
-
   let lang = "bn";
+  let isClosed = false;
+  const previouslyFocused = document.activeElement;
+  const backgroundState = [];
+
   const overlay = document.createElement("div");
   overlay.id = "whatsappGroupPopupOverlay";
   overlay.setAttribute("role", "dialog");
   overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "whatsappGroupPopupTitle");
+  overlay.setAttribute("aria-describedby", "whatsappGroupPopupMessage");
 
   const card = document.createElement("div");
   card.id = "whatsappGroupPopupCard";
 
   const accent = document.createElement("div");
   accent.className = "wgp-accent";
+  accent.setAttribute("aria-hidden", "true");
 
   const content = document.createElement("div");
   content.className = "wgp-content";
 
-  const langToggle = document.createElement("div");
-  langToggle.className = "wgp-lang";
-  langToggle.setAttribute("aria-label", "Language");
+  const topbar = document.createElement("div");
+  topbar.className = "wgp-topbar";
 
   const closeBtn = document.createElement("button");
   closeBtn.type = "button";
   closeBtn.className = "wgp-close";
-  closeBtn.setAttribute("aria-label", "Close");
+
+  const langToggle = document.createElement("div");
+  langToggle.className = "wgp-lang";
+  langToggle.setAttribute("role", "group");
 
   const bnBtn = document.createElement("button");
   bnBtn.type = "button";
-  bnBtn.textContent = "BN";
+  bnBtn.textContent = "বাংলা";
 
   const itBtn = document.createElement("button");
   itBtn.type = "button";
@@ -3203,15 +2988,14 @@ function showWhatsAppGroupPopup() {
   const iconImg = document.createElement("img");
   iconImg.src = "assets/images/whatsapp.png";
   iconImg.alt = "";
-  iconImg.onerror = () => {
-    icon.textContent = "☎";
-  };
   icon.appendChild(iconImg);
 
   const title = document.createElement("h2");
+  title.id = "whatsappGroupPopupTitle";
   title.className = "wgp-title";
 
   const message = document.createElement("p");
+  message.id = "whatsappGroupPopupMessage";
   message.className = "wgp-message";
 
   const actions = document.createElement("div");
@@ -3219,27 +3003,68 @@ function showWhatsAppGroupPopup() {
 
   const primary = document.createElement("button");
   primary.type = "button";
-  primary.className = "wgp-primary";
+  primary.className = "wgp-action-pill wgp-primary";
+  const primaryIcon = document.createElement("span");
+  primaryIcon.className = "wgp-action-icon";
+  primaryIcon.setAttribute("aria-hidden", "true");
+  const primaryIconImg = document.createElement("img");
+  primaryIconImg.src = "assets/images/whatsapp.png";
+  primaryIconImg.alt = "";
+  const primaryLabel = document.createElement("span");
+  primaryLabel.className = "wgp-action-label";
+  primaryIcon.appendChild(primaryIconImg);
+  primary.appendChild(primaryIcon);
+  primary.appendChild(primaryLabel);
 
   const secondary = document.createElement("button");
   secondary.type = "button";
-  secondary.className = "wgp-secondary";
+  secondary.className = "wgp-action-pill wgp-secondary";
+  const secondaryIcon = document.createElement("span");
+  secondaryIcon.className = "wgp-action-icon wgp-action-icon--later";
+  secondaryIcon.setAttribute("aria-hidden", "true");
+  const secondaryLabel = document.createElement("span");
+  secondaryLabel.className = "wgp-action-label";
+  secondary.appendChild(secondaryIcon);
+  secondary.appendChild(secondaryLabel);
 
   const note = document.createElement("p");
   note.className = "wgp-note";
 
   function renderLanguage() {
     const text = WHATSAPP_GROUP_POPUP_TEXT[lang];
-    card.setAttribute("lang", lang === "bn" ? "bn" : "it");
+    card.setAttribute("lang", lang);
     title.textContent = text.title;
     message.textContent = text.message;
-    primary.textContent = text.primary;
-    secondary.textContent = text.secondary;
+    primaryLabel.textContent = text.primary;
+    secondaryLabel.textContent = text.secondary;
     note.textContent = text.note;
+    closeBtn.setAttribute("aria-label", lang === "bn" ? "পপ-আপ বন্ধ করুন" : "Chiudi");
+    langToggle.setAttribute("aria-label", lang === "bn" ? "ভাষা বেছে নিন" : "Scegli lingua");
+    bnBtn.setAttribute("aria-label", lang === "bn" ? "বাংলা, নির্বাচিত" : "Bangla");
+    itBtn.setAttribute("aria-label", lang === "it" ? "Italiano, selezionato" : "Italiano");
     bnBtn.classList.toggle("is-active", lang === "bn");
     itBtn.classList.toggle("is-active", lang === "it");
     bnBtn.setAttribute("aria-pressed", lang === "bn" ? "true" : "false");
     itBtn.setAttribute("aria-pressed", lang === "it" ? "true" : "false");
+  }
+
+  function restoreBackground() {
+    backgroundState.forEach(({ element, inert }) => {
+      if (element.isConnected) element.inert = inert;
+    });
+    document.body.classList.remove("whatsapp-group-popup-open");
+  }
+
+  function closePopup({ joined = false } = {}) {
+    if (isClosed) return;
+    isClosed = true;
+    if (joined) Storage.set(WHATSAPP_GROUP_CLICKED_KEY, "true");
+    else Storage.set(WHATSAPP_GROUP_DISMISSED_AT_KEY, String(Date.now()));
+    restoreBackground();
+    overlay.remove();
+    if (previouslyFocused instanceof HTMLElement && previouslyFocused.isConnected) {
+      previouslyFocused.focus({ preventScroll: true });
+    }
   }
 
   bnBtn.addEventListener("click", () => {
@@ -3253,34 +3078,44 @@ function showWhatsAppGroupPopup() {
   });
 
   primary.addEventListener("click", () => {
-    Storage.set(WHATSAPP_GROUP_CLICKED_KEY, "true");
+    closePopup({ joined: true });
     openWhatsAppGroupLink();
-    overlay.remove();
   });
 
-  secondary.addEventListener("click", () => {
-    Storage.set(WHATSAPP_GROUP_DISMISSED_AT_KEY, String(Date.now()));
-    overlay.remove();
-  });
-
-  closeBtn.addEventListener("click", () => {
-    Storage.set(WHATSAPP_GROUP_DISMISSED_AT_KEY, String(Date.now()));
-    overlay.remove();
-  });
+  secondary.addEventListener("click", () => closePopup());
+  closeBtn.addEventListener("click", () => closePopup());
 
   overlay.addEventListener("click", event => {
-    if (event.target === overlay) {
-      Storage.set(WHATSAPP_GROUP_DISMISSED_AT_KEY, String(Date.now()));
-      overlay.remove();
+    if (event.target === overlay) closePopup();
+  });
+
+  overlay.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closePopup();
+      return;
+    }
+    if (event.key !== "Tab") return;
+
+    const focusable = [closeBtn, bnBtn, itBtn, primary, secondary];
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
     }
   });
 
   langToggle.appendChild(bnBtn);
   langToggle.appendChild(itBtn);
+  topbar.appendChild(closeBtn);
+  topbar.appendChild(langToggle);
   actions.appendChild(primary);
   actions.appendChild(secondary);
-  content.appendChild(langToggle);
-  content.appendChild(closeBtn);
+  content.appendChild(topbar);
   content.appendChild(icon);
   content.appendChild(title);
   content.appendChild(message);
@@ -3292,6 +3127,13 @@ function showWhatsAppGroupPopup() {
 
   renderLanguage();
   document.body.appendChild(overlay);
+  Array.from(document.body.children).forEach(element => {
+    if (!(element instanceof HTMLElement) || element === overlay) return;
+    backgroundState.push({ element, inert: element.inert });
+    element.inert = true;
+  });
+  document.body.classList.add("whatsapp-group-popup-open");
+  window.requestAnimationFrame(() => closeBtn.focus({ preventScroll: true }));
 }
 
 /***********************

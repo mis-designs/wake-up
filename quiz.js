@@ -3278,7 +3278,10 @@ async function finishQuiz(forceFinish = false) {
   } catch (err) {
     if (quizAccessErrorHandled) return;
     hideLoading();
-    await showMessage("Errore", "Errore invio risposte");
+    await showMessage(
+      "Risultato non disponibile",
+      "Non siamo riusciti a controllare il risultato. Verifica la connessione e riprova."
+    );
     console.error("[quiz] finishQuiz failed:", err.message);
   } finally {
     hideLoading();

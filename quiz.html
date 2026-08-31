@@ -25,7 +25,7 @@
     <style>@import url('https://banglawebfonts.pages.dev/css/un-bangla.css');</style>
     <link href="https://banglawebfonts.pages.dev/css/tiro-bangla.css" rel="stylesheet">
     <link rel="stylesheet" href="loading-ui.css?v=1-shared-gif-loader">
-    <link rel="stylesheet" href="mystyle.css?v=48-shared-gif-loader">
+  <link rel="stylesheet" href="mystyle.css?v=49-single-surface-loader">
     <link rel="stylesheet" href="quiz-help.css?v=20260829-a11y-trigger-label">
     <link rel="stylesheet" href="magic-dictionary.css?v=1.2.5-settings-layout">
     <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
@@ -234,10 +234,10 @@
 
     <div id="loading-overlay" class="loading-overlay hidden" aria-hidden="true">
         <div class="loading-card" role="status" aria-live="polite">
-            <div class="quiz-loading-figure magic-loading-indicator__media">
+            <div class="quiz-loading-figure magic-loading-indicator__media" aria-hidden="true">
                 <img id="quiz-loading-figure-img" class="quiz-loading-figure-img magic-loading-indicator__image" src="icons/loading.gif" alt="" aria-hidden="true" draggable="false">
             </div>
-            <p id="loading-text">Caricamento...</p>
+            <p id="loading-text" class="sr-only">Caricamento...</p>
         </div>
     </div>
 
@@ -286,7 +286,7 @@
     <script src="magic-dictionary.js?v=1.2.5-shared-gif-loader"></script>
     <script src="screen-protection.js?v=1.2.0"></script>
     <script src="learning-sync.js?v=2"></script>
-    <script src="quiz.js?v=73-shared-gif-loader"></script>
+<script src="quiz.js?v=74-single-surface-loader"></script>
     <script src="quiz-help.js?v=20260831-shared-gif-loader"></script>
 </body>
 

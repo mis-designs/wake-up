@@ -50,7 +50,7 @@ test("the watermark exists only inside book images and not as a page overlay", (
 });
 
 test("the PWA requests the private-book reader build", () => {
-  assert.match(index, /script\.js\?v=65-shared-gif-loader/u);
-  assert.match(worker, /magicbook-pwa-v148-shared-gif-loader/u);
-  assert.match(worker, /script\.js\?v=65-shared-gif-loader/u);
+  assert.match(index, /script\.js\?v=66-whatsapp-dialog/u);
+  assert.match(worker, /magicbook-pwa-v149-whatsapp-loader-polish/u);
+  assert.match(worker, /script\.js\?v=66-whatsapp-dialog/u);
 });
