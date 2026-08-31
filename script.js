@@ -8,6 +8,8 @@ const WHATSAPP_GROUP_CODE = "IMMZ6UaFfbWEseRttKpvQk";
 const AUTH_API = "/api/auth";
 const ADMIN_API = "/api/admin";
 const PROMO_STATUS_API = "/api/promo-status";
+// Temporary public switch: set this single value to true to restore Promo Code access.
+const PROMO_LOGIN_ENABLED = false;
 const APP_TITLE = "MagicBook";
 const EXPLANATION_FIGURES_CACHE_KEY = "magicbook_explanation_figures_v1";
 const PROMO_CAMPAIGN_DURATION_MS = 3 * 24 * 60 * 60 * 1000;
@@ -524,11 +526,14 @@ function getDeviceId() {
 window.addEventListener("load", async () => {
   const wasReset = await forceGlobalAuthResetIfNeeded();
 
+  syncPromoLoginAvailability();
   setupLoginUI();
-  setupPromoLandingUI();
   setupProfileUI();
   setupAdminUI();
-  void setupPromoCampaign();
+  if (PROMO_LOGIN_ENABLED) {
+    setupPromoLandingUI();
+    void setupPromoCampaign();
+  }
 
   if (wasReset) {
     const publicRoute = getRouteStateFromLocation();
@@ -865,6 +870,11 @@ function setLoginButtonBusy(button, isBusy) {
 }
 
 async function login(options = {}) {
+  if (options.source === "promo-card" && !PROMO_LOGIN_ENABLED) {
+    showLoginScreen("", { replace: true });
+    return;
+  }
+
   const fromPromoCard = options.source === "promo-card";
   const phoneInput = document.getElementById(fromPromoCard ? "promoLandingPhone" : "user");
   const promoCodeInput = fromPromoCard ? document.getElementById("promoLandingCode") : null;
@@ -1495,6 +1505,11 @@ function clearSessionData() {
 }
 
 function showLandingScreen(options = {}) {
+  if (!PROMO_LOGIN_ENABLED) {
+    showLoginScreen("", { replace: options.replace === true });
+    return;
+  }
+
   hideAll();
   document.getElementById("landing")?.classList.remove("hidden");
   const promoLandingError = document.getElementById("promoLandingError");
@@ -1514,6 +1529,16 @@ function showLandingScreen(options = {}) {
 let promoCampaignTimer = null;
 let promoCampaignDeadline = 0;
 let promoCampaignActive = null;
+
+function syncPromoLoginAvailability() {
+  const card = document.getElementById("promoAccessCard");
+  if (!card) return;
+
+  card.hidden = !PROMO_LOGIN_ENABLED;
+  card.classList.toggle("hidden", !PROMO_LOGIN_ENABLED);
+  if (PROMO_LOGIN_ENABLED) card.removeAttribute("aria-hidden");
+  else card.setAttribute("aria-hidden", "true");
+}
 
 function updatePromoLandingButtonState() {
   const phoneInput = document.getElementById("promoLandingPhone");
@@ -1568,6 +1593,8 @@ function openPromoPackages() {
 }
 
 function setupPromoLandingUI() {
+  if (!PROMO_LOGIN_ENABLED) return;
+
   const phoneInput = document.getElementById("promoLandingPhone");
   const codeInput = document.getElementById("promoLandingCode");
   const button = document.querySelector(".promo-access-submit");
@@ -1596,6 +1623,10 @@ function setupPromoLandingUI() {
 }
 
 function loginFromPromoCard() {
+  if (!PROMO_LOGIN_ENABLED) {
+    showLoginScreen("", { replace: true });
+    return Promise.resolve();
+  }
   return login({ source: "promo-card" });
 }
 
@@ -1641,6 +1672,8 @@ function renderPromoCampaignCountdown() {
 }
 
 async function setupPromoCampaign() {
+  if (!PROMO_LOGIN_ENABLED) return;
+
   if (promoCampaignTimer) clearInterval(promoCampaignTimer);
   promoCampaignTimer = null;
   promoCampaignDeadline = 0;

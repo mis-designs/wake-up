@@ -35,6 +35,6 @@ test("the dictionary entry keeps its badge and bilingual copy separated", () => 
 
 test("the desktop home layout ships in a fresh PWA build", () => {
   assert.match(page, /style\.css\?v=70-whatsapp-dialog/u);
-  assert.match(worker, /magicbook-pwa-v149-whatsapp-loader-polish/u);
+  assert.match(worker, /magicbook-pwa-v150-promo-ui-disabled/u);
   assert.match(worker, /style\.css\?v=70-whatsapp-dialog/u);
 });

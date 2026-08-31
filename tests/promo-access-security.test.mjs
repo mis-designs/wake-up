@@ -321,8 +321,9 @@ test("main login no longer presents the finished optional promo-code field", () 
   assert.match(scriptSource, /promoCode: \(fromPromoCard \? promoCode : pendingPromoLoginCode\) \|\| undefined/);
 });
 
-test("landing renders the promo login without exposing environment values", () => {
-  assert.match(pageSource, /class="promo-access-card"/);
+test("landing preserves the dormant promo login without exposing environment values", () => {
+  assert.match(pageSource, /class="promo-access-card hidden"[^>]*aria-hidden="true"[^>]*hidden/);
+  assert.match(scriptSource, /const PROMO_LOGIN_ENABLED = false;/);
   assert.match(pageSource, /id="promoLandingPhone"[\s\S]*?id="promoLandingCode"/);
   assert.match(pageSource, /<form class="promo-access-form"[^>]*novalidate[^>]*loginFromPromoCard\(\)/);
   assert.match(pageSource, /id="promoAccessNextStep"[^>]*role="status"[\s\S]*?Spero che ti sia piaciuta la nostra ultima promo\./);

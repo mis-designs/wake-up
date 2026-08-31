@@ -30,19 +30,20 @@ test("legacy grading accepts only IDs issued in its signed quiz", () => {
   assert.equal(hasOnlyIssuedTrialQuestions([{ id: "q2-a", answer: 7 }], ids), false);
 });
 
-test("the public landing restores promo-code access instead of the guest trial", () => {
+test("the public landing keeps promo access dormant instead of restoring the guest trial", () => {
   const page = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   const main = readFileSync(new URL("../script.js", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../style.css", import.meta.url), "utf8");
   const landing = page.match(/<main class="public-landing[\s\S]*?<\/main>/)?.[0] || "";
 
-  assert.match(landing, /class="promo-access-card"/);
+  assert.match(landing, /class="promo-access-card hidden"[^>]*aria-hidden="true"[^>]*hidden/);
   assert.match(landing, /id="promoLandingPhone"[\s\S]*?id="promoLandingCode"/);
   assert.match(landing, /Login con <span>Promo Code<\/span>/);
   assert.doesNotMatch(landing, /class="trial-card"|startGuestTrial\(/);
   assert.doesNotMatch(page, /<div class="card hidden" id="login"[\s\S]*?id="promoCode"/);
   assert.match(main, /PROMO_CAMPAIGN_DURATION_MS = 3 \* 24 \* 60 \* 60 \* 1000/);
-  assert.match(main, /setupPromoLandingUI\(\);[\s\S]*?void setupPromoCampaign\(\);/);
+  assert.match(main, /const PROMO_LOGIN_ENABLED = false;/);
+  assert.match(main, /if \(PROMO_LOGIN_ENABLED\) \{[\s\S]*?setupPromoLandingUI\(\);[\s\S]*?void setupPromoCampaign\(\);/);
   assert.doesNotMatch(main, /setupAdminUI\(\);\s*setupTrialMarketing\(\);/);
   assert.match(styles, /\.promo-access-card/);
 });

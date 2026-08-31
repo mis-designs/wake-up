@@ -57,8 +57,8 @@ test("Admin filters support arrow, Home and End navigation without weakening sea
 
 test("Admin control redesign ships through fresh PWA assets", () => {
   assert.match(page, /style\.css\?v=70-whatsapp-dialog/u);
-  assert.match(page, /script\.js\?v=66-whatsapp-dialog/u);
-  assert.match(worker, /magicbook-pwa-v149-whatsapp-loader-polish/u);
+  assert.match(page, /script\.js\?v=67-promo-ui-disabled/u);
+  assert.match(worker, /magicbook-pwa-v150-promo-ui-disabled/u);
   assert.match(worker, /style\.css\?v=70-whatsapp-dialog/u);
-  assert.match(worker, /script\.js\?v=66-whatsapp-dialog/u);
+  assert.match(worker, /script\.js\?v=67-promo-ui-disabled/u);
 });

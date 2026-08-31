@@ -4,7 +4,7 @@
 
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 | --- | --- | --- | --- | --- |
-| Form | Login and Promo access forms | `index.html` `#login .login-form`, `#promoAccessCard` + shared login helpers | Phone access; server-requested admin password; isolated promo conversion landing | Login behavior and browser keyboard/failure checks |
+| Form | Login and dormant Promo access forms | `index.html` `#login .login-form`, `#promoAccessCard` + shared login helpers | Phone access; server-requested admin password; feature-switched promo conversion landing | Login behavior and browser keyboard/failure checks |
 | Scrollbar | Learning screen root | `src/learning-insights.css` | Browser forced-colors only | No nested horizontal scroller; no page overflow at 320px |
 | Statistics workspace | `src/learning-insights.js` | Authenticated learning model | Empty, insufficient, ready, cached, refreshing | Data-state tests and 320–1920 browser verification |
 | Error recovery | `src/learning-insights.js` | Authenticated errors and plan | Five categories; empty/populated master-detail; recovered section | URL, interaction, focus, and responsive verification |
@@ -35,6 +35,7 @@
 | UI assets | Repository images/SVGs + authenticated figure endpoint | No Unicode glyphs as UI icons. Decorative CSS marks remain hidden from assistive technology. |
 | Font library | `libreria-font.html`, `libreria-font.css`, `assets/fonts/magicbook-bangla-fonts.css` | Admin links to `/libreria-font`; the static page compares the three locally hosted Bengali faces with identical live text and returns to `/admin`. |
 | Promo conversion | `#promoAccessNextStep` + `openPromoPackages()` | A previous promo or a full campaign produces persistent inline guidance; the user chooses when to open `/join`, which focuses the packages heading. |
+| Promo login availability | `PROMO_LOGIN_ENABLED` in `script.js` | The default `false` state keeps `#promoAccessCard` hidden before paint, skips promo setup/status requests, rejects promo-card activation, and routes logged-out welcome traffic to `/login`. Setting only the switch to `true` restores the preserved promo flow. |
 | Quiz correction translations | `quiz.js`, `quiz-help.js`, `mystyle.css` | Each correction row owns one on-demand translation disclosure. `quiz-help.js` owns data resolution and caching; `quiz.js` owns row state and interaction; `mystyle.css` owns responsive presentation. |
 | Quiz correction audio | `quiz.js`, `mystyle.css`, `icons/explain_quiz.svg` | Every correct, wrong, and unanswered row exposes the same labelled person-artwork audio control. Audio is fetched only after activation, only one review audio plays at a time, and missing audio uses the established unavailable message. |
 | Live quiz bilingual help | `quiz-help.js`, `quiz-help.css` | Clicking the current Italian question opens one modal card. Translation and keywords share the same frame and switch through dot tabs, touch swipe, or tab keyboard navigation. The dialog traps focus, closes with Escape/backdrop/close, and restores focus to the question. |
@@ -86,7 +87,7 @@
 
 ## Responsive behavior
 
-- Public promo landing: from 1024px the access pass uses two columns — campaign title and timer on the left, labelled phone/code form on the right — with Login/Join/About in one compact row below. Below 1024px the semantic vertical order remains heading, timer, form, feedback, sources, then access switcher.
+- Public access: while Promo Code is disabled, logged-out welcome traffic opens the personal login directly. When promo access is enabled, from 1024px its pass uses two columns — campaign title and timer on the left, labelled phone/code form on the right — with Login/Join/About in one compact row below; narrower viewports retain the semantic vertical order.
 - 1280–1920: wide grouped surfaces use the viewport; Statistics is overview/action, chapter matrix/detail; Errori is explorer/plan with master-detail.
 - 768–1024: major regions stack only when necessary; chapter detail becomes sequential; no control is compressed below a usable target.
 - 320–430: one vertical flow, two-column chapter matrix, three-column category grid wrapping to two rows, sequential detail, plan before categories.

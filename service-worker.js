@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v149-whatsapp-loader-polish";
+const CACHE_NAME = "magicbook-pwa-v150-promo-ui-disabled";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -18,7 +18,7 @@ const STATIC_ASSETS = [
   "/src/learning-insights.js?v=5-figure-explanation-ui&ui=7-shared-gif-loader",
   "/homebg.css?v=3",
   "/mystyle.css?v=49-single-surface-loader",
-  "/script.js?v=66-whatsapp-dialog",
+  "/script.js?v=67-promo-ui-disabled",
   "/study-quiz.html",
   "/study-quiz.css?v=24-shared-gif-loader",
   "/study-quiz.js?v=18-shared-gif-loader",
