@@ -59,6 +59,6 @@ test("only a server-authorized Admin avoids automatic finish and keeps full elap
 
 test("the Admin overtime timer ships in fresh quiz and PWA assets", () => {
   assert.match(page, /quiz\.js\?v=75-audio-player-pill/u);
-  assert.match(worker, /magicbook-pwa-v151-audio-player-pill/u);
+  assert.match(worker, /magicbook-pwa-v152-emerald-glass-player/u);
   assert.match(worker, /quiz\.js\?v=75-audio-player-pill/u);
 });

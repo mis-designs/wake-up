@@ -15,7 +15,7 @@
 | Quiz timer | `quiz.js`, `#timer` | Signed Admin role returned by `api/quiz.js` | Normal countdown; Admin elapsed overtime | Boundary, authorization, elapsed-time, and cache-version tests |
 | Global connectivity alert | `offline-notice.js`, `offline-notice.css` | `navigator.onLine` plus browser `online` and `offline` events | Initial offline; connection lost; automatic recovery | Shared static test plus browser offline/online verification |
 | Loading indicator | `loading-ui.css`, `icons/loading.gif` | Shared async-state contract | Page, panel, inline status, busy control; static reduced-motion fallback | Asset/cache, busy-state, layout-stability, and reduced-motion tests |
-| Explanation audio player | `audio-player-ui.css` + owning playback JS | Shared Quiz/Studia quiz visual control | Idle, playing, loading, unavailable/error | Alignment, ARIA label, keyboard, reduced-motion, forced-colors, and cache tests |
+| Explanation audio player | `audio-player-ui.css` + owning playback JS | Shared Quiz/Studia quiz translucent emerald pill and approved play/pause SVG pair | Idle, playing, loading, unavailable/error | SVG state, alignment, ARIA label, keyboard, reduced-motion, forced-colors, and cache tests |
 | WhatsApp group dialog | `script.js`, `style.css` | Authenticated Home invitation state | Bangla default; Italian alternate; join or defer | Focus trap/restoration, locale, responsive, reduced-motion, and cache tests |
 
 ## Feature ownership

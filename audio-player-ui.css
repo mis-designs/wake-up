@@ -1,30 +1,47 @@
-/* Shared explanation player — Admin-derived icon pill language. */
+/* Shared explanation player — Admin-derived emerald glass pill. */
 .quiz-audio-explanation,
 .study-explanation-player {
   --audio-player-start: #34d399;
   --audio-player-mid: #10b981;
   --audio-player-end: #059669;
-  --audio-player-line: rgba(5, 150, 105, .2);
-  --audio-player-glow: rgba(16, 185, 129, .28);
-  --audio-player-track: #d7e7e3;
+  --audio-player-line: rgba(5, 150, 105, .24);
+  --audio-player-glow: rgba(16, 185, 129, .3);
+  --audio-player-track: #cfe4de;
   box-sizing: border-box;
-  min-height: 54px;
+  min-height: 56px;
   gap: 10px;
-  padding: 6px 9px 6px 6px;
+  padding: 7px 10px 7px 7px;
   border: 1px solid var(--audio-player-line);
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, .98), rgba(236, 253, 245, .94));
+  background: rgba(255, 255, 255, .68);
   color: #17233a;
-  box-shadow: 0 8px 20px rgba(30, 41, 59, .1);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, .05), 0 10px 28px rgba(5, 150, 105, .14);
+  backdrop-filter: blur(14px) saturate(135%);
+  -webkit-backdrop-filter: blur(14px) saturate(135%);
   filter: none;
   opacity: 1;
   transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
 }
 
+.quiz-audio-explanation:hover,
+.study-explanation-player:hover {
+  border-color: rgba(5, 150, 105, .36);
+  background: rgba(255, 255, 255, .84);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, .08), 0 14px 30px rgba(5, 150, 105, .18);
+}
+
+.quiz-audio-explanation:focus-within,
+.study-explanation-player:focus-within {
+  border-color: #10b981;
+  background: rgba(255, 255, 255, .9);
+  box-shadow: 0 0 0 3px rgba(38, 59, 212, .12), 0 14px 32px rgba(5, 150, 105, .2);
+}
+
 .quiz-audio-explanation.is-playing,
 .study-explanation-player.is-playing {
-  border-color: rgba(5, 150, 105, .38);
-  box-shadow: 0 12px 26px rgba(16, 185, 129, .2);
+  border-color: rgba(5, 150, 105, .48);
+  background: rgba(255, 255, 255, .82);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, .1), 0 15px 34px rgba(16, 185, 129, .22);
 }
 
 .quiz-audio-play,
@@ -48,54 +65,41 @@
   transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
 }
 
-.quiz-audio-play::before,
-.quiz-audio-play::after,
-.study-explanation-play::before,
-.study-explanation-play::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  box-sizing: border-box;
+.audio-player-icon {
+  grid-area: 1 / 1;
+  display: block;
+  width: 25px;
+  height: 25px;
+  pointer-events: none;
+  transform-origin: center;
+  transition: opacity 140ms ease, transform 180ms ease;
 }
 
-.quiz-audio-play::before,
-.study-explanation-play::before {
-  width: 0;
-  height: 0;
-  margin: 0;
-  border-top: 7px solid transparent;
-  border-bottom: 7px solid transparent;
-  border-left: 10px solid currentColor;
-  transform: translate(-38%, -50%);
-}
-
-.quiz-audio-play::after,
-.study-explanation-play::after {
-  width: 3px;
-  height: 14px;
-  border-radius: 1px;
-  background: currentColor;
-  opacity: 0;
-  transform: translate(2px, -50%) scaleY(.7);
-  transition: opacity 120ms ease, transform 180ms ease;
-}
-
-.quiz-audio-play.is-playing::before,
-.study-explanation-play.is-playing::before {
-  width: 3px;
-  height: 14px;
-  border: 0;
-  border-radius: 1px;
-  background: currentColor;
-  box-shadow: none;
-  transform: translate(-5px, -50%);
-}
-
-.quiz-audio-play.is-playing::after,
-.study-explanation-play.is-playing::after {
+.audio-player-icon--play {
   opacity: 1;
-  transform: translate(2px, -50%) scaleY(1);
+  transform: scale(1) rotate(0deg);
+}
+
+.audio-player-icon--pause {
+  opacity: 0;
+  transform: scale(.72) rotate(-8deg);
+}
+
+.quiz-audio-play.is-playing .audio-player-icon--play,
+.study-explanation-play.is-playing .audio-player-icon--play {
+  opacity: 0;
+  transform: scale(.72) rotate(8deg);
+}
+
+.quiz-audio-play.is-playing .audio-player-icon--pause,
+.study-explanation-play.is-playing .audio-player-icon--pause {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.quiz-audio-play.is-playing,
+.study-explanation-play.is-playing {
+  animation: audio-player-emerald-breathe 2.2s ease-in-out infinite;
 }
 
 .quiz-audio-play:hover:not(:disabled),
@@ -211,6 +215,17 @@
   transform: translateY(0);
 }
 
+@keyframes audio-player-emerald-breathe {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .72), 0 6px 18px rgba(16, 185, 129, .28);
+  }
+
+  50% {
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .82), 0 9px 24px rgba(16, 185, 129, .46);
+  }
+}
+
 .quiz-audio-explanation.is-loading,
 .study-explanation-player.is-loading {
   --audio-player-start: #94a3b8;
@@ -219,7 +234,7 @@
   --audio-player-line: rgba(71, 85, 105, .2);
   --audio-player-glow: rgba(71, 85, 105, .2);
   --audio-player-track: #dbe2ea;
-  background: linear-gradient(180deg, #ffffff, #f1f5f9);
+  background: rgba(248, 250, 252, .78);
   opacity: 1;
 }
 
@@ -230,7 +245,7 @@
   --audio-player-line: rgba(71, 85, 105, .2);
   --audio-player-glow: rgba(71, 85, 105, .18);
   --audio-player-track: #dbe2ea;
-  background: linear-gradient(180deg, #ffffff, #f1f5f9);
+  background: rgba(248, 250, 252, .72);
   opacity: .78;
   filter: none;
 }
@@ -243,7 +258,7 @@
   --audio-player-line: rgba(220, 38, 38, .2);
   --audio-player-glow: rgba(239, 68, 68, .25);
   --audio-player-track: #f3d8d8;
-  background: linear-gradient(180deg, #ffffff, #fff1f2);
+  background: rgba(255, 241, 242, .74);
   opacity: 1;
   filter: none;
 }
@@ -261,11 +276,15 @@
   .study-explanation-player,
   .quiz-audio-play,
   .study-explanation-play,
-  .quiz-audio-play::after,
-  .study-explanation-play::after,
+  .audio-player-icon,
   .quiz-audio-speed,
   .study-explanation-speed {
     transition: none;
+  }
+
+  .quiz-audio-play.is-playing,
+  .study-explanation-play.is-playing {
+    animation: none;
   }
 
   .quiz-audio-play:hover:not(:disabled),

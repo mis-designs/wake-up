@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v151-audio-player-pill";
+const CACHE_NAME = "magicbook-pwa-v152-emerald-glass-player";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -18,11 +18,11 @@ const STATIC_ASSETS = [
   "/src/learning-insights.js?v=5-figure-explanation-ui&ui=7-shared-gif-loader",
   "/homebg.css?v=3",
   "/mystyle.css?v=49-single-surface-loader",
-  "/audio-player-ui.css?v=1-admin-pill",
+  "/audio-player-ui.css?v=2-emerald-glass-svg",
   "/script.js?v=67-promo-ui-disabled",
   "/study-quiz.html",
   "/study-quiz.css?v=24-shared-gif-loader",
-  "/study-quiz.js?v=19-audio-player-pill",
+  "/study-quiz.js?v=20-emerald-glass-svg",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=75-audio-player-pill",
   "/quiz-help.css?v=20260829-a11y-trigger-label",
