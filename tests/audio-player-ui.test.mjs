@@ -10,10 +10,10 @@ const studyScript = readFileSync(new URL("../study-quiz.js", import.meta.url), "
 const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
 
 test("Quiz and Studia quiz load one shared Admin-derived player skin", () => {
-  assert.ok(quizPage.indexOf("mystyle.css?v=49-single-surface-loader") < quizPage.indexOf("audio-player-ui.css?v=2-emerald-glass-svg"));
-  assert.ok(studyPage.indexOf("study-quiz.css?v=24-shared-gif-loader") < studyPage.indexOf("audio-player-ui.css?v=2-emerald-glass-svg"));
-  assert.match(styles, /\.quiz-audio-explanation,\s*\.study-explanation-player\s*\{[\s\S]*?min-height:\s*56px;[\s\S]*?border:\s*1px solid var\(--audio-player-line\);[\s\S]*?border-radius:\s*999px;[\s\S]*?background:\s*rgba\(255, 255, 255, \.68\);/u);
-  assert.match(styles, /box-shadow:[^;]*0 10px 28px rgba\(5, 150, 105, \.14\);[\s\S]*?backdrop-filter:\s*blur\(14px\) saturate\(135%\);/u);
+  assert.ok(quizPage.indexOf("mystyle.css?v=49-single-surface-loader") < quizPage.indexOf("audio-player-ui.css?v=3-transparent-svg-only"));
+  assert.ok(studyPage.indexOf("study-quiz.css?v=24-shared-gif-loader") < studyPage.indexOf("audio-player-ui.css?v=3-transparent-svg-only"));
+  assert.match(styles, /\.quiz-audio-explanation,\s*\.study-explanation-player\s*\{[\s\S]*?min-height:\s*56px;[\s\S]*?border:\s*1px solid var\(--audio-player-line\);[\s\S]*?border-radius:\s*999px;[\s\S]*?background:\s*transparent;/u);
+  assert.match(styles, /box-shadow:[^;]*0 10px 28px rgba\(5, 150, 105, \.14\);[\s\S]*?backdrop-filter:\s*none;/u);
   assert.match(styles, /--audio-player-start:\s*#34d399;[\s\S]*?--audio-player-mid:\s*#10b981;[\s\S]*?--audio-player-end:\s*#059669;/u);
   assert.match(styles, /\.quiz-audio-speed,\s*\.study-explanation-speed\s*\{[\s\S]*?rgba\(124, 58, 237, \.08\)[\s\S]*?color:\s*#5b21b6;/u);
 });
@@ -26,6 +26,13 @@ test("the supplied play and pause SVGs share one stable centred 40px control", (
   assert.match(studyScript, /audio-player-icon--pause[\s\S]*?M9\.5 15V9M14\.5 15V9M22 12/u);
   assert.match(styles, /\.audio-player-icon\s*\{[\s\S]*?grid-area:\s*1 \/ 1;[\s\S]*?width:\s*25px;[\s\S]*?height:\s*25px;/u);
   assert.match(styles, /\.quiz-audio-play\.is-playing \.audio-player-icon--pause,[\s\S]*?opacity:\s*1;[\s\S]*?scale\(1\)/u);
+  assert.match(styles, /\.quiz-audio-play::before,\s*\.study-explanation-play::before\s*\{[\s\S]*?content:\s*none;/u);
+});
+
+test("legacy black states cannot replace the transparent player surface", () => {
+  assert.match(styles, /\.quiz-audio-explanation\.is-active\s*\{[\s\S]*?background:\s*transparent;/u);
+  assert.match(styles, /\.quiz-audio-explanation\.is-loading,\s*\.study-explanation-player\.is-loading\s*\{[\s\S]*?background:\s*transparent;/u);
+  assert.match(styles, /\.quiz-audio-explanation\.is-error,\s*\.study-explanation-player\.is-error\s*\{[\s\S]*?background:\s*transparent;/u);
 });
 
 test("player controls expose hover, focus, state and motion-safe feedback", () => {
@@ -47,8 +54,8 @@ test("playback state updates the visible control and its accessible action", () 
 test("the shared player ships through the current PWA cache", () => {
   assert.match(quizPage, /quiz\.js\?v=75-audio-player-pill/u);
   assert.match(studyPage, /study-quiz\.js\?v=20-emerald-glass-svg/u);
-  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v152-emerald-glass-player"/u);
-  assert.match(worker, /audio-player-ui\.css\?v=2-emerald-glass-svg/u);
+  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v153-transparent-svg-player"/u);
+  assert.match(worker, /audio-player-ui\.css\?v=3-transparent-svg-only/u);
   assert.match(worker, /quiz\.js\?v=75-audio-player-pill/u);
   assert.match(worker, /study-quiz\.js\?v=20-emerald-glass-svg/u);
 });

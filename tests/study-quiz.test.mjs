@@ -83,7 +83,7 @@ test("study explanation players reuse the supplied artwork with stable responsiv
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.study-explanation-artwork\s*\{\s*animation:\s*none/u);
   assert.match(page, /study-quiz\.css\?v=24-shared-gif-loader/u);
   assert.match(page, /study-quiz\.js\?v=20-emerald-glass-svg/u);
-  assert.match(worker, /magicbook-pwa-v152-emerald-glass-player/u);
+  assert.match(worker, /magicbook-pwa-v153-transparent-svg-player/u);
   assert.match(worker, /\/icons\/explain_quiz\.svg/u);
 });
 
