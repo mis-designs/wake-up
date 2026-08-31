@@ -528,7 +528,7 @@
   function actionButton(className, label, icon) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `study-action ${className}`;
+    button.className = `study-action magic-loading-control ${className}`;
     const symbol = document.createElement("span");
     symbol.className = "study-action-icon";
     symbol.setAttribute("aria-hidden", "true");
@@ -564,13 +564,13 @@
     artwork.draggable = false;
 
     const root = document.createElement("div");
-    root.className = "study-explanation-player";
+    root.className = "study-explanation-player magic-loading-host";
     root.setAttribute("role", "group");
     root.setAttribute("aria-label", `Spiegazione audio della domanda ${index + 1}`);
 
     const play = document.createElement("button");
     play.type = "button";
-    play.className = "study-explanation-play";
+    play.className = "study-explanation-play magic-loading-control";
     play.setAttribute("aria-label", "Riproduci spiegazione");
 
     const progress = document.createElement("input");
@@ -889,7 +889,12 @@
   function helpSkeleton() {
     const section = document.createElement("section");
     section.className = "study-help";
-    section.innerHTML = '<div class="study-help-skeleton" aria-label="Caricamento traduzione"></div>';
+    section.setAttribute("aria-busy", "true");
+    section.innerHTML = `
+      <div class="magic-loading-indicator magic-loading-indicator--panel" role="status">
+        <span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading.gif" alt=""></span>
+        <span class="magic-loading-indicator__label">Caricamento traduzione…</span>
+      </div>`;
     return section;
   }
 

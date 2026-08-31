@@ -230,7 +230,10 @@
           <div class="li-skeleton-top"><div class="li-skeleton-overview"><span></span><span></span><span></span><span></span></div><div class="li-skeleton-action"><span></span><span></span></div></div>
           <div class="li-skeleton-matrix">${cells}</div>
         </main>
-        <p class="li-loading-copy">Carico i tuoi risultati…</p>
+        <p class="li-loading-copy magic-loading-indicator" role="status">
+          <span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading.gif" alt=""></span>
+          <span class="magic-loading-indicator__label">Carico i tuoi risultati…</span>
+        </p>
       </div>`;
   }
 

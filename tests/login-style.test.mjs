@@ -10,14 +10,14 @@ const daisyBuild = readFileSync(new URL("../assets/daisyui.css", import.meta.url
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
 test("login uses locally compiled, scoped daisyUI components", () => {
-  assert.ok(page.indexOf("assets/daisyui.css?v=2-learning-shell") < page.indexOf("style.css?v=68-admin-control-pills"));
+  assert.ok(page.indexOf("assets/daisyui.css?v=2-learning-shell") < page.indexOf("style.css?v=69-shared-gif-loader"));
   assert.match(page, /id="login" data-theme="magicbook"/);
   assert.match(page, /class="login-pass d-card"/);
   assert.match(page, /class="login-form d-fieldset"/);
   assert.match(page, /class="login-input d-input d-input-lg"/);
   assert.match(page, /class="login-submit d-btn d-btn-primary d-btn-lg"/);
   assert.match(page, /class="login-feedback d-alert d-alert-error d-alert-soft"/);
-  assert.match(page, /d-loading d-loading-spinner d-loading-sm/);
+  assert.match(page, /login-submit-spinner magic-loading-image magic-loading-image--button/);
 
   assert.match(daisySource, /root: "#login"/);
   assert.match(daisySource, /prefix: "d-"/);

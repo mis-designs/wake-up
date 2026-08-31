@@ -96,10 +96,13 @@ gtag('config', 'G-C5JPY9HFHD', {
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MagicBook">
 <link rel="stylesheet" href="assets/daisyui.css?v=2-learning-shell">
-<link rel="stylesheet" href="style.css?v=68-admin-control-pills">
+<link rel="stylesheet" href="loading-ui.css?v=1-shared-gif-loader">
+<link rel="stylesheet" href="style.css?v=69-shared-gif-loader">
 <link rel="stylesheet" href="homebg.css?v=3">
 <link rel="stylesheet" href="magic-dictionary.css?v=1.2.5-settings-layout">
 <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
+<link rel="stylesheet" href="/offline-notice.css?v=1.0.0">
+<script src="/offline-notice.js?v=1.0.0" defer></script>
 <link rel="stylesheet" href="src/learning-insights.css?v=9-card-spacing&ui=10">
 </head>
 <body>
@@ -183,7 +186,7 @@ gtag('config', 'G-C5JPY9HFHD', {
             <label class="sr-only promo-access-field-label" for="promoLandingCode">Promo Code</label>
             <input id="promoLandingCode" class="promo-access-code" type="text" placeholder="Inserisci il Promo Code" aria-label="Promo Code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="64" aria-describedby="promoLandingError" aria-required="true" aria-invalid="false">
           </div>
-          <button class="promo-access-submit" type="submit" disabled aria-disabled="true" aria-busy="false"><span>Entra con Promo Code</span><b aria-hidden="true"></b></button>
+          <button class="promo-access-submit" type="submit" disabled aria-disabled="true" aria-busy="false"><span>Entra con Promo Code</span><img class="login-submit-spinner magic-loading-image magic-loading-image--button hidden" src="icons/loading.gif" alt="" aria-hidden="true"><b aria-hidden="true"></b></button>
         </form>
         <p class="promo-access-error" id="promoLandingError" data-nosnippet role="status" aria-live="polite"></p>
 
@@ -658,7 +661,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 
         <button class="login-submit d-btn d-btn-primary d-btn-lg" type="submit" disabled aria-busy="false">
           <span class="login-submit-label">Continua</span>
-          <span class="login-submit-spinner d-loading d-loading-spinner d-loading-sm hidden" aria-hidden="true"></span>
+          <img class="login-submit-spinner magic-loading-image magic-loading-image--button hidden" src="icons/loading.gif" alt="" aria-hidden="true">
         </button>
       </form>
 
@@ -806,7 +809,7 @@ gtag('config', 'G-C5JPY9HFHD', {
         <strong id="adminDatasetTitle">Ultimi 10 utenti aggiunti</strong>
         <span id="adminDatasetCaption">La schermata iniziale carica solo i 10 utenti più recenti.</span>
       </div>
-      <button id="adminLoadAllUsers" class="admin-secondary-btn admin-load-all-btn" type="button">Carica tutti gli utenti</button>
+      <button id="adminLoadAllUsers" class="admin-secondary-btn admin-load-all-btn magic-loading-control" type="button">Carica tutti gli utenti</button>
     </section>
 
     <section class="admin-stats" aria-label="Statistiche degli utenti caricati">
@@ -930,7 +933,7 @@ gtag('config', 'G-C5JPY9HFHD', {
       </label>
       <div class="admin-modal-actions">
         <button class="admin-secondary-btn" type="button" onclick="adminCloseUserModal()">Annulla</button>
-        <button id="adminModalSave" class="admin-primary-btn" type="submit">Salva</button>
+        <button id="adminModalSave" class="admin-primary-btn magic-loading-control" type="submit">Salva</button>
       </div>
     </form>
   </div>
@@ -945,7 +948,7 @@ gtag('config', 'G-C5JPY9HFHD', {
     <p id="adminConfirmText"></p>
     <div class="admin-modal-actions">
       <button class="admin-secondary-btn" type="button" onclick="adminCloseConfirm()">Annulla</button>
-      <button id="adminConfirmAction" class="admin-danger-btn" type="button">Conferma</button>
+      <button id="adminConfirmAction" class="admin-danger-btn magic-loading-control" type="button">Conferma</button>
     </div>
   </div>
 </div>
@@ -1231,10 +1234,10 @@ gtag('config', 'G-C5JPY9HFHD', {
 </div>
 
 <script src="patenteGlossaryResolver.js?v=1.0.0"></script>
-<script src="magic-dictionary.js?v=1.2.4"></script>
+<script src="magic-dictionary.js?v=1.2.5-shared-gif-loader"></script>
 <script src="screen-protection.js?v=1.2.0"></script>
 <script src="learning-sync.js?v=2"></script>
-<script src="src/learning-insights.js?v=5-figure-explanation-ui&ui=6"></script>
-<script src="script.js?v=64-admin-control-pills"></script>
+<script src="src/learning-insights.js?v=5-figure-explanation-ui&ui=7-shared-gif-loader"></script>
+<script src="script.js?v=65-shared-gif-loader"></script>
 </body>
 </html>

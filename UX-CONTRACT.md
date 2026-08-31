@@ -13,6 +13,8 @@
 | Live quiz bilingual help | `quiz-help.js`, `quiz-help.css`, `#quiz-help-workspace` | Synchronized help resolver and authenticated quiz question | One dialog card; translation and keywords are two dot-selected panels | Swipe, keyboard tabs, focus trap, narrow viewport, and reduced-motion tests |
 | Admin quiz answer marker | `api/quiz.js`, `api/local-quiz-bank.mjs`, `quiz.js`, `mystyle.css` | Signed Admin role and private local answer bank | Green under Vero or red under Falso according to the correct value | Authorization, public-payload, client-visibility, and contrast tests |
 | Quiz timer | `quiz.js`, `#timer` | Signed Admin role returned by `api/quiz.js` | Normal countdown; Admin elapsed overtime | Boundary, authorization, elapsed-time, and cache-version tests |
+| Global connectivity alert | `offline-notice.js`, `offline-notice.css` | `navigator.onLine` plus browser `online` and `offline` events | Initial offline; connection lost; automatic recovery | Shared static test plus browser offline/online verification |
+| Loading indicator | `loading-ui.css`, `icons/loading.gif` | Shared async-state contract | Page, panel, inline status, busy control; static reduced-motion fallback | Asset/cache, busy-state, layout-stability, and reduced-motion tests |
 
 ## Feature ownership
 
@@ -26,6 +28,7 @@
 | Error master/detail | `src/learning-insights.js` | At most one selected item per category. The master trigger controls the matching detail and focus remains recoverable after rerender. |
 | Pagination | `src/learning-insights.js` | Eight initial items; `Mostra altri` appends without losing stable focus. |
 | Async status | `#learningInsightsStatus` | Polite live region for refresh, offline cache, and retry results. |
+| Shared loading feedback | `loading-ui.css`, `icons/loading.gif` | User-visible initial loads, panel requests, and button operations use the same GIF with truthful Italian status copy and `aria-busy`. Busy mutations disable duplicate activation without changing control dimensions. Background refresh preserves current content and uses its existing subtle status instead of a blocking overlay. Reduced-motion replaces the animated image with a static system-operable mark. |
 | UI assets | Repository images/SVGs + authenticated figure endpoint | No Unicode glyphs as UI icons. Decorative CSS marks remain hidden from assistive technology. |
 | Font library | `libreria-font.html`, `libreria-font.css`, `assets/fonts/magicbook-bangla-fonts.css` | Admin links to `/libreria-font`; the static page compares the three locally hosted Bengali faces with identical live text and returns to `/admin`. |
 | Promo conversion | `#promoAccessNextStep` + `openPromoPackages()` | A previous promo or a full campaign produces persistent inline guidance; the user chooses when to open `/join`, which focuses the packages heading. |
@@ -36,6 +39,7 @@
 | Admin quiz overtime | `api/quiz.js`, `quiz.js`, `#timer` | Only the server-returned signed Admin role enables overtime. At the normal limit the display changes from `0:00` to `+0:00`, counts upward, and never auto-submits; ordinary users still finish automatically. Manual Admin completion reports the full elapsed time. |
 | Study explanation audio | `study-quiz.js`, `study-quiz.css`, `icons/explain_quiz.svg` | Each available explanation keeps the supplied artwork beside the player. The artwork is decorative, reserves stable geometry, mirrors play/pause state, and shrinks without displacing the controls on narrow screens. |
 | Admin user loading | `script.js`, `api/admin.js` | Opening Admin requests only the 10 newest users. Phone search uses the authenticated server action after a 300 ms debounce and ignores stale results. The complete list is requested only through `Carica tutti gli utenti`; Promo and Duplicati explain that they require that complete scope. Dataset filters expose tab state and support Left/Right/Home/End keyboard movement. |
+| Global connectivity alert | `offline-notice.js`, `offline-notice.css` | Every HTML entry loads one shared alertdialog. It blocks interaction only while `navigator.onLine` is false, keeps the background inert, restores prior focus on reconnect, and never uses browser-native alerts. |
 
 ## Statistiche
 
@@ -95,6 +99,7 @@
 - Valid cached data appears immediately with its update time while a background refresh runs online.
 - Pending local answers are sent only to the authenticated Vercel endpoint, validated, and merged by event ID.
 - Offline with cache keeps the screen usable; offline without cache, expired access, 14-second timeout, and generic failure have separate recovery copy.
+- A global connection-loss alert appears immediately when the app opens offline or loses connectivity. It remains stable without repeated toasts, disappears automatically on `online`, and restores the prior focus. The cached page remains rendered underneath and is revalidated by its owning workflow after reconnection.
 - Retry is idempotent and disabled while a request is active. No backend implementation detail is shown to the learner.
 
 ## Accessibility

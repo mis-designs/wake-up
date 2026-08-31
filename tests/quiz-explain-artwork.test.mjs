@@ -11,8 +11,8 @@ const iconUrl = new URL("../icons/explain_quiz.svg", import.meta.url);
 test("explanation artwork is rendered beside the shared audio player", () => {
   assert.equal(existsSync(iconUrl), true);
   assert.match(html, /id="quiz-audio-artwork"[^>]+src="icons\/explain_quiz\.svg"/u);
-  assert.match(html, /mystyle\.css\?v=47-review-audio-control/u);
-  assert.match(html, /quiz\.js\?v=72-admin-overtime-timer/u);
+  assert.match(html, /mystyle\.css\?v=48-shared-gif-loader/u);
+  assert.match(html, /quiz\.js\?v=73-shared-gif-loader/u);
   assert.match(worker, /\/icons\/explain_quiz\.svg/u);
 });
 
@@ -26,7 +26,7 @@ test("artwork spins only while shared audio is playing and pauses in place", () 
 });
 
 test("every correction card receives the clickable person audio control", () => {
-  assert.match(script, /items\.forEach\(item => \{[\s\S]*?reviewAudioControl\.className = "modal-review-audio-button";[\s\S]*?explainIcon\.src = "icons\/explain_quiz\.svg";/u);
+  assert.match(script, /items\.forEach\(item => \{[\s\S]*?reviewAudioControl\.className = "modal-review-audio-button magic-loading-control";[\s\S]*?explainIcon\.src = "icons\/explain_quiz\.svg";/u);
   assert.doesNotMatch(script, /if \(stateClass === "is-wrong"\)[\s\S]*?modal-review-audio-button/u);
   assert.match(script, /reviewAudioControl\.addEventListener\("click",[\s\S]*?toggleReviewAudio\(reviewAudioControl, item\)/u);
   assert.match(script, /async function toggleReviewAudio\(button, question\)[\s\S]*?requestSharedAudioBlob\(question\)[\s\S]*?reviewAudio\.play\(\)/u);

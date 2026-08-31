@@ -27,7 +27,9 @@ test("the Admin exposes a clean, static Bengali font library route", () => {
   assert.match(page, /\/assets\/fonts\/magicbook-bangla-fonts\.css\?v=1-adorsho/u);
   assert.match(page, /\/libreria-font\.css\?v=1-three-fonts/u);
   assert.doesNotMatch(page, /banglawebfonts\.pages\.dev/u);
-  assert.doesNotMatch(page, /<script\b/u);
+  const scripts = [...page.matchAll(/<script\b[^>]*src="([^"]+)"[^>]*><\/script>/gu)].map(match => match[1]);
+  assert.deepEqual(scripts, ["/offline-notice.js?v=1.0.0"]);
+  assert.doesNotMatch(page, /<script\b(?![^>]*src="\/offline-notice\.js\?v=1\.0\.0")[^>]*>/u);
 });
 
 test("the library compares all three local fonts with the same live Bengali sentence", () => {
@@ -94,7 +96,7 @@ test("the library fonts are valid, pinned local WOFF2 assets and cached offline"
     assert.equal(createHash("sha256").update(font).digest("hex"), item.hash);
   }
 
-  assert.match(worker, /magicbook-pwa-v147-admin-overtime-timer/u);
+  assert.match(worker, /magicbook-pwa-v148-shared-gif-loader/u);
   assert.match(worker, /\/libreria-font\.html/u);
   assert.match(worker, /\/libreria-font\.css\?v=1-three-fonts/u);
   assert.match(worker, /\/assets\/fonts\/magicbook-bangla-fonts\.css\?v=1-adorsho/u);

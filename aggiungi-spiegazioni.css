@@ -22,7 +22,9 @@ body {
 .audio-admin-head > p { margin: 22px 0 5px; color: #f05c0b; font-size: .78rem; font-weight: 950; letter-spacing: .14em; }
 .audio-admin-head h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.4rem); letter-spacing: -.04em; }
 .audio-admin-head > span { display: block; margin-top: 8px; color: #58718f; font-weight: 750; }
+.audio-admin-head > span.magic-loading-inline-status { display: inline-flex; }
 .audio-admin-message { min-height: 0; margin-bottom: 14px; color: #0b7f62; font-weight: 800; }
+.audio-admin-message.magic-loading-inline-status { display: inline-flex; }
 .audio-admin-message.error { color: #b12c39; }
 .hidden { display: none !important; }
 .audio-admin-chapters { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
@@ -67,8 +69,7 @@ body {
 .audio-admin-italian-listen:disabled { cursor: wait; opacity: .72; }
 .audio-admin-italian-listen svg { width: 19px; height: 19px; flex: 0 0 19px; }
 .audio-admin-italian-listen.is-playing { border-color: #087e72; background: #087e72; color: #fff; }
-.audio-admin-italian-listen.is-loading svg { animation: audioItalianPulse .8s ease-in-out infinite alternate; }
-@keyframes audioItalianPulse { to { opacity: .35; transform: scale(.86); } }
+.audio-admin-italian-listen.is-loading { pointer-events: none; }
 .audio-admin-icon.pause { background: #e8eff8; border-color: #c7d8ef; }
 .audio-admin-icon.renew { background: #eeeaff; border-color: #cfc5ff; }
 .audio-admin-icon.save { background: #e4f5ed; border-color: #afe0c8; }

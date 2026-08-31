@@ -898,12 +898,7 @@ async function login(options = {}) {
 
   if (loginButton) {
     loginButton.disabled = true;
-    if (!fromPromoCard) setLoginButtonBusy(loginButton, true);
-    else {
-      loginButton.classList.add("is-loading");
-      loginButton.setAttribute("aria-busy", "true");
-      loginButton.setAttribute("aria-disabled", "true");
-    }
+    setLoginButtonBusy(loginButton, true);
     if (loginButtonLabel) loginButtonLabel.textContent = "Verifica...";
   }
 
@@ -996,11 +991,7 @@ async function login(options = {}) {
     if (err) err.textContent = "Verifica non riuscita. Riprova tra poco.";
   } finally {
     if (loginButton) {
-      if (!fromPromoCard) setLoginButtonBusy(loginButton, false);
-      else {
-        loginButton.classList.remove("is-loading");
-        loginButton.setAttribute("aria-busy", "false");
-      }
+      setLoginButtonBusy(loginButton, false);
       if (loginButtonLabel) loginButtonLabel.textContent = originalText;
     }
     updateLoginButtonState();
@@ -1099,7 +1090,7 @@ function ensureOtpUI() {
 
   const verifyButton = document.createElement("button");
   verifyButton.id = "otpVerifyButton";
-  verifyButton.className = "login-submit otp-submit";
+  verifyButton.className = "login-submit otp-submit magic-loading-control";
   verifyButton.type = "submit";
   verifyButton.textContent = "Verifica";
   verifyButton.dataset.defaultText = "Verifica";
@@ -1172,6 +1163,7 @@ function setOtpLoading(isLoading) {
   if (verifyButton) {
     verifyButton.disabled = isLoading;
     verifyButton.classList.toggle("is-loading", isLoading);
+    verifyButton.setAttribute("aria-busy", isLoading ? "true" : "false");
     verifyButton.textContent = isLoading ? "Verifica..." : (verifyButton.dataset.defaultText || "Verifica");
   }
   if (resendButton && isLoading) {
@@ -3947,17 +3939,6 @@ function openDictionaryFromMenu() {
  ***********************/
 const MAGIC_BOOK_API = "/api/getPages";
 let isTrialBookViewer = false;
-const VIEWER_LOADING_FIGURES = [
-  "fig1",
-  "fig8",
-  "fig25",
-  "fig50",
-  "fig120",
-  "fig220",
-  "fig350",
-  "fig440",
-  "fig550"
-];
 let currentBookViewer = {
   book: "magic",
   type: null,
@@ -3971,49 +3952,12 @@ let magicBookViewerRequestId = 0;
 let magicBookScrollHandlerInstalled = false;
 let magicBookLoadObserver = null;
 
-function buildViewerLoadingFigureUrl(figure) {
-  const params = new URLSearchParams({
-    kind: "figure",
-    figure
-  });
-  return `/api/asset?${params.toString()}`;
-}
-
-function stopViewerLoadingAnimation(loader) {
-  if (loader?._figureTimer) {
-    window.clearInterval(loader._figureTimer);
-    loader._figureTimer = null;
-  }
-}
+function stopViewerLoadingAnimation() {}
 
 function startViewerLoadingAnimation(loader) {
   const img = loader?.querySelector(".viewer-loading-figure-img");
-  if (!loader || !img || loader._figureTimer) return;
-
-  let lastFigure = "";
-
-  const getRandomFigure = () => {
-    if (VIEWER_LOADING_FIGURES.length <= 1) return VIEWER_LOADING_FIGURES[0] || "";
-    let next = "";
-    do {
-      next = VIEWER_LOADING_FIGURES[Math.floor(Math.random() * VIEWER_LOADING_FIGURES.length)];
-    } while (next === lastFigure);
-    lastFigure = next;
-    return next;
-  };
-
-  const showNext = () => {
-    const figure = getRandomFigure();
-    if (!figure) return;
-    img.classList.remove("is-sliding");
-    void img.offsetWidth;
-    img.src = buildViewerLoadingFigureUrl(figure);
-    img.classList.add("is-sliding");
-  };
-
-  img.onerror = showNext;
-  showNext();
-  loader._figureTimer = window.setInterval(showNext, 1500);
+  if (!loader || !img) return;
+  img.src = "icons/loading.gif";
 }
 
 async function fetchMagicBookPage({ type, chapter, page }) {
@@ -4195,34 +4139,29 @@ function setMagicBookLoading(pages, visible, { active = true } = {}) {
   }
 
   const loader = document.createElement("div");
-  loader.className = "viewer-loading";
+  loader.className = "viewer-loading magic-loading-indicator magic-loading-indicator--panel";
   loader.classList.toggle("is-active", active);
   loader.setAttribute("role", "status");
   loader.setAttribute("aria-live", "polite");
 
   const figureShell = document.createElement("div");
-  figureShell.className = "viewer-loading-figure";
+  figureShell.className = "viewer-loading-figure magic-loading-indicator__media";
 
   const img = document.createElement("img");
-  img.className = "viewer-loading-figure-img";
+  img.className = "viewer-loading-figure-img magic-loading-indicator__image";
+  img.src = "icons/loading.gif";
   img.alt = "";
+  img.setAttribute("aria-hidden", "true");
   img.draggable = false;
 
   figureShell.appendChild(img);
 
   const text = document.createElement("span");
-  text.className = "viewer-loading-text";
-  text.textContent = "Loading...";
-
-  const progress = document.createElement("div");
-  progress.className = "viewer-loading-bar";
-
-  const progressFill = document.createElement("span");
-  progress.appendChild(progressFill);
+  text.className = "viewer-loading-text magic-loading-indicator__label";
+  text.textContent = "Caricamento pagina…";
 
   loader.appendChild(figureShell);
   loader.appendChild(text);
-  loader.appendChild(progress);
   pages.appendChild(loader);
 
   if (active) startViewerLoadingAnimation(loader);
@@ -5291,6 +5230,8 @@ function updateAdminDatasetControls() {
   if (loadAll) {
     const allLoaded = adminState.mode === "all" && !adminState.loading;
     loadAll.disabled = adminState.loading || allLoaded;
+    loadAll.classList.toggle("is-loading", adminState.loading && adminState.mode === "all");
+    loadAll.setAttribute("aria-busy", adminState.loading && adminState.mode === "all" ? "true" : "false");
     loadAll.textContent = adminState.loading && adminState.mode === "all"
       ? "Caricamento..."
       : allLoaded
@@ -5303,7 +5244,11 @@ function updateAdminDatasetControls() {
 function renderAdminLoading() {
   updateAdminDatasetControls();
   const list = document.getElementById("adminUserList");
-  if (list) list.innerHTML = '<div class="admin-loading">Caricamento...</div>';
+  if (list) list.innerHTML = `
+    <div class="admin-loading magic-loading-indicator magic-loading-indicator--panel" role="status">
+      <span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading.gif" alt=""></span>
+      <strong class="magic-loading-indicator__label">Caricamento utenti…</strong>
+    </div>`;
 }
 
 function getFilteredAdminUsers() {
@@ -5415,7 +5360,7 @@ function renderAdminUsers() {
   if (adminState.tab === "promo" && adminState.promoLoading) {
     list.innerHTML = `
       <div class="admin-promo-state is-loading" role="status">
-        <span class="admin-promo-spinner" aria-hidden="true"></span>
+        <span class="admin-promo-spinner magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading.gif" alt=""></span>
         <strong>Caricamento utenti promo...</strong>
         <small>Sto leggendo i dati promozionali dal database.</small>
       </div>
@@ -5609,6 +5554,8 @@ async function adminSubmitUserModal() {
   const originalText = save?.textContent || "Salva";
   if (save) {
     save.disabled = true;
+    save.classList.add("is-loading");
+    save.setAttribute("aria-busy", "true");
     save.textContent = "Salvataggio...";
   }
 
@@ -5637,6 +5584,8 @@ async function adminSubmitUserModal() {
   } finally {
     if (save) {
       save.disabled = false;
+      save.classList.remove("is-loading");
+      save.setAttribute("aria-busy", "false");
       save.textContent = originalText;
     }
   }
@@ -5678,6 +5627,8 @@ async function adminSubmitBulkCreate(save) {
   const originalText = save?.textContent || "Aggiungi";
   if (save) {
     save.disabled = true;
+    save.classList.add("is-loading");
+    save.setAttribute("aria-busy", "true");
     save.textContent = "Aggiungo...";
   }
 
@@ -5710,6 +5661,8 @@ async function adminSubmitBulkCreate(save) {
   } finally {
     if (save) {
       save.disabled = false;
+      save.classList.remove("is-loading");
+      save.setAttribute("aria-busy", "false");
       save.textContent = originalText;
     }
   }
@@ -5822,6 +5775,8 @@ async function adminRunConfirm() {
   const originalText = button?.textContent || "Conferma";
   if (button) {
     button.disabled = true;
+    button.classList.add("is-loading");
+    button.setAttribute("aria-busy", "true");
     button.textContent = "Attendi...";
   }
 
@@ -5835,6 +5790,8 @@ async function adminRunConfirm() {
   } finally {
     if (button) {
       button.disabled = false;
+      button.classList.remove("is-loading");
+      button.setAttribute("aria-busy", "false");
       button.textContent = originalText;
     }
   }

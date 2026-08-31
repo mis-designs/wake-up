@@ -1630,19 +1630,6 @@ a:focus-visible {
     cursor: wait;
 }
 
-.promo-access-submit.is-loading span::after {
-    content: "";
-    display: inline-block;
-    width: 13px;
-    height: 13px;
-    margin-left: 8px;
-    border: 2px solid rgba(255, 255, 255, .48);
-    border-top-color: #fff;
-    border-radius: 50%;
-    vertical-align: -2px;
-    animation: spin .7s linear infinite;
-}
-
 .promo-access-error {
     min-height: 17px;
     margin: 8px 2px 0;
@@ -5359,8 +5346,10 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
 }
 
 .viewer-loading-figure {
-    width: min(230px, 72vw);
-    aspect-ratio: 16 / 10;
+    --magic-loading-size: min(168px, 52vw);
+    width: var(--magic-loading-size);
+    height: var(--magic-loading-size);
+    aspect-ratio: 1;
     border: 1px solid rgba(3, 27, 70, 0.14);
     border-radius: 17px;
     overflow: hidden;
@@ -5381,35 +5370,10 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     border-radius: inherit;
 }
 
-.viewer-loading-figure-img.is-sliding {
-    animation: loadingFigureSlide 1.5s ease-in-out both;
-}
-
 .viewer-loading-text {
     opacity: 0;
     transform: translateY(8px);
     transition: opacity 0.18s ease, transform 0.18s ease;
-}
-
-.viewer-loading-bar {
-    width: min(260px, 74vw);
-    height: 7px;
-    border-radius: 999px;
-    overflow: hidden;
-    background: rgba(3, 27, 70, 0.09);
-    opacity: 0;
-    transform: translateY(8px);
-    transition: opacity 0.18s ease, transform 0.18s ease;
-}
-
-.viewer-loading-bar span {
-    display: block;
-    width: 62%;
-    height: 100%;
-    border-radius: inherit;
-    background: linear-gradient(90deg, #58db9a, #c9f41d, #f1b44c, #ff5f7d);
-    background-size: 240% 100%;
-    animation: loadingGradientBar 1.15s linear infinite;
 }
 
 .viewer-loading.is-active {
@@ -5417,40 +5381,9 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
 }
 
 .viewer-loading.is-active .viewer-loading-figure,
-.viewer-loading.is-active .viewer-loading-text,
-.viewer-loading.is-active .viewer-loading-bar {
+.viewer-loading.is-active .viewer-loading-text {
     opacity: 1;
     transform: translateY(0);
-}
-
-@keyframes loadingFigureSlide {
-    0% {
-        opacity: 0;
-        transform: translateX(100%) scale(0.96);
-    }
-    16% {
-        opacity: 1;
-        transform: translateX(0) scale(1);
-    }
-    72% {
-        opacity: 1;
-        transform: translateX(0) scale(1);
-    }
-    100% {
-        opacity: 0;
-        transform: translateX(-100%) scale(0.96);
-    }
-}
-
-@keyframes loadingGradientBar {
-    from {
-        transform: translateX(-72%);
-        background-position: 0% 50%;
-    }
-    to {
-        transform: translateX(172%);
-        background-position: 100% 50%;
-    }
 }
 
 /* PAGE IMAGE */
@@ -6859,7 +6792,7 @@ body.qms-open { overflow: hidden; }
     --admin-user-mid: #10b981;
     --admin-user-end: #047857;
     border-radius: 18px;
-    padding: 12px;
+    padding: 0;
     display: grid;
     gap: 14px;
 }
@@ -7553,13 +7486,12 @@ body.qms-open { overflow: hidden; }
 }
 
 .admin-promo-spinner {
-    width: 28px;
-    height: 28px;
+    --magic-loading-size: 58px;
+    width: 58px;
+    height: 58px;
     margin-bottom: 2px;
-    border: 3px solid rgba(124, 58, 237, 0.16);
-    border-top-color: #7c3aed;
-    border-radius: 50%;
-    animation: adminPromoSpin 0.8s linear infinite;
+    border: 0;
+    border-radius: 16px;
 }
 
 .admin-promo-state.is-error {
@@ -7581,14 +7513,6 @@ body.qms-open { overflow: hidden; }
     font-size: 0.78rem;
     font-weight: 900;
     cursor: pointer;
-}
-
-@keyframes adminPromoSpin {
-    to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .admin-promo-spinner { animation: none; }
 }
 
 .admin-modal {

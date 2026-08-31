@@ -108,17 +108,6 @@ if (!TRIAL_MODE && !hasCurrentClientAuthResetVersion()) {
 
 const QUIZ_API = "/api/quiz";
 const ASSET_API = "/api/asset";
-const QUIZ_LOADING_FIGURES = [
-  "fig1",
-  "fig8",
-  "fig25",
-  "fig50",
-  "fig120",
-  "fig220",
-  "fig350",
-  "fig440",
-  "fig550"
-];
 const EXPLANATION_EXTENSIONS = ["png", "webp", "jpg", "jpeg"];
 const EXPLANATION_FIGURES_CACHE_KEY = "magicbook_explanation_figures_v1";
 const QUIZ_MODE_CONFIG = {
@@ -140,41 +129,11 @@ function buildFigureImageUrl(figure) {
   return buildAssetUrl({ kind: "figure", figure: String(figure || "").trim() });
 }
 
-function stopQuizLoadingFigures() {
-  if (window.quizLoadingFigureTimer) {
-    window.clearInterval(window.quizLoadingFigureTimer);
-    window.quizLoadingFigureTimer = null;
-  }
-}
+function stopQuizLoadingFigures() {}
 
 function startQuizLoadingFigures() {
   const img = document.getElementById("quiz-loading-figure-img");
-  if (!img || window.quizLoadingFigureTimer) return;
-
-  let lastFigure = "";
-
-  const getRandomFigure = () => {
-    if (QUIZ_LOADING_FIGURES.length <= 1) return QUIZ_LOADING_FIGURES[0] || "";
-    let next = "";
-    do {
-      next = QUIZ_LOADING_FIGURES[Math.floor(Math.random() * QUIZ_LOADING_FIGURES.length)];
-    } while (next === lastFigure);
-    lastFigure = next;
-    return next;
-  };
-
-  const showNext = () => {
-    const figure = getRandomFigure();
-    if (!figure) return;
-    img.classList.remove("is-sliding");
-    void img.offsetWidth;
-    img.src = buildFigureImageUrl(figure);
-    img.classList.add("is-sliding");
-  };
-
-  img.onerror = showNext;
-  showNext();
-  window.quizLoadingFigureTimer = window.setInterval(showNext, 1500);
+  if (img) img.src = "icons/loading.gif";
 }
 
 function buildExplanationImageUrl(figure, value, ext) {
@@ -2013,6 +1972,7 @@ function showLoading(message = "Caricamento...") {
   loadingText.innerText = message;
   loadingOverlay.classList.remove("hidden");
   loadingOverlay.setAttribute("aria-hidden", "false");
+  loadingOverlay.setAttribute("aria-busy", "true");
   document.body.classList.add("loading-open");
   startQuizLoadingFigures();
 }
@@ -2021,6 +1981,7 @@ function hideLoading() {
   stopQuizLoadingFigures();
   loadingOverlay.classList.add("hidden");
   loadingOverlay.setAttribute("aria-hidden", "true");
+  loadingOverlay.setAttribute("aria-busy", "false");
   document.body.classList.remove("loading-open");
 }
 
@@ -2699,18 +2660,21 @@ function renderReviewTranslationLoading(panel) {
   panel.setAttribute("aria-busy", "true");
 
   const status = document.createElement("p");
-  status.className = "modal-review-translation-loading";
+  status.className = "modal-review-translation-loading magic-loading-indicator";
   status.setAttribute("role", "status");
-  status.textContent = "Carico traduzione e parole chiave…";
-
-  const skeleton = document.createElement("div");
-  skeleton.className = "modal-review-translation-skeleton";
-  skeleton.setAttribute("aria-hidden", "true");
-  for (let index = 0; index < 3; index += 1) {
-    const line = document.createElement("span");
-    skeleton.appendChild(line);
-  }
-  panel.append(status, skeleton);
+  const media = document.createElement("span");
+  media.className = "magic-loading-indicator__media";
+  media.setAttribute("aria-hidden", "true");
+  const image = document.createElement("img");
+  image.className = "magic-loading-indicator__image";
+  image.src = "icons/loading.gif";
+  image.alt = "";
+  const label = document.createElement("span");
+  label.className = "magic-loading-indicator__label";
+  label.textContent = "Carico traduzione e parole chiave…";
+  media.appendChild(image);
+  status.append(media, label);
+  panel.append(status);
 }
 
 function renderReviewTranslationPanel(panel, help = {}) {
@@ -2976,7 +2940,7 @@ function renderAnswerReview(items = []) {
 
     const reviewAudioControl = document.createElement("button");
     reviewAudioControl.type = "button";
-    reviewAudioControl.className = "modal-review-audio-button";
+    reviewAudioControl.className = "modal-review-audio-button magic-loading-control";
     reviewAudioControl.classList.toggle("is-trial-locked", TRIAL_MODE);
     reviewAudioControl.dataset.audioLabel = `Ascolta la spiegazione audio della domanda ${item.index}`;
     setReviewAudioButtonState(reviewAudioControl, "idle");

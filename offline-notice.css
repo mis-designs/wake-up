@@ -1,0 +1,205 @@
+:root {
+  --magic-offline-ink: #17233a;
+  --magic-offline-muted: #5b6d85;
+  --magic-offline-line: #d9e2ee;
+  --magic-offline-surface: #ffffff;
+  --magic-offline-accent: #138f86;
+  --magic-offline-warning: #a96c16;
+  --magic-offline-focus: #263bd4;
+}
+
+body.magic-offline-active {
+  overflow: hidden;
+}
+
+.magic-offline-notice[hidden] {
+  display: none;
+}
+
+.magic-offline-notice {
+  position: fixed;
+  inset: 0;
+  z-index: 30000;
+  display: grid;
+  place-items: center;
+  padding:
+    max(20px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    max(20px, env(safe-area-inset-bottom))
+    max(18px, env(safe-area-inset-left));
+}
+
+.magic-offline-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 20, 38, 0.72);
+  backdrop-filter: blur(12px) saturate(0.8);
+  -webkit-backdrop-filter: blur(12px) saturate(0.8);
+}
+
+.magic-offline-card {
+  position: relative;
+  width: min(100%, 390px);
+  border: 1px solid var(--magic-offline-line);
+  border-top: 5px solid var(--magic-offline-accent);
+  border-radius: 24px;
+  padding: 20px 24px 24px;
+  overflow: hidden;
+  background: var(--magic-offline-surface);
+  color: var(--magic-offline-ink);
+  text-align: center;
+  box-shadow: 0 30px 80px rgba(10, 20, 38, 0.34);
+  animation: magicOfflineEnter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.magic-offline-card:focus-visible {
+  outline: 3px solid var(--magic-offline-focus);
+  outline-offset: 4px;
+}
+
+.magic-offline-visual {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 156px;
+  height: 142px;
+  margin: 0 auto 4px;
+}
+
+.magic-offline-visual::before {
+  position: absolute;
+  width: 124px;
+  height: 124px;
+  border-radius: 50%;
+  background: rgba(19, 143, 134, 0.1);
+  content: "";
+}
+
+.magic-offline-visual img {
+  position: relative;
+  display: block;
+  width: 138px;
+  height: 138px;
+  border-radius: 50%;
+  object-fit: cover;
+  mix-blend-mode: multiply;
+}
+
+.magic-offline-kicker {
+  margin: 0 0 7px;
+  color: var(--magic-offline-accent);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.magic-offline-card h2 {
+  margin: 0;
+  color: var(--magic-offline-ink);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: clamp(2rem, 9vw, 2.55rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+
+.magic-offline-message {
+  max-width: 316px;
+  margin: 13px auto 0;
+  color: var(--magic-offline-muted);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.magic-offline-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 40px;
+  margin-top: 20px;
+  border: 1px solid rgba(169, 108, 22, 0.2);
+  border-radius: 9999px;
+  padding: 9px 14px;
+  background: rgba(169, 108, 22, 0.08);
+  color: #865711;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.77rem;
+  font-weight: 800;
+}
+
+.magic-offline-status-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: var(--magic-offline-warning);
+  box-shadow: 0 0 0 0 rgba(169, 108, 22, 0.35);
+  animation: magicOfflinePulse 1.8s ease-out infinite;
+}
+
+@keyframes magicOfflineEnter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes magicOfflinePulse {
+  70% {
+    box-shadow: 0 0 0 8px rgba(169, 108, 22, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(169, 108, 22, 0);
+  }
+}
+
+@media (max-width: 480px) {
+  .magic-offline-card {
+    width: min(100%, 352px);
+    border-radius: 20px;
+    padding: 17px 20px 22px;
+  }
+
+  .magic-offline-visual {
+    width: 142px;
+    height: 128px;
+  }
+
+  .magic-offline-visual img {
+    width: 126px;
+    height: 126px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .magic-offline-card,
+  .magic-offline-status-dot {
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .magic-offline-backdrop {
+    background: Canvas;
+    opacity: 0.92;
+  }
+
+  .magic-offline-card,
+  .magic-offline-status {
+    border: 2px solid CanvasText;
+  }
+
+  .magic-offline-status-dot {
+    background: CanvasText;
+  }
+}

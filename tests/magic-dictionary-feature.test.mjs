@@ -154,9 +154,9 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(index, /premium-new-badge home-dictionary-new-badge/u);
   assert.doesNotMatch(index, /home-dictionary-mark/u);
   assert.match(index, /openDictionaryFromMenu\(\)/u);
-  assert.match(index, /magic-dictionary\.js\?v=1\.2\.4/u);
-  assert.match(quiz, /magic-dictionary\.js\?v=1\.2\.4/u);
-  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.2\.4/u);
+  assert.match(index, /magic-dictionary\.js\?v=1\.2\.5-shared-gif-loader/u);
+  assert.match(quiz, /magic-dictionary\.js\?v=1\.2\.5-shared-gif-loader/u);
+  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.2\.5-shared-gif-loader/u);
   for (const html of [index, quiz, studyQuiz]) {
     assert.match(html, /https:\/\/banglawebfonts\.pages\.dev\/css\/tiro-bangla\.css/u);
     assert.match(html, /https:\/\/banglawebfonts\.pages\.dev\/fonts\/tiro-bangla\/tiro-bangla-regular\.woff2/u);
@@ -170,8 +170,8 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(dictionaryCss, /\.magic-dictionary-settings button\s*\{[\s\S]*width:\s*auto;[\s\S]*justify-self:\s*end;[\s\S]*white-space:\s*nowrap;/u);
   assert.match(script, /state\.screen === "dictionary"/u);
   assert.match(script, /MagicDictionaryFeature\?\.onAuthenticated/u);
-  assert.match(worker, /magicbook-pwa-v147-admin-overtime-timer/u);
-  assert.match(worker, /magic-dictionary\.js\?v=1\.2\.4/u);
+  assert.match(worker, /magicbook-pwa-v148-shared-gif-loader/u);
+  assert.match(worker, /magic-dictionary\.js\?v=1\.2\.5-shared-gif-loader/u);
   assert.match(worker, /magic-dictionary\.css\?v=1\.2\.5-settings-layout/u);
   assert.ok(vercel.rewrites.some(route => route.source === "/dizionario" && route.destination === "/"));
   assert.match(redirects, /^\/dizionario \/index\.html 200$/mu);

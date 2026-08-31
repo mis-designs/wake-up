@@ -188,7 +188,7 @@ function showMessage(text, type = "") {
   const el = $("audioAdminMessage");
   if (!el) return;
   el.textContent = text || "";
-  el.className = `audio-admin-message${type ? ` ${type}` : ""}`;
+  el.className = `audio-admin-message${type ? ` ${type}` : ""}${type === "loading" ? " magic-loading-inline-status is-loading" : ""}`;
 }
 
 function openDialog({ title, text, confirmLabel = "Continua", cancelLabel = "Annulla", danger = false, error = "" }) {
@@ -275,7 +275,7 @@ function answerBadge(value) {
 
 function iconButton(kind, label, icon) {
   const button = document.createElement("button");
-  button.type = "button"; button.className = `audio-admin-icon ${kind}`; button.setAttribute("aria-label", label); button.title = label; button.innerHTML = icon;
+  button.type = "button"; button.className = `audio-admin-icon magic-loading-control ${kind}`; button.setAttribute("aria-label", label); button.title = label; button.innerHTML = icon;
   return button;
 }
 
@@ -303,7 +303,9 @@ function renderChapters() {
   });
   const total = state.chapters.reduce((sum, chapter) => sum + chapter.questions.length, 0);
   const done = state.chapters.reduce((sum, chapter) => sum + chapterProgress(chapter).done, 0);
-  $("audioAdminGlobalProgress").textContent = `${done} di ${total} spiegazioni aggiunte · ${total ? Math.round(done / total * 100) : 0}%`;
+  const globalProgress = $("audioAdminGlobalProgress");
+  globalProgress?.classList.remove("is-loading");
+  if (globalProgress) globalProgress.textContent = `${done} di ${total} spiegazioni aggiunte · ${total ? Math.round(done / total * 100) : 0}%`;
 }
 
 function openChapter(index) {
@@ -384,7 +386,7 @@ function renderHelpLoading(panel) {
   panel.dataset.helpState = "loading";
   panel.setAttribute("aria-busy", "true");
   const status = document.createElement("p");
-  status.className = "audio-admin-help-status";
+  status.className = "audio-admin-help-status magic-loading-inline-status is-loading";
   status.setAttribute("role", "status");
   status.textContent = "Caricamento della traduzione personale…";
   panel.append(status);
@@ -594,7 +596,7 @@ function base64AudioUrl(base64) {
 function createItalianQuestionPlayer(question) {
   const button = document.createElement("button");
   button.type = "button";
-  button.className = "audio-admin-italian-listen";
+  button.className = "audio-admin-italian-listen magic-loading-control";
   button.innerHTML = `${SPEAKER_ICON}<span>Italiano</span>`;
   button.setAttribute("aria-label", "Ascolta la domanda in italiano");
   button.title = "Ascolta la domanda in italiano";
@@ -670,7 +672,7 @@ function createItalianQuestionPlayer(question) {
 
 function createAudioPlayer(question, { legacy = false } = {}) {
   const player = document.createElement("div"); player.className = "audio-admin-player"; player.setAttribute("aria-label", "Player spiegazione audio");
-  const button = document.createElement("button"); button.type = "button"; button.className = "audio-admin-player-play"; button.setAttribute("aria-label", "Riproduci spiegazione");
+  const button = document.createElement("button"); button.type = "button"; button.className = "audio-admin-player-play magic-loading-control"; button.setAttribute("aria-label", "Riproduci spiegazione");
   const progress = document.createElement("input"); progress.type = "range"; progress.min = "0"; progress.max = "100"; progress.step = "0.1"; progress.value = "0"; progress.className = "audio-admin-player-progress"; progress.setAttribute("aria-label", "Avanzamento audio"); progress.setAttribute("aria-valuemin", "0"); progress.setAttribute("aria-valuemax", "100"); progress.setAttribute("aria-valuenow", "0");
   const speed = document.createElement("button"); speed.type = "button"; speed.className = "audio-admin-player-speed"; speed.textContent = "1×"; speed.title = "Cambia velocità";
   const audio = new Audio(); audio.preload = "metadata"; let loading = null; let objectUrl = ""; let speedValue = 1; let frame = 0; let seeking = false; let durationHint = 0; let sourceMode = ""; let blobFallbackTried = false;
@@ -859,18 +861,23 @@ async function saveInline() {
 
 function inlineRecorder() {
   const item = state.inline; const panel = document.createElement("section"); panel.className = "audio-admin-inline-recorder";
-  const info = document.createElement("div"); info.className = "audio-admin-inline-status"; const status = document.createElement("span"); status.textContent = item.status; const timer = document.createElement("strong"); timer.id = "audioInlineTimer"; timer.textContent = formatTime(elapsed(item)); const close = iconButton("close", "Chiudi registratore", CLOSE_ICON); close.className = "audio-admin-inline-close"; close.disabled = item.saving; close.addEventListener("click", requestCloseInline); info.append(status, timer, close);
+  const info = document.createElement("div"); info.className = "audio-admin-inline-status"; const status = document.createElement("span"); status.className = item.saving ? "magic-loading-inline-status is-loading" : ""; status.textContent = item.status; const timer = document.createElement("strong"); timer.id = "audioInlineTimer"; timer.textContent = formatTime(elapsed(item)); const close = iconButton("close", "Chiudi registratore", CLOSE_ICON); close.className = "audio-admin-inline-close"; close.disabled = item.saving; close.addEventListener("click", requestCloseInline); info.append(status, timer, close);
   const controls = document.createElement("div"); controls.className = "audio-admin-inline-controls";
   const start = iconButton("record", item.phase === "paused" ? "Riprendi registrazione" : "Inizia registrazione", MIC_ICON); start.disabled = item.saving; start.addEventListener("click", startRecording);
   const pause = iconButton("pause", "Metti in pausa", PAUSE_ICON); pause.disabled = item.saving || item.phase !== "recording"; pause.addEventListener("click", pauseRecording);
-  const trash = iconButton("trash", item.chunks.length ? "Elimina registrazione" : "Elimina audio salvato", TRASH_ICON); trash.disabled = item.saving || (!item.chunks.length && !item.saved); trash.addEventListener("click", () => item.chunks.length ? discardDraft() : removeSaved(item.question));
+  const trash = iconButton("trash", item.chunks.length ? "Elimina registrazione" : "Elimina audio salvato", TRASH_ICON); trash.disabled = item.saving || (!item.chunks.length && !item.saved); trash.addEventListener("click", () => item.chunks.length ? discardDraft() : removeSaved(item.question, trash));
   const renew = iconButton("renew", "Ricomincia registrazione", RENEW_ICON); renew.disabled = item.saving || (!item.chunks.length && !item.blob); renew.addEventListener("click", renewRecording);
-  const save = iconButton("save", item.retryable ? "Riprova caricamento" : "Salva spiegazione", SAVE_ICON); save.disabled = item.saving || (!item.blob && item.phase !== "recording"); save.addEventListener("click", saveInline); controls.append(start, pause, trash, renew, save);
+  const save = iconButton("save", item.retryable ? "Riprova caricamento" : "Salva spiegazione", SAVE_ICON); save.classList.toggle("is-loading", item.saving); save.setAttribute("aria-busy", item.saving ? "true" : "false"); save.disabled = item.saving || (!item.blob && item.phase !== "recording"); save.addEventListener("click", saveInline); controls.append(start, pause, trash, renew, save);
   panel.append(info); if (item.blobUrl) { const preview = document.createElement("audio"); preview.controls = true; preview.src = item.blobUrl; preview.className = "audio-admin-inline-preview"; panel.append(preview); } panel.append(controls); return panel;
 }
 
-async function removeSaved(question) {
+async function removeSaved(question, trigger = null) {
   const accepted = await openDialog({ title: "Eliminare la spiegazione?", text: "L'audio sparirà per gli utenti in entrambi i progetti.", confirmLabel: "Elimina", cancelLabel: "Annulla", danger: true }); if (!accepted) return;
+  if (trigger) {
+    trigger.disabled = true;
+    trigger.classList.add("is-loading");
+    trigger.setAttribute("aria-busy", "true");
+  }
   try {
     await api("deleteQuizAudio", quizAudioPayload(question));
     state.audioKeys.delete(question.quizKey);
@@ -878,6 +885,13 @@ async function removeSaved(question) {
     if (state.inline?.key === question.quizKey) closeInline();
     renderChapters(); renderChapter();
   } catch (error) { await showProblem("Eliminazione non riuscita", "Il sito non è riuscito a eliminare l'audio.", error); }
+  finally {
+    if (trigger?.isConnected) {
+      trigger.disabled = false;
+      trigger.classList.remove("is-loading");
+      trigger.setAttribute("aria-busy", "false");
+    }
+  }
 }
 
 $("audioAdminDialogCancel").addEventListener("click", () => closeDialog(false));
@@ -1041,7 +1055,10 @@ async function load() {
   if (!isAdmin()) { showMessage("Accesso admin richiesto.", "error"); return; }
   try {
     await ensureFreshAccessToken({ force: true });
-    showMessage("Caricamento catalogo Magic Book…");
+    const globalProgress = $("audioAdminGlobalProgress");
+    globalProgress?.classList.add("is-loading");
+    if (globalProgress) globalProgress.textContent = "Caricamento catalogo Magic Book…";
+    showMessage("Caricamento catalogo Magic Book…", "loading");
     const [catalog, overview, collisionRegistry] = await Promise.all([
       api("getMagicBookCatalog"),
       api("getQuizAudioAdminOverview"),
@@ -1071,7 +1088,7 @@ async function load() {
     const chapterParam = Number(params.get("capitolo"));
     if (params.get("controllo-audio") === "1" && legacyReviewGroups().length) showLegacyReviews(false);
     else if (chapterParam > 0 && chapterParam <= state.chapters.length) openChapter(chapterParam - 1);
-  } catch (error) { showMessage("Impossibile caricare il catalogo audio.", "error"); await showProblem("Caricamento non riuscito", "Controlla la configurazione server e la pubblicazione del catalogo Apps Script.", error); }
+  } catch (error) { $("audioAdminGlobalProgress")?.classList.remove("is-loading"); showMessage("Impossibile caricare il catalogo audio.", "error"); await showProblem("Caricamento non riuscito", "Controlla la configurazione server e la pubblicazione del catalogo Apps Script.", error); }
 }
 
 window.addEventListener("popstate", () => {

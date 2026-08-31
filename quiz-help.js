@@ -382,7 +382,7 @@
     bangla.textContent = word.simpleBn;
     const audio = document.createElement("button");
     audio.type = "button";
-    audio.className = "quiz-help-word-audio";
+    audio.className = "quiz-help-word-audio magic-loading-control";
     audio.textContent = "🔊 Ascolta";
     audio.addEventListener("click", () => playBanglaWord(word.ttsBn || `${word.bangla}। ${word.simpleBn}`, audio));
     wordDetail.append(heading, italian, bangla, audio);
@@ -419,6 +419,7 @@
     if (!question?.question) return;
     const ownRequest = ++requestId;
     translationText.textContent = "";
+    translationStatus.classList.add("magic-loading-inline-status", "is-loading");
     translationStatus.textContent = "Carico le traduzioni TMM Books…";
     renderContext(null);
     wordsList.innerHTML = '<span class="quiz-help-skeleton"></span><span class="quiz-help-skeleton"></span><span class="quiz-help-skeleton"></span>';
@@ -439,6 +440,7 @@
     if (ownRequest !== requestId) return;
     const verifiedTranslation = usableBanglaTranslation(help?.translation);
     translationText.textContent = verifiedTranslation;
+    translationStatus.classList.remove("is-loading");
     translationStatus.textContent = verifiedTranslation
       ? (help?.translationSource === "automatic" ? "Traduzione automatica di backup." : "")
       : "Traduzione non disponibile al momento.";

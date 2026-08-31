@@ -607,7 +607,10 @@
     root.document.getElementById("magicWordGateMeter").style.width = "0%";
     content.innerHTML = `
       <span class="magic-word-kicker">IL TUO RIPASSO</span>
-      <div class="magic-word-loader" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="magic-loading-indicator magic-loading-indicator--panel" role="status">
+        <span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading.gif" alt=""></span>
+        <span class="sr-only">Preparazione parole in corso</span>
+      </div>
       <h2 id="magicWordGateTitle">Preparo le tue 5 parole…</h2>
       <p>Un piccolo allenamento prima di iniziare.</p>`;
   }
@@ -930,6 +933,7 @@
     const more = root.document?.getElementById("magicDictionaryMore");
     const total = root.document?.getElementById("magicDictionaryTotal");
     if (!list || !status || !more || !total) return;
+    list.setAttribute("aria-busy", "false");
 
     const filtered = filteredDictionaryWords();
     const visible = filtered.slice(0, dictionaryVisibleCount);
@@ -972,6 +976,15 @@
     root.scrollTo?.(0, 0);
     const status = root.document?.getElementById("magicDictionaryStatus");
     if (status) status.textContent = "Caricamento del dizionario…";
+    const list = root.document?.getElementById("magicDictionaryList");
+    if (list) {
+      list.setAttribute("aria-busy", "true");
+      list.innerHTML = `
+        <div class="magic-loading-indicator magic-loading-indicator--panel magic-loading-indicator--grid" role="status">
+          <span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading.gif" alt=""></span>
+          <span class="magic-loading-indicator__label">Caricamento del dizionario…</span>
+        </div>`;
+    }
     try {
       await loadCatalog();
       dictionaryVisibleCount = PAGE_SIZE;
