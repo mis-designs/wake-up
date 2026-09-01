@@ -12,7 +12,7 @@ test("explanation artwork is rendered beside the shared audio player", () => {
   assert.equal(existsSync(iconUrl), true);
   assert.match(html, /id="quiz-audio-artwork"[^>]+src="icons\/explain_quiz\.svg"/u);
   assert.match(html, /mystyle\.css\?v=49-single-surface-loader/u);
-  assert.match(html, /quiz\.js\?v=75-audio-player-pill/u);
+  assert.match(html, /quiz\.js\?v=76-italian-display-order/u);
   assert.match(worker, /\/icons\/explain_quiz\.svg/u);
 });
 

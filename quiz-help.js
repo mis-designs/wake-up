@@ -365,18 +365,18 @@
   function renderContext(help) {
     const visible = Boolean(help?.chapter?.italian || help?.topic?.italian);
     context.classList.toggle("hidden", !visible);
-    chapterIt.textContent = help?.chapter?.italian || "";
+    chapterIt.textContent = window.MagicItalianDisplay.uppercase(help?.chapter?.italian);
     chapterBn.textContent = help?.chapter?.bangla || "";
-    topicIt.textContent = help?.topic?.italian || "";
+    topicIt.textContent = window.MagicItalianDisplay.uppercase(help?.topic?.italian);
     topicBn.textContent = help?.topic?.bangla || "";
   }
 
   function showWordDetail(word) {
     wordDetail.replaceChildren();
     const heading = document.createElement("strong");
-    heading.textContent = `${word.italian} · ${word.bangla}`;
+    heading.textContent = `${window.MagicItalianDisplay.initialUppercase(word.italian)} · ${word.bangla}`;
     const italian = document.createElement("p");
-    italian.textContent = word.simpleIt;
+    italian.textContent = window.MagicItalianDisplay.initialUppercase(word.simpleIt);
     const bangla = document.createElement("p");
     bangla.lang = "bn";
     bangla.textContent = word.simpleBn;
@@ -404,7 +404,7 @@
       button.type = "button";
       button.className = "quiz-help-word";
       const italian = document.createElement("strong");
-      italian.textContent = word.italian;
+      italian.textContent = window.MagicItalianDisplay.initialUppercase(word.italian);
       const bangla = document.createElement("span");
       bangla.lang = "bn";
       bangla.textContent = word.bangla;

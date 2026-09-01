@@ -37,7 +37,7 @@ test("the popup coordinates with existing blocking dialogs and ships in the PWA 
   assert.match(script, /document\.getElementById\("whatsNewPopupOverlay"\)/u);
   assert.match(index, /style\.css\?v=70-whatsapp-dialog/u);
   assert.match(index, /script\.js\?v=67-promo-ui-disabled/u);
-  assert.match(worker, /magicbook-pwa-v153-transparent-svg-player/u);
+  assert.match(worker, /magicbook-pwa-v155-user-study-order/u);
   assert.match(worker, /script\.js\?v=67-promo-ui-disabled/u);
   assert.match(worker, /\/icons\/ui%20mobile\.svg/u);
 });

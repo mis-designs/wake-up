@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v153-transparent-svg-player";
+const CACHE_NAME = "magicbook-pwa-v155-user-study-order";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -14,6 +14,7 @@ const STATIC_ASSETS = [
   "/offline-notice.css?v=1.0.0",
   "/offline-notice.js?v=1.0.0",
   "/learning-sync.js?v=2",
+  "/italian-display.js?v=1",
   "/src/learning-insights.css?v=9-card-spacing&ui=10",
   "/src/learning-insights.js?v=5-figure-explanation-ui&ui=7-shared-gif-loader",
   "/homebg.css?v=3",
@@ -21,12 +22,12 @@ const STATIC_ASSETS = [
   "/audio-player-ui.css?v=3-transparent-svg-only",
   "/script.js?v=67-promo-ui-disabled",
   "/study-quiz.html",
-  "/study-quiz.css?v=24-shared-gif-loader",
-  "/study-quiz.js?v=20-emerald-glass-svg",
+  "/study-quiz.css?v=25-user-study-order",
+  "/study-quiz.js?v=22-user-study-order",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=75-audio-player-pill",
-  "/quiz-help.css?v=20260829-a11y-trigger-label",
-  "/quiz-help.js?v=20260831-shared-gif-loader",
+  "/quiz.js?v=76-italian-display-order",
+  "/quiz-help.css?v=20260901-italian-display-order",
+  "/quiz-help.js?v=20260901-italian-display-order",
   "/patenteGlossaryResolver.js?v=1.0.0",
   "/patenteContextResolverV3.js?v=4.0.0-glossary-display",
   "/quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity",

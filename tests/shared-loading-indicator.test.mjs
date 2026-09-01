@@ -78,16 +78,16 @@ test("quiz, study and explanation operations reuse the same busy-control contrac
 });
 
 test("the shared loader and all changed consumers ship in one fresh PWA cache", () => {
-  assert.match(worker, /magicbook-pwa-v153-transparent-svg-player/u);
+  assert.match(worker, /magicbook-pwa-v155-user-study-order/u);
   assert.match(worker, /loading-ui\.css\?v=1-shared-gif-loader/u);
   assert.match(worker, /icons\/loading\.gif/u);
   assert.match(worker, /style\.css\?v=70-whatsapp-dialog/u);
   assert.match(worker, /script\.js\?v=67-promo-ui-disabled/u);
   assert.match(worker, /mystyle\.css\?v=49-single-surface-loader/u);
   assert.match(worker, /audio-player-ui\.css\?v=3-transparent-svg-only/u);
-  assert.match(worker, /quiz\.js\?v=75-audio-player-pill/u);
-  assert.match(worker, /quiz-help\.js\?v=20260831-shared-gif-loader/u);
-  assert.match(worker, /study-quiz\.js\?v=20-emerald-glass-svg/u);
+  assert.match(worker, /quiz\.js\?v=76-italian-display-order/u);
+  assert.match(worker, /quiz-help\.js\?v=20260901-italian-display-order/u);
+  assert.match(worker, /study-quiz\.js\?v=22-user-study-order/u);
   assert.match(worker, /magic-dictionary\.js\?v=1\.2\.5-shared-gif-loader/u);
   assert.match(worker, /learning-insights\.js\?v=5-figure-explanation-ui&ui=7-shared-gif-loader/u);
 });

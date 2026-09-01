@@ -2723,11 +2723,11 @@ function renderReviewTranslationPanel(panel, help = {}) {
     tag.className = "modal-review-translation-tag";
     tag.classList.toggle("is-missing", !item.value);
     tag.setAttribute("aria-label", `${item.label}: ${item.value || "non disponibile"}`);
-    tag.textContent = tagValue;
+    tag.textContent = item.value
+      ? window.MagicItalianDisplay.uppercase(tagValue)
+      : tagValue;
     context.appendChild(tag);
   });
-  panel.appendChild(context);
-
   const wordsGroup = document.createElement("div");
   wordsGroup.className = "modal-review-translation-words-group";
   wordsGroup.appendChild(createReviewHelpLabel("PAROLE CHIAVE"));
@@ -2747,7 +2747,7 @@ function renderReviewTranslationPanel(panel, help = {}) {
       const chip = document.createElement("span");
       chip.className = "modal-review-translation-word";
       const italian = document.createElement("strong");
-      italian.textContent = String(word.italian || "").trim();
+      italian.textContent = window.MagicItalianDisplay.initialUppercase(word.italian);
       const bangla = document.createElement("span");
       bangla.lang = "bn";
       bangla.setAttribute("translate", "no");
@@ -2758,6 +2758,7 @@ function renderReviewTranslationPanel(panel, help = {}) {
   }
   wordsGroup.appendChild(words);
   panel.appendChild(wordsGroup);
+  panel.appendChild(context);
 }
 
 function fallbackReviewTranslationHelp(item) {

@@ -96,7 +96,9 @@ body.study-trial-mode .study-header{border-bottom-color:rgba(217,155,22,.35);box
 .study-answer { border-radius: 999px; padding: 6px 10px; font-size: .65rem; font-weight: 900; letter-spacing: .06em; }
 .study-answer.is-true { background: #e3f7ef; color: #087557; }
 .study-answer.is-false { background: #ffeaeb; color: #b42c3b; }
-.study-figure { display: block; width: min(300px, 100%); max-height: 240px; margin: 0 auto 18px; object-fit: contain; border-radius: 16px; background: #f3f5f8; }
+.study-figure-frame { position: relative; width: min(300px, 100%); margin: 0 auto 18px; overflow: hidden; border-radius: 16px; background: #fff; }
+.study-figure-frame::after { content: ""; position: absolute; z-index: 1; inset: 0 auto auto 0; width: 24%; height: 20%; background: #fff; pointer-events: none; }
+.study-figure { display: block; width: 100%; max-height: 240px; object-fit: contain; background: #fff; }
 .study-question-text { margin: 0; color: #101b30; font-size: clamp(1rem, 2.2vw, 1.18rem); font-weight: 750; line-height: 1.58; }
 .study-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
 .study-action { display: inline-flex; min-height: 42px; align-items: center; gap: 8px; border: 1px solid #dce3ed; border-radius: 999px; padding: 8px 13px; background: #fff; color: #2b3a54; font-size: .75rem; font-weight: 850; cursor: pointer; box-shadow: 0 3px 10px rgba(29, 43, 72, .035); transition: transform .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease; }
@@ -134,6 +136,7 @@ body.study-trial-mode .study-header{border-bottom-color:rgba(217,155,22,.35);box
 .study-translation.is-missing { color: #7b8799; font-family: Inter, Arial, sans-serif; font-size: .82rem; font-weight: 650; font-style: italic; }
 .study-context { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .study-context span { border-radius: 10px; padding: 7px 9px; background: rgba(31, 157, 54, .08); color: #275f34; font-size: .68rem; font-weight: 750; }
+.study-context span[lang="it"] { text-transform: uppercase; }
 .study-words { display: flex; flex-wrap: wrap; gap: 8px; }
 .study-word { border: 1px solid #d8e1ea; border-radius: 13px; padding: 9px 11px; background: #fff; text-align: left; cursor: pointer; }
 .study-word:hover, .study-word:focus-visible { border-color: #b7a9f2; outline: none; background: #fbfaff; box-shadow: 0 6px 15px rgba(76, 59, 158, .08); }

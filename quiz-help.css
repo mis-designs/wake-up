@@ -205,7 +205,7 @@ body.quiz-help-open { overflow: hidden; }
 
 .quiz-help-translation-text { margin: 0; color: #fff; font-family: var(--font-bengali); font-size: 1.42rem; line-height: 1.68; overflow-wrap: anywhere; }
 .quiz-help-status, .quiz-help-empty { margin: 10px 0 0; color: rgba(255,255,255,.62); font-size: .78rem; }
-.quiz-help-context { display: grid; gap: 8px; margin-bottom: 13px; }
+.quiz-help-context { display: grid; gap: 8px; margin-top: 13px; }
 .quiz-help-context.hidden { display: none; }
 .quiz-help-context > div { padding: 9px 11px; border-left: 3px solid var(--magic-help); border-radius: 8px; background: #0c0f16; }
 .quiz-help-context small { color: var(--magic-help); font-size: .72rem; font-weight: 900; }

@@ -639,13 +639,16 @@
     main.appendChild(meta);
 
     if (String(question.figure || "").trim()) {
+      const figure = document.createElement("div");
+      figure.className = "study-figure-frame";
       const image = document.createElement("img");
       image.className = "study-figure";
       image.loading = "lazy";
       image.alt = `Figura della domanda ${index + 1}`;
       image.src = assetUrl(question.figure);
-      image.addEventListener("error", () => image.remove(), { once: true });
-      main.appendChild(image);
+      image.addEventListener("error", () => figure.remove(), { once: true });
+      figure.appendChild(image);
+      main.appendChild(figure);
     }
 
     const text = document.createElement("p");
@@ -933,17 +936,24 @@
     translationSection.appendChild(translation);
     container.appendChild(translationSection);
 
+    let context = null;
     if (help?.chapter?.italian || help?.topic?.italian) {
-      const context = document.createElement("div");
+      context = document.createElement("div");
       context.className = "study-context";
-      [help.chapter?.italian, help.topic?.italian, help.chapter?.bangla, help.topic?.bangla]
-        .filter(Boolean)
-        .forEach(value => {
+      context.setAttribute("aria-label", "Capitolo e argomento");
+      [
+        { value: help.chapter?.italian, language: "it" },
+        { value: help.topic?.italian, language: "it" },
+        { value: help.chapter?.bangla, language: "bn" },
+        { value: help.topic?.bangla, language: "bn" }
+      ].filter(item => item.value).forEach(item => {
           const tag = document.createElement("span");
-          tag.textContent = value;
+          tag.lang = item.language;
+          tag.textContent = item.language === "it"
+            ? window.MagicItalianDisplay.uppercase(item.value)
+            : item.value;
           context.appendChild(tag);
         });
-      translationSection.appendChild(context);
     }
 
     const wordsSection = helpSection("PAROLE CHIAVE");
@@ -962,7 +972,7 @@
         button.type = "button";
         button.className = "study-word";
         const italian = document.createElement("strong");
-        italian.textContent = word.italian;
+        italian.textContent = window.MagicItalianDisplay.initialUppercase(word.italian);
         const bangla = document.createElement("span");
         bangla.lang = "bn";
         bangla.textContent = word.bangla;
@@ -971,17 +981,19 @@
         words.appendChild(button);
       });
     }
-    wordsSection.append(words, detail);
+    wordsSection.appendChild(words);
+    wordsSection.appendChild(detail);
     container.appendChild(wordsSection);
+    if (context) container.appendChild(context);
     return container;
   }
 
   function renderWordDetail(word, detail) {
     detail.replaceChildren();
     const heading = document.createElement("strong");
-    heading.textContent = `${word.italian} · ${word.bangla}`;
+    heading.textContent = `${window.MagicItalianDisplay.initialUppercase(word.italian)} · ${word.bangla}`;
     const italian = document.createElement("p");
-    italian.textContent = word.simpleIt;
+    italian.textContent = window.MagicItalianDisplay.initialUppercase(word.simpleIt);
     const bangla = document.createElement("p");
     bangla.lang = "bn";
     bangla.textContent = word.simpleBn;
