@@ -824,6 +824,74 @@ body.loading-open {
   overflow: auto;
 }
 
+.modal-card.modal-time-expired {
+  border: 1px solid rgba(19, 143, 134, 0.28);
+  background: var(--color-white);
+  box-shadow: 0 24px 58px rgba(14, 83, 66, 0.2);
+}
+
+.modal-card.modal-time-expired .modal-badge {
+  min-width: 0;
+  background: #e4f8f2;
+  color: #087557;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.modal-card.modal-time-expired h3 {
+  color: #17233a;
+  font-size: clamp(1.45rem, 5vw, 1.8rem);
+}
+
+.modal-card.modal-time-expired p {
+  color: #4f5e72;
+}
+
+.modal-card.modal-time-expired .modal-actions {
+  flex-wrap: wrap;
+}
+
+.modal-card.modal-time-expired .modal-btn {
+  min-height: 48px;
+  border-radius: 999px;
+}
+
+.modal-card.modal-time-expired .modal-btn-primary {
+  background: linear-gradient(135deg, #0b9f6e 0%, #67d833 100%);
+  box-shadow: 0 10px 24px rgba(11, 159, 110, 0.2);
+}
+
+.modal-card.modal-time-expired .modal-btn-secondary {
+  border: 1px solid rgba(19, 143, 134, 0.22);
+  background: rgba(255, 255, 255, 0.88);
+  color: #17624f;
+}
+
+@media (max-width: 380px) {
+  .modal-card.modal-time-expired .modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .modal-card.modal-time-expired .modal-btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-card.modal-time-expired {
+    animation: none;
+  }
+
+  .modal-card.modal-time-expired .modal-btn {
+    transition: none;
+  }
+
+  .modal-card.modal-time-expired .modal-btn:hover {
+    transform: none;
+  }
+}
+
 .modal-badge {
   display: inline-flex;
   align-items: center;

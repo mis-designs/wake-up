@@ -44,7 +44,7 @@ test("Admin timer changes from the normal countdown to explicit elapsed overtime
   });
 });
 
-test("only a server-authorized Admin avoids automatic finish and keeps full elapsed time", () => {
+test("only a server-authorized Admin enters uninterrupted overtime", () => {
   const elapsed = functionSource("getElapsedQuizSeconds", "paintQuizTimer");
   const timer = functionSource("startTimer", "allAnswered");
 
@@ -52,13 +52,14 @@ test("only a server-authorized Admin avoids automatic finish and keeps full elap
   assert.match(api, /isAdmin: admin/u);
   assert.match(source, /isAdmin = data\.isAdmin === true;/u);
   assert.match(timer, /time <= 0 && !isAdmin/u);
-  assert.match(timer, /finishQuiz\(true\)/u);
-  assert.match(timer, /time = quizDurationMinutes \* 60 - elapsedSeconds/u);
-  assert.match(elapsed, /return isAdmin \? elapsedSeconds : Math\.min\(maxSeconds, elapsedSeconds\);/u);
+  assert.match(timer, /void handleUserTimerExpiry\(\)/u);
+  assert.doesNotMatch(timer, /finishQuiz/u);
+  assert.match(timer, /time = cycleSeconds - elapsedCycleSeconds/u);
+  assert.match(elapsed, /return elapsedSeconds;/u);
 });
 
 test("the Admin overtime timer ships in fresh quiz and PWA assets", () => {
-  assert.match(page, /quiz\.js\?v=76-italian-display-order/u);
-  assert.match(worker, /magicbook-pwa-v155-user-study-order/u);
-  assert.match(worker, /quiz\.js\?v=76-italian-display-order/u);
+  assert.match(page, /quiz\.js\?v=78-audio-speed-cycle/u);
+  assert.match(worker, /magicbook-pwa-v158-admin-profile-logo/u);
+  assert.match(worker, /quiz\.js\?v=78-audio-speed-cycle/u);
 });

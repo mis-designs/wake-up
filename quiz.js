@@ -711,10 +711,12 @@ const reviewAudio = new Audio();
 reviewAudio.preload = "metadata";
 const SHARED_AUDIO_AVAILABILITY_DELAY_MS = 350;
 const QUIZ_IMAGE_REQUEST_DELAY_MS = 140;
+const SHARED_AUDIO_SPEED_STEPS = [1, 0.5, 1, 1.25, 1.5, 2];
 let sharedAudioQuestion = "";
 let sharedAudioLoading = null;
 let sharedAudioFrame = 0;
-let sharedAudioSpeedValue = 1;
+let sharedAudioSpeedStep = 0;
+let sharedAudioSpeedValue = SHARED_AUDIO_SPEED_STEPS[sharedAudioSpeedStep];
 let sharedAudioRequestId = 0;
 let sharedAudioObjectUrl = "";
 let sharedAudioSeeking = false;
@@ -841,6 +843,19 @@ function seekSharedAudioFromProgress() {
   try { sharedAudio.currentTime = duration * percent / 100; } catch (_) { return; }
   sharedAudioProgress.setAttribute("aria-valuenow", percent.toFixed(1));
   sharedAudioProgress.style.setProperty("--progress", `${percent}%`);
+}
+
+function formatSharedAudioSpeed(value) {
+  return `${String(value).replace(".", ",")}\u00d7`;
+}
+
+function cycleSharedAudioSpeed() {
+  sharedAudioSpeedStep = (sharedAudioSpeedStep + 1) % SHARED_AUDIO_SPEED_STEPS.length;
+  sharedAudioSpeedValue = SHARED_AUDIO_SPEED_STEPS[sharedAudioSpeedStep];
+  sharedAudio.playbackRate = sharedAudioSpeedValue;
+  if (!sharedAudioSpeed) return;
+  sharedAudioSpeed.textContent = formatSharedAudioSpeed(sharedAudioSpeedValue);
+  sharedAudioSpeed.setAttribute("aria-label", `Velocit\u00e0 ${sharedAudioSpeedValue}x`);
 }
 
 function animateSharedAudioProgress() {
@@ -1192,7 +1207,7 @@ sharedAudioProgress?.addEventListener("change", () => { seekSharedAudioFromProgr
 sharedAudioProgress?.addEventListener("pointerup", () => { seekSharedAudioFromProgress(); sharedAudioSeeking = false; paintSharedAudioProgress(); });
 sharedAudioProgress?.addEventListener("pointercancel", () => { seekSharedAudioFromProgress(); sharedAudioSeeking = false; paintSharedAudioProgress(); });
 sharedAudioProgress?.addEventListener("touchend", () => { seekSharedAudioFromProgress(); sharedAudioSeeking = false; paintSharedAudioProgress(); }, { passive: true });
-sharedAudioSpeed?.addEventListener("click", () => { const speeds = [1, 1.25, 1.5, 2]; sharedAudioSpeedValue = speeds[(speeds.indexOf(sharedAudioSpeedValue) + 1) % speeds.length]; sharedAudio.playbackRate = sharedAudioSpeedValue; sharedAudioSpeed.textContent = `${String(sharedAudioSpeedValue).replace(".", ",")}×`; sharedAudioSpeed.setAttribute("aria-label", `Velocità ${sharedAudioSpeedValue}x`); });
+sharedAudioSpeed?.addEventListener("click", cycleSharedAudioSpeed);
 sharedAudio.addEventListener("play", () => { setSharedAudioPlaying(true); if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame); animateSharedAudioProgress(); });
 sharedAudio.addEventListener("pause", () => { setSharedAudioPlaying(false); if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame); sharedAudioFrame = 0; });
 sharedAudio.addEventListener("ended", () => { setSharedAudioPlaying(false); if (sharedAudioFrame) cancelAnimationFrame(sharedAudioFrame); sharedAudioFrame = 0; sharedAudioSeeking = false; if (sharedAudioProgress) sharedAudioProgress.value = "0"; sharedAudioProgress?.style.setProperty("--progress", "0%"); });
@@ -2163,7 +2178,8 @@ function resetModalState() {
   reviewTranslationGeneration += 1;
   if (_resultScrollCleanup) { _resultScrollCleanup(); _resultScrollCleanup = null; }
   modal.classList.remove("modal-fullscreen");
-  modalCard.classList.remove("modal-result", "modal-pass", "modal-fail");
+  modalCard.classList.remove("modal-result", "modal-pass", "modal-fail", "modal-time-expired");
+  modalCard.setAttribute("role", "dialog");
   modalBadge.innerText = "Quiz";
   modalIconShell.classList.add("hidden");
   modalIconShell.onclick = null;
@@ -2271,7 +2287,8 @@ function openModal({
   cancelText = "Annulla",
   showCancel = false,
   badgeText = "Quiz",
-  result = null
+  result = null,
+  timeExpired = false
 }) {
   if (modal.classList.contains("hidden")) {
     modalFocusOrigin = document.activeElement instanceof HTMLElement
@@ -2285,6 +2302,8 @@ function openModal({
   modalCancel.innerText = cancelText;
   modalCancel.style.display = showCancel ? "block" : "none";
   modalBadge.innerText = badgeText;
+  modalCard.classList.toggle("modal-time-expired", timeExpired);
+  modalCard.setAttribute("role", timeExpired ? "alertdialog" : "dialog");
 
   if (result) {
     const normalizedResult = normalizeQuizResult(result);
@@ -2382,7 +2401,17 @@ function openModal({
   modal.setAttribute("aria-hidden", "false");
   document.body.classList.add("modal-open");
   quizContainer?.setAttribute("inert", "");
-  requestAnimationFrame(focusModalDialog);
+  requestAnimationFrame(() => {
+    if (!timeExpired) {
+      focusModalDialog();
+      return;
+    }
+    try {
+      modalConfirm.focus({ preventScroll: true });
+    } catch (_) {
+      modalConfirm.focus();
+    }
+  });
 
   if (result) {
     // Reset scroll position then attach hide-on-scroll for stats
@@ -2414,6 +2443,7 @@ function closeModal(result) {
     modalResolver(result);
     modalResolver = null;
   }
+  schedulePendingTimerExpiry();
 }
 
 function showMessage(title, message, confirmText = "Chiudi") {
@@ -3171,13 +3201,16 @@ function prev() {
 
 // TIMER
 let timerInterval = null;
+let timerCycleStartedAt = 0;
+let timerExpiryPromptOpen = false;
+let timerExpiryPending = false;
 
 function getElapsedQuizSeconds() {
   const maxSeconds = quizDurationMinutes * 60;
   const elapsedSeconds = !quizStartedAt
     ? Math.max(0, maxSeconds - time)
     : Math.max(0, Math.floor((Date.now() - quizStartedAt) / 1000));
-  return isAdmin ? elapsedSeconds : Math.min(maxSeconds, elapsedSeconds);
+  return elapsedSeconds;
 }
 
 function paintQuizTimer() {
@@ -3189,18 +3222,92 @@ function paintQuizTimer() {
   timer.classList.toggle("is-overtime", presentation.isOvertime);
 }
 
-function startTimer() {
+function getTimerExpiryCopy(durationMinutes = quizDurationMinutes) {
+  const minutes = Math.max(1, Math.round(Number(durationMinutes) || 20));
+  const unit = minutes === 1 ? "minuto" : "minuti";
+  return {
+    title: "Tempo scaduto",
+    message: `Sono trascorsi ${minutes} ${unit}. Vuoi continuare il quiz?`,
+    confirmText: "Sì, continua",
+    cancelText: "Chiudi quiz"
+  };
+}
+
+function closeTransientQuizOverlaysForTimer() {
+  stopAllAudio();
+  document.querySelector('#quiz-help-workspace:not(.hidden) [data-help-close]')?.click();
+  if (explanationModal && !explanationModal.classList.contains("hidden")) {
+    closeExplanation();
+  }
+}
+
+function schedulePendingTimerExpiry() {
+  if (!timerExpiryPending || timerExpiryPromptOpen) return;
+  queueMicrotask(() => {
+    if (
+      !timerExpiryPending
+      || timerExpiryPromptOpen
+      || isAdmin
+      || isFinishing
+      || quizAccessErrorHandled
+      || time > 0
+    ) return;
+    void handleUserTimerExpiry();
+  });
+}
+
+async function handleUserTimerExpiry() {
+  if (isAdmin || quizAccessErrorHandled) {
+    timerExpiryPending = false;
+    return;
+  }
+  if (isFinishing) {
+    timerExpiryPending = true;
+    return;
+  }
+  if (timerExpiryPromptOpen) return;
+  if (!modal.classList.contains("hidden")) {
+    timerExpiryPending = true;
+    return;
+  }
+
+  timerExpiryPending = false;
+  timerExpiryPromptOpen = true;
+  closeTransientQuizOverlaysForTimer();
+  const shouldContinue = await openModal({
+    ...getTimerExpiryCopy(),
+    showCancel: true,
+    badgeText: "Tempo",
+    timeExpired: true
+  });
+  timerExpiryPromptOpen = false;
+
+  if (shouldContinue === true) {
+    startTimer({ preserveElapsed: true });
+    return;
+  }
+  returnToBook();
+}
+
+function startTimer({ preserveElapsed = false } = {}) {
   clearInterval(timerInterval);
-  time = quizDurationMinutes * 60;
-  quizStartedAt = Date.now();
+  const cycleSeconds = quizDurationMinutes * 60;
+  const now = Date.now();
+  time = cycleSeconds;
+  if (!preserveElapsed || !quizStartedAt) quizStartedAt = now;
+  timerCycleStartedAt = now;
+  timerExpiryPending = false;
   paintQuizTimer();
   timerInterval = setInterval(() => {
-    const elapsedSeconds = Math.max(0, Math.floor((Date.now() - quizStartedAt) / 1000));
-    time = quizDurationMinutes * 60 - elapsedSeconds;
+    const elapsedCycleSeconds = Math.max(0, Math.floor((Date.now() - timerCycleStartedAt) / 1000));
+    time = cycleSeconds - elapsedCycleSeconds;
     paintQuizTimer();
     if (time <= 0 && !isAdmin) {
       clearInterval(timerInterval);
-      finishQuiz(true);
+      timerInterval = null;
+      time = 0;
+      paintQuizTimer();
+      void handleUserTimerExpiry();
     }
   }, 1000);
 }
@@ -3270,6 +3377,7 @@ async function finishQuiz(forceFinish = false) {
     result._elapsedSeconds = elapsedSeconds;
 
     clearInterval(timerInterval);
+    timerExpiryPending = false;
     hideLoading();
     const action = await showResult(result);
 
@@ -3289,5 +3397,6 @@ async function finishQuiz(forceFinish = false) {
   } finally {
     hideLoading();
     isFinishing = false;
+    schedulePendingTimerExpiry();
   }
 }

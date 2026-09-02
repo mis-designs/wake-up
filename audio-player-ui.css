@@ -8,9 +8,13 @@
   --audio-player-glow: rgba(16, 185, 129, .3);
   --audio-player-track: #cfe4de;
   box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 40px minmax(42px, 1fr) 40px;
+  align-items: center;
   min-height: 56px;
-  gap: 10px;
-  padding: 7px 10px 7px 7px;
+  column-gap: 10px;
+  padding: 7px 1px 7px 7px;
+  overflow: visible;
   border: 1px solid var(--audio-player-line);
   border-radius: 999px;
   background: transparent;
@@ -197,7 +201,10 @@
 .study-explanation-speed {
   display: inline-grid;
   flex: 0 0 auto;
+  justify-self: start;
+  width: max-content;
   min-width: 40px;
+  max-width: none;
   height: 40px;
   place-items: center;
   padding: 0 8px;
@@ -209,6 +216,8 @@
   font-size: .74rem;
   font-weight: 900;
   line-height: 1;
+  white-space: nowrap;
+  transform-origin: left center;
   cursor: pointer;
   transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
@@ -277,8 +286,8 @@
 @media (max-width: 420px) {
   .quiz-audio-explanation,
   .study-explanation-player {
-    gap: 7px;
-    padding-right: 7px;
+    column-gap: 7px;
+    padding-right: 1px;
   }
 }
 

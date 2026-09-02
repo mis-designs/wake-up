@@ -523,7 +523,7 @@ function getDeviceId() {
 /***********************
  * AUTO LOGIN
  ***********************/
-window.addEventListener("load", async () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const wasReset = await forceGlobalAuthResetIfNeeded();
 
   syncPromoLoginAvailability();

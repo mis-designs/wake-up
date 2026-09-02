@@ -146,7 +146,7 @@ test("the synchronized resolver and cache versions are deployed together", () =>
   for (const source of [quizPage, studyPage, worker]) {
     assert.match(source, /patenteContextResolverV3\.js\?v=4\.0\.0-glossary-display/u);
   }
-  assert.match(worker, /magicbook-pwa-v155-user-study-order/u);
+  assert.match(worker, /magicbook-pwa-v158-admin-profile-logo/u);
   assert.match(worker, /quiz-help\.js\?v=20260901-italian-display-order/u);
-  assert.match(worker, /study-quiz\.js\?v=22-user-study-order/u);
+  assert.match(worker, /study-quiz\.js\?v=23-audio-speed-cycle/u);
 });

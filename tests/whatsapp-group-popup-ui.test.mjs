@@ -47,9 +47,9 @@ test("the WhatsApp invitation behaves as a bounded accessible modal", () => {
 test("popup presentation belongs to shared CSS and ships in the current cache", () => {
   assert.doesNotMatch(script, /injectWhatsAppGroupPopupStyles|whatsappGroupPopupStyles/u);
   assert.doesNotMatch(script, /icon\.textContent\s*=/u);
-  assert.match(page, /style\.css\?v=70-whatsapp-dialog/u);
+  assert.match(page, /style\.css\?v=71-admin-profile-logo/u);
   assert.match(page, /script\.js\?v=67-promo-ui-disabled/u);
-  assert.match(worker, /magicbook-pwa-v155-user-study-order/u);
-  assert.match(worker, /style\.css\?v=70-whatsapp-dialog/u);
+  assert.match(worker, /magicbook-pwa-v158-admin-profile-logo/u);
+  assert.match(worker, /style\.css\?v=71-admin-profile-logo/u);
   assert.match(worker, /script\.js\?v=67-promo-ui-disabled/u);
 });

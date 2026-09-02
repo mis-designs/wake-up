@@ -7033,6 +7033,7 @@ body.qms-open { overflow: hidden; }
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     cursor: pointer;
+    overflow: hidden;
     z-index: 1200;
 }
 
@@ -7040,10 +7041,12 @@ body.qms-open { overflow: hidden; }
     display: none !important;
 }
 
-.admin-entry img {
-    width: 24px;
-    height: 24px;
-    object-fit: contain;
+.admin-entry .admin-profile-logo {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+    object-position: center;
 }
 
 .admin-panel {
@@ -7092,10 +7095,15 @@ body.qms-open { overflow: hidden; }
     text-align: center;
 }
 
-.admin-title img {
-    width: 34px;
-    height: 34px;
-    object-fit: contain;
+.admin-title .admin-profile-logo {
+    width: 38px;
+    height: 38px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2), 0 8px 18px rgba(5, 150, 105, 0.16);
+    object-fit: cover;
+    object-position: center;
 }
 
 .admin-title span,

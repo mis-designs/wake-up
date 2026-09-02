@@ -76,13 +76,13 @@ test("the correct-answer marker is private to signed Admin quiz sessions", () =>
 });
 
 test("the bilingual card and Admin marker ship through fresh PWA assets", () => {
-  assert.match(page, /mystyle\.css\?v=49-single-surface-loader/u);
-  assert.match(page, /quiz\.js\?v=76-italian-display-order/u);
+  assert.match(page, /mystyle\.css\?v=50-user-timer-prompt/u);
+  assert.match(page, /quiz\.js\?v=78-audio-speed-cycle/u);
   assert.match(page, /quiz-help\.css\?v=20260901-italian-display-order/u);
   assert.match(page, /quiz-help\.js\?v=20260901-italian-display-order/u);
-  assert.match(worker, /magicbook-pwa-v155-user-study-order/u);
-  assert.match(worker, /mystyle\.css\?v=49-single-surface-loader/u);
-  assert.match(worker, /quiz\.js\?v=76-italian-display-order/u);
+  assert.match(worker, /magicbook-pwa-v158-admin-profile-logo/u);
+  assert.match(worker, /mystyle\.css\?v=50-user-timer-prompt/u);
+  assert.match(worker, /quiz\.js\?v=78-audio-speed-cycle/u);
   assert.match(worker, /quiz-help\.css\?v=20260901-italian-display-order/u);
   assert.match(worker, /quiz-help\.js\?v=20260901-italian-display-order/u);
 });

@@ -78,6 +78,7 @@
   const QUIZ_SESSION_REFRESH_SKEW_MS = 90 * 1000;
   const STUDY_AUDIO_STATUS_DELAY_MS = 400;
   const STUDY_AUDIO_REQUEST_TIMEOUT_MS = 12000;
+  const EXPLANATION_AUDIO_SPEED_STEPS = [1, 0.5, 1, 1.25, 1.5, 2];
   const ttsCache = createBoundedCache(48);
   const helpCache = new Map();
   const audioStatusCache = new Map();
@@ -604,7 +605,8 @@
       play,
       progress,
       speed,
-      speedValue: 1,
+      speedStep: 0,
+      speedValue: EXPLANATION_AUDIO_SPEED_STEPS[0],
       key: `explanation:${question.id || fingerprint(question)}`
     };
     play.addEventListener("click", () => playExplanation(question, controls));
@@ -1065,10 +1067,10 @@
   }
 
   function changeExplanationSpeed(controls) {
-    const speeds = [1, 1.25, 1.5, 2];
-    controls.speedValue = speeds[(speeds.indexOf(controls.speedValue) + 1) % speeds.length];
-    controls.speed.textContent = `${String(controls.speedValue).replace(".", ",")}×`;
-    controls.speed.setAttribute("aria-label", `Velocità ${controls.speedValue}x`);
+    controls.speedStep = (controls.speedStep + 1) % EXPLANATION_AUDIO_SPEED_STEPS.length;
+    controls.speedValue = EXPLANATION_AUDIO_SPEED_STEPS[controls.speedStep];
+    controls.speed.textContent = `${String(controls.speedValue).replace(".", ",")}\u00d7`;
+    controls.speed.setAttribute("aria-label", `Velocit\u00e0 ${controls.speedValue}x`);
     if (activePlayback?.key === controls.key) activePlayback.audio.playbackRate = controls.speedValue;
   }
 
