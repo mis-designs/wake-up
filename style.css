@@ -649,10 +649,10 @@ a:focus-visible {
     height: 42px;
     padding: 0;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.42);
-    border: 1px solid rgba(255, 255, 255, 0.56);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: #ffffff;
+    border: 1px solid #d9e2ee;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -662,8 +662,11 @@ a:focus-visible {
 }
 
 .profile-btn img {
+    display: block;
     width: 20px;
     height: 20px;
+    opacity: 1;
+    filter: none;
 }
 
 .profile-panel {
@@ -7026,12 +7029,12 @@ body.qms-open { overflow: hidden; }
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.42);
+    background: #ffffff;
     color: var(--color-dark);
-    border: 1px solid rgba(255, 255, 255, 0.56);
+    border: 1px solid #d9e2ee;
     box-shadow: 0 12px 24px rgba(37, 41, 67, 0.16);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     cursor: pointer;
     overflow: hidden;
     z-index: 1200;
@@ -7042,11 +7045,15 @@ body.qms-open { overflow: hidden; }
 }
 
 .admin-entry .admin-profile-logo {
+    display: block;
     width: 100%;
     height: 100%;
     border-radius: inherit;
     object-fit: cover;
     object-position: center;
+    opacity: 1;
+    filter: none;
+    mix-blend-mode: normal;
 }
 
 .admin-panel {
@@ -7098,12 +7105,15 @@ body.qms-open { overflow: hidden; }
 .admin-title .admin-profile-logo {
     width: 38px;
     height: 38px;
-    border: 2px solid #ffffff;
+    border: 1px solid #d9e2ee;
     border-radius: 50%;
     background: #ffffff;
-    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2), 0 8px 18px rgba(5, 150, 105, 0.16);
+    box-shadow: 0 8px 18px rgba(37, 41, 67, 0.12);
     object-fit: cover;
     object-position: center;
+    opacity: 1;
+    filter: none;
+    mix-blend-mode: normal;
 }
 
 .admin-title span,

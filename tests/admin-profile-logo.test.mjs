@@ -15,14 +15,19 @@ test("the Admin entry and title share the supplied profile image", () => {
 });
 
 test("the Admin image fills both circular profile surfaces", () => {
-  assert.match(styles, /\.admin-entry\s*\{[\s\S]*?border-radius:\s*50%;[\s\S]*?overflow:\s*hidden;/u);
-  assert.match(styles, /\.admin-entry \.admin-profile-logo\s*\{[\s\S]*?width:\s*100%;[\s\S]*?height:\s*100%;[\s\S]*?border-radius:\s*inherit;[\s\S]*?object-fit:\s*cover;/u);
-  assert.match(styles, /\.admin-title \.admin-profile-logo\s*\{[\s\S]*?width:\s*38px;[\s\S]*?height:\s*38px;[\s\S]*?border-radius:\s*50%;[\s\S]*?object-fit:\s*cover;/u);
+  assert.match(styles, /\.admin-entry\s*\{[\s\S]*?border-radius:\s*50%;[\s\S]*?background:\s*#ffffff;[\s\S]*?backdrop-filter:\s*none;[\s\S]*?overflow:\s*hidden;/u);
+  assert.match(styles, /\.admin-entry \.admin-profile-logo\s*\{[\s\S]*?display:\s*block;[\s\S]*?width:\s*100%;[\s\S]*?height:\s*100%;[\s\S]*?border-radius:\s*inherit;[\s\S]*?object-fit:\s*cover;[\s\S]*?opacity:\s*1;[\s\S]*?mix-blend-mode:\s*normal;/u);
+  assert.match(styles, /\.admin-title \.admin-profile-logo\s*\{[\s\S]*?width:\s*38px;[\s\S]*?height:\s*38px;[\s\S]*?border-radius:\s*50%;[\s\S]*?object-fit:\s*cover;[\s\S]*?opacity:\s*1;[\s\S]*?mix-blend-mode:\s*normal;/u);
+});
+
+test("the Admin and Profile buttons have opaque non-glass surfaces", () => {
+  assert.match(styles, /\.profile-btn\s*\{[\s\S]*?background:\s*#ffffff;[\s\S]*?border:\s*1px solid #d9e2ee;[\s\S]*?backdrop-filter:\s*none;[\s\S]*?-webkit-backdrop-filter:\s*none;/u);
+  assert.match(styles, /\.admin-entry\s*\{[\s\S]*?background:\s*#ffffff;[\s\S]*?border:\s*1px solid #d9e2ee;[\s\S]*?backdrop-filter:\s*none;[\s\S]*?-webkit-backdrop-filter:\s*none;/u);
 });
 
 test("the Admin profile image ships in the current PWA cache", () => {
-  assert.match(page, /style\.css\?v=71-admin-profile-logo/u);
-  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v158-admin-profile-logo"/u);
-  assert.match(worker, /style\.css\?v=71-admin-profile-logo/u);
+  assert.match(page, /style\.css\?v=72-solid-profile-controls/u);
+  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v159-solid-profile-controls"/u);
+  assert.match(worker, /style\.css\?v=72-solid-profile-controls/u);
   assert.match(worker, /assets\/admin\/ADMIN_PROFILE_LOGO\.jpg/u);
 });

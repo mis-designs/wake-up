@@ -67,7 +67,7 @@ test("playback state updates the visible control and its accessible action", () 
 test("the shared player ships through the current PWA cache", () => {
   assert.match(quizPage, /quiz\.js\?v=78-audio-speed-cycle/u);
   assert.match(studyPage, /study-quiz\.js\?v=23-audio-speed-cycle/u);
-  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v158-admin-profile-logo"/u);
+  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v159-solid-profile-controls"/u);
   assert.match(worker, /audio-player-ui\.css\?v=4-speed-outward/u);
   assert.match(worker, /quiz\.js\?v=78-audio-speed-cycle/u);
   assert.match(worker, /study-quiz\.js\?v=23-audio-speed-cycle/u);

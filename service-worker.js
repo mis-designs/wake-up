@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v158-admin-profile-logo";
+const CACHE_NAME = "magicbook-pwa-v159-solid-profile-controls";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -8,7 +8,7 @@ const STATIC_ASSETS = [
   "/assets/fonts/magicbook-bangla-fonts.css?v=1-adorsho",
   "/assets/daisyui.css?v=2-learning-shell",
   "/loading-ui.css?v=1-shared-gif-loader",
-  "/style.css?v=71-admin-profile-logo",
+  "/style.css?v=72-solid-profile-controls",
   "/magic-dictionary.css?v=1.2.5-settings-layout",
   "/screen-protection.css?v=1.1.0",
   "/offline-notice.css?v=1.0.0",

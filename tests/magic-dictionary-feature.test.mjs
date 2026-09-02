@@ -170,7 +170,7 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(dictionaryCss, /\.magic-dictionary-settings button\s*\{[\s\S]*width:\s*auto;[\s\S]*justify-self:\s*end;[\s\S]*white-space:\s*nowrap;/u);
   assert.match(script, /state\.screen === "dictionary"/u);
   assert.match(script, /MagicDictionaryFeature\?\.onAuthenticated/u);
-  assert.match(worker, /magicbook-pwa-v158-admin-profile-logo/u);
+  assert.match(worker, /magicbook-pwa-v159-solid-profile-controls/u);
   assert.match(worker, /magic-dictionary\.js\?v=1\.2\.5-shared-gif-loader/u);
   assert.match(worker, /magic-dictionary\.css\?v=1\.2\.5-settings-layout/u);
   assert.ok(vercel.rewrites.some(route => route.source === "/dizionario" && route.destination === "/"));

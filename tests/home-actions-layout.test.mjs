@@ -34,7 +34,7 @@ test("the dictionary entry keeps its badge and bilingual copy separated", () => 
 });
 
 test("the desktop home layout ships in a fresh PWA build", () => {
-  assert.match(page, /style\.css\?v=71-admin-profile-logo/u);
-  assert.match(worker, /magicbook-pwa-v158-admin-profile-logo/u);
-  assert.match(worker, /style\.css\?v=71-admin-profile-logo/u);
+  assert.match(page, /style\.css\?v=72-solid-profile-controls/u);
+  assert.match(worker, /magicbook-pwa-v159-solid-profile-controls/u);
+  assert.match(worker, /style\.css\?v=72-solid-profile-controls/u);
 });

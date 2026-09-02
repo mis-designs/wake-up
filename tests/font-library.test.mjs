@@ -96,7 +96,7 @@ test("the library fonts are valid, pinned local WOFF2 assets and cached offline"
     assert.equal(createHash("sha256").update(font).digest("hex"), item.hash);
   }
 
-  assert.match(worker, /magicbook-pwa-v158-admin-profile-logo/u);
+  assert.match(worker, /magicbook-pwa-v159-solid-profile-controls/u);
   assert.match(worker, /\/libreria-font\.html/u);
   assert.match(worker, /\/libreria-font\.css\?v=1-three-fonts/u);
   assert.match(worker, /\/assets\/fonts\/magicbook-bangla-fonts\.css\?v=1-adorsho/u);
