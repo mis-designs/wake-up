@@ -105,6 +105,24 @@
       ]
     },
     {
+      "source": "/privacypolicy",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/privacypolicy.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/study-quiz",
       "headers": [
         {
@@ -262,6 +280,10 @@
     {
       "source": "/libreria-font",
       "destination": "/libreria-font.html"
+    },
+    {
+      "source": "/privacypolicy",
+      "destination": "/privacypolicy.html"
     },
     {
       "source": "/aggiungi-spiegazioni",

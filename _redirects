@@ -15,6 +15,7 @@ https://magicph.netlify.app/* https://tmmmagic.eu/:splat 301!
 /magic-book/esame-pdf /index.html 200
 /admin /index.html 200
 /libreria-font /libreria-font.html 200
+/privacypolicy /privacypolicy.html 200
 /quiz /quiz.html 200
 /quiz/capitolo-* /quiz.html 200
 /quiz/multi /quiz.html 200

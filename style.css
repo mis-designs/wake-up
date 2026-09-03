@@ -1355,6 +1355,28 @@ a:focus-visible {
     gap: 10px;
 }
 
+.public-landing .landing-privacy-link {
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: -4px auto 0;
+    color: rgba(250, 248, 243, 0.78);
+    font-family: "Inter", Arial, sans-serif;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-decoration: underline;
+    text-decoration-color: rgba(250, 248, 243, 0.34);
+    text-underline-offset: 4px;
+    text-transform: uppercase;
+}
+
+.public-landing .landing-privacy-link:hover {
+    color: #ffffff;
+    text-decoration-color: rgba(250, 248, 243, 0.92);
+}
+
 .public-landing .landing-choice {
     width: 100%;
     min-height: 48px;

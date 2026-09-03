@@ -22,6 +22,12 @@
   Cache-Control: no-cache, no-store, must-revalidate
   X-Robots-Tag: noindex, nofollow, noimageindex
 
+/privacypolicy
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/privacypolicy.html
+  Cache-Control: no-cache, no-store, must-revalidate
+
 /service-worker.js
   Cache-Control: no-cache, no-store, must-revalidate
   Service-Worker-Allowed: /

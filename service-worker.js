@@ -5,6 +5,8 @@ const STATIC_ASSETS = [
   "/quiz.html",
   "/libreria-font.html",
   "/libreria-font.css?v=1-three-fonts",
+  "/privacypolicy.html",
+  "/privacy-policy.css?v=1-editorial-policy",
   "/assets/fonts/magicbook-bangla-fonts.css?v=1-adorsho",
   "/assets/daisyui.css?v=2-learning-shell",
   "/loading-ui.css?v=1-shared-gif-loader",
@@ -88,8 +90,10 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  const fallbackPage = url.pathname.startsWith("/libreria-font")
-    ? "/libreria-font.html"
+  const fallbackPage = url.pathname.startsWith("/privacypolicy")
+    ? "/privacypolicy.html"
+    : url.pathname.startsWith("/libreria-font")
+      ? "/libreria-font.html"
     : url.pathname.startsWith("/studia-quiz")
       ? "/study-quiz.html"
       : url.pathname.startsWith("/quiz")
