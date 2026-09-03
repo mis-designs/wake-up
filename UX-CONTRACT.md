@@ -17,6 +17,7 @@
 | Loading indicator | `loading-ui.css`, `icons/loading.gif` | Shared async-state contract | Page, panel, inline status, busy control; static reduced-motion fallback | Asset/cache, busy-state, layout-stability, and reduced-motion tests |
 | Explanation audio player | `audio-player-ui.css` + owning playback JS | Shared Quiz/Studia quiz transparent emerald pill using only the approved play/pause SVG pair | Idle, playing, loading, unavailable/error; 1x to first-click 0.5x, then up to 2x | No legacy pseudo-icon/black background, fixed progress geometry, outward-growing speed label, ARIA label, keyboard, reduced-motion, forced-colors, and cache tests |
 | WhatsApp group dialog | `script.js`, `style.css` | Authenticated Home invitation state | Bangla default; Italian alternate; join or defer | Focus trap/restoration, locale, responsive, reduced-motion, and cache tests |
+| Android WebView density | `mobile-experience.css`, Android `MainActivity.kt` | Standard Android WebView marker plus the live responsive application | Compact Home, chapter selector, and Quiz; ordinary browser layout remains unchanged | Native-marker, blank-promo, touch-target, drag-frame, and Android build checks |
 
 ## Feature ownership
 
@@ -47,6 +48,7 @@
 | Study figure presentation | `study-quiz.js`, `study-quiz.css` | The learner-facing Studia quiz masks the catalog number printed in the upper-left of figure assets. The stored image and Admin-facing asset remain unchanged; image failure removes the complete figure frame without leaving empty space. |
 | Admin user loading | `script.js`, `api/admin.js` | Opening Admin requests only the 10 newest users. Phone search uses the authenticated server action after a 300 ms debounce and ignores stale results. The complete list is requested only through `Carica tutti gli utenti`; Promo and Duplicati explain that they require that complete scope. Dataset filters expose tab state and support Left/Right/Home/End keyboard movement. |
 | Global connectivity alert | `offline-notice.js`, `offline-notice.css` | Every HTML entry loads one shared alertdialog. It blocks interaction only while `navigator.onLine` is false, keeps the background inert, restores prior focus on reconnect, and never uses browser-native alerts. |
+| Android native shell | `mobile-experience.css` + Android `MainActivity.kt` | The shell fixes browser text zoom at 100 percent and marks its document as `android-webview`. Home omits the unreliable remote promo frame, core screens use compact spacing, and essential actions stay present with usable targets. The chapter drag path batches visual updates once per animation frame. |
 
 ## Statistiche
 

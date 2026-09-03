@@ -6,6 +6,7 @@ canonical_ui:
   paths:
     - loading-ui.css
     - style.css
+    - mobile-experience.css
     - src/daisyui.css
     - assets/daisyui.css
     - src/learning-insights.css
@@ -15,8 +16,8 @@ canonical_ui:
   notes: Existing application tokens remain canonical. Locally compiled, d-prefixed daisyUI controls provide interaction primitives; the scoped learning stylesheet owns layout and visual hierarchy.
 design_context:
   owner: Magic Book
-  last_updated: 2026-09-02
-  revision_notes: Added a shared icon-led pill treatment for Admin utility actions, with distinct emerald, coral, and violet palettes; the local Bengali font library now compares its faces using the approved Magic Book sentence. Admin now opens with the 10 most recent users, searches remotely by phone, and loads the complete list only after an explicit action. The Admin search and dataset filters now share the same compact pill geometry and semantic palette as the utility actions. Live quiz help now uses one bottom-centred bilingual card with two dot-selected swipe panels; signed Admin quiz sessions alone receive the restrained correct-answer marker and an overtime timer that continues beyond the normal limit. Learners now receive an accessible timeout decision at the normal quiz limit: continuing starts a fresh duration without losing total elapsed time, while closing exits without grading. Quiz correction keeps the person-led audio explanation control available on correct, wrong, and unanswered rows. Quiz and Studia quiz now share an Admin-derived explanation player with only the supplied outlined play/pause SVGs, a fully transparent pill interior, stable icon geometry, violet speed utility, and reduced-motion support. Every Magic Book surface now shares one connection-loss alert that clears automatically when the browser reports the network is back. Visible asynchronous work now uses the supplied loading.gif through one shared loading treatment across access, Admin, book, dictionary, learning, quiz, study, and explanation workflows. The blocking quiz load is one seamless white viewport with only the centered GIF visible, while its status remains available to assistive technology. The WhatsApp group dialog now uses the Admin pill language, local Bengali typography, aligned language controls, and modal focus behavior. Translation surfaces now place chapter/topic tags after keyword cards; Italian context tags use uppercase while words and explanatory Italian copy begin with an uppercase letter unless the source is an intentional special form. Learner-facing Studia quiz figures conceal the catalog number in the source image without altering the stored asset or Admin views.
+  last_updated: 2026-09-03
+  revision_notes: Android WebView now uses a compact mobile density layer for Home, chapter selection, and Quiz. The unreliable embedded promo is omitted only inside the native shell, preserving immediate access to real actions. Continuous decorative effects are reduced, the chapter carousel batches drag rendering per animation frame, and essential controls retain usable touch targets.
 ---
 
 # Magic Book design context
@@ -35,6 +36,7 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 - Imagery: reuse `icons/statistiche-patente.png`, `icons/errori-patente.png`, `icons/go-back.png`, `icons/next.png`, `assets/admin/update.png`, and authenticated figure assets. Existing SVGs are reused only when their meaning matches.
 - Icon rule: no Unicode characters as UI icons. Use repository assets, text labels, or decorative CSS marks hidden from assistive technology.
 - Avoid giant headings, oversized empty surfaces, decorative gradients, neon, game styling, generic KPI-card grids, traffic-sign decoration, and horizontal scrollers.
+- Android WebView compactness is owned by `mobile-experience.css`; it may reduce decoration and spacing without changing route meaning or hiding required controls.
 
 ## Tokens
 

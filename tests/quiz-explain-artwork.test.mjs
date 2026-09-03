@@ -36,3 +36,14 @@ test("every correction card receives the clickable person audio control", () => 
   assert.match(styles, /\.modal-review-figure-shell \.modal-review-audio-button\s*\{[\s\S]*?right:\s*-11px;[\s\S]*?transform:\s*translateY\(-50%\)/u);
   assert.match(styles, /\.modal-review-audio-button\.is-playing \.modal-review-explain-icon\s*\{\s*animation-play-state:\s*running;/u);
 });
+
+test("missing review audio is handled inline without the global toast", () => {
+  assert.match(script, /reviewAudioStatus\.className = "modal-review-audio-status"/u);
+  assert.match(script, /function showReviewAudioFailure\(button, error\)[\s\S]*?setReviewAudioStatus\(/u);
+  assert.match(script, /button\.dataset\.audioUnavailable === "true"/u);
+  assert.match(script, /quiz_audio_\(not_found\|requires_review\|legacy_not_found\|legacy_not_ambiguous\|not_configured\)/u);
+  assert.match(styles, /\.modal-review-audio-button\.is-unavailable\s*\{/u);
+  assert.match(styles, /\.modal-review-audio-status\s*\{/u);
+  const toggleBlock = script.match(/async function toggleReviewAudio\(button, question\)[\s\S]*?\n\}\n\nreviewAudio\.addEventListener/u)?.[0] || "";
+  assert.doesNotMatch(toggleBlock, /showAudioUnavailableToast\(/u);
+});

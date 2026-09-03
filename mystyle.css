@@ -1205,6 +1205,37 @@ body.loading-open {
   opacity: .65;
 }
 
+.modal-review-audio-button.is-unavailable {
+  cursor: not-allowed;
+  filter: grayscale(.45);
+  opacity: .52;
+}
+
+.modal-review-audio-button:disabled {
+  cursor: not-allowed;
+}
+
+.modal-review-audio-status {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: rgba(37, 41, 67, .05);
+  color: rgba(37, 41, 67, .62);
+  font-size: .72rem;
+  line-height: 1.35;
+}
+
+.modal-review-audio-status[data-status="unavailable"] {
+  background: #f1f2f6;
+  color: #5a6080;
+}
+
+.modal-review-audio-status[data-status="error"] {
+  background: #fff7e8;
+  color: #8a641b;
+}
+
 .modal-review-audio-button:focus-visible {
   outline: 3px solid rgba(58, 78, 251, .75);
   outline-offset: 2px;

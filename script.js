@@ -3353,10 +3353,12 @@ function updateCardStyles() {
   });
 }
 
-function updateCardTrack(dragOffset) {
+function updateCardTrack(dragOffset, measuredBaseOffset) {
   const track = document.getElementById("chapterCardTrack");
   if (!track) return;
-  const base = getTrackBaseOffset(selectedChapter);
+  const base = Number.isFinite(measuredBaseOffset)
+    ? measuredBaseOffset
+    : getTrackBaseOffset(selectedChapter);
   track.style.transform = `translateX(${base + (dragOffset || 0)}px)`;
 }
 
@@ -3370,6 +3372,8 @@ let cardDragging = false;
 let cardDragStartX = 0;
 let cardDragDelta = 0;
 let cardPointerMoved = false;
+let cardTrackBaseOffset = 0;
+let cardDragFrame = 0;
 
 function initCardTrack() {
   const track = document.getElementById("chapterCardTrack");
@@ -3405,6 +3409,7 @@ function initCardTrack() {
     cardPointerMoved = false;
     cardDragStartX = e.clientX;
     cardDragDelta = 0;
+    cardTrackBaseOffset = getTrackBaseOffset(selectedChapter);
     track.classList.add("is-dragging");
     track.setPointerCapture(e.pointerId);
   });
@@ -3413,12 +3418,21 @@ function initCardTrack() {
     if (!cardDragging) return;
     cardDragDelta = e.clientX - cardDragStartX;
     if (Math.abs(cardDragDelta) > 5) cardPointerMoved = true;
-    updateCardTrack(cardDragDelta);
+    if (!cardDragFrame) {
+      cardDragFrame = requestAnimationFrame(() => {
+        cardDragFrame = 0;
+        updateCardTrack(cardDragDelta, cardTrackBaseOffset);
+      });
+    }
   });
 
   const endDrag = e => {
     if (!cardDragging) return;
     cardDragging = false;
+    if (cardDragFrame) {
+      cancelAnimationFrame(cardDragFrame);
+      cardDragFrame = 0;
+    }
     track.classList.remove("is-dragging");
     if (track.hasPointerCapture(e.pointerId)) track.releasePointerCapture(e.pointerId);
 
@@ -3476,6 +3490,9 @@ function startEngineSequence() {
   const engineBtn = document.getElementById("engineBtn");
   const engineImg = document.getElementById("engineImg");
   const chaptersEl = document.getElementById("chapters");
+  const compactMotion = document.documentElement.classList.contains("android-webview")
+    || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const navigationDelay = compactMotion ? 650 : 1650;
 
   // Fallback: no dashboard present, navigate directly
   if (!engineBtn) {
@@ -3537,7 +3554,7 @@ function startEngineSequence() {
         }, 280);
       }
     }, 700);
-  }, 1650);
+  }, navigationDelay);
 }
 
 function initDashboard() {

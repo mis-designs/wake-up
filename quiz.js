@@ -943,16 +943,65 @@ function reviewAudioIdentityKey(question) {
 function setReviewAudioButtonState(button, state = "idle") {
   if (!button) return;
   const baseLabel = button.dataset.audioLabel || "Ascolta la spiegazione audio";
+  const unavailable = button.dataset.audioUnavailable === "true";
   button.classList.toggle("is-loading", state === "loading");
   button.classList.toggle("is-playing", state === "playing");
-  button.disabled = state === "loading";
+  button.disabled = state === "loading" || unavailable;
   button.setAttribute("aria-busy", state === "loading" ? "true" : "false");
   button.setAttribute("aria-pressed", state === "playing" ? "true" : "false");
-  button.setAttribute("aria-label", state === "loading"
-    ? "Caricamento della spiegazione audio"
-    : state === "playing"
-      ? "Metti in pausa la spiegazione audio"
-      : baseLabel);
+  button.setAttribute("aria-disabled", unavailable ? "true" : "false");
+  button.setAttribute("aria-label", unavailable
+    ? "Spiegazione audio non disponibile per questa domanda"
+    : state === "loading"
+      ? "Caricamento della spiegazione audio"
+      : state === "playing"
+        ? "Metti in pausa la spiegazione audio"
+        : baseLabel);
+}
+
+function setReviewAudioStatus(button, message, { unavailable = false } = {}) {
+  if (!button) return;
+  const row = button.closest(".modal-review-item");
+  const status = row?.querySelector(".modal-review-audio-status");
+  if (status) {
+    status.textContent = message;
+    status.dataset.status = unavailable ? "unavailable" : "error";
+    status.hidden = false;
+  }
+  if (unavailable) {
+    button.dataset.audioUnavailable = "true";
+    button.classList.add("is-unavailable");
+  } else {
+    delete button.dataset.audioUnavailable;
+    button.classList.remove("is-unavailable");
+  }
+  setReviewAudioButtonState(button, "idle");
+}
+
+function clearReviewAudioStatus(button) {
+  if (!button) return;
+  const row = button.closest(".modal-review-item");
+  const status = row?.querySelector(".modal-review-audio-status");
+  if (status) {
+    status.hidden = true;
+    status.textContent = "";
+    delete status.dataset.status;
+  }
+  if (button.dataset.audioUnavailable !== "true") {
+    button.classList.remove("is-unavailable");
+  }
+}
+
+function showReviewAudioFailure(button, error) {
+  const code = String(error?.message || error || "quiz_audio_unknown_error").toLowerCase();
+  const unavailable = /quiz_audio_(not_found|requires_review|legacy_not_found|legacy_not_ambiguous|not_configured)/.test(code);
+  setReviewAudioStatus(
+    button,
+    unavailable
+      ? "Spiegazione audio non disponibile per questa domanda."
+      : "Audio non disponibile al momento. Riprova.",
+    { unavailable }
+  );
 }
 
 function revokeReviewAudioObjectUrl() {
@@ -994,14 +1043,16 @@ function waitForReviewAudioReady() {
 }
 
 async function toggleReviewAudio(button, question) {
+  if (!button || button.dataset.audioUnavailable === "true") return;
+  clearReviewAudioStatus(button);
   const audioKey = reviewAudioIdentityKey(question);
   if (reviewAudioButton === button && reviewAudioKey === audioKey && reviewAudio.src) {
     try {
       if (reviewAudio.paused) await reviewAudio.play();
       else reviewAudio.pause();
-    } catch (_) {
+    } catch (error) {
       resetReviewAudioPlayer();
-      showAudioUnavailableToast("La spiegazione audio non è disponibile per questa domanda.");
+      showReviewAudioFailure(button, error);
     }
     return;
   }
@@ -1023,10 +1074,10 @@ async function toggleReviewAudio(button, question) {
     await waitForReviewAudioReady();
     if (requestId !== reviewAudioRequestId || reviewAudioButton !== button) return;
     await reviewAudio.play();
-  } catch (_) {
+  } catch (error) {
     if (requestId !== reviewAudioRequestId || reviewAudioButton !== button) return;
     resetReviewAudioPlayer();
-    showAudioUnavailableToast("La spiegazione audio non è disponibile per questa domanda.");
+    showReviewAudioFailure(button, error);
   }
 }
 
@@ -2969,7 +3020,11 @@ function renderAnswerReview(items = []) {
       : `La tua risposta: ${answerLabel(item.userAnswer)} | Corretta: ${answerLabel(item.correctAnswer)}`;
 
     const translationDisclosure = createReviewTranslationDisclosure(item);
-    row.append(status, title, answersText, translationDisclosure.tools);
+    const reviewAudioStatus = document.createElement("p");
+    reviewAudioStatus.className = "modal-review-audio-status";
+    reviewAudioStatus.setAttribute("role", "status");
+    reviewAudioStatus.hidden = true;
+    row.append(status, title, answersText, translationDisclosure.tools, reviewAudioStatus);
 
     const reviewAudioControl = document.createElement("button");
     reviewAudioControl.type = "button";
