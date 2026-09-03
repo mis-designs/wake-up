@@ -10,7 +10,7 @@ test("Android WebView is detected before the responsive stylesheet paints", () =
 
   for (const page of [index, quiz]) {
     assert.match(page, /classList\.add\("android-webview"\)/u);
-    assert.match(page, /mobile-experience\.css\?v=1-native-density/u);
+    assert.match(page, /mobile-experience\.css\?v=2-balanced-shell/u);
   }
 
   assert.ok(index.indexOf("android-webview") < index.indexOf("style.css?v=72-solid-profile-controls"));
@@ -27,6 +27,24 @@ test("native density removes the blank promo and keeps compact, scroll-safe cont
   assert.match(styles, /\.dash-engine\s*\{[^}]*animation: none;/su);
 });
 
+test("the native header reserves symmetric space for live utility buttons", () => {
+  const styles = read("mobile-experience.css");
+  const script = read("script.js");
+
+  assert.match(styles, /grid-template-columns:\s*var\(--native-header-side\) minmax\(0, 1fr\) var\(--native-header-side\);/u);
+  assert.match(styles, /data-app-utility-count="2"[^}]*--native-header-side:\s*94px;/su);
+  assert.match(styles, /data-app-profile-visible="true"[^}]*\.admin-entry[\s\S]*?right:\s*60px;/u);
+  assert.match(styles, /\.chapter-status\s*\{[^}]*max-width:\s*100%;[^}]*justify-content:\s*center;/su);
+  assert.match(script, /function syncAppUtilityLayout\(\)[\s\S]*?root\.dataset\.appUtilityCount[\s\S]*?root\.dataset\.appAdminVisible[\s\S]*?root\.dataset\.appProfileVisible/u);
+});
+
+test("native home actions center when they fit and remain scroll-safe when they do not", () => {
+  const styles = read("mobile-experience.css");
+
+  assert.match(styles, /#home > \.home-actions\s*\{[^}]*margin-block:\s*auto;[^}]*margin-inline:\s*auto;/su);
+  assert.match(styles, /#home\s*\{[^}]*overflow-y:\s*auto;[^}]*overscroll-behavior-y:\s*contain;/su);
+});
+
 test("chapter drag work is frame-batched and native navigation is shorter", () => {
   const script = read("script.js");
   const worker = read("service-worker.js");
@@ -34,6 +52,8 @@ test("chapter drag work is frame-batched and native navigation is shorter", () =
   assert.match(script, /cardDragFrame = requestAnimationFrame/u);
   assert.match(script, /updateCardTrack\(cardDragDelta, cardTrackBaseOffset\)/u);
   assert.match(script, /const navigationDelay = compactMotion \? 650 : 1650;/u);
-  assert.match(worker, /mobile-experience\.css\?v=1-native-density/u);
-  assert.match(worker, /script\.js\?v=68-native-fluidity/u);
+  assert.match(script, /const appActionGate = \(\(\) =>/u);
+  assert.match(script, /function scheduleExclusiveAppNavigation/u);
+  assert.match(worker, /mobile-experience\.css\?v=2-balanced-shell/u);
+  assert.match(worker, /script\.js\?v=69-exclusive-actions/u);
 });

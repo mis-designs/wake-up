@@ -7,7 +7,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function createMagicDictionary(root) {
   "use strict";
 
-  const VERSION = "1.2.4";
+  const VERSION = "1.2.6";
   const MANIFEST_URL = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const FALLBACK_URL = "/data/patente/quiz-help-runtime-v2.json";
   const STORAGE_PREFIX = "magicbook.wordLearning.v1";
@@ -45,6 +45,7 @@
   let inertTargets = [];
   let italianSpeechRequestId = 0;
   let italianSpeechTimer = 0;
+  let italianSpeechFocusToken = null;
   const memoryStorage = new Map();
 
   function italianSpeechVoice(synthesis) {
@@ -55,12 +56,13 @@
       || null;
   }
 
-  function stopItalianSpeech() {
+  function clearItalianSpeech() {
     italianSpeechRequestId += 1;
     if (italianSpeechTimer) {
       root.clearTimeout?.(italianSpeechTimer);
       italianSpeechTimer = 0;
     }
+    italianSpeechFocusToken = null;
     try {
       root.speechSynthesis?.cancel?.();
     } catch {
@@ -68,14 +70,51 @@
     }
   }
 
+  function stopItalianSpeech({ resume = false, reason = "manual" } = {}) {
+    const token = italianSpeechFocusToken;
+    const focus = root.MagicAudioFocus;
+    if (token && focus?.isCurrent?.(token)) {
+      void focus.cancelTransient(token, { resume, reason });
+      return;
+    }
+    clearItalianSpeech();
+  }
+
+  function completeItalianSpeech(token, requestId, { resume = true } = {}) {
+    if (requestId !== italianSpeechRequestId || italianSpeechFocusToken !== token) return false;
+    italianSpeechRequestId += 1;
+    italianSpeechTimer = 0;
+    italianSpeechFocusToken = null;
+    if (token && root.MagicAudioFocus) {
+      void root.MagicAudioFocus.completeTransient(token, { resume });
+    }
+    return true;
+  }
+
   function speakItalian(value, options = {}) {
     const text = String(value || "").trim();
     const synthesis = root.speechSynthesis;
     const Utterance = root.SpeechSynthesisUtterance;
-    stopItalianSpeech();
-    if (!text || !synthesis || typeof synthesis.speak !== "function" || typeof Utterance !== "function") return false;
+    if (!text || !synthesis || typeof synthesis.speak !== "function" || typeof Utterance !== "function") {
+      stopItalianSpeech();
+      return false;
+    }
 
-    const requestId = italianSpeechRequestId;
+    const focus = root.MagicAudioFocus;
+    root.cancelPendingQuizExplanationAudio?.({ preserveStartedPlayback: Boolean(focus) });
+    root.cancelPendingStudyExplanationAudio?.();
+    let focusToken = null;
+    if (focus) {
+      focusToken = focus.beginTransient({
+        key: `dictionary-it:${hashString(text)}`,
+        stop: clearItalianSpeech
+      });
+    } else {
+      clearItalianSpeech();
+    }
+    italianSpeechFocusToken = focusToken;
+    const requestId = ++italianSpeechRequestId;
+
     const speak = () => {
       italianSpeechTimer = 0;
       if (requestId !== italianSpeechRequestId) return;
@@ -87,9 +126,11 @@
         utterance.volume = 1;
         const voice = italianSpeechVoice(synthesis);
         if (voice) utterance.voice = voice;
+        utterance.onend = () => completeItalianSpeech(focusToken, requestId, { resume: true });
+        utterance.onerror = () => completeItalianSpeech(focusToken, requestId, { resume: true });
         synthesis.speak(utterance);
       } catch {
-        // The visual exercise remains fully usable if device TTS is unavailable.
+        completeItalianSpeech(focusToken, requestId, { resume: true });
       }
     };
 

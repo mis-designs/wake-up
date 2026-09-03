@@ -71,6 +71,9 @@
   let helpPromise = null;
   let helpIdIndex = null;
   let activePlayback = null;
+  let activeTtsPlayback = null;
+  let pendingExplanation = null;
+  let explanationRequestId = 0;
   let toastTimer = 0;
   let loadRequestId = 0;
   let wordTtsRequestId = 0;
@@ -83,6 +86,7 @@
   const helpCache = new Map();
   const audioStatusCache = new Map();
   const pendingAudioStatusChecks = new Map();
+  const audioFocus = window.MagicAudioFocus;
 
   function createBoundedCache(maxEntries = 48) {
     const entries = new Map();
@@ -567,7 +571,8 @@
     const root = document.createElement("div");
     root.className = "study-explanation-player magic-loading-host";
     root.setAttribute("role", "group");
-    root.setAttribute("aria-label", `Spiegazione audio della domanda ${index + 1}`);
+    const audioLabel = `Spiegazione audio della domanda ${index + 1}`;
+    root.setAttribute("aria-label", audioLabel);
 
     const play = document.createElement("button");
     play.type = "button";
@@ -607,6 +612,7 @@
       speed,
       speedStep: 0,
       speedValue: EXPLANATION_AUDIO_SPEED_STEPS[0],
+      audioLabel,
       key: `explanation:${question.id || fingerprint(question)}`
     };
     play.addEventListener("click", () => playExplanation(question, controls));
@@ -1081,20 +1087,110 @@
     controls?.artwork.classList.toggle("is-spinning", isPlaying);
   }
 
-  function stopPlayback() {
-    cancelTtsRequest();
-    if (!activePlayback) return;
-    if (activePlayback.frame) cancelAnimationFrame(activePlayback.frame);
-    activePlayback.audio.pause();
-    activePlayback.button?.classList.remove("is-playing");
-    setExplanationPlaying(activePlayback.controls, false);
-    activePlayback.controls?.root.classList.remove("is-loading");
-    if (activePlayback.controls) {
-      activePlayback.controls.progress.value = "0";
-      activePlayback.controls.progress.style.setProperty("--progress", "0%");
+  function setExplanationSuspended(playback, isSuspended) {
+    if (!playback?.controls) return;
+    const { controls } = playback;
+    controls.root.classList.toggle("is-interrupted", isSuspended);
+    controls.surface.classList.toggle("is-interrupted", isSuspended);
+    controls.root.setAttribute(
+      "aria-label",
+      isSuspended ? "Spiegazione in pausa durante l'altro audio" : controls.audioLabel
+    );
+    if (isSuspended) {
+      controls.play.setAttribute("aria-label", "Riprendi ora la spiegazione");
+    } else {
+      setExplanationPlaying(controls, !playback.audio.paused && !playback.audio.ended);
     }
-    if (activePlayback.url) URL.revokeObjectURL(activePlayback.url);
-    activePlayback = null;
+  }
+
+  function createExplanationFocusAdapter(playback) {
+    return Object.freeze({
+      isPlaying: () => activePlayback === playback && !playback.audio.paused && !playback.audio.ended,
+      canResume: () => activePlayback === playback && playback.audio.hasAttribute("src") && !playback.audio.ended,
+      pause: () => {
+        if (activePlayback === playback) playback.audio.pause();
+      },
+      resume: async (_reason, isCurrent = () => true) => {
+        if (activePlayback !== playback || playback.audio.ended || !isCurrent()) return;
+        playback.audio.playbackRate = playback.controls.speedValue;
+        await playback.audio.play();
+      },
+      setSuspended: value => setExplanationSuspended(playback, value)
+    });
+  }
+
+  function disposeExplanationPlayback(playback = activePlayback) {
+    if (!playback) return;
+    if (activePlayback === playback) activePlayback = null;
+    audioFocus?.clearResumable(playback.focusAdapter);
+    if (playback.frame) cancelAnimationFrame(playback.frame);
+    playback.audio.pause();
+    playback.audio.removeAttribute("src");
+    playback.audio.load();
+    playback.button?.classList.remove("is-playing");
+    setExplanationPlaying(playback.controls, false);
+    setExplanationSuspended(playback, false);
+    playback.controls?.root.classList.remove("is-loading");
+    if (playback.controls) {
+      playback.controls.progress.value = "0";
+      playback.controls.progress.style.setProperty("--progress", "0%");
+    }
+    if (playback.url) URL.revokeObjectURL(playback.url);
+  }
+
+  function cancelPendingExplanation() {
+    explanationRequestId += 1;
+    const pending = pendingExplanation;
+    pendingExplanation = null;
+    if (!pending) return;
+    pending.controller?.abort();
+    pending.button.disabled = false;
+    pending.button.removeAttribute("aria-busy");
+    pending.root.classList.remove("is-loading");
+  }
+
+  window.cancelPendingStudyExplanationAudio = cancelPendingExplanation;
+
+  function disposeStudyTts(playback) {
+    if (!playback) return;
+    if (activeTtsPlayback === playback) activeTtsPlayback = null;
+    wordTtsRequestId += 1;
+    cancelTtsRequest();
+    playback.controller?.abort();
+    playback.audio?.pause();
+    playback.audio?.removeAttribute("src");
+    playback.audio?.load();
+    playback.button?.classList.remove("is-playing", "is-loading");
+    playback.button?.removeAttribute("aria-busy");
+    if (playback.button) playback.button.disabled = false;
+    if (playback.url) URL.revokeObjectURL(playback.url);
+  }
+
+  function stopStudyTts({ resume = false, reason = "manual" } = {}) {
+    const playback = activeTtsPlayback;
+    if (!playback) return;
+    if (playback.focusToken && audioFocus?.isCurrent(playback.focusToken)) {
+      void audioFocus.cancelTransient(playback.focusToken, { resume, reason });
+      return;
+    }
+    disposeStudyTts(playback);
+  }
+
+  function completeStudyTts(playback, { resume = true } = {}) {
+    if (!playback || activeTtsPlayback !== playback) return false;
+    disposeStudyTts(playback);
+    if (playback.focusToken && audioFocus) {
+      void audioFocus.completeTransient(playback.focusToken, { resume });
+    }
+    return true;
+  }
+
+  function stopPlayback() {
+    audioFocus?.cancelAll();
+    cancelPendingExplanation();
+    cancelTtsRequest();
+    disposeStudyTts(activeTtsPlayback);
+    disposeExplanationPlayback(activePlayback);
   }
 
   const MAX_INLINE_TTS_BYTES = 3 * 1024 * 1024;
@@ -1130,28 +1226,33 @@
     return request.promise;
   }
 
-  async function startAudio(url, button, key, controls = null, durationHint = 0) {
+  async function startExplanationAudio(url, button, key, controls, durationHint = 0) {
     if (activePlayback?.key === key) {
+      audioFocus?.claimResumable(activePlayback.focusAdapter);
       if (activePlayback.audio.paused) {
         await activePlayback.audio.play();
       } else {
+        audioFocus?.markManualPause(activePlayback.focusAdapter);
         activePlayback.audio.pause();
       }
       return;
     }
-    stopPlayback();
+    audioFocus?.claimResumable(activePlayback?.focusAdapter);
+    disposeExplanationPlayback(activePlayback);
     const audio = new Audio(url);
     audio.preload = "metadata";
-    if (controls) audio.playbackRate = controls.speedValue;
-    activePlayback = { audio, button, url, key, controls, durationHint, frame: 0 };
+    audio.playbackRate = controls.speedValue;
+    const playback = { audio, button, url, key, controls, durationHint, frame: 0, focusAdapter: null };
+    playback.focusAdapter = createExplanationFocusAdapter(playback);
+    activePlayback = playback;
+    audioFocus?.setResumable(playback.focusAdapter);
     audio.addEventListener("play", () => {
       if (activePlayback?.audio !== audio) return;
+      audioFocus?.setResumable(playback.focusAdapter);
       button.classList.add("is-playing");
       setExplanationPlaying(controls, true);
-      if (controls) {
-        if (activePlayback.frame) cancelAnimationFrame(activePlayback.frame);
-        activePlayback.frame = requestAnimationFrame(animateExplanationProgress);
-      }
+      if (activePlayback.frame) cancelAnimationFrame(activePlayback.frame);
+      activePlayback.frame = requestAnimationFrame(animateExplanationProgress);
     });
     audio.addEventListener("pause", () => {
       if (activePlayback?.audio !== audio) return;
@@ -1167,26 +1268,61 @@
       }));
     audio.addEventListener("ended", () => {
       if (activePlayback?.audio !== audio) return;
-      if (activePlayback.frame) cancelAnimationFrame(activePlayback.frame);
-      button.classList.remove("is-playing");
-      setExplanationPlaying(controls, false);
-      if (controls) {
-        controls.progress.value = "0";
-        controls.progress.style.setProperty("--progress", "0%");
-      }
-      URL.revokeObjectURL(url);
-      activePlayback = null;
+      disposeExplanationPlayback(playback);
     }, { once: true });
     audio.addEventListener("error", () => {
-      if (activePlayback?.audio === audio) stopPlayback();
-      showToast("Audio non disponibile al momento.");
+      if (activePlayback?.audio === audio) {
+        disposeExplanationPlayback(playback);
+        showToast("Audio non disponibile al momento.");
+      }
     }, { once: true });
     try {
       await audio.play();
     } catch (error) {
-      if (activePlayback?.audio === audio) stopPlayback();
+      if (activePlayback?.audio === audio) disposeExplanationPlayback(playback);
       throw error;
     }
+  }
+
+  function beginStudyTts(key, button) {
+    cancelPendingExplanation();
+    const controller = new AbortController();
+    const playback = { audio: null, url: "", button, key, controller, focusToken: null };
+    if (audioFocus) {
+      playback.focusToken = audioFocus.beginTransient({
+        key: `study:${key}`,
+        stop: () => disposeStudyTts(playback)
+      });
+    } else {
+      stopStudyTts({ resume: false, reason: "superseded" });
+      activePlayback?.audio.pause();
+    }
+    activeTtsPlayback = playback;
+    const requestId = ++wordTtsRequestId;
+    button.classList.add("is-loading");
+    button.setAttribute("aria-busy", "true");
+    return { playback, requestId };
+  }
+
+  async function startTtsAudio(playback, url) {
+    if (!playback || activeTtsPlayback !== playback) {
+      URL.revokeObjectURL(url);
+      return;
+    }
+    const audio = new Audio(url);
+    playback.audio = audio;
+    playback.url = url;
+    audio.addEventListener("play", () => {
+      if (activeTtsPlayback === playback) playback.button.classList.add("is-playing");
+    });
+    audio.addEventListener("ended", () => completeStudyTts(playback, { resume: true }), { once: true });
+    audio.addEventListener("error", () => {
+      if (completeStudyTts(playback, { resume: true })) showToast("Audio non disponibile al momento.");
+    }, { once: true });
+    playback.button.classList.remove("is-loading");
+    playback.button.removeAttribute("aria-busy");
+    playback.button.disabled = false;
+    await audio.play();
   }
 
   async function playTts(question, language, button, card) {
@@ -1194,14 +1330,12 @@
       window.location.href = trialOfferUrl(language === "bn" ? "Audio Bengali completo" : "Audio italiano completo");
       return;
     }
-    const ownRequest = ++wordTtsRequestId;
     const key = `${language}:${question.id || fingerprint(question)}`;
-    if (activePlayback?.key === key) {
-      await startAudio(activePlayback.url, button, key).catch(() => showToast("Audio non disponibile al momento."));
+    if (activeTtsPlayback?.key === key) {
+      stopStudyTts({ resume: false, reason: "manual" });
       return;
     }
-    button.disabled = true;
-    button.classList.add("is-loading");
+    const { playback, requestId: ownRequest } = beginStudyTts(key, button);
     try {
       let data = ttsCache.get(key);
       if (!data) {
@@ -1259,7 +1393,7 @@
         });
         ttsCache.set(key, data);
       }
-      if (ownRequest !== wordTtsRequestId) return;
+      if (ownRequest !== wordTtsRequestId || activeTtsPlayback !== playback) return;
       const safeTranslation = language === "bn" ? usableBanglaTranslation(data.translation) : "";
       if (safeTranslation) {
         const translation = card.querySelector(".study-translation");
@@ -1269,16 +1403,15 @@
           translation.classList.remove("is-missing");
         }
       }
-      await startAudio(base64AudioUrl(data.audio), button, key);
+      await startTtsAudio(playback, base64AudioUrl(data.audio));
     } catch (error) {
-      if (error?.name === "AbortError" || ownRequest !== wordTtsRequestId) return;
+      if (error?.name === "AbortError" || ownRequest !== wordTtsRequestId || activeTtsPlayback !== playback) return;
       const missingTranslation = error?.message === "translation_not_available";
-      showToast(language === "bn"
-        ? (missingTranslation ? "Traduzione non disponibile al momento." : "Audio bangla non disponibile.")
-        : "Audio italiano non disponibile.");
-    } finally {
-      button.disabled = false;
-      button.classList.remove("is-loading");
+      if (completeStudyTts(playback, { resume: true })) {
+        showToast(language === "bn"
+          ? (missingTranslation ? "Traduzione non disponibile al momento." : "Audio bangla non disponibile.")
+          : "Audio italiano non disponibile.");
+      }
     }
   }
 
@@ -1294,15 +1427,12 @@
     }
 
     const key = `bn-word:${hash(value)}`;
-    if (activePlayback?.key === key) {
-      await startAudio(activePlayback.url, button, key)
-        .catch(() => showToast("Audio parola non disponibile."));
+    if (activeTtsPlayback?.key === key) {
+      stopStudyTts({ resume: false, reason: "manual" });
       return;
     }
 
-    const ownRequest = ++wordTtsRequestId;
-    button.disabled = true;
-    button.classList.add("is-loading");
+    const { playback, requestId: ownRequest } = beginStudyTts(key, button);
     try {
       let data = ttsCache.get(key);
       if (!data) {
@@ -1322,25 +1452,36 @@
         });
         ttsCache.set(key, data);
       }
-      if (ownRequest !== wordTtsRequestId) return;
-      await startAudio(base64AudioUrl(data.audio), button, key);
+      if (ownRequest !== wordTtsRequestId || activeTtsPlayback !== playback) return;
+      await startTtsAudio(playback, base64AudioUrl(data.audio));
     } catch (error) {
-      if (error?.name === "AbortError" || ownRequest !== wordTtsRequestId) return;
-      showToast("Audio parola non disponibile.");
-    } finally {
-      button.disabled = false;
-      button.classList.remove("is-loading");
+      if (error?.name === "AbortError" || ownRequest !== wordTtsRequestId || activeTtsPlayback !== playback) return;
+      if (completeStudyTts(playback, { resume: true })) showToast("Audio parola non disponibile.");
     }
   }
 
-  async function audioApi(action, question, { blob = false } = {}) {
-    if (TRIAL_MODE) throw new Error("trial_premium_audio");
+  function createTimedAudioRequest(parentSignal) {
     const controller = new AbortController();
+    const abortFromParent = () => controller.abort();
+    if (parentSignal?.aborted) abortFromParent();
+    else parentSignal?.addEventListener("abort", abortFromParent, { once: true });
     const timeoutId = window.setTimeout(() => controller.abort(), STUDY_AUDIO_REQUEST_TIMEOUT_MS);
+    return {
+      signal: controller.signal,
+      cleanup() {
+        window.clearTimeout(timeoutId);
+        parentSignal?.removeEventListener("abort", abortFromParent);
+      }
+    };
+  }
+
+  async function audioApi(action, question, { blob = false, signal } = {}) {
+    if (TRIAL_MODE) throw new Error("trial_premium_audio");
+    const request = createTimedAudioRequest(signal);
     try {
       const response = await fetch(API, {
         method: "POST",
-        signal: controller.signal,
+        signal: request.signal,
         headers: authHeaders({ json: true }),
         body: JSON.stringify({
           action,
@@ -1366,7 +1507,7 @@
       }
       return readApiResponse(response);
     } finally {
-      window.clearTimeout(timeoutId);
+      request.cleanup();
     }
   }
 
@@ -1440,23 +1581,39 @@
   }
 
   async function playExplanation(question, controls) {
-    wordTtsRequestId += 1;
-    cancelTtsRequest();
     const { root, play: button, key } = controls;
+    if (pendingExplanation?.controls === controls) {
+      cancelPendingExplanation();
+      return;
+    }
+    cancelPendingExplanation();
+    if (audioFocus) audioFocus.claimResumable(activePlayback?.focusAdapter);
+    else stopStudyTts({ resume: false, reason: "resumable-request" });
     if (activePlayback?.key === key) {
-      await startAudio(activePlayback.url, button, key, controls, activePlayback.durationHint)
+      await startExplanationAudio(activePlayback.url, button, key, controls, activePlayback.durationHint)
         .catch(() => showToast("Spiegazione audio non disponibile."));
       return;
     }
+    const request = {
+      id: ++explanationRequestId,
+      root,
+      button,
+      controls,
+      controller: new AbortController()
+    };
+    pendingExplanation = request;
     button.disabled = true;
     root.classList.remove("is-error");
     root.classList.add("is-loading");
     button.setAttribute("aria-busy", "true");
     try {
-      const source = await fetchExplanationBlob(question);
+      const source = await fetchExplanationBlob(question, { signal: request.controller.signal });
+      if (pendingExplanation !== request || request.id !== explanationRequestId) return;
       if (!source.blob.size) throw new Error("empty_audio_blob");
-      await startAudio(URL.createObjectURL(source.blob), button, key, controls, source.durationMs / 1000);
+      await startExplanationAudio(URL.createObjectURL(source.blob), button, key, controls, source.durationMs / 1000);
     } catch (error) {
+      if (pendingExplanation !== request || request.id !== explanationRequestId) return;
+      if (error?.name === "AbortError") return;
       const code = String(error?.message || "");
       const definitelyMissing = code === "quiz_audio_not_found" || code === "audio_blob_404";
       if (definitelyMissing) {
@@ -1469,40 +1626,44 @@
         showToast("L'audio non si è caricato. Tocca di nuovo per riprovare.");
       }
     } finally {
-      button.disabled = false;
-      root.classList.remove("is-loading");
-      button.removeAttribute("aria-busy");
+      if (pendingExplanation === request) {
+        pendingExplanation = null;
+        button.disabled = false;
+        root.classList.remove("is-loading");
+        button.removeAttribute("aria-busy");
+      }
     }
   }
 
-  async function fetchExplanationBlob(question) {
+  async function fetchExplanationBlob(question, { signal } = {}) {
     let firstError = null;
     try {
-      const source = await audioApi("getQuizAudioBlob", question, { blob: true });
+      const source = await audioApi("getQuizAudioBlob", question, { blob: true, signal });
       if (source?.blob?.size) return source;
       firstError = new Error("empty_audio_blob");
     } catch (error) {
+      if (error?.name === "AbortError") throw error;
       firstError = error;
     }
 
     // Use the signed object only after an explicit click, so scrolling never
     // creates a second audio request for every visible question.
     try {
-      const playback = await audioApi("getQuizAudioPlayback", question);
+      const playback = await audioApi("getQuizAudioPlayback", question, { signal });
       if (!playback?.audioUrl) throw firstError || new Error("audio_url_missing");
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), STUDY_AUDIO_REQUEST_TIMEOUT_MS);
+      const request = createTimedAudioRequest(signal);
       let response;
       try {
-        response = await fetch(playback.audioUrl, { cache: "no-store", signal: controller.signal });
+        response = await fetch(playback.audioUrl, { cache: "no-store", signal: request.signal });
       } finally {
-        window.clearTimeout(timeoutId);
+        request.cleanup();
       }
       if (!response.ok) throw firstError || new Error(`audio_url_${response.status}`);
       const blob = await response.blob();
       if (!blob.size) throw firstError || new Error("empty_audio_blob");
       return { blob, durationMs: Number(playback.durationMs) || 0 };
-    } catch (_) {
+    } catch (error) {
+      if (error?.name === "AbortError") throw error;
       throw firstError || new Error("audio_not_available");
     }
   }

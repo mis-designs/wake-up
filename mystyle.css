@@ -1201,6 +1201,17 @@ body.loading-open {
   animation-play-state: running;
 }
 
+.modal-review-audio-button.is-interrupted {
+  outline: 2px dashed rgba(79, 70, 229, .52);
+  outline-offset: 2px;
+}
+
+.modal-review-audio-button.is-interrupted .modal-review-explain-icon {
+  animation-play-state: paused;
+  filter: saturate(.72) drop-shadow(0 7px 10px rgba(55, 48, 163, .18));
+  opacity: .84;
+}
+
 .modal-review-audio-button.is-loading .modal-review-explain-icon {
   opacity: .65;
 }
@@ -2344,5 +2355,9 @@ html[data-reader-size="xlarge"] #question { font-size: clamp(1.38rem, 3.9vw, 1.5
   .modal-review-translation-tag,
   .modal-review-translation-word {
     border: 1px solid CanvasText;
+  }
+
+  .modal-review-audio-button.is-interrupted {
+    outline: 2px dashed Highlight;
   }
 }

@@ -154,9 +154,9 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(index, /premium-new-badge home-dictionary-new-badge/u);
   assert.doesNotMatch(index, /home-dictionary-mark/u);
   assert.match(index, /openDictionaryFromMenu\(\)/u);
-  assert.match(index, /magic-dictionary\.js\?v=1\.2\.5-shared-gif-loader/u);
-  assert.match(quiz, /magic-dictionary\.js\?v=1\.2\.5-shared-gif-loader/u);
-  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.2\.5-shared-gif-loader/u);
+  assert.match(index, /magic-dictionary\.js\?v=1\.2\.6-audio-focus/u);
+  assert.match(quiz, /magic-dictionary\.js\?v=1\.2\.6-audio-focus/u);
+  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.2\.6-audio-focus/u);
   for (const html of [index, quiz, studyQuiz]) {
     assert.match(html, /https:\/\/banglawebfonts\.pages\.dev\/css\/tiro-bangla\.css/u);
     assert.match(html, /https:\/\/banglawebfonts\.pages\.dev\/fonts\/tiro-bangla\/tiro-bangla-regular\.woff2/u);
@@ -171,7 +171,7 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(script, /state\.screen === "dictionary"/u);
   assert.match(script, /MagicDictionaryFeature\?\.onAuthenticated/u);
   assert.match(worker, /magicbook-pwa-v159-solid-profile-controls/u);
-  assert.match(worker, /magic-dictionary\.js\?v=1\.2\.5-shared-gif-loader/u);
+  assert.match(worker, /magic-dictionary\.js\?v=1\.2\.6-audio-focus/u);
   assert.match(worker, /magic-dictionary\.css\?v=1\.2\.5-settings-layout/u);
   assert.ok(vercel.rewrites.some(route => route.source === "/dizionario" && route.destination === "/"));
   assert.match(redirects, /^\/dizionario \/index\.html 200$/mu);
@@ -237,4 +237,62 @@ test("the word exercise speaks each Italian prompt and the Italian word behind a
   assert.match(source, /speakItalian\(word\.it, \{ delayMs: WORD_ARRIVAL_SPEECH_DELAY_MS \}\)/u);
   assert.match(source, /const selectedWord = findWord\(selectedId\);[\s\S]*speakItalian\(selectedWord\.it\)/u);
   assert.match(source, /answerLocked = true;\s+stopItalianSpeech\(\);/u);
+});
+
+test("dictionary speech joins audio focus and distinguishes natural completion from manual stop", async () => {
+  const calls = [];
+  let current = null;
+  let spoken = null;
+  context.cancelPendingQuizExplanationAudio = options => calls.push(["cancel-quiz-pending", options]);
+  context.cancelPendingStudyExplanationAudio = () => calls.push(["cancel-study-pending"]);
+  context.MagicAudioFocus = {
+    beginTransient(options) {
+      current = { token: {}, stop: options.stop };
+      calls.push(["begin", options.key]);
+      return current.token;
+    },
+    isCurrent(token) {
+      return current?.token === token;
+    },
+    async completeTransient(token, options) {
+      if (current?.token !== token) return false;
+      current = null;
+      calls.push(["complete", options.resume]);
+      return true;
+    },
+    async cancelTransient(token, options) {
+      if (current?.token !== token) return false;
+      const active = current;
+      current = null;
+      active.stop(options.reason);
+      calls.push(["cancel", options.resume, options.reason]);
+      return true;
+    }
+  };
+  context.SpeechSynthesisUtterance = class {
+    constructor(text) { this.text = text; }
+  };
+  context.speechSynthesis = {
+    cancel: () => calls.push(["synthesis-cancel"]),
+    getVoices: () => [{ lang: "it-IT", name: "Italiano" }],
+    speak: utterance => { spoken = utterance; }
+  };
+
+  assert.equal(feature.__test.speakItalian("arrestarsi"), true);
+  assert.equal(typeof spoken?.onend, "function");
+  spoken.onend();
+  await Promise.resolve();
+  assert.ok(calls.some(call => call[0] === "complete" && call[1] === true));
+
+  spoken = null;
+  assert.equal(feature.__test.speakItalian("segnale"), true);
+  feature.__test.stopItalianSpeech();
+  await Promise.resolve();
+  assert.ok(calls.some(call => call[0] === "cancel" && call[1] === false && call[2] === "manual"));
+  assert.ok(calls.some(call => call[0] === "cancel-quiz-pending" && call[1]?.preserveStartedPlayback === true));
+  assert.ok(calls.some(call => call[0] === "cancel-study-pending"));
+
+  delete context.MagicAudioFocus;
+  delete context.cancelPendingQuizExplanationAudio;
+  delete context.cancelPendingStudyExplanationAudio;
 });

@@ -289,18 +289,42 @@
 
   window.QuizHelpData = Object.freeze({ getQuestionHelp });
 
-  function stopWordAudio() {
-    wordAudioRequestId += 1;
-    const playback = activeWordPlayback;
-    activeWordPlayback = null;
+  function disposeWordAudio(playback) {
     if (!playback) return;
-    playback.audio.pause();
+    if (activeWordPlayback === playback) activeWordPlayback = null;
+    wordAudioRequestId += 1;
+    playback.controller?.abort();
+    playback.audio?.pause();
+    playback.audio?.removeAttribute("src");
+    playback.audio?.load();
     playback.button.classList.remove("is-playing", "is-loading");
+    playback.button.removeAttribute("aria-busy");
     playback.button.disabled = false;
-    URL.revokeObjectURL(playback.url);
+    if (playback.url) URL.revokeObjectURL(playback.url);
   }
 
-  window.stopQuizHelpAudio = stopWordAudio;
+  function stopWordAudio({ resume = false, reason = "manual" } = {}) {
+    const playback = activeWordPlayback;
+    if (!playback) return;
+    const focus = window.MagicAudioFocus;
+    if (playback.focusToken && focus?.isCurrent(playback.focusToken)) {
+      void focus.cancelTransient(playback.focusToken, { resume, reason });
+      return;
+    }
+    disposeWordAudio(playback);
+  }
+
+  function completeWordAudio(playback, { resume = true } = {}) {
+    if (!playback || activeWordPlayback !== playback) return false;
+    const focus = window.MagicAudioFocus;
+    disposeWordAudio(playback);
+    if (playback.focusToken && focus) {
+      void focus.completeTransient(playback.focusToken, { resume });
+    }
+    return true;
+  }
+
+  window.stopQuizHelpAudio = () => stopWordAudio({ resume: false, reason: "context-change" });
 
   function wordAudioUrl(base64) {
     const binary = atob(base64);
@@ -322,43 +346,57 @@
 
     const key = hash(cleanText);
     if (activeWordPlayback?.key === key) {
-      if (activeWordPlayback.audio.paused) {
-        await activeWordPlayback.audio.play().catch(() => stopWordAudio());
-      } else {
-        stopWordAudio();
-      }
+      stopWordAudio({ resume: false, reason: "manual" });
       return;
     }
 
-    stopAllAudio?.();
+    const controller = new AbortController();
+    const playback = { audio: null, url: "", button, key, controller, focusToken: null };
+    const focus = window.MagicAudioFocus;
+    window.cancelPendingQuizExplanationAudio?.({ preserveStartedPlayback: Boolean(focus) });
+    if (focus) {
+      playback.focusToken = focus.beginTransient({
+        key: `quiz-word:${key}`,
+        stop: () => disposeWordAudio(playback)
+      });
+    } else {
+      stopAllAudio?.();
+    }
+    activeWordPlayback = playback;
     const ownRequest = ++wordAudioRequestId;
-    button.disabled = true;
     button.classList.add("is-loading");
+    button.setAttribute("aria-busy", "true");
     try {
       let data = wordAudioCache.get(key);
       if (!data) {
-        data = await fetchQuizJson(buildQuizApiUrl("getTTS", { text: cleanText }));
+        data = await fetchQuizJson(
+          buildQuizApiUrl("getTTS", { text: cleanText }),
+          { signal: controller.signal }
+        );
         if (!data?.audio) throw new Error("audio_not_available");
         wordAudioCache.set(key, data);
       }
-      if (ownRequest !== wordAudioRequestId) return;
+      if (ownRequest !== wordAudioRequestId || activeWordPlayback !== playback) return;
 
       const url = wordAudioUrl(data.audio);
       const audio = new Audio(url);
-      activeWordPlayback = { audio, url, button, key };
+      playback.audio = audio;
+      playback.url = url;
       audio.addEventListener("play", () => button.classList.add("is-playing"));
-      audio.addEventListener("ended", stopWordAudio, { once: true });
+      audio.addEventListener("ended", () => completeWordAudio(playback, { resume: true }), { once: true });
       audio.addEventListener("error", () => {
-        stopWordAudio();
-        showAudioUnavailableToast?.("Audio bangla non disponibile");
+        if (completeWordAudio(playback, { resume: true })) {
+          showAudioUnavailableToast?.("Audio bangla non disponibile");
+        }
       }, { once: true });
-      await audio.play();
-    } catch (_) {
-      stopWordAudio();
-      showAudioUnavailableToast?.("Audio bangla non disponibile");
-    } finally {
-      button.disabled = false;
       button.classList.remove("is-loading");
+      button.removeAttribute("aria-busy");
+      await audio.play();
+    } catch (error) {
+      if (error?.name === "AbortError" || ownRequest !== wordAudioRequestId || activeWordPlayback !== playback) return;
+      if (completeWordAudio(playback, { resume: true })) {
+        showAudioUnavailableToast?.("Audio bangla non disponibile");
+      }
     }
   }
 

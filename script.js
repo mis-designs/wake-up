@@ -93,6 +93,110 @@ function setAppRoute(state = {}, options = {}) {
   window.history[method](state, "", path);
 }
 
+// One app-level transition may own navigation at a time. This prevents two
+// near-simultaneous taps from opening competing screens or delayed routes.
+const appActionGate = (() => {
+  let activeToken = null;
+  let releaseTimer = 0;
+
+  function paintState() {
+    const root = document.documentElement;
+    if (activeToken) root.dataset.appTransition = activeToken.name;
+    else delete root.dataset.appTransition;
+
+    if (document.body) {
+      if (activeToken) document.body.setAttribute("aria-busy", "true");
+      else document.body.removeAttribute("aria-busy");
+    }
+  }
+
+  function begin(name) {
+    if (activeToken) return null;
+    activeToken = { id: Symbol(name), name: String(name || "navigation") };
+    paintState();
+    return activeToken;
+  }
+
+  function release(token) {
+    if (!token || token !== activeToken) return false;
+    if (releaseTimer) window.clearTimeout(releaseTimer);
+    releaseTimer = 0;
+    activeToken = null;
+    paintState();
+    return true;
+  }
+
+  function releaseAfter(token, delay = 280) {
+    if (!token || token !== activeToken) return;
+    if (releaseTimer) window.clearTimeout(releaseTimer);
+    releaseTimer = window.setTimeout(() => release(token), Math.max(0, Number(delay) || 0));
+  }
+
+  function run(name, work, { holdMs = 280, bypass = false } = {}) {
+    if (bypass) {
+      work(null);
+      return true;
+    }
+    const token = begin(name);
+    if (!token) return false;
+    try {
+      work(token);
+    } catch (error) {
+      release(token);
+      throw error;
+    }
+    releaseAfter(token, holdMs);
+    return true;
+  }
+
+  function cancel() {
+    if (releaseTimer) window.clearTimeout(releaseTimer);
+    releaseTimer = 0;
+    activeToken = null;
+    paintState();
+  }
+
+  return {
+    begin,
+    cancel,
+    isBusy: () => Boolean(activeToken),
+    isCurrent: token => Boolean(token && token === activeToken),
+    release,
+    releaseAfter,
+    run
+  };
+})();
+
+function runExclusiveAppAction(name, work, options = {}) {
+  return appActionGate.run(name, work, {
+    holdMs: options.holdMs,
+    bypass: options.bypass === true || applyingRouteFromHistory
+  });
+}
+
+function scheduleExclusiveAppNavigation(name, beforeNavigate, navigate, delay = 460) {
+  const token = appActionGate.begin(name);
+  if (!token) return false;
+  try {
+    beforeNavigate?.();
+  } catch (error) {
+    appActionGate.release(token);
+    throw error;
+  }
+
+  window.setTimeout(async () => {
+    if (!appActionGate.isCurrent(token)) return;
+    try {
+      await navigate();
+    } catch (error) {
+      console.error(`Navigation action failed: ${name}`, error);
+    } finally {
+      appActionGate.release(token);
+    }
+  }, delay);
+  return true;
+}
+
 function getRouteStateFromLocation() {
   const path = normalizeRoutePath();
   if (path === "/prova-gratis" || /^\/prova-gratis\/libro-(1|3)$/.test(path)) {
@@ -116,6 +220,8 @@ function getRouteStateFromLocation() {
 }
 
 function openRouteState(state = getRouteStateFromLocation()) {
+  // Browser Back/Forward always wins over a pending delayed tap.
+  appActionGate.cancel();
   const publicScreens = ["welcome", "login", "join", "about"];
   const requestedState = publicScreens.includes(state.screen)
     ? { screen: "home" }
@@ -529,6 +635,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   syncPromoLoginAvailability();
   setupLoginUI();
   setupProfileUI();
+  syncAppUtilityLayout();
   setupAdminUI();
   if (PROMO_LOGIN_ENABLED) {
     setupPromoLandingUI();
@@ -2180,6 +2287,25 @@ function getCurrentSessionDeviceId() {
   return Storage.get(KEYS.deviceId) || session?.deviceId || getDeviceId();
 }
 
+function syncAppUtilityLayout() {
+  const root = document.documentElement;
+  const adminEntry = document.getElementById("adminEntryBtn");
+  const profile = document.getElementById("profileBtn");
+  const header = document.getElementById("appHeader");
+  const menu = header?.querySelector(".menu-btn");
+  const isVisible = element => Boolean(element && !element.classList.contains("hidden"));
+  const headerVisible = Boolean(header?.classList.contains("is-visible"));
+  const adminVisible = isVisible(adminEntry);
+  const profileVisible = isVisible(profile);
+  const menuVisible = Boolean(headerVisible && menu && !menu.classList.contains("menu-btn-hidden"));
+  const utilityCount = Number(adminVisible) + Number(profileVisible) + Number(menuVisible);
+
+  root.dataset.appUtilityCount = String(utilityCount);
+  root.dataset.appAdminVisible = String(adminVisible);
+  root.dataset.appProfileVisible = String(profileVisible);
+  root.dataset.appMenuVisible = String(menuVisible);
+}
+
 async function warmExplanationFiguresCache() {
   const phone = getCurrentSessionPhone();
   const deviceId = getCurrentSessionDeviceId();
@@ -2214,6 +2340,7 @@ function updateProfileUI(isLoggedIn = true) {
   profilePanel.classList.add("hidden");
   profileBtn.setAttribute("aria-expanded", "false");
   if (userPhone) userPhone.textContent = phone ? "Telefono: " + phone : "";
+  syncAppUtilityLayout();
 }
 
 function setProfileIconVisible(visible) {
@@ -2231,6 +2358,7 @@ function setProfileIconVisible(visible) {
     profilePanel?.classList.add("hidden");
     profileBtn.setAttribute("aria-expanded", "false");
   }
+  syncAppUtilityLayout();
 }
 
 function setWhatsAppVisible(visible) {
@@ -2253,6 +2381,7 @@ function setupProfileUI() {
 
   profileBtn.addEventListener("click", event => {
     event.stopPropagation();
+    if (appActionGate.isBusy()) return;
     const phone = getCurrentSessionPhone();
     const userPhone = document.getElementById("userPhone");
     if (userPhone) userPhone.textContent = phone ? "Telefono: " + phone : "";
@@ -3193,32 +3322,36 @@ function hideAll() {
 
 function showHome() {
   if (trialGuestMode) { showChapters(); return; }
-  hideAll();
-  document.getElementById("home")?.classList.remove("hidden");
-  setChapterMode(false);
-  document.body.classList.add("app-mode");
-  showAppHeader("home");
-  currentScreen = "home";
-  updateProfileUI(true);
-  setProfileIconVisible(true);
-  setLoggedInChrome();
-  setAppRoute({ screen: "home" });
-  updateAdminEntryVisibility();
-  maybeShowWhatsAppGroupPopup();
+  return runExclusiveAppAction("show-home", () => {
+    hideAll();
+    document.getElementById("home")?.classList.remove("hidden");
+    setChapterMode(false);
+    document.body.classList.add("app-mode");
+    showAppHeader("home");
+    currentScreen = "home";
+    updateProfileUI(true);
+    setProfileIconVisible(true);
+    setLoggedInChrome();
+    setAppRoute({ screen: "home" });
+    updateAdminEntryVisibility();
+    maybeShowWhatsAppGroupPopup();
+  });
 }
 
 function showChapters() {
-  hideAll();
-  document.getElementById("chapters")?.classList.remove("hidden");
-  setChapterMode(false);
-  document.body.classList.add("app-mode");
-  showAppHeader("chapters");
-  currentScreen = "chapters";
-  updateProfileUI(!trialGuestMode);
-  setProfileIconVisible(false);
-  setAppRoute({ screen: "chapters" });
-  requestAnimationFrame(() => updateCardTrack());
-  if (trialGuestMode) decorateGuestTrialUI();
+  return runExclusiveAppAction("show-chapters", () => {
+    hideAll();
+    document.getElementById("chapters")?.classList.remove("hidden");
+    setChapterMode(false);
+    document.body.classList.add("app-mode");
+    showAppHeader("chapters");
+    currentScreen = "chapters";
+    updateProfileUI(!trialGuestMode);
+    setProfileIconVisible(false);
+    setAppRoute({ screen: "chapters" });
+    requestAnimationFrame(() => updateCardTrack());
+    if (trialGuestMode) decorateGuestTrialUI();
+  });
 }
 
 function showMagicDictionary(options = {}) {
@@ -3227,15 +3360,17 @@ function showMagicDictionary(options = {}) {
     return;
   }
   const returnScreen = ["home", "statistics", "errors"].includes(currentScreen) ? currentScreen : "chapters";
-  hideAll();
-  setChapterMode(false);
-  document.body.classList.add("app-mode");
-  currentScreen = "dictionary";
-  updateProfileUI(true);
-  setProfileIconVisible(false);
-  setLoggedInChrome();
-  setAppRoute({ screen: "dictionary" }, { replace: options.replace === true });
-  window.MagicDictionaryFeature?.showDictionary({ returnScreen, query: options.query || "" });
+  return runExclusiveAppAction("show-dictionary", () => {
+    hideAll();
+    setChapterMode(false);
+    document.body.classList.add("app-mode");
+    currentScreen = "dictionary";
+    updateProfileUI(true);
+    setProfileIconVisible(false);
+    setLoggedInChrome();
+    setAppRoute({ screen: "dictionary" }, { replace: options.replace === true });
+    window.MagicDictionaryFeature?.showDictionary({ returnScreen, query: options.query || "" });
+  });
 }
 
 function showLearningInsightsScreen(mode, options = {}) {
@@ -3243,16 +3378,18 @@ function showLearningInsightsScreen(mode, options = {}) {
     openTrialPaywall(mode === "errors" ? "Errori" : "Statistiche");
     return;
   }
-  hideAll();
-  setChapterMode(false);
-  document.getElementById("learningInsightsScreen")?.classList.remove("hidden");
-  document.body.classList.add("app-mode", "learning-insights-mode");
-  currentScreen = mode === "errors" ? "errors" : "statistics";
-  updateProfileUI(true);
-  setProfileIconVisible(false);
-  setLoggedInChrome();
-  setAppRoute({ screen: currentScreen }, { replace: options.replace === true });
-  window.MagicBookLearningInsights?.show(mode, { focus: options.focus !== false });
+  return runExclusiveAppAction(`show-learning-${mode}`, () => {
+    hideAll();
+    setChapterMode(false);
+    document.getElementById("learningInsightsScreen")?.classList.remove("hidden");
+    document.body.classList.add("app-mode", "learning-insights-mode");
+    currentScreen = mode === "errors" ? "errors" : "statistics";
+    updateProfileUI(true);
+    setProfileIconVisible(false);
+    setLoggedInChrome();
+    setAppRoute({ screen: currentScreen }, { replace: options.replace === true });
+    window.MagicBookLearningInsights?.show(mode, { focus: options.focus !== false });
+  });
 }
 
 function showLearningStatistics(options = {}) {
@@ -3485,6 +3622,8 @@ function startEngineSequence() {
     return;
   }
   if (engineStarting) return;
+  const transitionToken = appActionGate.begin(`start-chapter-${selectedChapter}`);
+  if (!transitionToken) return;
   engineStarting = true;
 
   const engineBtn = document.getElementById("engineBtn");
@@ -3496,10 +3635,24 @@ function startEngineSequence() {
 
   // Fallback: no dashboard present, navigate directly
   if (!engineBtn) {
-    openChapter(selectedChapter);
     engineStarting = false;
+    appActionGate.release(transitionToken);
+    openChapter(selectedChapter);
     return;
   }
+
+  const resetEngineState = () => {
+    engineStarting = false;
+    engineBtn.classList.remove("is-starting");
+    chaptersEl?.classList.remove("engine-shaking");
+    if (engineImg) {
+      engineImg.style.opacity = "0";
+      setTimeout(() => {
+        engineImg.src = "icons/car_off.png";
+        engineImg.style.opacity = "1";
+      }, 280);
+    }
+  };
 
   // --- Sound ---
   try {
@@ -3540,20 +3693,15 @@ function startEngineSequence() {
 
   // --- Navigate to chapter ---
   setTimeout(() => {
+    if (!appActionGate.isCurrent(transitionToken)) {
+      resetEngineState();
+      return;
+    }
+    appActionGate.release(transitionToken);
     openChapter(selectedChapter);
 
     // Reset engine button after viewer is open (invisible to user)
-    setTimeout(() => {
-      engineStarting = false;
-      engineBtn.classList.remove("is-starting");
-      if (engineImg) {
-        engineImg.style.opacity = "0";
-        setTimeout(() => {
-          engineImg.src = "icons/car_off.png";
-          engineImg.style.opacity = "1";
-        }, 280);
-      }
-    }, 700);
+    setTimeout(resetEngineState, 700);
   }, navigationDelay);
 }
 
@@ -3591,11 +3739,12 @@ function openExam() {
 function openExamModeScreen() {
   const overlay = document.getElementById("examModeOverlay");
   if (!overlay) return;
-
-  overlay.classList.remove("hidden");
-  requestAnimationFrame(() => overlay.classList.add("qms-visible"));
-  document.body.classList.add("qms-open");
-  currentScreen = "examMode";
+  return runExclusiveAppAction("open-exam-options", () => {
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("qms-visible"));
+    document.body.classList.add("qms-open");
+    currentScreen = "examMode";
+  }, { holdMs: 320 });
 }
 
 function closeExamModeScreen() {
@@ -3612,24 +3761,29 @@ function closeExamModeScreen() {
 function startExamQuiz(mode) {
   const validModes = new Set(["exam80", "exam30"]);
   if (!validModes.has(mode)) return;
-
-  closeExamModeScreen();
-  setTimeout(() => {
-    window.location.href = getQuizPath({ mode });
-  }, 460);
+  scheduleExclusiveAppNavigation(
+    `start-${mode}`,
+    () => closeExamModeScreen(),
+    () => { window.location.href = getQuizPath({ mode }); }
+  );
 }
 
 function startExamPdf() {
-  closeExamModeScreen();
-  setTimeout(() => {
-    openMagicBookPages({ type: "exam" });
-  }, 460);
+  scheduleExclusiveAppNavigation(
+    "start-exam-pdf",
+    () => closeExamModeScreen(),
+    () => openMagicBookPages({ type: "exam" })
+  );
 }
 
 function openChapter(cap) {
   if (trialGuestMode && !isGuestTrialChapter(cap)) { openTrialPaywall(`Capitolo ${cap}`); return; }
-  if (trialGuestMode) { openTrialBook(cap); return; }
-  openMagicBookPages({ type: "chapter", chapter: cap });
+  if (trialGuestMode) {
+    return runExclusiveAppAction(`open-trial-chapter-${cap}`, () => openTrialBook(cap), { holdMs: 420 });
+  }
+  return runExclusiveAppAction(`open-chapter-${cap}`, () => {
+    void openMagicBookPages({ type: "chapter", chapter: cap });
+  }, { holdMs: 420 });
 }
 
 /***********************
@@ -3658,7 +3812,10 @@ function showAppHeader(context = "chapter", param = null) {
   if (!header) return;
 
   header.classList.remove("hidden");
-  requestAnimationFrame(() => header.classList.add("is-visible"));
+  requestAnimationFrame(() => {
+    header.classList.add("is-visible");
+    syncAppUtilityLayout();
+  });
 
   const nameEl  = document.getElementById("headerChapterName");
   const iconEl  = document.getElementById("statusIcon");
@@ -3669,6 +3826,7 @@ function showAppHeader(context = "chapter", param = null) {
   const menuVisible = context === "chapter" || context === "exam";
   if (menuBtn) menuBtn.classList.toggle("menu-btn-hidden", !menuVisible);
   if (!menuVisible) closeChapterMenu();
+  syncAppUtilityLayout();
 
   if (context === "home") {
     if (nameEl) nameEl.textContent = "Magic Book";
@@ -3704,6 +3862,7 @@ function hideAppHeader() {
   header?.classList.remove("is-visible");
   closeChapterMenu();
   currentViewingChapter = null;
+  syncAppUtilityLayout();
 }
 
 function buildChapterMenu() {
@@ -3730,15 +3889,16 @@ function toggleChapterMenu() {
   const menu    = document.getElementById("chapterMenu");
   const overlay = document.getElementById("menuOverlay");
   if (!menu) return;
-
-  if (menu.classList.contains("menu-open")) {
-    closeChapterMenu();
-  } else {
-    buildChapterMenu();
-    menu.classList.add("menu-open");
-    overlay?.classList.add("overlay-visible");
-    document.body.classList.add("body-menu-open");
-  }
+  return runExclusiveAppAction("toggle-chapter-menu", () => {
+    if (menu.classList.contains("menu-open")) {
+      closeChapterMenu();
+    } else {
+      buildChapterMenu();
+      menu.classList.add("menu-open");
+      overlay?.classList.add("overlay-visible");
+      document.body.classList.add("body-menu-open");
+    }
+  }, { holdMs: 180 });
 }
 
 function closeChapterMenu() {
@@ -3754,6 +3914,7 @@ function openChapterFromMenu(chapterNum) {
 
 // Context-aware back navigation
 function goBack() {
+  if (appActionGate.isBusy()) return;
   closeChapterMenu();
   if (trialGuestMode && currentScreen === "chapters") {
     trialGuestMode = false;
@@ -4317,20 +4478,21 @@ let qmsPillsBuilt    = false;
 function openQuizModeScreen() {
   const overlay = document.getElementById("quizModeOverlay");
   if (!overlay) return;
+  return runExclusiveAppAction("open-quiz-options", () => {
+    _qmsResetAll();
 
-  _qmsResetAll();
+    if (!qmsPillsBuilt) {
+      _buildQMSCapPills();
+      _buildQMSMultiPills();
+      qmsPillsBuilt = true;
+    }
 
-  if (!qmsPillsBuilt) {
-    _buildQMSCapPills();
-    _buildQMSMultiPills();
-    qmsPillsBuilt = true;
-  }
-
-  overlay.classList.remove("hidden");
-  requestAnimationFrame(() => overlay.classList.add("qms-visible"));
-  document.body.classList.add("qms-open");
-  currentScreen = "quizMode";
-  decorateGuestQuizUI();
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("qms-visible"));
+    document.body.classList.add("qms-open");
+    currentScreen = "quizMode";
+    decorateGuestQuizUI();
+  }, { holdMs: 320 });
 }
 
 function decorateGuestQuizUI() {
@@ -4524,46 +4686,58 @@ function _buildQMSMultiPills() {
 // ── Start actions ──────────────────────────────────────────────────────────
 
 function startStudyQuiz() {
-  if (trialGuestMode) {
-    closeQuizModeScreen();
-    setTimeout(() => { window.location.href = "/studia-quiz/prova-gratis"; }, 460);
-    return;
-  }
-  closeQuizModeScreen();
-  setTimeout(() => { window.location.href = "/studia-quiz"; }, 460);
+  const destination = trialGuestMode ? "/studia-quiz/prova-gratis" : "/studia-quiz";
+  scheduleExclusiveAppNavigation(
+    "start-study-quiz",
+    () => closeQuizModeScreen(),
+    () => { window.location.href = destination; }
+  );
 }
 
 function startMixQuiz() {
   if (trialGuestMode) {
     const attempts = getTrialMixAttempts();
     if (attempts >= 2) { openTrialPaywall("Quiz Mix 786"); return; }
-    setTrialMixAttempts(attempts + 1);
-    closeQuizModeScreen();
-    setTimeout(() => { window.location.href = "/quiz/prova-gratis?chapter=1&mix=1"; }, 460);
+    scheduleExclusiveAppNavigation(
+      "start-trial-mix-quiz",
+      () => {
+        setTrialMixAttempts(attempts + 1);
+        closeQuizModeScreen();
+      },
+      () => { window.location.href = "/quiz/prova-gratis?chapter=1&mix=1"; }
+    );
     return;
   }
-  closeQuizModeScreen();
-  setTimeout(() => { window.location.href = getQuizPath(); }, 460);
+  scheduleExclusiveAppNavigation(
+    "start-mix-quiz",
+    () => closeQuizModeScreen(),
+    () => { window.location.href = getQuizPath(); }
+  );
 }
 
 function startCapQuiz() {
   if (trialGuestMode && !isFreeTrialChapter(qmsCapSelected)) { openTrialPaywall("Questo quiz"); return; }
   if (qmsCapSelected === null) return;
   const ch = qmsCapSelected;
-  closeQuizModeScreen();
-  setTimeout(() => {
-    window.location.href = trialGuestMode
-      ? `/quiz/prova-gratis?chapter=${ch}`
-      : getQuizPath({ chapters: String(ch) });
-  }, 460);
+  const destination = trialGuestMode
+    ? `/quiz/prova-gratis?chapter=${ch}`
+    : getQuizPath({ chapters: String(ch) });
+  scheduleExclusiveAppNavigation(
+    `start-chapter-quiz-${ch}`,
+    () => closeQuizModeScreen(),
+    () => { window.location.href = destination; }
+  );
 }
 
 function startMultiQuiz() {
   if (trialGuestMode) { openTrialPaywall("Quiz Multi"); return; }
   if (qmsMultiSelected.size < 2) return;
   const chapters = Array.from(qmsMultiSelected).sort((a, b) => a - b).join(",");
-  closeQuizModeScreen();
-  setTimeout(() => { window.location.href = getQuizPath({ chapters }); }, 460);
+  scheduleExclusiveAppNavigation(
+    `start-multi-quiz-${chapters}`,
+    () => closeQuizModeScreen(),
+    () => { window.location.href = getQuizPath({ chapters }); }
+  );
 }
 
 /***********************
@@ -4607,6 +4781,7 @@ function updateAdminEntryVisibility() {
     && isCurrentSessionAdmin()
     && !adminPanelIsOpen;
   btn.classList.toggle("hidden", !shouldShow);
+  syncAppUtilityLayout();
 }
 
 function refreshAdminEntryOnResume() {
@@ -4898,16 +5073,21 @@ async function showAdminPanel() {
     return;
   }
 
-  hideAll();
-  document.getElementById("adminPanel")?.classList.remove("hidden");
-  document.body.classList.add("admin-mode");
-  setChapterMode(false);
-  setProfileIconVisible(false);
-  setLoggedInChrome();
-  currentScreen = "admin";
-  updateAdminEntryVisibility();
-  setAppRoute({ screen: "admin" });
-  await adminLoadUsers(false, "recent");
+  let loadPromise = Promise.resolve();
+  const started = runExclusiveAppAction("show-admin", () => {
+    hideAll();
+    document.getElementById("adminPanel")?.classList.remove("hidden");
+    document.body.classList.add("admin-mode");
+    setChapterMode(false);
+    setProfileIconVisible(false);
+    setLoggedInChrome();
+    currentScreen = "admin";
+    updateAdminEntryVisibility();
+    setAppRoute({ screen: "admin" });
+    loadPromise = adminLoadUsers(false, "recent");
+  }, { holdMs: 360 });
+  if (!started) return;
+  await loadPromise;
 }
 
 function getAdminResponseUsers(data) {

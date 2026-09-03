@@ -43,7 +43,7 @@ test("repeated TTS clicks stay bounded and release cancelled audio work", () => 
   assert.match(quizSource, /bengaliAudioCache\s*=\s*createBoundedCache\(36\)/);
   assert.match(quizSource, /cancelQuizTtsRequest\("it"\)/);
   assert.match(quizSource, /cancelQuizTtsRequest\("bn"\)/);
-  assert.match(quizSource, /URL\.revokeObjectURL\(blobUrl\)/);
+  assert.match(quizSource, /function disposeGeneratedAudio\([\s\S]*?URL\.revokeObjectURL\(objectUrl\)/);
   assert.match(studySource, /ttsCache\s*=\s*createBoundedCache\(48\)/);
   assert.match(studySource, /requestTtsData\(key/);
   assert.match(studySource, /cancelTtsRequest\(\)/);

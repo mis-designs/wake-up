@@ -10,8 +10,8 @@ const studyScript = readFileSync(new URL("../study-quiz.js", import.meta.url), "
 const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
 
 test("Quiz and Studia quiz load one shared Admin-derived player skin", () => {
-  assert.ok(quizPage.indexOf("mystyle.css?v=50-user-timer-prompt") < quizPage.indexOf("audio-player-ui.css?v=4-speed-outward"));
-  assert.ok(studyPage.indexOf("study-quiz.css?v=25-user-study-order") < studyPage.indexOf("audio-player-ui.css?v=4-speed-outward"));
+  assert.ok(quizPage.indexOf("mystyle.css?v=50-user-timer-prompt") < quizPage.indexOf("audio-player-ui.css?v=5-audio-focus"));
+  assert.ok(studyPage.indexOf("study-quiz.css?v=25-user-study-order") < studyPage.indexOf("audio-player-ui.css?v=5-audio-focus"));
   assert.match(styles, /\.quiz-audio-explanation,\s*\.study-explanation-player\s*\{[\s\S]*?min-height:\s*56px;[\s\S]*?border:\s*1px solid var\(--audio-player-line\);[\s\S]*?border-radius:\s*999px;[\s\S]*?background:\s*transparent;/u);
   assert.match(styles, /box-shadow:[^;]*0 10px 28px rgba\(5, 150, 105, \.14\);[\s\S]*?backdrop-filter:\s*none;/u);
   assert.match(styles, /--audio-player-start:\s*#34d399;[\s\S]*?--audio-player-mid:\s*#10b981;[\s\S]*?--audio-player-end:\s*#059669;/u);
@@ -43,9 +43,11 @@ test("the speed selector slows to 0.5x first and then advances to 2x", () => {
   assert.match(studyScript, /String\(controls\.speedValue\)\.replace\("\.", ","\)/u);
 });
 
-test("wider speed labels grow outward without shortening the progress track", () => {
-  assert.match(styles, /\.quiz-audio-explanation,\s*\.study-explanation-player\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*40px minmax\(42px, 1fr\) 40px;[\s\S]*?overflow:\s*visible;/u);
-  assert.match(styles, /\.quiz-audio-speed,\s*\.study-explanation-speed\s*\{[\s\S]*?justify-self:\s*start;[\s\S]*?width:\s*max-content;[\s\S]*?min-width:\s*40px;[\s\S]*?white-space:\s*nowrap;[\s\S]*?transform-origin:\s*left center;/u);
+test("artwork, progress and every speed label stay inside the mobile card", () => {
+  assert.match(styles, /\.quiz-audio-explanation-shell,\s*\.study-explanation-media\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*44px minmax\(0, 1fr\);[\s\S]*?max-width:\s*100%;/u);
+  assert.match(styles, /\.quiz-audio-explanation,\s*\.study-explanation-player\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*40px minmax\(42px, 1fr\) 56px;[\s\S]*?width:\s*100%;[\s\S]*?max-width:\s*100%;/u);
+  assert.match(styles, /\.quiz-audio-speed,\s*\.study-explanation-speed\s*\{[\s\S]*?justify-self:\s*stretch;[\s\S]*?width:\s*56px;[\s\S]*?max-width:\s*56px;[\s\S]*?white-space:\s*nowrap;[\s\S]*?transform-origin:\s*center;/u);
+  assert.match(styles, /@media \(max-width: 420px\)[\s\S]*?grid-template-columns:\s*40px minmax\(36px, 1fr\) 52px;/u);
 });
 
 test("player controls expose hover, focus, state and motion-safe feedback", () => {
@@ -65,10 +67,13 @@ test("playback state updates the visible control and its accessible action", () 
 });
 
 test("the shared player ships through the current PWA cache", () => {
-  assert.match(quizPage, /quiz\.js\?v=78-audio-speed-cycle/u);
-  assert.match(studyPage, /study-quiz\.js\?v=23-audio-speed-cycle/u);
+  assert.match(quizPage, /audio-focus\.js\?v=1-resumable-tts[\s\S]*?quiz\.js\?v=79-audio-focus/u);
+  assert.match(studyPage, /audio-focus\.js\?v=1-resumable-tts[\s\S]*?study-quiz\.js\?v=24-audio-focus/u);
+  assert.match(quizPage, /quiz\.js\?v=79-audio-focus/u);
+  assert.match(studyPage, /study-quiz\.js\?v=24-audio-focus/u);
   assert.match(worker, /CACHE_NAME = "magicbook-pwa-v159-solid-profile-controls"/u);
-  assert.match(worker, /audio-player-ui\.css\?v=4-speed-outward/u);
-  assert.match(worker, /quiz\.js\?v=78-audio-speed-cycle/u);
-  assert.match(worker, /study-quiz\.js\?v=23-audio-speed-cycle/u);
+  assert.match(worker, /audio-player-ui\.css\?v=5-audio-focus/u);
+  assert.match(worker, /audio-focus\.js\?v=1-resumable-tts/u);
+  assert.match(worker, /quiz\.js\?v=79-audio-focus/u);
+  assert.match(worker, /study-quiz\.js\?v=24-audio-focus/u);
 });
