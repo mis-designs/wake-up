@@ -21,6 +21,7 @@ test("the privacy policy is a public, indexable static route", () => {
   assert.match(page, /<meta name="robots" content="index,follow">/u);
   assert.match(page, /<link rel="canonical" href="https:\/\/tmmmagic\.eu\/privacypolicy">/u);
   assert.match(page, /privacy-policy\.css\?v=1-editorial-policy/u);
+  assert.match(page, /privacy-policy\.js\?v=1-index-navigation/u);
   assert.doesNotMatch(page, /googletagmanager|googleapis|banglawebfonts/u);
   assert.match(index, /<a class="landing-privacy-link" href="\/privacypolicy">Privacy policy<\/a>/u);
   assert.match(index, /<a href="\/privacypolicy">Privacy policy<\/a>/u);
@@ -52,5 +53,25 @@ test("the privacy policy is available in the offline shell", () => {
   const worker = read("service-worker.js");
   assert.match(worker, /\/privacypolicy\.html/u);
   assert.match(worker, /\/privacy-policy\.css\?v=1-editorial-policy/u);
+  assert.match(worker, /\/privacy-policy\.js\?v=1-index-navigation/u);
   assert.match(worker, /url\.pathname\.startsWith\("\/privacypolicy"\)[\s\S]*?"\/privacypolicy\.html"/u);
+});
+
+test("the index owns accessible section navigation with active state and hash history", () => {
+  const page = read("privacypolicy.html");
+  assert.match(page, /class="privacy-index"/u);
+  assert.match(page, /href="#controller"/u);
+  assert.match(page, /aria-label="Indice dell’informativa"/u);
+
+  const navigation = read("privacy-policy.js");
+  assert.match(navigation, /scrollIntoView\(\{ behavior:/u);
+  assert.match(navigation, /history\.pushState/u);
+  assert.match(navigation, /aria-current/u);
+  assert.match(navigation, /IntersectionObserver/u);
+  assert.match(navigation, /prefers-reduced-motion/u);
+
+  const styles = read("privacy-policy.css");
+  assert.match(styles, /\.privacy-index a\.is-active/u);
+  assert.match(styles, /\.privacy-index-contact a\s*\{[^}]*overflow-wrap:\s*break-word/su);
+  assert.doesNotMatch(styles, /\.privacy-index-contact a\s*\{[^}]*overflow-wrap:\s*anywhere/su);
 });

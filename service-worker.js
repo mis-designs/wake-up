@@ -7,6 +7,7 @@ const STATIC_ASSETS = [
   "/libreria-font.css?v=1-three-fonts",
   "/privacypolicy.html",
   "/privacy-policy.css?v=1-editorial-policy",
+  "/privacy-policy.js?v=1-index-navigation",
   "/assets/fonts/magicbook-bangla-fonts.css?v=1-adorsho",
   "/assets/daisyui.css?v=2-learning-shell",
   "/loading-ui.css?v=1-shared-gif-loader",

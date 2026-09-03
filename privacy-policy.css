@@ -263,12 +263,14 @@ button:focus-visible {
 .privacy-index nav { margin-top: 16px; }
 .privacy-index ol { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
 .privacy-index li { border-bottom: 1px solid rgba(23, 35, 58, .1); }
-.privacy-index a { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 5px; align-items: center; min-height: 35px; color: #576779; font-size: .73rem; font-weight: 750; text-decoration: none; }
+.privacy-index a { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 5px; align-items: center; min-height: 35px; color: #576779; font-size: .73rem; font-weight: 750; text-decoration: none; transition: color .18s ease, box-shadow .18s ease; }
 .privacy-index a:hover { color: var(--privacy-teal-dark); }
+.privacy-index a.is-active { color: var(--privacy-teal-dark); box-shadow: inset 2px 0 0 var(--privacy-teal); }
+.privacy-index a.is-active span { color: var(--privacy-coral); }
 .privacy-index a span { color: var(--privacy-teal); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .62rem; font-weight: 800; }
 .privacy-index-contact { display: grid; gap: 5px; margin-top: 25px; padding-top: 17px; border-top: 1px solid var(--privacy-ink); }
 .privacy-index-contact span { color: var(--privacy-muted); font-size: .65rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
-.privacy-index-contact a { color: var(--privacy-teal-dark); font-size: .69rem; font-weight: 800; overflow-wrap: anywhere; text-underline-offset: 3px; }
+.privacy-index-contact a { display: block; max-width: 100%; color: var(--privacy-teal-dark); font-size: .69rem; font-weight: 800; overflow-wrap: break-word; word-break: normal; text-underline-offset: 3px; }
 
 .privacy-article { min-width: 0; }
 .privacy-section { scroll-margin-top: 105px; padding: 0 0 57px; border-bottom: 1px solid var(--privacy-line); }
@@ -344,6 +346,7 @@ button:focus-visible {
   .privacy-index li { border: 0; }
   .privacy-index a { min-width: max-content; min-height: 38px; margin-right: 18px; padding-bottom: 6px; border-bottom: 2px solid transparent; }
   .privacy-index a:hover { border-color: var(--privacy-teal); text-decoration: none; }
+  .privacy-index a.is-active { box-shadow: none; border-color: var(--privacy-teal); }
   .privacy-index-contact { display: flex; align-items: baseline; gap: 8px; margin-top: 12px; padding-top: 12px; }
   .privacy-prose { padding-left: 72px; }
 }
