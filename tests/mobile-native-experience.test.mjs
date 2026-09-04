@@ -7,14 +7,16 @@ const read = file => readFileSync(new URL(`../${file}`, import.meta.url), "utf8"
 test("Android WebView is detected before the responsive stylesheet paints", () => {
   const index = read("index.html");
   const quiz = read("quiz.html");
+  const marker = read("android-webview-mode.js");
 
   for (const page of [index, quiz]) {
-    assert.match(page, /classList\.add\("android-webview"\)/u);
+    assert.match(page, /android-webview-mode\.js\?v=1-quantum-signal/u);
     assert.match(page, /mobile-experience\.css\?v=2-balanced-shell/u);
   }
 
-  assert.ok(index.indexOf("android-webview") < index.indexOf("style.css?v=72-solid-profile-controls"));
-  assert.ok(quiz.indexOf("android-webview") < quiz.indexOf("mystyle.css?v=50-user-timer-prompt"));
+  assert.match(marker, /classList\.add\("android-webview"\)/u);
+  assert.ok(index.indexOf("android-webview-mode.js") < index.indexOf("style.css?v=72-solid-profile-controls"));
+  assert.ok(quiz.indexOf("android-webview-mode.js") < quiz.indexOf("mystyle.css?v=50-user-timer-prompt"));
 });
 
 test("native density removes the blank promo and keeps compact, scroll-safe controls", () => {

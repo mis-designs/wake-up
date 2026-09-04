@@ -4,14 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="google" content="notranslate">
-    <script>
-    (() => {
-        const ua = navigator.userAgent || "";
-        if (/Android/i.test(ua) && (/\bwv\b/i.test(ua) || /MagicBookViewer/i.test(ua))) {
-            document.documentElement.classList.add("android-webview");
-        }
-    })();
-    </script>
+    <script src="/android-webview-mode.js?v=1-quantum-signal"></script>
     <script>
     if (window.location.pathname === "/quiz.html") {
         window.location.replace("/");
@@ -40,10 +33,11 @@
     <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
     <link rel="stylesheet" href="/offline-notice.css?v=1.0.0">
     <link rel="stylesheet" href="mobile-experience.css?v=2-balanced-shell">
+    <link rel="stylesheet" href="/android-app-theme.css?v=1-quantum-signal">
     <script src="/offline-notice.js?v=1.0.0" defer></script>
 </head>
 
-<body data-screen-protection="always">
+<body class="quiz-page" data-screen-protection="always">
 
     <div class="quiz-container">
 

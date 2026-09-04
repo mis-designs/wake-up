@@ -28,8 +28,11 @@ test("the Admin exposes a clean, static Bengali font library route", () => {
   assert.match(page, /\/libreria-font\.css\?v=1-three-fonts/u);
   assert.doesNotMatch(page, /banglawebfonts\.pages\.dev/u);
   const scripts = [...page.matchAll(/<script\b[^>]*src="([^"]+)"[^>]*><\/script>/gu)].map(match => match[1]);
-  assert.deepEqual(scripts, ["/offline-notice.js?v=1.0.0"]);
-  assert.doesNotMatch(page, /<script\b(?![^>]*src="\/offline-notice\.js\?v=1\.0\.0")[^>]*>/u);
+  assert.deepEqual(scripts, [
+    "/android-webview-mode.js?v=1-quantum-signal",
+    "/offline-notice.js?v=1.0.0"
+  ]);
+  assert.doesNotMatch(page, /<script\b(?![^>]*src="\/(?:android-webview-mode\.js\?v=1-quantum-signal|offline-notice\.js\?v=1\.0\.0)")[^>]*>/u);
 });
 
 test("the library compares all three local fonts with the same live Bengali sentence", () => {

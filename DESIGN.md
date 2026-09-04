@@ -7,6 +7,8 @@ canonical_ui:
     - loading-ui.css
     - style.css
     - mobile-experience.css
+    - android-webview-mode.js
+    - android-app-theme.css
     - src/daisyui.css
     - assets/daisyui.css
     - src/learning-insights.css
@@ -16,8 +18,8 @@ canonical_ui:
   notes: Existing application tokens remain canonical. Locally compiled, d-prefixed daisyUI controls provide interaction primitives; the scoped learning stylesheet owns layout and visual hierarchy.
 design_context:
   owner: Magic Book
-  last_updated: 2026-09-03
-  revision_notes: Android WebView now uses a compact, balanced mobile shell for Home, chapter selection, and Quiz. The header reserves symmetric space for whichever Admin, Profile, or menu utilities are visible, Home actions center only when they fit and otherwise scroll naturally, and explanation-player controls remain inside their card. One app-level action gate owns delayed screen changes so rapid competing taps cannot open two destinations. Audio focus separately coordinates resumable explanation audio and transient TTS.
+  last_updated: 2026-09-04
+  revision_notes: Android WebView now has an app-only graphite, signal-orange, and pavement-gray palette in addition to its compact shell. The browser presentation remains unchanged. Shared marker and theme assets apply before paint on every application entry, while green/red/amber learning states retain their semantic meaning.
 ---
 
 # Magic Book design context
@@ -37,10 +39,13 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 - Icon rule: no Unicode characters as UI icons. Use repository assets, text labels, or decorative CSS marks hidden from assistive technology.
 - Avoid giant headings, oversized empty surfaces, decorative gradients, neon, game styling, generic KPI-card grids, traffic-sign decoration, and horizontal scrollers.
 - Android WebView compactness is owned by `mobile-experience.css`; it may reduce decoration and spacing without changing route meaning or hiding required controls. Header titles stay visually centered through symmetric live utility rails, and short Home content uses auto margins that collapse safely when vertical scrolling is needed.
+- Installed-app color is owned by `android-app-theme.css` behind the `html.android-webview` marker. Graphite chrome and signal-orange actions distinguish the Android app while the ordinary browser version keeps its current palette. The theme changes color only; route structure, density, typography, and behavior stay with their existing owners.
 
 ## Tokens
 
 - Brand action: `--li-action: var(--color-primary)`; dark action `#263bd4`.
+- Android installed palette: signal orange `#FF4500`, graphite `#1A1A1A`, pavement gray `#E5E5E5`, primary ink `#111827`, muted ink `#4B5563`, and structural border `#9CA3AF`. Long reading surfaces remain white for legibility. Orange uses dark ink rather than white text so normal-size labels pass WCAG AA.
+- Semantic colors are independent of the installed palette: correct/positive remains green, incorrect/error remains red, and warning/limited data remains amber.
 - Ink/navy: `#17233a` / `#12315f`.
 - Positive: `--li-teal: #138f86`; attention: `--li-coral: #c84f4b`; limited data: `--li-amber: #a96c16`.
 - Page/surface/line: `#f3f6fb`, `#ffffff`, `#d9e2ee`.
