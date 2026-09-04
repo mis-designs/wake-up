@@ -10,7 +10,7 @@ test("Android WebView is detected before the responsive stylesheet paints", () =
   const marker = read("android-webview-mode.js");
 
   for (const page of [index, quiz]) {
-    assert.match(page, /android-webview-mode\.js\?v=1-quantum-signal/u);
+    assert.match(page, /android-webview-mode\.js\?v=2-aura-fluid/u);
     assert.match(page, /mobile-experience\.css\?v=2-balanced-shell/u);
   }
 
@@ -57,5 +57,5 @@ test("chapter drag work is frame-batched and native navigation is shorter", () =
   assert.match(script, /const appActionGate = \(\(\) =>/u);
   assert.match(script, /function scheduleExclusiveAppNavigation/u);
   assert.match(worker, /mobile-experience\.css\?v=2-balanced-shell/u);
-  assert.match(worker, /script\.js\?v=69-exclusive-actions/u);
+  assert.match(worker, /script\.js\?v=70-aura-fluid-drag/u);
 });

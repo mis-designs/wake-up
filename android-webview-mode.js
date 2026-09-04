@@ -9,11 +9,11 @@
 
   const root = document.documentElement;
   root.classList.add("android-webview");
-  root.dataset.appPalette = "quantum-signal";
+  root.dataset.appPalette = "aura-fluid";
 
   const syncThemeColor = () => {
     const themeColor = document.querySelector('meta[name="theme-color"]');
-    if (themeColor) themeColor.setAttribute("content", "#1A1A1A");
+    if (themeColor) themeColor.setAttribute("content", "#5B1E91");
   };
 
   if (document.readyState === "loading") {

@@ -3456,6 +3456,12 @@ let selectedChapter = 1;
 const CARD_WIDTH = 140;
 const CARD_GAP = 16;
 const CARD_SPACING = CARD_WIDTH + CARD_GAP;
+const AURA_DRAG_PROJECTION_MS = 110;
+const AURA_DRAG_MAX_STEPS = 6;
+
+function usesAuraFluidDrag() {
+  return document.documentElement.dataset.appPalette === "aura-fluid";
+}
 
 function clampChapter(value) {
   return Math.max(1, Math.min(TOTAL_CHAPTERS, value));
@@ -3472,17 +3478,27 @@ function getTrackBaseOffset(chapter) {
   return (w - CARD_WIDTH) / 2 - (chapter - 1) * CARD_SPACING;
 }
 
-function updateCardStyles() {
+function updateCardStyles(previewChapter = selectedChapter) {
   const track = document.getElementById("chapterCardTrack");
   if (!track) return;
 
+  const safePreview = Math.max(1, Math.min(TOTAL_CHAPTERS, previewChapter));
+  const previewIndex = Math.round(safePreview) - 1;
+
   track.querySelectorAll(".chapter-card").forEach((card, i) => {
-    const dist = Math.min(Math.abs(i - (selectedChapter - 1)), 2);
-    const scale = [1, 0.85, 0.72][dist];
-    const opacity = [1, 0.65, 0.38][dist];
-    card.style.transform = `scale(${scale})`;
+    const dist = Math.min(Math.abs(i + 1 - safePreview), 2);
+    const scale = Math.max(0.72, 1 - dist * 0.15);
+    const opacity = Math.max(0.38, 1 - dist * 0.34);
+    const lift = usesAuraFluidDrag() ? Math.min(dist, 2) * 3 : 0;
+    const isSelected = i === selectedChapter - 1;
+
+    card.style.transform = `translateY(${lift}px) scale(${scale})`;
     card.style.opacity = opacity;
-    card.classList.toggle("is-active", dist === 0);
+    card.classList.toggle("is-active", isSelected);
+    card.classList.toggle("is-drag-preview", cardDragging && i === previewIndex);
+    card.tabIndex = isSelected ? 0 : -1;
+    if (isSelected) card.setAttribute("aria-current", "true");
+    else card.removeAttribute("aria-current");
   });
 
   document.querySelectorAll(".chapter-card-dot").forEach((dot, i) => {
@@ -3505,21 +3521,43 @@ function selectChapter(num) {
   updateCardTrack();
 }
 
+function focusSelectedChapter() {
+  const selected = document.querySelector(`.chapter-card[data-chapter="${selectedChapter}"]`);
+  if (selected instanceof HTMLElement) selected.focus({ preventScroll: true });
+}
+
+function getResistedDragOffset(rawDelta) {
+  if (!usesAuraFluidDrag()) return rawDelta;
+
+  const maxRight = (selectedChapter - 1) * CARD_SPACING;
+  const maxLeft = -(TOTAL_CHAPTERS - selectedChapter) * CARD_SPACING;
+  if (rawDelta > maxRight) return maxRight + (rawDelta - maxRight) * 0.22;
+  if (rawDelta < maxLeft) return maxLeft + (rawDelta - maxLeft) * 0.22;
+  return rawDelta;
+}
+
 let cardDragging = false;
 let cardDragStartX = 0;
 let cardDragDelta = 0;
 let cardPointerMoved = false;
 let cardTrackBaseOffset = 0;
 let cardDragFrame = 0;
+let cardDragLastX = 0;
+let cardDragLastTime = 0;
+let cardDragVelocity = 0;
 
 function initCardTrack() {
   const track = document.getElementById("chapterCardTrack");
   const dotsEl = document.getElementById("chapterCardDots");
   if (!track) return;
 
+  track.setAttribute("role", "group");
+  track.setAttribute("aria-label", "Selezione capitolo");
+
   for (let i = 1; i <= TOTAL_CHAPTERS; i++) {
-    const card = document.createElement("div");
+    const card = document.createElement("button");
     const chapterTitle = CHAPTER_TITLES[i - 1] || `Capitolo ${i}`;
+    card.type = "button";
     card.className = "chapter-card";
     card.dataset.chapter = i;
     card.setAttribute("aria-label", `Capitolo ${i}: ${chapterTitle}`);
@@ -3528,6 +3566,28 @@ function initCardTrack() {
       <strong class="chapter-card-number">${formatChapter(i)}</strong>
       <span class="chapter-card-title">${chapterTitle}</span>
     `;
+    card.addEventListener("keydown", e => {
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        selectChapter(selectedChapter + 1);
+        focusSelectedChapter();
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        selectChapter(selectedChapter - 1);
+        focusSelectedChapter();
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        selectChapter(1);
+        focusSelectedChapter();
+      } else if (e.key === "End") {
+        e.preventDefault();
+        selectChapter(TOTAL_CHAPTERS);
+        focusSelectedChapter();
+      } else if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        startEngineSequence();
+      }
+    });
     track.appendChild(card);
   }
 
@@ -3536,16 +3596,21 @@ function initCardTrack() {
       const dot = document.createElement("span");
       dot.className = "chapter-card-dot";
       dot.dataset.chapter = i;
-      dot.addEventListener("click", () => selectChapter(i));
+      dot.setAttribute("aria-hidden", "true");
       dotsEl.appendChild(dot);
     }
+    dotsEl.setAttribute("aria-hidden", "true");
   }
 
   track.addEventListener("pointerdown", e => {
+    if (e.isPrimary === false || (e.pointerType === "mouse" && e.button !== 0)) return;
     cardDragging = true;
     cardPointerMoved = false;
     cardDragStartX = e.clientX;
     cardDragDelta = 0;
+    cardDragLastX = e.clientX;
+    cardDragLastTime = e.timeStamp;
+    cardDragVelocity = 0;
     cardTrackBaseOffset = getTrackBaseOffset(selectedChapter);
     track.classList.add("is-dragging");
     track.setPointerCapture(e.pointerId);
@@ -3553,17 +3618,28 @@ function initCardTrack() {
 
   track.addEventListener("pointermove", e => {
     if (!cardDragging) return;
-    cardDragDelta = e.clientX - cardDragStartX;
-    if (Math.abs(cardDragDelta) > 5) cardPointerMoved = true;
+    const rawDelta = e.clientX - cardDragStartX;
+    const elapsed = e.timeStamp - cardDragLastTime;
+    if (elapsed > 0 && elapsed < 80) {
+      const nextVelocity = (e.clientX - cardDragLastX) / elapsed;
+      cardDragVelocity = cardDragVelocity * 0.68 + nextVelocity * 0.32;
+    }
+    cardDragLastX = e.clientX;
+    cardDragLastTime = e.timeStamp;
+    cardDragDelta = getResistedDragOffset(rawDelta);
+    if (Math.abs(rawDelta) > 5) cardPointerMoved = true;
     if (!cardDragFrame) {
       cardDragFrame = requestAnimationFrame(() => {
         cardDragFrame = 0;
         updateCardTrack(cardDragDelta, cardTrackBaseOffset);
+        if (usesAuraFluidDrag()) {
+          updateCardStyles(selectedChapter - cardDragDelta / CARD_SPACING);
+        }
       });
     }
   });
 
-  const endDrag = e => {
+  const endDrag = (e, cancelled = false) => {
     if (!cardDragging) return;
     cardDragging = false;
     if (cardDragFrame) {
@@ -3573,8 +3649,17 @@ function initCardTrack() {
     track.classList.remove("is-dragging");
     if (track.hasPointerCapture(e.pointerId)) track.releasePointerCapture(e.pointerId);
 
-    if (cardPointerMoved) {
-      const steps = Math.round(-cardDragDelta / CARD_SPACING);
+    if (cancelled) {
+      updateCardStyles();
+      updateCardTrack();
+    } else if (cardPointerMoved) {
+      const projectedDelta = usesAuraFluidDrag()
+        ? cardDragDelta + cardDragVelocity * AURA_DRAG_PROJECTION_MS
+        : cardDragDelta;
+      const rawSteps = Math.round(-projectedDelta / CARD_SPACING);
+      const steps = usesAuraFluidDrag()
+        ? Math.max(-AURA_DRAG_MAX_STEPS, Math.min(AURA_DRAG_MAX_STEPS, rawSteps))
+        : rawSteps;
       selectChapter(selectedChapter + steps);
     } else {
       // Pointer capture makes `e.target` resolve to the track on several mobile
@@ -3594,17 +3679,11 @@ function initCardTrack() {
       }
     }
     cardDragDelta = 0;
+    cardDragVelocity = 0;
   };
 
   track.addEventListener("pointerup", endDrag);
-  track.addEventListener("pointercancel", endDrag);
-
-  document.addEventListener("keydown", e => {
-    if (document.getElementById("chapters")?.classList.contains("hidden")) return;
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); selectChapter(selectedChapter + 1); }
-    if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); selectChapter(selectedChapter - 1); }
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); startEngineSequence(); }
-  });
+  track.addEventListener("pointercancel", e => endDrag(e, true));
 
   updateCardStyles();
 }
