@@ -11,12 +11,12 @@ test("Android WebView is detected before the responsive stylesheet paints", () =
 
   for (const page of [index, quiz]) {
     assert.match(page, /android-webview-mode\.js\?v=2-aura-fluid/u);
-    assert.match(page, /mobile-experience\.css\?v=2-balanced-shell/u);
+    assert.match(page, /mobile-experience\.css\?v=3-question-footer-grid/u);
   }
 
   assert.match(marker, /classList\.add\("android-webview"\)/u);
   assert.ok(index.indexOf("android-webview-mode.js") < index.indexOf("style.css?v=72-solid-profile-controls"));
-  assert.ok(quiz.indexOf("android-webview-mode.js") < quiz.indexOf("mystyle.css?v=50-user-timer-prompt"));
+  assert.ok(quiz.indexOf("android-webview-mode.js") < quiz.indexOf("mystyle.css?v=51-question-footer-reflow"));
 });
 
 test("native density removes the blank promo and keeps compact, scroll-safe controls", () => {
@@ -56,6 +56,6 @@ test("chapter drag work is frame-batched and native navigation is shorter", () =
   assert.match(script, /const navigationDelay = compactMotion \? 650 : 1650;/u);
   assert.match(script, /const appActionGate = \(\(\) =>/u);
   assert.match(script, /function scheduleExclusiveAppNavigation/u);
-  assert.match(worker, /mobile-experience\.css\?v=2-balanced-shell/u);
+  assert.match(worker, /mobile-experience\.css\?v=3-question-footer-grid/u);
   assert.match(worker, /script\.js\?v=70-aura-fluid-drag/u);
 });

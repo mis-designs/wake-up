@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v159-solid-profile-controls";
+const CACHE_NAME = "magicbook-pwa-v160-question-footer-reflow";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -12,7 +12,7 @@ const STATIC_ASSETS = [
   "/assets/daisyui.css?v=2-learning-shell",
   "/loading-ui.css?v=1-shared-gif-loader",
   "/style.css?v=72-solid-profile-controls",
-  "/mobile-experience.css?v=2-balanced-shell",
+  "/mobile-experience.css?v=3-question-footer-grid",
   "/android-webview-mode.js?v=2-aura-fluid",
   "/android-app-theme.css?v=2-aura-fluid",
   "/magic-dictionary.css?v=1.2.5-settings-layout",
@@ -25,7 +25,7 @@ const STATIC_ASSETS = [
   "/src/learning-insights.css?v=9-card-spacing&ui=10",
   "/src/learning-insights.js?v=5-figure-explanation-ui&ui=7-shared-gif-loader",
   "/homebg.css?v=3",
-  "/mystyle.css?v=50-user-timer-prompt",
+  "/mystyle.css?v=51-question-footer-reflow",
   "/audio-player-ui.css?v=5-audio-focus",
   "/script.js?v=70-aura-fluid-drag",
   "/study-quiz.html",
@@ -33,7 +33,7 @@ const STATIC_ASSETS = [
   "/study-quiz.js?v=24-audio-focus",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=79-audio-focus",
-  "/quiz-help.css?v=20260901-italian-display-order",
+  "/quiz-help.css?v=20260905-question-footer-reflow",
   "/quiz-help.js?v=20260903-audio-focus",
   "/patenteGlossaryResolver.js?v=1.0.0",
   "/patenteContextResolverV3.js?v=4.0.0-glossary-display",

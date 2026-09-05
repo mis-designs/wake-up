@@ -26,13 +26,13 @@
     <style>@import url('https://banglawebfonts.pages.dev/css/un-bangla.css');</style>
     <link href="https://banglawebfonts.pages.dev/css/tiro-bangla.css" rel="stylesheet">
     <link rel="stylesheet" href="loading-ui.css?v=1-shared-gif-loader">
-  <link rel="stylesheet" href="mystyle.css?v=50-user-timer-prompt">
+  <link rel="stylesheet" href="mystyle.css?v=51-question-footer-reflow">
     <link rel="stylesheet" href="audio-player-ui.css?v=5-audio-focus">
-    <link rel="stylesheet" href="quiz-help.css?v=20260901-italian-display-order">
+    <link rel="stylesheet" href="quiz-help.css?v=20260905-question-footer-reflow">
     <link rel="stylesheet" href="magic-dictionary.css?v=1.2.5-settings-layout">
     <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
     <link rel="stylesheet" href="/offline-notice.css?v=1.0.0">
-    <link rel="stylesheet" href="mobile-experience.css?v=2-balanced-shell">
+    <link rel="stylesheet" href="mobile-experience.css?v=3-question-footer-grid">
     <link rel="stylesheet" href="/android-app-theme.css?v=2-aura-fluid">
     <script src="/offline-notice.js?v=1.0.0" defer></script>
 </head>
@@ -59,73 +59,75 @@
         <div id="progress">Domanda 1 / 30</div>
 
         <div class="question-area">
+            <div class="quiz-question-content">
+                <div id="figure-wrap" class="figure-wrap hidden">
+                    <div id="img-skeleton" class="img-skeleton hidden">
+                        <span class="img-skeleton-label">Caricamento immagine…</span>
+                    </div>
+                    <img id="figure" alt="">
+                </div>
+                <!-- Il testo ufficiale del quiz deve restare in italiano anche con la traduzione del browser. -->
+                <button id="question" type="button" class="notranslate" translate="no" lang="it" aria-haspopup="dialog" aria-controls="quiz-help-workspace" aria-describedby="quiz-help-trigger-description"></button>
+                <span id="quiz-help-trigger-description" class="sr-only">Apri la traduzione Bangla e le parole chiave.</span>
+                <section id="quiz-audio-recorder" class="quiz-audio-recorder hidden" aria-label="Registratore spiegazione audio">
+                    <div class="quiz-audio-recorder-head">
+                        <strong>Spiegazione audio</strong>
+                        <span id="quiz-audio-record-time">0:00</span>
+                        <button id="quiz-audio-record-close" type="button" aria-label="Chiudi registratore">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+                    <p id="quiz-audio-record-status">Premi il microfono per iniziare.</p>
+                    <audio id="quiz-audio-record-preview" class="hidden" controls></audio>
+                    <div class="quiz-audio-record-actions">
+                        <button id="quiz-audio-record-start" type="button">
+                            <span id="quiz-audio-record-start-icon" class="quiz-recorder-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none"><rect x="8" y="2" width="8" height="13" rx="4" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                            </span>
+                            <span id="quiz-audio-record-start-label">Registra</span>
+                        </button>
+                        <button id="quiz-audio-record-pause" type="button" disabled>
+                            <span class="quiz-recorder-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none"><path d="M8 5V19M16 5V19" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+                            </span>
+                            <span>Pausa</span>
+                        </button>
+                        <button id="quiz-audio-record-save" type="button" disabled>
+                            <span id="quiz-audio-record-save-icon" class="quiz-recorder-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none"><path d="M5 3H17L19 5V21H5V3Z" stroke="currentColor" stroke-width="2"/><path d="M8 3V9H16V3M8 21V14H16V21" stroke="currentColor" stroke-width="2"/></svg>
+                            </span>
+                            <span>Salva</span>
+                        </button>
+                    </div>
+                </section>
+            </div>
             <div class="quiz-question-actions">
-            <div id="quiz-audio-admin-tools" class="quiz-audio-admin-tools hidden">
-                <button id="quiz-audio-add" class="quiz-audio-add" type="button" aria-label="Aggiungi spiegazione audio" aria-expanded="false">
-                    <span aria-hidden="true">+</span>
-                    <img class="hidden" src="assets/admin/edit.png" alt="" aria-hidden="true">
+                <div id="quiz-audio-admin-tools" class="quiz-audio-admin-tools hidden">
+                    <button id="quiz-audio-add" class="quiz-audio-add" type="button" aria-label="Aggiungi spiegazione audio" aria-expanded="false">
+                        <span aria-hidden="true">+</span>
+                        <img class="hidden" src="assets/admin/edit.png" alt="" aria-hidden="true">
+                    </button>
+                    <div id="quiz-audio-edit-menu" class="quiz-audio-edit-menu hidden">
+                        <button id="quiz-audio-rerecord" type="button">
+                            <img src="assets/admin/renew.png" alt="" aria-hidden="true">
+                            <span>Registra di nuovo</span>
+                        </button>
+                        <button id="quiz-audio-delete" type="button">
+                            <img src="assets/admin/trash.png" alt="" aria-hidden="true">
+                            <span>Elimina audio</span>
+                        </button>
+                    </div>
+                </div>
+                <button id="explanation-btn" class="explanation-btn hidden" type="button" onclick="openExplanation()" aria-label="Apri spiegazione">
+                    Spiega
                 </button>
-                <div id="quiz-audio-edit-menu" class="quiz-audio-edit-menu hidden">
-                    <button id="quiz-audio-rerecord" type="button">
-                        <img src="assets/admin/renew.png" alt="" aria-hidden="true">
-                        <span>Registra di nuovo</span>
-                    </button>
-                    <button id="quiz-audio-delete" type="button">
-                        <img src="assets/admin/trash.png" alt="" aria-hidden="true">
-                        <span>Elimina audio</span>
-                    </button>
+                <div class="quiz-click-hint" aria-hidden="true">
+                    <span class="quiz-click-hint-mark" aria-hidden="true"></span>
+                    <span class="quiz-click-hint-copy">
+                        <strong>Apri aiuto</strong>
+                        <small>Traduzione e parole chiave</small>
+                    </span>
                 </div>
-            </div>
-            <button id="explanation-btn" class="explanation-btn hidden" type="button" onclick="openExplanation()" aria-label="Apri spiegazione">
-                Spiega
-            </button>
-            </div>
-            <section id="quiz-audio-recorder" class="quiz-audio-recorder hidden" aria-label="Registratore spiegazione audio">
-                <div class="quiz-audio-recorder-head">
-                    <strong>Spiegazione audio</strong>
-                    <span id="quiz-audio-record-time">0:00</span>
-                    <button id="quiz-audio-record-close" type="button" aria-label="Chiudi registratore">
-                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
-                    </button>
-                </div>
-                <p id="quiz-audio-record-status">Premi il microfono per iniziare.</p>
-                <audio id="quiz-audio-record-preview" class="hidden" controls></audio>
-                <div class="quiz-audio-record-actions">
-                    <button id="quiz-audio-record-start" type="button">
-                        <span id="quiz-audio-record-start-icon" class="quiz-recorder-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none"><rect x="8" y="2" width="8" height="13" rx="4" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                        </span>
-                        <span id="quiz-audio-record-start-label">Registra</span>
-                    </button>
-                    <button id="quiz-audio-record-pause" type="button" disabled>
-                        <span class="quiz-recorder-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none"><path d="M8 5V19M16 5V19" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
-                        </span>
-                        <span>Pausa</span>
-                    </button>
-                    <button id="quiz-audio-record-save" type="button" disabled>
-                        <span id="quiz-audio-record-save-icon" class="quiz-recorder-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none"><path d="M5 3H17L19 5V21H5V3Z" stroke="currentColor" stroke-width="2"/><path d="M8 3V9H16V3M8 21V14H16V21" stroke="currentColor" stroke-width="2"/></svg>
-                        </span>
-                        <span>Salva</span>
-                    </button>
-                </div>
-            </section>
-            <div id="figure-wrap" class="figure-wrap hidden">
-                <div id="img-skeleton" class="img-skeleton hidden">
-                    <span class="img-skeleton-label">Caricamento immagine…</span>
-                </div>
-                <img id="figure" alt="">
-            </div>
-            <!-- Il testo ufficiale del quiz deve restare in italiano anche con la traduzione del browser. -->
-            <button id="question" type="button" class="notranslate" translate="no" lang="it" aria-haspopup="dialog" aria-controls="quiz-help-workspace" aria-describedby="quiz-help-trigger-description"></button>
-            <span id="quiz-help-trigger-description" class="sr-only">Apri la traduzione Bangla e le parole chiave.</span>
-            <div class="quiz-click-hint" aria-hidden="true">
-                <span class="quiz-click-hint-hand">👆</span>
-                <span class="quiz-click-hint-copy">
-                    <strong>Clicca qui</strong>
-                    <small>Traduzione e parole chiave</small>
-                </span>
             </div>
         </div>
 

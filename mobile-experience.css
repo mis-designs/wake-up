@@ -382,15 +382,19 @@ html.android-webview body {
   }
 
   html.android-webview .question-area {
-    gap: 8px;
+    --quiz-question-flow-gap: 8px;
+    gap: var(--quiz-question-flow-gap);
     padding: 12px;
     border-radius: 18px;
     box-shadow: 0 4px 14px rgba(37, 41, 67, 0.1);
+  }
+
+  html.android-webview .quiz-question-content {
     overscroll-behavior: contain;
     scrollbar-width: none;
   }
 
-  html.android-webview .question-area::-webkit-scrollbar {
+  html.android-webview .quiz-question-content::-webkit-scrollbar {
     display: none;
   }
 
@@ -413,11 +417,6 @@ html.android-webview body {
 
   html.android-webview[data-reader-size="xlarge"] #question {
     font-size: clamp(1.2rem, 4.4vw, 1.3rem);
-  }
-
-  html.android-webview .quiz-question-actions {
-    bottom: 9px;
-    left: 9px;
   }
 
   html.android-webview .quiz-command-bar {

@@ -6,6 +6,8 @@ canonical_ui:
   paths:
     - loading-ui.css
     - style.css
+    - mystyle.css
+    - quiz-help.css
     - mobile-experience.css
     - android-webview-mode.js
     - android-app-theme.css
@@ -18,8 +20,8 @@ canonical_ui:
   notes: Existing application tokens remain canonical. Locally compiled, d-prefixed daisyUI controls provide interaction primitives; the scoped learning stylesheet owns layout and visual hierarchy.
 design_context:
   owner: Magic Book
-  last_updated: 2026-09-04
-  revision_notes: Android WebView now uses the app-only Aura Fluid palette and a direct-manipulation chapter selector. Purple, lilac, white, and dark ink replace the previous installed palette without changing the browser presentation. The chapter carousel follows the pointer, resists its boundaries, projects a short release gesture, and retains tap and keyboard alternatives. Green/red/amber learning states keep their semantic meaning.
+  last_updated: 2026-09-05
+  revision_notes: Quiz question utilities now use an in-flow, wrapping footer so long or enlarged copy can never sit beneath “Spiega” or the first-use help hint in narrow browsers. Android WebView keeps the app-only Aura Fluid palette and direct-manipulation chapter selector; semantic learning colors remain unchanged.
 ---
 
 # Magic Book design context
@@ -84,6 +86,7 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 - Admin search and filters: the phone field is an emerald icon-led pill with no visible placeholder, while retaining a programmatic Italian name and explicit clear control. Users, Promo, In scadenza, Scaduti, and Duplicati use the same pill radius with green, violet, amber, red, and slate state accents; runtime values are owned by `style.css` under `.admin-toolbar` and consumed by the search, tabs, and utility actions.
 - Admin user dataset: entry loads at most the 10 newest registrations. A labelled scope bar explains whether the current data is recent, searched, or complete; exact phone lookup stays remote, while `Carica tutti gli utenti` is the explicit opt-in for full-list filters such as Promo and Duplicati.
 - Live quiz bilingual help: clicking the Italian question opens one dark bottom-centred card. Translation and keyword content are peer panels inside the same frame, selected through two accessible dots, Left/Right/Home/End keys, or a horizontal touch swipe; long content scrolls vertically inside its panel. Pink remains the single help accent and the dialog owns focus, Escape, backdrop dismissal, and trigger-focus restoration.
+- Live quiz question footer: figure, Italian question, and optional Admin recorder keep their semantic source order in the card’s dedicated scroll region. “Spiega” and the first-question help hint share a reserved, wrapping footer below it; neither uses overlay coordinates. The footer remains visible while long text scrolls independently and keeps important controls at least 44px tall.
 - Admin quiz answer marker: only a server-authorized Admin session receives the private answer value. One small green marker sits below `Vero` when true is correct, or one small red marker sits below `Falso` when false is correct; ordinary learners receive neither the value nor reserved marker space, and assistive technology receives an explicit Admin-only text equivalent.
 - Quiz timer continuation: the timer counts down through the normal duration for every role. At zero, a server-authorized Admin session changes to a `+0:00` elapsed-overtime display and continues until the Admin finishes or exits. A non-Admin session pauses at `0:00` and opens the shared timeout dialog; `Sì, continua` starts a fresh full-duration cycle while preserving total elapsed time, and `Chiudi quiz` returns to the menu without grading. The decision repeats after every completed cycle. Result summaries report the complete elapsed time.
 - Quiz correction audio: every correction row—correct, wrong, or unanswered—keeps the existing person artwork as a labelled audio button. Audio remains demand-loaded after activation, one review explanation plays at a time, and unavailable audio returns the existing recoverable message.
@@ -115,6 +118,7 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 - Route entry focuses `#learningInsightsHeading`; background refresh does not steal focus. Re-rendered tabs, chapter cells, disclosure controls, and close actions restore focus.
 - Tabs implement Left/Right/Home/End. Selected and expanded controls expose matching ARIA state/control relationships.
 - Status is expressed with text and color. Interactive targets are at least 40–44px, focus is visible, and reduced-motion/forced-colors modes are supported.
+- Long quiz questions and reader-size variants reflow before their action footer; no question utility may cover copy at 320px, browser zoom, or iOS text scaling.
 - Verify 320, 375, 430, 768, 1024, 1280, 1440, and 1920 widths; capture 375, 768, 1440, and 1920 evidence.
 - Verify empty, 1–9 answers, medium history, large history, figure failure, offline cache, expired access, timeout, and generic backend failure.
 - No Unicode UI icons, fabricated sequences/charts, inferred causes, duplicate global chrome, or hidden horizontal overflow patches.

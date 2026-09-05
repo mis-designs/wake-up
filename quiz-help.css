@@ -10,13 +10,17 @@
 .question-area { position: relative; cursor: pointer; }
 
 .quiz-click-hint {
-  position: absolute;
-  right: 16px;
-  bottom: 14px;
-  z-index: 2;
+  position: static;
+  inset: auto;
+  z-index: auto;
+  min-width: 0;
+  width: max-content;
+  max-width: 100%;
+  flex: 0 0 auto;
   display: none;
   align-items: center;
   gap: 8px;
+  margin-left: auto;
   padding: 7px 11px 7px 8px;
   border: 1px solid rgba(58, 78, 251, .22);
   border-radius: 999px;
@@ -30,18 +34,17 @@
 
 .quiz-help-discoverable .quiz-click-hint:not(.is-dismissed) { display: flex; }
 
-.quiz-click-hint-hand {
-  display: grid;
-  width: 27px;
-  height: 27px;
-  place-items: center;
+.quiz-click-hint-mark {
+  flex: 0 0 12px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background: #eef0ff;
-  font-size: 1.05rem;
+  background: #3a4efb;
+  box-shadow: 0 0 0 5px #eef0ff;
   animation: quizClickHintTap 1.8s ease-in-out infinite;
 }
 
-.quiz-click-hint-copy { display: grid; gap: 1px; line-height: 1.1; }
+.quiz-click-hint-copy { min-width: 0; display: grid; gap: 1px; line-height: 1.1; }
 .quiz-click-hint-copy strong { font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; }
 .quiz-click-hint-copy small { color: rgba(37, 48, 168, .72); font-size: .62rem; }
 
@@ -52,12 +55,12 @@
 
 @keyframes quizClickHintTap {
   0%, 55%, 100% { transform: translateY(0) scale(1); }
-  20% { transform: translateY(3px) scale(.9); }
+  20% { transform: translateY(1px) scale(.72); }
   35% { transform: translateY(0) scale(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .quiz-click-hint, .quiz-click-hint-hand { animation: none; }
+  .quiz-click-hint, .quiz-click-hint-mark { animation: none; }
 }
 body.quiz-help-open { overflow: hidden; }
 
