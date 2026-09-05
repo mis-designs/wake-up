@@ -215,7 +215,7 @@ test("translation controls meet touch, focus, Bengali typography, and reduced-mo
 test("review translation asset versions match between the page and service worker", () => {
   const expected = new Map([
     ["mystyle.css", "51-question-footer-reflow"],
-    ["quiz.js", "79-audio-focus"],
+    ["quiz.js", "80-numberless-figures"],
     ["quiz-help.js", "20260903-audio-focus"]
   ]);
 

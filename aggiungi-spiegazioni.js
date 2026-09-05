@@ -261,7 +261,12 @@ async function deleteDraft(key) {
 function figureUrl(figure) {
   const value = String(figure || "").trim();
   if (!value || ["0", "false", "null", "undefined"].includes(value.toLowerCase())) return "";
-  return `/api/asset?kind=figure&figure=${encodeURIComponent(value)}`;
+  const params = new URLSearchParams({
+    kind: "figure",
+    figure: value,
+    presentation: "numberless-v1"
+  });
+  return `/api/asset?${params}`;
 }
 
 function answerBadge(value) {

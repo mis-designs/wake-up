@@ -116,7 +116,12 @@
   }
 
   function figureUrl(figureId) {
-    return `/api/asset?kind=figure&figure=${encodeURIComponent(String(figureId || ""))}`;
+    const params = new URLSearchParams({
+      kind: "figure",
+      figure: String(figureId || ""),
+      presentation: "numberless-v1"
+    });
+    return `/api/asset?${params}`;
   }
 
   function figureAssetId(item) {

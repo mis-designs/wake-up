@@ -1,5 +1,9 @@
 import { normalizeExplanationFigureKey } from "./quiz-explanation-availability.mjs";
 import {
+  QUIZ_FIGURE_PRESENTATION_VERSION,
+  renderNumberlessQuizFigure
+} from "./quiz-figure-image.mjs";
+import {
   headMagicBookObject,
   isMagicBookStorageConfigured,
   isMissingMagicBookObject,
@@ -82,7 +86,8 @@ function getDynamicAsset(query = {}) {
 
     return {
       path: `Figure/${figure}.jpg`,
-      contentType: "image/jpeg"
+      contentType: "image/jpeg",
+      figurePresentation: QUIZ_FIGURE_PRESENTATION_VERSION
     };
   }
 
@@ -141,11 +146,15 @@ export default async function handler(req, res) {
       return res.status(204).end();
     }
 
+    const responseBuffer = selectedAsset.figurePresentation === QUIZ_FIGURE_PRESENTATION_VERSION
+      ? await renderNumberlessQuizFigure(selectedObject.buffer)
+      : selectedObject.buffer;
+
     res.setHeader("Content-Type", selectedAsset.contentType);
     res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=604800");
     res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
     res.setHeader("X-Robots-Tag", "noindex, noimageindex");
-    return res.send(selectedObject.buffer);
+    return res.send(responseBuffer);
   } catch (err) {
     return res.status(500).json({ error: "server_error" });
   }

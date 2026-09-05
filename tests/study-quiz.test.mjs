@@ -66,14 +66,15 @@ test("study questions use the supplied audio icon and the complete explanation p
   assert.match(source, /changeExplanationSpeed\(controls\)/);
 });
 
-test("learner study figures hide the embedded catalog number without changing the source asset", () => {
+test("study figures use the shared numberless source and keep their failure recovery", () => {
   const source = readFileSync(new URL("../study-quiz.js", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../study-quiz.css", import.meta.url), "utf8");
 
   assert.match(source, /figure\.className = "study-figure-frame"[\s\S]*?figure\.appendChild\(image\)[\s\S]*?main\.appendChild\(figure\)/u);
   assert.match(source, /image\.addEventListener\("error", \(\) => figure\.remove\(\), \{ once: true \}\)/u);
+  assert.match(source, /kind:\s*"figure"[\s\S]*?presentation:\s*"numberless-v1"/u);
   assert.match(styles, /\.study-figure-frame\s*\{[^}]*position:\s*relative;[^}]*overflow:\s*hidden;[^}]*background:\s*#fff;/u);
-  assert.match(styles, /\.study-figure-frame::after\s*\{[^}]*inset:\s*0 auto auto 0;[^}]*width:\s*24%;[^}]*height:\s*20%;[^}]*background:\s*#fff;[^}]*pointer-events:\s*none;/u);
+  assert.doesNotMatch(styles, /\.study-figure-frame::after/u);
 });
 
 test("study explanation players reuse the supplied artwork with stable responsive geometry", () => {
@@ -91,9 +92,9 @@ test("study explanation players reuse the supplied artwork with stable responsiv
   assert.match(styles, /\.study-explanation-artwork\s*\{[^}]*width:\s*50px[^}]*height:\s*50px[^}]*animation-play-state:\s*paused/u);
   assert.match(styles, /@media \(max-width: 430px\)[\s\S]*?\.study-explanation-artwork\s*\{[^}]*flex-basis:\s*44px[^}]*width:\s*44px[^}]*height:\s*44px/u);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.study-explanation-artwork\s*\{\s*animation:\s*none/u);
-  assert.match(page, /study-quiz\.css\?v=25-user-study-order/u);
-  assert.match(page, /study-quiz\.js\?v=24-audio-focus/u);
-  assert.match(worker, /magicbook-pwa-v160-question-footer-reflow/u);
+  assert.match(page, /study-quiz\.css\?v=26-numberless-figures/u);
+  assert.match(page, /study-quiz\.js\?v=25-numberless-figures/u);
+  assert.match(worker, /magicbook-pwa-v161-numberless-figures/u);
   assert.match(worker, /\/icons\/explain_quiz\.svg/u);
 });
 

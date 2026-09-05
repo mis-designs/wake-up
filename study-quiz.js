@@ -527,7 +527,11 @@
   }
 
   function assetUrl(figure) {
-    return `/api/asset?${new URLSearchParams({ kind: "figure", figure: String(figure || "").trim() })}`;
+    return `/api/asset?${new URLSearchParams({
+      kind: "figure",
+      figure: String(figure || "").trim(),
+      presentation: "numberless-v1"
+    })}`;
   }
 
   function actionButton(className, label, icon) {

@@ -9,6 +9,7 @@ canonical_ui:
     - mystyle.css
     - quiz-help.css
     - mobile-experience.css
+    - api/quiz-figure-image.mjs
     - android-webview-mode.js
     - android-app-theme.css
     - src/daisyui.css
@@ -21,7 +22,7 @@ canonical_ui:
 design_context:
   owner: Magic Book
   last_updated: 2026-09-05
-  revision_notes: Quiz question utilities now use an in-flow, wrapping footer so long or enlarged copy can never sit beneath “Spiega” or the first-use help hint in narrow browsers. Android WebView keeps the app-only Aura Fluid palette and direct-manipulation chapter selector; semantic learning colors remain unchanged.
+  revision_notes: Every catalog quiz figure now has its printed upper-left identifier removed in source pixels by the shared asset endpoint before delivery, so the result is invariant under viewport, zoom, and object-fit changes. Quiz question utilities retain their in-flow wrapping footer; Android WebView keeps the app-only Aura Fluid palette and direct-manipulation chapter selector.
 ---
 
 # Magic Book design context
@@ -87,6 +88,7 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 - Admin user dataset: entry loads at most the 10 newest registrations. A labelled scope bar explains whether the current data is recent, searched, or complete; exact phone lookup stays remote, while `Carica tutti gli utenti` is the explicit opt-in for full-list filters such as Promo and Duplicati.
 - Live quiz bilingual help: clicking the Italian question opens one dark bottom-centred card. Translation and keyword content are peer panels inside the same frame, selected through two accessible dots, Left/Right/Home/End keys, or a horizontal touch swipe; long content scrolls vertically inside its panel. Pink remains the single help accent and the dialog owns focus, Escape, backdrop dismissal, and trigger-focus restoration.
 - Live quiz question footer: figure, Italian question, and optional Admin recorder keep their semantic source order in the card’s dedicated scroll region. “Spiega” and the first-question help hint share a reserved, wrapping footer below it; neither uses overlay coordinates. The footer remains visible while long text scrolls independently and keeps important controls at least 44px tall.
+- Quiz figure presentation: `api/quiz-figure-image.mjs`, reached through `api/asset.js`, is the single owner for every catalog figure shown in Quiz, quiz correction, Studia quiz, Statistiche/Errori, and Admin explanation tools. It removes the printed catalog identifier from the upper-left source pixels before the image reaches CSS; therefore resizing, browser zoom, text zoom, orientation, and `object-fit` cannot reveal it. Original R2 objects and separate Admin metadata remain unchanged. Transformation failure is fail-closed and shows the owning surface's existing image fallback rather than an unprocessed figure.
 - Admin quiz answer marker: only a server-authorized Admin session receives the private answer value. One small green marker sits below `Vero` when true is correct, or one small red marker sits below `Falso` when false is correct; ordinary learners receive neither the value nor reserved marker space, and assistive technology receives an explicit Admin-only text equivalent.
 - Quiz timer continuation: the timer counts down through the normal duration for every role. At zero, a server-authorized Admin session changes to a `+0:00` elapsed-overtime display and continues until the Admin finishes or exits. A non-Admin session pauses at `0:00` and opens the shared timeout dialog; `Sì, continua` starts a fresh full-duration cycle while preserving total elapsed time, and `Chiudi quiz` returns to the menu without grading. The decision repeats after every completed cycle. Result summaries report the complete elapsed time.
 - Quiz correction audio: every correction row—correct, wrong, or unanswered—keeps the existing person artwork as a labelled audio button. Audio remains demand-loaded after activation, one review explanation plays at a time, and unavailable audio returns the existing recoverable message.
@@ -100,7 +102,7 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 - Chapter detail: one selected chapter at a time, side-by-side on wide screens, sequential on tablet, and a focusable bottom sheet on phones; it shows attempts, quiz coverage, correct answers, recent result, review/recovered counts, and existing quiz/book actions.
 - Error summary: `Da ripassare`, `Sta migliorando`, and `Recuperati` in one grouped strip.
 - Error categories: five stable tabs — Figure, Quiz, Parole, Argomenti, Capitoli. Recovered items are a separate positive section, not a duplicated tab.
-- Error master/detail: figures show the real authenticated image; words retain dictionary access; detail copy states observed counts without causal diagnosis. Lists start at eight items and use `Mostra altri`.
+- Error master/detail: figures show the real authenticated numberless presentation; words retain dictionary access; detail copy states observed counts without causal diagnosis. Lists start at eight items and use `Mostra altri`.
 - Review plan: one to three actions, total estimated time, and immediate CTA using the existing quiz, book, figure, or dictionary destinations.
 - Recovered: up to three recent recovered items remain visible below active work.
 
@@ -110,7 +112,7 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 - Empty, insufficient, ready, cached, refreshing, offline-cached, no-cache offline, expired access, timeout, and generic failure are distinct states.
 - Empty/insufficient views stay compact and tell the learner exactly which quiz action is available.
 - Cached data renders first; online data replaces it only after validation. Pending local responses remain identified without blocking the UI.
-- Figures are lazy loaded, use a stable aspect frame, and expose a visible fallback without layout shift.
+- Figures are lazy loaded, use a stable aspect frame, receive their numberless pixels from the shared asset endpoint, and expose a visible fallback without layout shift.
 - Backend diagnostic labels and reasons are translated into simpler presentation copy; the underlying classification and calculations are untouched.
 
 ## Accessibility and validation

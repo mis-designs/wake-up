@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v160-question-footer-reflow";
+const CACHE_NAME = "magicbook-pwa-v161-numberless-figures";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -23,16 +23,16 @@ const STATIC_ASSETS = [
   "/italian-display.js?v=1",
   "/audio-focus.js?v=1-resumable-tts",
   "/src/learning-insights.css?v=9-card-spacing&ui=10",
-  "/src/learning-insights.js?v=5-figure-explanation-ui&ui=7-shared-gif-loader",
+  "/src/learning-insights.js?v=5-figure-explanation-ui&ui=8-numberless-figures",
   "/homebg.css?v=3",
   "/mystyle.css?v=51-question-footer-reflow",
   "/audio-player-ui.css?v=5-audio-focus",
   "/script.js?v=70-aura-fluid-drag",
   "/study-quiz.html",
-  "/study-quiz.css?v=25-user-study-order",
-  "/study-quiz.js?v=24-audio-focus",
+  "/study-quiz.css?v=26-numberless-figures",
+  "/study-quiz.js?v=25-numberless-figures",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=79-audio-focus",
+  "/quiz.js?v=80-numberless-figures",
   "/quiz-help.css?v=20260905-question-footer-reflow",
   "/quiz-help.js?v=20260903-audio-focus",
   "/patenteGlossaryResolver.js?v=1.0.0",
