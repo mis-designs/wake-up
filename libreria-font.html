@@ -8,14 +8,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f4f8f4">
   <meta name="robots" content="noindex,nofollow,noimageindex">
-  <title>MagicBook | Libreria font</title>
+  <title>MagicBook | Magic Styles</title>
   <link rel="icon" type="image/png" href="/api/asset?name=mg_logo">
   <link rel="apple-touch-icon" href="/api/asset?name=mg_logo">
   <link rel="preload" as="font" type="font/woff2" href="/assets/fonts/hadi-rounded/hadi-rounded-regular.woff2?v=1" crossorigin>
   <link rel="preload" as="font" type="font/woff2" href="/assets/fonts/adorsho-lipi/adorsho-lipi-regular.woff2?v=1" crossorigin>
   <link rel="preload" as="font" type="font/woff2" href="/assets/fonts/ekushey-lal-sabuj/ekushey-lal-sabuj-regular.woff2?v=1" crossorigin>
   <link rel="stylesheet" href="/assets/fonts/magicbook-bangla-fonts.css?v=1-adorsho">
-  <link rel="stylesheet" href="/libreria-font.css?v=1-three-fonts">
+  <link rel="stylesheet" href="/libreria-font.css?v=2-magic-styles">
+  <link rel="stylesheet" href="/magic-styles.css?v=1-soft-glow">
+  <link rel="stylesheet" href="/loading-ui.css?v=1-shared-gif-loader">
   <link rel="stylesheet" href="/offline-notice.css?v=1.0.0">
   <link rel="stylesheet" href="/android-app-theme.css?v=2-aura-fluid">
   <script src="/offline-notice.js?v=1.0.0" defer></script>
@@ -27,13 +29,62 @@
     </a>
     <div class="font-library-heading">
       <small>MAGICBOOK</small>
-      <h1 id="font-library-title">Libreria font bengalesi</h1>
-      <p>Hadi Rounded, Adorsho Lipi ed Ekushey Lal Sabuj</p>
+      <h1 id="font-library-title">Magic Styles</h1>
+      <p>Componenti, effetti e font di MagicBook</p>
     </div>
   </header>
 
   <main class="font-library-main" aria-labelledby="font-library-title">
-    <section class="font-library-sheet" aria-labelledby="font-library-overview-title">
+    <nav class="magic-library-nav" aria-label="Raccolta Magic Styles">
+      <a href="#magic-components">Componenti</a>
+      <a href="#magic-fonts">Font bengalesi</a>
+    </nav>
+    <section class="font-library-sheet magic-library-components" id="magic-components" aria-labelledby="magic-components-title">
+      <header class="font-library-overview">
+        <div>
+          <span class="font-library-kicker">STILI IN USO</span>
+          <h2 id="magic-components-title">Piccoli dettagli, stessa identità</h2>
+          <p>Una raccolta degli elementi di MagicBook, da conservare e riutilizzare. Le anteprime mostrano gli stessi componenti dell’app.</p>
+        </div>
+      </header>
+      <div class="magic-library-specimen">
+        <div class="magic-library-copy">
+          <h3>Card con bagliore</h3>
+          <p>Bianco al centro, un alone morbido in movimento e la stellina viola nell’angolo. Riservata a Exam 80 e alle azioni da mettere in evidenza.</p>
+          <small>Anteprima · La barra è un esempio, non il tuo avanzamento.</small>
+        </div>
+        <a class="audio-admin-chapter magic-glow-card" href="/aggiungi-spiegazioni?exam=80" aria-label="Apri Exam 80 in Aggiungi spiegazioni">
+          <strong>Exam 80</strong>
+          <small>Apri le spiegazioni audio</small>
+          <span class="audio-admin-progress" aria-hidden="true"><i style="width: 57%"></i></span>
+          <span class="magic-sparkle" aria-hidden="true"></span>
+        </a>
+      </div>
+      <div class="magic-library-specimen">
+        <div class="magic-library-copy">
+          <h3>Card e avanzamento</h3>
+          <p>Il modello dei capitoli: titolo, stato audio e barra verde. Una base semplice per le raccolte e le attività di studio.</p>
+          <small>Anteprima · La barra mostra uno stato di esempio.</small>
+        </div>
+        <a class="audio-admin-chapter" href="/aggiungi-spiegazioni" aria-label="Apri tutti i capitoli in Aggiungi spiegazioni">
+          <strong>Capitoli</strong>
+          <small>Apri le spiegazioni audio</small>
+          <span class="audio-admin-progress" aria-hidden="true"><i style="width: 75%"></i></span>
+        </a>
+      </div>
+      <div class="magic-library-specimen">
+        <div class="magic-library-copy">
+          <h3>Caricamento</h3>
+          <p>Un indicatore compatto con un messaggio chiaro. Lo stesso segnale accompagna le attese nelle sezioni dell’app.</p>
+        </div>
+        <div class="magic-library-loading-preview" aria-label="Anteprima dell’indicatore di caricamento">
+          <span class="magic-loading-inline-status is-loading">Caricamento in corso…</span>
+          <small>Anteprima</small>
+        </div>
+      </div>
+      <footer class="font-library-note">Il bagliore resta statico quando sul dispositivo è attiva la riduzione delle animazioni.</footer>
+    </section>
+    <section class="font-library-sheet" id="magic-fonts" aria-labelledby="font-library-overview-title">
       <header class="font-library-overview">
         <div>
           <span class="font-library-kicker">RIFERIMENTO TIPOGRAFICO</span>

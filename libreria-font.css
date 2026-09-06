@@ -72,6 +72,19 @@ body {
 .font-library-heading p { margin: 3px 0 0; color: var(--library-muted); font-size: .78rem; }
 
 .font-library-main { width: min(1160px, calc(100% - 32px)); margin: 0 auto; padding: clamp(24px, 5vw, 54px) 0 80px; }
+.magic-library-nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
+.magic-library-nav a { display: inline-flex; min-height: 44px; align-items: center; padding: 10px 16px; border: 1px solid var(--library-line); border-radius: 999px; background: #fff; color: var(--library-ink); font-size: .85rem; font-weight: 700; text-decoration: none; cursor: pointer; }
+.magic-library-nav a:hover { border-color: var(--library-accent); background: #f0f8f1; }
+.magic-library-nav a:focus-visible { outline: 3px solid #263bd4; outline-offset: 3px; }
+#magic-components, #magic-fonts { scroll-margin-top: 110px; }
+.magic-library-components { margin-bottom: 28px; }
+.magic-library-specimen { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 310px); align-items: center; gap: 40px; padding: 32px clamp(24px, 4vw, 40px); }
+.magic-library-specimen + .magic-library-specimen { border-top: 1px solid var(--library-line); }
+.magic-library-copy h3 { margin: 0 0 8px; font-size: 1.05rem; }
+.magic-library-copy p { max-width: 570px; margin: 0; color: var(--library-muted); font-size: .88rem; line-height: 1.65; }
+.magic-library-copy small { display: block; margin-top: 12px; color: var(--library-muted); font-size: .74rem; line-height: 1.5; }
+.magic-library-loading-preview { display: grid; justify-items: start; gap: 12px; padding: 18px; color: var(--library-ink); }
+.magic-library-loading-preview > small { color: var(--library-muted); }
 .font-library-sheet { overflow: hidden; border: 1px solid var(--library-line); border-radius: 26px; background: var(--library-surface); box-shadow: 0 17px 46px rgba(15, 67, 31, .10); }
 
 .font-library-overview {
@@ -126,6 +139,7 @@ body {
 .font-library-note { padding: 17px clamp(24px, 4vw, 40px); border-top: 1px solid var(--library-line); background: #f7fbf7; color: var(--library-muted); font-size: .76rem; line-height: 1.55; }
 
 @media (max-width: 700px) {
+  .magic-library-specimen { grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 24px 20px; }
   .font-library-header { min-height: 76px; padding: 10px 14px; }
   .font-library-heading p { display: none; }
   .font-library-main { width: min(100% - 22px, 620px); padding-top: 18px; }

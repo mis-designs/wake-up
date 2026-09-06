@@ -12,5 +12,5 @@ test("the audio admin renews its short session without logout", () => {
   assert.match(client, /await ensureFreshAccessToken\(\)/u);
   assert.match(client, /ensureFreshAccessToken\(\{ force: true \}\)/u);
   assert.match(client, /\["token_expired", "unauthorized", "admin_forbidden"\]/u);
-  assert.match(page, /aggiungi-spiegazioni\.js\?v=20-exam80-safe-audio/u);
+  assert.match(page, /aggiungi-spiegazioni\.js\?v=21-exam80-glow/u);
 });

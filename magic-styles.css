@@ -1,0 +1,76 @@
+/* Shared live specimens: used by Admin audio and the Magic Styles library. */
+.audio-admin-chapter { display: grid; gap: 8px; min-height: 124px; padding: 17px; border: 1px solid #d5e1f0; border-radius: 18px; background: #fff; color: #17233a; font: inherit; text-decoration: none; text-align: left; cursor: pointer; box-shadow: 0 8px 25px rgba(28, 56, 92, .07); transition: transform .16s ease, border-color .16s ease; }
+.audio-admin-chapter:hover { transform: translateY(-2px); border-color: #6797e9; }
+.audio-admin-chapter:focus-visible { outline: 3px solid #263bd4; outline-offset: 4px; }
+.audio-admin-chapter:active { transform: translateY(0); }
+.audio-admin-chapter strong { font-size: 1.03rem; line-height: 1.3; }
+.audio-admin-chapter small { color: #5d7592; font-weight: 700; }
+.audio-admin-progress { height: 7px; margin-top: auto; overflow: hidden; border-radius: 999px; background: #e8eef5; }
+.audio-admin-progress i { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #77d39a, #20a56b); transition: width .25s ease; }
+
+.magic-glow-card {
+  --magic-glow-lilac: #c4b5fd;
+  --magic-glow-rose: #fbcfe8;
+  --magic-glow-mint: #a7f3d0;
+  position: relative;
+  isolation: isolate;
+  border-color: var(--magic-glow-lilac);
+}
+.magic-glow-card::before,
+.magic-glow-card::after {
+  content: "";
+  position: absolute;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.magic-glow-card::before {
+  z-index: -2;
+  inset: -3px;
+  background: linear-gradient(115deg, var(--magic-glow-lilac), var(--magic-glow-rose), var(--magic-glow-mint), var(--magic-glow-lilac));
+  background-size: 250% 250%;
+  filter: blur(9px);
+  opacity: .6;
+  animation: magic-soft-glow 9s ease-in-out infinite;
+}
+.magic-glow-card::after {
+  z-index: -1;
+  inset: 0;
+  background: #fff;
+}
+.magic-glow-card > strong { padding-inline-end: 42px; }
+.magic-sparkle {
+  position: absolute;
+  inset-block-start: 12px;
+  inset-inline-end: 12px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(100% 100% at 50% 0%, #a78bfa 0%, #8b5cf6 60%, #6d28d9 100%);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .7), 0 4px 12px rgba(124, 58, 237, .22);
+  pointer-events: none;
+}
+.magic-sparkle::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  background: url("/icons/magic-sparkles.svg") center / contain no-repeat;
+}
+@keyframes magic-soft-glow {
+  0%, 100% { background-position: 0% 50%; opacity: .5; }
+  50% { background-position: 100% 50%; opacity: .85; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .magic-glow-card::before { animation: none; opacity: .55; }
+  .audio-admin-chapter, .audio-admin-progress i { transition: none; }
+  .audio-admin-chapter:hover { transform: none; }
+}
+@media (forced-colors: active) {
+  .magic-glow-card::before, .magic-glow-card::after { display: none; }
+  .audio-admin-chapter { border-color: ButtonText; }
+  .audio-admin-chapter:focus-visible { outline-color: Highlight; }
+  .audio-admin-progress { background: Canvas; border: 1px solid CanvasText; }
+  .audio-admin-progress i { background: Highlight; }
+  .magic-sparkle { forced-color-adjust: none; }
+}

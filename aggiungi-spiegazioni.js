@@ -301,11 +301,12 @@ function renderChapters() {
   state.chapters.forEach((chapter, index) => {
     const progress = chapterProgress(chapter);
     const button = document.createElement("button");
-    button.type = "button"; button.className = "audio-admin-chapter";
+    button.type = "button"; button.className = chapter.key === "0" ? "audio-admin-chapter magic-glow-card" : "audio-admin-chapter";
+    const sparkle = document.createElement("span"); sparkle.className = "magic-sparkle"; sparkle.setAttribute("aria-hidden", "true");
     const title = document.createElement("strong"); title.textContent = chapter.key === "0" ? "Exam 80" : `${String(index + 1).padStart(2, "0")} · ${chapterName(chapter, index)}`;
     const count = document.createElement("small"); count.textContent = `${progress.done} di ${progress.total} audio · ${progress.percent}%`;
     const bar = document.createElement("span"); bar.className = "audio-admin-progress"; const fill = document.createElement("i"); fill.style.width = `${progress.percent}%`; bar.append(fill);
-    button.append(title, count, bar); button.addEventListener("click", () => openChapter(index)); root.append(button);
+    button.append(title, count, bar); if (chapter.key === "0") button.append(sparkle); button.addEventListener("click", () => openChapter(index)); root.append(button);
   });
   const total = state.chapters.reduce((sum, chapter) => sum + chapter.questions.length, 0);
   const done = state.chapters.reduce((sum, chapter) => sum + chapterProgress(chapter).done, 0);
