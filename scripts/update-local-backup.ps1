@@ -58,11 +58,6 @@ if ($robocopyExit -ge 8) {
   throw "Backup copy failed with robocopy exit code $robocopyExit"
 }
 
-$environmentTemplate = Join-Path $projectRoot ".env.example"
-if (Test-Path -LiteralPath $environmentTemplate -PathType Leaf) {
-  Copy-Item -LiteralPath $environmentTemplate -Destination (Join-Path $currentSnapshot ".env.example") -Force
-}
-
 if (-not (Test-Path -LiteralPath (Join-Path $backupRoot ".git") -PathType Container)) {
   & git -C $backupRoot init --quiet
   if ($LASTEXITCODE -ne 0) { throw "Could not initialize the backup repository." }

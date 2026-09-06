@@ -9,6 +9,24 @@ html.android-webview body {
   overscroll-behavior: none;
 }
 
+/* The Android shell keeps the document viewport fixed. Admin therefore owns
+   one explicit vertical scroller, just like Home and the lesson surface. */
+html.android-webview body.admin-mode {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+html.android-webview body.admin-mode #adminPanel {
+  height: 100dvh;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y pinch-zoom;
+}
+
 @media (max-width: 600px) {
   html.android-webview .app-header {
     --native-header-side: 44px;

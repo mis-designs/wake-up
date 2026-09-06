@@ -21,8 +21,8 @@ canonical_ui:
   notes: Existing application tokens remain canonical. Locally compiled, d-prefixed daisyUI controls provide interaction primitives; the scoped learning stylesheet owns layout and visual hierarchy.
 design_context:
   owner: Magic Book
-  last_updated: 2026-09-05
-  revision_notes: Every catalog quiz figure now has its printed upper-left identifier removed in source pixels by the shared asset endpoint before delivery, so the result is invariant under viewport, zoom, and object-fit changes. Quiz question utilities retain their in-flow wrapping footer; Android WebView keeps the app-only Aura Fluid palette and direct-manipulation chapter selector.
+  last_updated: 2026-09-07
+  revision_notes: The Android WebView Admin route now owns one touch-safe vertical scroller, while ordinary browser scrolling remains unchanged. Existing Admin identity, numberless figure delivery, in-flow Quiz utilities, Aura Fluid palette, and direct-manipulation chapter behavior remain intact.
 ---
 
 # Magic Book design context

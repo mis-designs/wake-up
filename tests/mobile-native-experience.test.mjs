@@ -11,7 +11,7 @@ test("Android WebView is detected before the responsive stylesheet paints", () =
 
   for (const page of [index, quiz]) {
     assert.match(page, /android-webview-mode\.js\?v=2-aura-fluid/u);
-    assert.match(page, /mobile-experience\.css\?v=3-question-footer-grid/u);
+    assert.match(page, /mobile-experience\.css\?v=4-admin-scroll/u);
   }
 
   assert.match(marker, /classList\.add\("android-webview"\)/u);
@@ -47,6 +47,13 @@ test("native home actions center when they fit and remain scroll-safe when they 
   assert.match(styles, /#home\s*\{[^}]*overflow-y:\s*auto;[^}]*overscroll-behavior-y:\s*contain;/su);
 });
 
+test("the native Admin panel owns one touch-safe vertical scroller", () => {
+  const styles = read("mobile-experience.css");
+
+  assert.match(styles, /html\.android-webview body\.admin-mode\s*\{[^}]*height:\s*100dvh;[^}]*min-height:\s*0;[^}]*overflow:\s*hidden;/su);
+  assert.match(styles, /html\.android-webview body\.admin-mode #adminPanel\s*\{[^}]*height:\s*100dvh;[^}]*min-height:\s*0;[^}]*overflow-x:\s*hidden;[^}]*overflow-y:\s*auto;[^}]*overscroll-behavior-y:\s*contain;[^}]*-webkit-overflow-scrolling:\s*touch;[^}]*touch-action:\s*pan-y pinch-zoom;/su);
+});
+
 test("chapter drag work is frame-batched and native navigation is shorter", () => {
   const script = read("script.js");
   const worker = read("service-worker.js");
@@ -56,6 +63,6 @@ test("chapter drag work is frame-batched and native navigation is shorter", () =
   assert.match(script, /const navigationDelay = compactMotion \? 650 : 1650;/u);
   assert.match(script, /const appActionGate = \(\(\) =>/u);
   assert.match(script, /function scheduleExclusiveAppNavigation/u);
-  assert.match(worker, /mobile-experience\.css\?v=3-question-footer-grid/u);
+  assert.match(worker, /mobile-experience\.css\?v=4-admin-scroll/u);
   assert.match(worker, /script\.js\?v=70-aura-fluid-drag/u);
 });

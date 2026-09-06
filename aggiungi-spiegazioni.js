@@ -163,12 +163,13 @@ function questionText(question) { return String(question?.question ?? question?.
 function questionFigure(question) { return question?.figure ?? question?.img ?? ""; }
 function quizAudioPayload(question) {
   return {
+    questionId: String(question?.id ?? ""),
     question: questionText(question),
     figure: QuizAudioIdentity.normalizeFigure(questionFigure(question)),
     quizAudioIdentityVersion: QuizAudioIdentity.VERSION
   };
 }
-function identityFor(question) { return QuizAudioIdentity.getIdentity(questionText(question), questionFigure(question)); }
+function identityFor(question) { return question.audioIdentity || QuizAudioIdentity.getIdentity(questionText(question), questionFigure(question)); }
 function legacyCollisionCandidates(legacyQuizKey) {
   const candidates = state.collisionRegistry?.collisions?.[legacyQuizKey]?.candidates;
   return Array.isArray(candidates) ? candidates : [];
@@ -176,7 +177,7 @@ function legacyCollisionCandidates(legacyQuizKey) {
 function isLegacyAmbiguous(legacyQuizKey) { return legacyCollisionCandidates(legacyQuizKey).length > 1; }
 function isIdentityAvailable(identity) {
   return state.audioKeys.has(identity.quizKey)
-    || (state.audioKeys.has(identity.legacyQuizKey) && !isLegacyAmbiguous(identity.legacyQuizKey));
+    || (identity.legacySafe !== false && state.audioKeys.has(identity.legacyQuizKey) && !isLegacyAmbiguous(identity.legacyQuizKey));
 }
 
 function formatTime(ms) {
@@ -301,7 +302,7 @@ function renderChapters() {
     const progress = chapterProgress(chapter);
     const button = document.createElement("button");
     button.type = "button"; button.className = "audio-admin-chapter";
-    const title = document.createElement("strong"); title.textContent = `${String(index + 1).padStart(2, "0")} · ${chapterName(chapter, index)}`;
+    const title = document.createElement("strong"); title.textContent = chapter.key === "0" ? "Exam 80" : `${String(index + 1).padStart(2, "0")} · ${chapterName(chapter, index)}`;
     const count = document.createElement("small"); count.textContent = `${progress.done} di ${progress.total} audio · ${progress.percent}%`;
     const bar = document.createElement("span"); bar.className = "audio-admin-progress"; const fill = document.createElement("i"); fill.style.width = `${progress.percent}%`; bar.append(fill);
     button.append(title, count, bar); button.addEventListener("click", () => openChapter(index)); root.append(button);
@@ -313,13 +314,28 @@ function renderChapters() {
   if (globalProgress) globalProgress.textContent = `${done} di ${total} spiegazioni aggiunte · ${total ? Math.round(done / total * 100) : 0}%`;
 }
 
-function openChapter(index) {
-  resetQuestionHelp(); state.selected = index; state.reviewOpen = false; state.query = ""; state.filter = "all"; state.activeQuestionId = null; closeInline();
-  $("audioAdminLegacyReview").classList.add("hidden"); $("audioAdminChapters").classList.add("hidden"); $("audioAdminQuestions").classList.remove("hidden"); renderChapter();
-  history.replaceState({}, "", `/aggiungi-spiegazioni?capitolo=${index + 1}`);
+async function canLeaveAudioSection() {
+  if (state.inline?.saving) {
+    showMessage("Attendi la fine del caricamento prima di cambiare sezione.");
+    return false;
+  }
+  if (hasUnsaved(state.inline)) {
+    return openDialog({ title: "Registrazione non salvata", text: "Vuoi abbandonare la registrazione e cambiare sezione?", confirmLabel: "Abbandona registrazione", cancelLabel: "Continua a modificare", danger: true });
+  }
+  return true;
 }
 
-function closeChapter() {
+async function openChapter(index) {
+  if (!state.chapters[index] || !await canLeaveAudioSection()) return;
+  stopCurrentPlayer(); state.playbackRequestId += 1;
+  resetQuestionHelp(); state.selected = index; state.reviewOpen = false; state.query = ""; state.filter = "all"; state.activeQuestionId = null; closeInline();
+  $("audioAdminLegacyReview").classList.add("hidden"); $("audioAdminChapters").classList.add("hidden"); $("audioAdminQuestions").classList.remove("hidden"); renderChapter();
+  history.replaceState({}, "", state.chapters[index].key === "0" ? "/aggiungi-spiegazioni?exam=80" : `/aggiungi-spiegazioni?capitolo=${state.chapters[index].key}`);
+}
+
+async function closeChapter() {
+  if (!await canLeaveAudioSection()) return;
+  stopCurrentPlayer(); state.playbackRequestId += 1;
   resetQuestionHelp(); state.selected = null; state.reviewOpen = false; state.activeQuestionId = null; closeInline();
   $("audioAdminLegacyReview").classList.add("hidden"); $("audioAdminQuestions").classList.add("hidden"); $("audioAdminChapters").classList.remove("hidden");
   renderChapters(); history.replaceState({}, "", "/aggiungi-spiegazioni");
@@ -340,7 +356,7 @@ function renderChapter() {
   if (!chapter) return;
   const root = $("audioAdminQuestions"); root.replaceChildren();
   const head = document.createElement("div"); head.className = "audio-admin-question-head";
-  const title = document.createElement("h2"); title.textContent = `${String(state.selected + 1).padStart(2, "0")} · ${chapterName(chapter, state.selected)}`;
+  const title = document.createElement("h2"); title.textContent = chapter.key === "0" ? "Exam 80" : `${String(state.selected + 1).padStart(2, "0")} · ${chapterName(chapter, state.selected)}`;
   const back = document.createElement("button"); back.type = "button"; back.className = "audio-admin-back-list"; back.setAttribute("aria-label", "Torna a tutti i capitoli");
   const backIcon = document.createElement("img"); backIcon.src = "icons/back.png"; backIcon.alt = ""; backIcon.setAttribute("aria-hidden", "true");
   const backLabel = document.createElement("span"); backLabel.textContent = "Tutti i capitoli"; back.append(backIcon, backLabel); back.addEventListener("click", closeChapter); head.append(title, back);
@@ -694,14 +710,7 @@ function createAudioPlayer(question, { legacy = false } = {}) {
     if (legacy) {
       result = await apiBlob("getLegacyQuizAudioBlob", quizAudioPayload(question));
     } else {
-      try {
-        result = await apiBlob("getQuizAudioBlob", quizAudioPayload(question));
-      } catch (error) {
-        // An admin must still be able to listen before assigning an ambiguous
-        // legacy recording to its final figure/question identity.
-        if (error?.message !== "quiz_audio_requires_review") throw error;
-        result = await apiBlob("getLegacyQuizAudioBlob", quizAudioPayload(question));
-      }
+      result = await apiBlob("getQuizAudioBlob", quizAudioPayload(question));
     }
     if (objectUrl) URL.revokeObjectURL(objectUrl);
     durationHint = Math.max(durationHint, Math.max(0, Number(result.durationMs) || 0) / 1000);
@@ -833,7 +842,7 @@ async function discardDraft() { const item = state.inline; if (!item) return; co
 async function renewRecording() { const item = state.inline; if (!item) return; const accepted = await openDialog({ title: "Ricominciare da capo?", text: "La registrazione attuale verrà sostituita da una nuova.", confirmLabel: "Ricomincia", cancelLabel: "Annulla" }); if (!accepted) return; await deleteDraft(item.key); const question = item.question; const activeId = item.activeQuestionId; closeInline(); state.inline = { activeQuestionId: activeId, key: question.quizKey, question, saved: item.saved, phase: "ready", chunks: [], elapsed: 0, startedAt: 0, status: "Microfono non avviato. Premi il microfono per iniziare.", stream: null, recorder: null, blob: null, blobUrl: "", timer: null, saving: false, retryable: false }; state.activeQuestionId = activeId; renderChapter(); }
 
 async function saveInline() {
-  const item = state.inline; if (!item) return; if (item.phase === "recording") await pauseRecording(); if (!item.blob) { await showProblem("Nessun audio da salvare", "Premi il microfono, registra la spiegazione e poi salva.", "audio_empty"); return; }
+  const item = state.inline; if (!item || item.saving) return; if (item.phase === "recording") await pauseRecording(); if (!item.blob) { await showProblem("Nessun audio da salvare", "Premi il microfono, registra la spiegazione e poi salva.", "audio_empty"); return; }
   item.saving = true; item.status = "Caricamento sicuro in corso…"; renderChapter();
   try {
     const payload = { ...quizAudioPayload(item.question), audioMimeType: item.blob.type || item.mimeType };
@@ -918,7 +927,7 @@ async function migrateSafeLegacyAudios() {
       const targetFigure = QuizAudioIdentity.normalizeFigure(candidates[0].figureKey);
       return choices.find(question => question.identity.figureKey === targetFigure);
     })
-    .filter(question => question && !state.audioKeys.has(question.identity.quizKey))
+    .filter(question => question && question.identity.legacySafe !== false && !state.audioKeys.has(question.identity.quizKey))
     .filter(Boolean);
   for (const question of pending) {
     try {
@@ -1062,10 +1071,10 @@ async function load() {
     await ensureFreshAccessToken({ force: true });
     const globalProgress = $("audioAdminGlobalProgress");
     globalProgress?.classList.add("is-loading");
-    if (globalProgress) globalProgress.textContent = "Caricamento catalogo Magic Book…";
-    showMessage("Caricamento catalogo Magic Book…", "loading");
+    if (globalProgress) globalProgress.textContent = "Caricamento capitoli ed Exam 80…";
+    showMessage("Caricamento capitoli ed Exam 80…", "loading");
     const [catalog, overview, collisionRegistry] = await Promise.all([
-      api("getMagicBookCatalog"),
+      api("getAdminAudioCatalog"),
       api("getQuizAudioAdminOverview"),
       fetch("data/quiz-audio-legacy-collisions-v1.json", { cache: "no-store" }).then(response => {
         if (!response.ok) throw new Error(`collision_registry_${response.status}`);
@@ -1073,7 +1082,7 @@ async function load() {
       })
     ]);
     const rows = Array.isArray(catalog.quiz) ? catalog.quiz : [];
-    if (rows.length !== 788) throw new Error(`magic_catalog_count_mismatch_${rows.length}`);
+    if (rows.length !== 868 || rows.filter(row => Number(row.chapter) === 0).length !== 80) throw new Error(`magic_catalog_count_mismatch_${rows.length}`);
     const identities = await Promise.all(rows.map(identityFor));
     state.collisionRegistry = QuizAudioIdentity.filterCollisionRegistry(collisionRegistry, identities, {
       preserveSources: ["all-books"]
@@ -1086,20 +1095,22 @@ async function load() {
       if (!byChapter.has(chapter)) byChapter.set(chapter, []);
       byChapter.get(chapter).push({ ...row, identity: identities[index], quizKey: identities[index].quizKey });
     });
-    state.chapters = [...byChapter.entries()].sort((a, b) => Number(a[0]) - Number(b[0])).map(([key, questions]) => ({ key, name: `Capitolo ${key}`, questions }));
+    state.chapters = [...byChapter.entries()].sort((a, b) => (Number(a[0]) || 26) - (Number(b[0]) || 26)).map(([key, questions]) => ({ key, name: key === "0" ? "Exam 80" : `Capitolo ${key}`, questions }));
     await migrateSafeLegacyAudios();
     renderChapters(); showMessage("");
     const params = new URLSearchParams(location.search);
     const chapterParam = Number(params.get("capitolo"));
     if (params.get("controllo-audio") === "1" && legacyReviewGroups().length) showLegacyReviews(false);
+    else if (params.get("exam") === "80") openChapter(state.chapters.findIndex(chapter => chapter.key === "0"));
     else if (chapterParam > 0 && chapterParam <= state.chapters.length) openChapter(chapterParam - 1);
-  } catch (error) { $("audioAdminGlobalProgress")?.classList.remove("is-loading"); showMessage("Impossibile caricare il catalogo audio.", "error"); await showProblem("Caricamento non riuscito", "Controlla la configurazione server e la pubblicazione del catalogo Apps Script.", error); }
+  } catch (error) { $("audioAdminGlobalProgress")?.classList.remove("is-loading"); showMessage("Impossibile caricare il catalogo audio.", "error"); await showProblem("Caricamento non riuscito", "Ricarica la pagina per riprovare. Se il problema continua, controlla il servizio audio.", error); }
 }
 
 window.addEventListener("popstate", () => {
   const params = new URLSearchParams(location.search);
   const index = Number(params.get("capitolo")) - 1;
   if (params.get("controllo-audio") === "1" && legacyReviewGroups().length) showLegacyReviews(false);
+  else if (params.get("exam") === "80") openChapter(state.chapters.findIndex(chapter => chapter.key === "0"));
   else if (index >= 0 && index < state.chapters.length) openChapter(index);
   else closeChapter();
 });

@@ -29,6 +29,6 @@ test("quiz status and blob requests preserve the server-signed audio identity", 
   assert.match(client, /audioIdentityToken: question\?\.audioIdentityToken \|\| ""/);
   assert.match(client, /audioIdentityToken: question\.audioIdentityToken \|\| ""/);
   assert.match(api, /purpose: "quiz-audio"/);
-  assert.match(api, /findQuizAudioRow\(trustedIdentity, \{ allowAmbiguousLegacy: true \}\)/);
-  assert.match(api, /trustedResult\.row[\s\S]*requiresReview: false/);
+  assert.match(api, /findQuizAudioRow\(trustedIdentity\)/);
+  assert.doesNotMatch(api, /allowAmbiguousLegacy/);
 });
