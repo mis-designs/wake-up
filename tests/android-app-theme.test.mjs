@@ -38,8 +38,8 @@ function contrast(foreground, background) {
   return (light + 0.05) / (dark + 0.05);
 }
 
-test("the Aura installed-app palette uses the supplied colors and stays WebView-scoped", () => {
-  for (const token of ["#5B1E91", "#FFFFFF", "#EB0000", "#BDB5E9", "#111827", "#4B5563", "#AFAFB6"]) {
+test("the Roadcraft installed-app palette is purposeful and stays WebView-scoped", () => {
+  for (const token of ["#315EFB", "#FFFFFF", "#D92D42", "#EAF0FF", "#17233A", "#637083", "#D7DEEA", "#087A60", "#C9F41D"]) {
     assert.match(theme, new RegExp(token, "i"));
   }
 
@@ -58,7 +58,7 @@ test("the app marker is applied before styles and the theme loads last on every 
     const html = read(page);
     const markerIndex = html.indexOf("/android-webview-mode.js?v=2-aura-fluid");
     const firstStylesheetIndex = html.indexOf('rel="stylesheet"');
-    const themeIndex = html.indexOf("/android-app-theme.css?v=3-aura-folio");
+    const themeIndex = html.indexOf("/android-app-theme.css?v=4-roadcraft");
     const lastStylesheetIndex = html.lastIndexOf('rel="stylesheet"');
 
     assert.ok(markerIndex >= 0, `${page} must load the WebView marker`);
@@ -69,24 +69,28 @@ test("the app marker is applied before styles and the theme loads last on every 
 
 test("the app theme assets are available offline", () => {
   assert.match(worker, /\/android-webview-mode\.js\?v=2-aura-fluid/);
-  assert.match(worker, /\/android-app-theme\.css\?v=3-aura-folio/);
+  assert.match(worker, /\/android-app-theme\.css\?v=4-roadcraft/);
 });
 
 test("primary app color pairings meet WCAG AA for normal text", () => {
-  assert.ok(contrast("#FFFFFF", "#5B1E91") >= 4.5, "white text on Aura purple must pass AA");
-  assert.ok(contrast("#111827", "#BDB5E9") >= 4.5, "dark text on lilac surface must pass AA");
-  assert.ok(contrast("#4B5563", "#FFFFFF") >= 4.5, "muted text on white must pass AA");
-  assert.ok(contrast("#FFFFFF", "#EB0000") >= 4.5, "white text on the danger accent must pass AA");
+  assert.ok(contrast("#FFFFFF", "#315EFB") >= 4.5, "white text on navigation blue must pass AA");
+  assert.ok(contrast("#17233A", "#EAF0FF") >= 4.5, "navy text on soft blue must pass AA");
+  assert.ok(contrast("#637083", "#FFFFFF") >= 4.5, "muted text on white must pass AA");
+  assert.ok(contrast("#FFFFFF", "#D92D42") >= 4.5, "white text on the danger accent must pass AA");
 });
 
-test("Aura Folio provides one app-only hierarchy across Home, Quiz and Admin", () => {
-  assert.match(theme, /--app-palette-background:\s*#F7F5FA/i);
-  assert.match(theme, /--app-palette-primary-strong:\s*#35104E/i);
-  assert.match(theme, /--app-palette-positive:\s*#08785F/i);
-  assert.match(theme, /#home > \.home-actions\s*\{[^}]*border:[^;]*var\(--app-palette-line\);[^}]*background:\s*var\(--app-palette-paper\);[^}]*box-shadow:\s*var\(--app-shadow-raised\);/su);
-  assert.match(theme, /#home > \.home-actions::before\s*\{[^}]*width:\s*3px;[^}]*background:\s*var\(--app-palette-primary\);/su);
+test("Roadcraft keeps the hierarchy open and restores domain-specific color roles", () => {
+  assert.match(theme, /--app-palette-background:\s*#F4F7FB/i);
+  assert.match(theme, /--app-palette-primary-strong:\s*#243BC7/i);
+  assert.match(theme, /--app-palette-positive:\s*#087A60/i);
+  assert.match(theme, /#home > \.home-actions\s*\{[^}]*padding:\s*0;[^}]*border:\s*0;[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;/su);
+  assert.match(theme, /#home > \.home-actions::before\s*\{[^}]*display:\s*none;/su);
+  assert.match(theme, /#home \.home-start-btn\s*\{[^}]*background:\s*linear-gradient\(135deg, #075F4C[^}]*#10A56D 100%\);/su);
+  assert.match(theme, /#home \.home-dictionary-entry\s*\{[^}]*background:\s*linear-gradient\(135deg, #17233A 0%, #263A59 100%\);/su);
+  assert.match(theme, /\.lesson-board\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;/su);
+  assert.match(theme, /\.lesson-tool-exam\s*\{[^}]*background:\s*var\(--app-palette-lime\);/su);
   assert.match(theme, /\.quiz-command-bar\s*\{[^}]*border:[^;]*var\(--app-palette-line\);[^}]*background:\s*var\(--app-palette-paper\);/su);
-  assert.match(theme, /body\.admin-mode :is\([\s\S]*?\.admin-toolbar,[\s\S]*?\.admin-user-card,[\s\S]*?\.admin-modal-card[\s\S]*?\)\s*\{[^}]*background:\s*var\(--app-palette-paper\);/u);
+  assert.match(theme, /body\.admin-mode \.admin-toolbar\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;/su);
   assert.match(theme, /@media \(hover: none\), \(pointer: coarse\)/u);
   assert.match(theme, /scrollbar-color:\s*var\(--app-palette-primary\) transparent;/u);
 });

@@ -11,7 +11,7 @@ test("Android WebView is detected before the responsive stylesheet paints", () =
 
   for (const page of [index, quiz]) {
     assert.match(page, /android-webview-mode\.js\?v=2-aura-fluid/u);
-    assert.match(page, /mobile-experience\.css\?v=5-aura-folio/u);
+    assert.match(page, /mobile-experience\.css\?v=6-roadcraft/u);
   }
 
   assert.match(marker, /classList\.add\("android-webview"\)/u);
@@ -42,19 +42,20 @@ test("the native header reserves symmetric space for live utility buttons", () =
   assert.match(script, /function syncAppUtilityLayout\(\)[\s\S]*?root\.dataset\.appUtilityCount[\s\S]*?root\.dataset\.appAdminVisible[\s\S]*?root\.dataset\.appProfileVisible/u);
 });
 
-test("native home actions center when they fit and remain scroll-safe when they do not", () => {
+test("native home actions begin near the header and remain scroll-safe", () => {
   const styles = read("mobile-experience.css");
 
-  assert.match(styles, /#home > \.home-actions\s*\{[^}]*margin-block:\s*auto;[^}]*margin-inline:\s*auto;/su);
+  assert.match(styles, /#home > \.home-actions\s*\{[^}]*width:\s*min\(100%, 324px\);[^}]*margin:\s*clamp\(16px, 3\.5dvh, 28px\) auto 0;/su);
   assert.match(styles, /#home\s*\{[^}]*overflow-y:\s*auto;[^}]*overscroll-behavior-y:\s*contain;/su);
-  assert.match(styles, /#home \.home-start-btn\s*\{[^}]*width:\s*100%;[^}]*min-height:\s*94px;[^}]*grid-template-columns:\s*84px minmax\(0, 1fr\);/su);
-  assert.match(styles, /@media \(max-width: 350px\)[\s\S]*?#home \.home-learning-entries\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\);/u);
+  assert.match(styles, /#home \.home-start-btn\s*\{[^}]*width:\s*min\(100%, 296px\);[^}]*min-height:\s*106px;[^}]*grid-template-columns:\s*86px minmax\(0, 1fr\);/su);
+  assert.match(styles, /#home \.home-learning-entries\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/su);
+  assert.doesNotMatch(styles, /@media \(max-width: 350px\)[\s\S]*?#home \.home-learning-entries\s*\{[^}]*grid-template-columns:/u);
 });
 
 test("the native chapter cockpit stays grouped instead of stretching controls apart", () => {
   const styles = read("mobile-experience.css");
 
-  assert.match(styles, /\.lesson-board\s*\{[^}]*flex:\s*0 0 auto;[^}]*grid-template-rows:\s*auto auto auto;[^}]*margin-block:\s*auto;/su);
+  assert.match(styles, /\.lesson-board\s*\{[^}]*flex:\s*0 0 auto;[^}]*grid-template-rows:\s*auto auto auto;[^}]*margin:\s*12px 0 0;[^}]*padding:\s*0;/su);
 });
 
 test("the native Admin panel owns one touch-safe vertical scroller", () => {
@@ -73,6 +74,6 @@ test("chapter drag work is frame-batched and native navigation is shorter", () =
   assert.match(script, /const navigationDelay = compactMotion \? 650 : 1650;/u);
   assert.match(script, /const appActionGate = \(\(\) =>/u);
   assert.match(script, /function scheduleExclusiveAppNavigation/u);
-  assert.match(worker, /mobile-experience\.css\?v=5-aura-folio/u);
+  assert.match(worker, /mobile-experience\.css\?v=6-roadcraft/u);
   assert.match(worker, /script\.js\?v=70-aura-fluid-drag/u);
 });
