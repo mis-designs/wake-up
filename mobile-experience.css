@@ -29,7 +29,7 @@ html.android-webview body.admin-mode #adminPanel {
 
 @media (max-width: 600px) {
   html.android-webview .app-header {
-    --native-header-side: 44px;
+    --native-header-side: 42px;
     display: grid;
     grid-template-columns: var(--native-header-side) minmax(0, 1fr) var(--native-header-side);
     column-gap: 8px;
@@ -40,11 +40,11 @@ html.android-webview body.admin-mode #adminPanel {
   }
 
   html.android-webview[data-app-utility-count="2"] .app-header {
-    --native-header-side: 94px;
+    --native-header-side: 88px;
   }
 
   html.android-webview[data-app-utility-count="3"] .app-header {
-    --native-header-side: 144px;
+    --native-header-side: 134px;
   }
 
   html.android-webview .header-left,
@@ -68,27 +68,33 @@ html.android-webview body.admin-mode #adminPanel {
   }
 
   html.android-webview .profile-btn {
-    top: calc(env(safe-area-inset-top, 0px) + 5px);
+    top: calc(env(safe-area-inset-top, 0px) + 6px);
     right: 10px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
   }
 
   html.android-webview .admin-entry {
-    top: calc(env(safe-area-inset-top, 0px) + 5px);
+    top: calc(env(safe-area-inset-top, 0px) + 6px);
     right: 10px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
   }
 
   html.android-webview[data-app-profile-visible="true"] .admin-entry,
   html.android-webview[data-app-menu-visible="true"] .admin-entry {
-    right: 60px;
+    right: 56px;
   }
 
   html.android-webview[data-app-profile-visible="true"][data-app-menu-visible="true"] .admin-entry {
-    right: 110px;
+    right: 102px;
   }
 
   html.android-webview .header-btn {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     border-radius: 11px;
   }
 
@@ -120,14 +126,14 @@ html.android-webview body.admin-mode #adminPanel {
   }
 
   html.android-webview body.app-mode #home > .home-actions {
-    width: min(100%, 332px);
+    width: min(100%, 348px);
     max-width: calc(100vw - 28px);
     margin-block: auto;
     margin-inline: auto;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    justify-items: center;
-    gap: 9px;
+    justify-items: stretch;
+    gap: 10px;
   }
 
   html.android-webview[data-app-transition] :is(
@@ -144,11 +150,13 @@ html.android-webview body.admin-mode #adminPanel {
   }
 
   html.android-webview body.app-mode #home .home-start-btn {
-    width: 226px;
-    max-width: 72vw;
-    padding: 6px 12px 6px 6px;
-    border-radius: 25px;
-    box-shadow: 0 9px 22px rgba(5, 91, 67, 0.2);
+    width: 100%;
+    max-width: none;
+    min-height: 94px;
+    aspect-ratio: auto;
+    grid-template-columns: 84px minmax(0, 1fr);
+    padding: 7px 12px 7px 7px;
+    border-radius: 20px;
     animation: none;
   }
 
@@ -157,15 +165,15 @@ html.android-webview body.admin-mode #adminPanel {
   }
 
   html.android-webview body.app-mode #home .home-start-open-label {
-    padding: 8px 5px;
+    padding: 9px 6px;
     font-size: 14px;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 
   html.android-webview body.app-mode #home .home-dictionary-entry {
-    width: 246px;
-    min-height: 54px;
+    width: 100%;
+    min-height: 58px;
     grid-template-columns: 36px minmax(0, 1fr);
     gap: 9px;
     padding: 7px 11px;
@@ -184,11 +192,12 @@ html.android-webview body.admin-mode #adminPanel {
 
   html.android-webview body.app-mode #home .home-learning-entries {
     width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
 
   html.android-webview body.app-mode #home .home-learning-entry {
-    min-height: 60px;
+    min-height: 66px;
     grid-template-columns: 36px minmax(0, 1fr);
     gap: 8px;
     padding: 7px 9px;
@@ -242,8 +251,11 @@ html.android-webview body.admin-mode #adminPanel {
   }
 
   html.android-webview body.app-mode .lesson-board {
-    margin-top: 4px;
-    padding-top: 3px;
+    width: 100%;
+    flex: 0 0 auto;
+    grid-template-rows: auto auto auto;
+    margin-block: auto;
+    padding: 8px 10px 10px;
     gap: 6px;
   }
 
@@ -438,7 +450,17 @@ html.android-webview body.admin-mode #adminPanel {
   }
 
   html.android-webview .quiz-command-bar {
+    grid-template-columns: 84px minmax(0, 1fr) minmax(0, 1fr) 42px 42px;
     gap: 6px 4px;
+  }
+
+  html.android-webview .quiz-media-controls .audio-controls {
+    width: 84px;
+  }
+
+  html.android-webview .quiz-media-controls .audio-btn {
+    width: 40px;
+    height: 40px;
   }
 
   html.android-webview .quiz-command-bar .controls button,
@@ -476,7 +498,7 @@ html.android-webview body.admin-mode #adminPanel {
   }
 
   html.android-webview body.app-mode #home .home-start-btn {
-    width: 208px;
+    min-height: 82px;
   }
 
   html.android-webview body.app-mode #home .home-dictionary-entry {
@@ -484,7 +506,7 @@ html.android-webview body.admin-mode #adminPanel {
   }
 
   html.android-webview body.app-mode #home .home-learning-entry {
-    min-height: 56px;
+    min-height: 58px;
   }
 
   html.android-webview body.app-mode #home .watermark-link {
@@ -516,7 +538,18 @@ html.android-webview body.admin-mode #adminPanel {
   }
 }
 
+@media (max-width: 350px) {
+  html.android-webview body.app-mode #home .home-learning-entries {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html.android-webview body.app-mode #home .home-learning-entry {
+    min-height: 54px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  /* Accessibility override: motion suppression must win over route animation rules. */
   html.android-webview *,
   html.android-webview *::before,
   html.android-webview *::after {

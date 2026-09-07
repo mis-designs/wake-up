@@ -58,7 +58,7 @@ test("the app marker is applied before styles and the theme loads last on every 
     const html = read(page);
     const markerIndex = html.indexOf("/android-webview-mode.js?v=2-aura-fluid");
     const firstStylesheetIndex = html.indexOf('rel="stylesheet"');
-    const themeIndex = html.indexOf("/android-app-theme.css?v=2-aura-fluid");
+    const themeIndex = html.indexOf("/android-app-theme.css?v=3-aura-folio");
     const lastStylesheetIndex = html.lastIndexOf('rel="stylesheet"');
 
     assert.ok(markerIndex >= 0, `${page} must load the WebView marker`);
@@ -69,7 +69,7 @@ test("the app marker is applied before styles and the theme loads last on every 
 
 test("the app theme assets are available offline", () => {
   assert.match(worker, /\/android-webview-mode\.js\?v=2-aura-fluid/);
-  assert.match(worker, /\/android-app-theme\.css\?v=2-aura-fluid/);
+  assert.match(worker, /\/android-app-theme\.css\?v=3-aura-folio/);
 });
 
 test("primary app color pairings meet WCAG AA for normal text", () => {
@@ -77,6 +77,18 @@ test("primary app color pairings meet WCAG AA for normal text", () => {
   assert.ok(contrast("#111827", "#BDB5E9") >= 4.5, "dark text on lilac surface must pass AA");
   assert.ok(contrast("#4B5563", "#FFFFFF") >= 4.5, "muted text on white must pass AA");
   assert.ok(contrast("#FFFFFF", "#EB0000") >= 4.5, "white text on the danger accent must pass AA");
+});
+
+test("Aura Folio provides one app-only hierarchy across Home, Quiz and Admin", () => {
+  assert.match(theme, /--app-palette-background:\s*#F7F5FA/i);
+  assert.match(theme, /--app-palette-primary-strong:\s*#35104E/i);
+  assert.match(theme, /--app-palette-positive:\s*#08785F/i);
+  assert.match(theme, /#home > \.home-actions\s*\{[^}]*border:[^;]*var\(--app-palette-line\);[^}]*background:\s*var\(--app-palette-paper\);[^}]*box-shadow:\s*var\(--app-shadow-raised\);/su);
+  assert.match(theme, /#home > \.home-actions::before\s*\{[^}]*width:\s*3px;[^}]*background:\s*var\(--app-palette-primary\);/su);
+  assert.match(theme, /\.quiz-command-bar\s*\{[^}]*border:[^;]*var\(--app-palette-line\);[^}]*background:\s*var\(--app-palette-paper\);/su);
+  assert.match(theme, /body\.admin-mode :is\([\s\S]*?\.admin-toolbar,[\s\S]*?\.admin-user-card,[\s\S]*?\.admin-modal-card[\s\S]*?\)\s*\{[^}]*background:\s*var\(--app-palette-paper\);/u);
+  assert.match(theme, /@media \(hover: none\), \(pointer: coarse\)/u);
+  assert.match(theme, /scrollbar-color:\s*var\(--app-palette-primary\) transparent;/u);
 });
 
 test("Aura drag follows the pointer, resists edges and keeps a non-drag alternative", () => {
