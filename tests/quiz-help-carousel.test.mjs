@@ -63,11 +63,11 @@ test("the correct-answer marker is private to signed Admin quiz sessions", () =>
 test("the bilingual card and Admin marker ship through fresh PWA assets", () => {
   assert.match(page, /mystyle\.css\?v=51-question-footer-reflow/u);
   assert.match(page, /quiz\.js\?v=80-numberless-figures/u);
-  assert.match(page, /quiz-help\.css\?v=20260907-inline-glass/u);
-  assert.match(page, /quiz-help\.js\?v=20260907-inline-glass/u);
+  assert.match(page, /quiz-help\.css\?v=20260907-liquid-glass/u);
+  assert.match(page, /quiz-help\.js\?v=20260907-liquid-glass/u);
   assert.match(worker, /magicbook-pwa-v161-numberless-figures/u);
   assert.match(worker, /mystyle\.css\?v=51-question-footer-reflow/u);
   assert.match(worker, /quiz\.js\?v=80-numberless-figures/u);
-  assert.match(worker, /quiz-help\.css\?v=20260907-inline-glass/u);
-  assert.match(worker, /quiz-help\.js\?v=20260907-inline-glass/u);
+  assert.match(worker, /quiz-help\.css\?v=20260907-liquid-glass/u);
+  assert.match(worker, /quiz-help\.js\?v=20260907-liquid-glass/u);
 });

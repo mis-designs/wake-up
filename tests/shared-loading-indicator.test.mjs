@@ -86,7 +86,7 @@ test("the shared loader and all changed consumers ship in one fresh PWA cache", 
   assert.match(worker, /mystyle\.css\?v=51-question-footer-reflow/u);
   assert.match(worker, /audio-player-ui\.css\?v=5-audio-focus/u);
   assert.match(worker, /quiz\.js\?v=80-numberless-figures/u);
-  assert.match(worker, /quiz-help\.js\?v=20260907-inline-glass/u);
+  assert.match(worker, /quiz-help\.js\?v=20260907-liquid-glass/u);
   assert.match(worker, /study-quiz\.js\?v=25-numberless-figures/u);
   assert.match(worker, /magic-dictionary\.js\?v=1\.2\.6-audio-focus/u);
   assert.match(worker, /learning-insights\.js\?v=5-figure-explanation-ui&ui=8-numberless-figures/u);

@@ -417,7 +417,7 @@
     bangla.textContent = word.simpleBn;
     const audio = document.createElement("button");
     audio.type = "button";
-    audio.className = "quiz-help-word-audio magic-loading-control";
+    audio.className = "quiz-help-word-audio magic-loading-control magic-glass-chip";
     audio.textContent = "Ascolta in Bangla";
     audio.addEventListener("click", () => playBanglaWord(word.ttsBn || `${word.bangla}। ${word.simpleBn}`, audio));
     wordDetail.append(heading, italian, bangla, audio);
