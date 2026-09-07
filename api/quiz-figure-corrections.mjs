@@ -1,5 +1,6 @@
 const FIGURE_CORRECTIONS_BY_ID = new Map([
-  ["q01131", "fig37"]
+  ["q01131", "fig37"],
+  ["cap18_q13", "fig698"]
 ]);
 
 function normalizeQuestion(value) {
@@ -12,6 +13,9 @@ function getFigureCorrection(row) {
   if (byId) return byId;
 
   const question = normalizeQuestion(row?.question);
+  if (question === "il simbolo raffigurato indica il comando che aziona il segnale mobile di pericolo") {
+    return "fig698";
+  }
   if (question.includes("forte vento laterale") && question.includes("entrata delle gallerie")) {
     return "fig37";
   }
