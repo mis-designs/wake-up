@@ -1,4 +1,43 @@
 /* Shared live specimens: used by Admin audio and the Magic Styles library. */
+.magic-glass-panel {
+  --magic-glass-blue: rgba(40, 57, 155, .92);
+  --magic-glass-teal: rgba(11, 96, 126, .94);
+  box-sizing: border-box;
+  border: 1px solid rgba(211, 235, 255, .58);
+  border-radius: 24px;
+  background: linear-gradient(112deg, var(--magic-glass-blue), var(--magic-glass-teal));
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 5px 18px rgba(24, 55, 115, .1);
+  color: #fff;
+}
+.magic-glass-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 8px 14px;
+  border: 1px solid rgba(220, 237, 255, .36);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08);
+  color: #fff;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  transition: background .16s ease, border-color .16s ease;
+}
+button.magic-glass-chip, a.magic-glass-chip { cursor: pointer; }
+button.magic-glass-chip:hover, a.magic-glass-chip:hover { background: rgba(0, 15, 65, .22); border-color: rgba(255, 255, 255, .7); }
+.magic-glass-chip[aria-expanded="true"], button.magic-glass-chip:active { background: rgba(0, 15, 65, .3); border-color: #fff; }
+.magic-glass-chip:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  .magic-glass-chip { transition: none; }
+}
+@media (forced-colors: active) {
+  .magic-glass-panel, .magic-glass-chip { background: Canvas; color: CanvasText; border-color: CanvasText; box-shadow: none; }
+  .magic-glass-chip:focus-visible { outline-color: Highlight; }
+}
 .audio-admin-chapter { display: grid; gap: 8px; min-height: 124px; padding: 17px; border: 1px solid #d5e1f0; border-radius: 18px; background: #fff; color: #17233a; font: inherit; text-decoration: none; text-align: left; cursor: pointer; box-shadow: 0 8px 25px rgba(28, 56, 92, .07); transition: transform .16s ease, border-color .16s ease; }
 .audio-admin-chapter:hover { transform: translateY(-2px); border-color: #6797e9; }
 .audio-admin-chapter:focus-visible { outline: 3px solid #263bd4; outline-offset: 4px; }

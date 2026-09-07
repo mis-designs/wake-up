@@ -85,6 +85,9 @@ body {
 .magic-library-copy small { display: block; margin-top: 12px; color: var(--library-muted); font-size: .74rem; line-height: 1.5; }
 .magic-library-loading-preview { display: grid; justify-items: start; gap: 12px; padding: 18px; color: var(--library-ink); }
 .magic-library-loading-preview > small { color: var(--library-muted); }
+.magic-library-glass-preview { min-width: 0; padding: 20px; }
+.magic-library-glass-preview p { margin: 0 0 18px; line-height: 1.6; }
+.magic-library-glass-preview > div { display: flex; flex-wrap: wrap; gap: 8px; font-size: .78rem; }
 .font-library-sheet { overflow: hidden; border: 1px solid var(--library-line); border-radius: 26px; background: var(--library-surface); box-shadow: 0 17px 46px rgba(15, 67, 31, .10); }
 
 .font-library-overview {

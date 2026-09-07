@@ -47,18 +47,9 @@
   const topicBn = document.getElementById("quiz-help-topic-bn");
   const wordsList = document.getElementById("quiz-help-words");
   const wordDetail = document.getElementById("quiz-help-word-detail");
-  const shell = workspace?.querySelector(".quiz-help-shell");
-  const slideViewport = workspace?.querySelector("[data-help-swipe-zone]");
-  const swipeStatus = document.getElementById("quiz-help-swipe-status");
-  const quizSurface = document.querySelector(".quiz-container");
-  const slides = Array.from(document.querySelectorAll("[data-help-slide]"));
-  const tabs = Array.from(document.querySelectorAll("[data-help-tab]"));
   let libraryPromise = null;
   let quizIdIndex = null;
   let requestId = 0;
-  let activeSlide = 0;
-  let helpFocusOrigin = null;
-  let swipeStart = null;
   let activeWordPlayback = null;
   let wordAudioRequestId = 0;
   const wordAudioCache = new Map();
@@ -409,7 +400,13 @@
     topicBn.textContent = help?.topic?.bangla || "";
   }
 
-  function showWordDetail(word) {
+  function showWordDetail(word, trigger) {
+    stopWordAudio();
+    const wasOpen = trigger.getAttribute("aria-expanded") === "true";
+    wordsList.querySelectorAll("button").forEach(button => button.setAttribute("aria-expanded", "false"));
+    wordDetail.classList.toggle("hidden", wasOpen);
+    if (wasOpen) return;
+    trigger.setAttribute("aria-expanded", "true");
     wordDetail.replaceChildren();
     const heading = document.createElement("strong");
     heading.textContent = `${window.MagicItalianDisplay.initialUppercase(word.italian)} · ${word.bangla}`;
@@ -421,7 +418,7 @@
     const audio = document.createElement("button");
     audio.type = "button";
     audio.className = "quiz-help-word-audio magic-loading-control";
-    audio.textContent = "🔊 Ascolta";
+    audio.textContent = "Ascolta in Bangla";
     audio.addEventListener("click", () => playBanglaWord(word.ttsBn || `${word.bangla}। ${word.simpleBn}`, audio));
     wordDetail.append(heading, italian, bangla, audio);
     wordDetail.classList.remove("hidden");
@@ -440,14 +437,13 @@
     words.forEach(word => {
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "quiz-help-word";
+      button.className = "quiz-help-word magic-glass-chip";
+      button.setAttribute("aria-expanded", "false");
+      button.setAttribute("aria-controls", "quiz-help-word-detail");
       const italian = document.createElement("strong");
       italian.textContent = window.MagicItalianDisplay.initialUppercase(word.italian);
-      const bangla = document.createElement("span");
-      bangla.lang = "bn";
-      bangla.textContent = word.bangla;
-      button.append(italian, bangla);
-      button.addEventListener("click", () => showWordDetail(word));
+      button.append(italian);
+      button.addEventListener("click", () => showWordDetail(word, button));
       wordsList.appendChild(button);
     });
   }
@@ -456,11 +452,15 @@
     const question = currentQuestion();
     if (!question?.question) return;
     const ownRequest = ++requestId;
+    stopWordAudio();
+    workspace.setAttribute("aria-busy", "true");
+    wordDetail.classList.add("hidden");
+    context.open = false;
     translationText.textContent = "";
     translationStatus.classList.add("magic-loading-inline-status", "is-loading");
-    translationStatus.textContent = "Carico le traduzioni TMM Books…";
+    translationStatus.textContent = "Caricamento traduzione…";
     renderContext(null);
-    wordsList.innerHTML = '<span class="quiz-help-skeleton"></span><span class="quiz-help-skeleton"></span><span class="quiz-help-skeleton"></span>';
+    wordsList.replaceChildren();
 
     let help = null;
     try {
@@ -476,6 +476,7 @@
       console.warn("[Magic Book quiz help]", error?.message || error);
     }
     if (ownRequest !== requestId) return;
+    workspace.setAttribute("aria-busy", "false");
     const verifiedTranslation = usableBanglaTranslation(help?.translation);
     translationText.textContent = verifiedTranslation;
     translationStatus.classList.remove("is-loading");
@@ -486,127 +487,36 @@
     renderWords(help?.words || []);
   }
 
-  function setSlide(index) {
-    activeSlide = index === 1 ? 1 : 0;
-    shell?.style.setProperty("--quiz-help-slide-index", String(activeSlide));
-    slides.forEach((slide, slideIndex) => {
-      const active = slideIndex === activeSlide;
-      slide.classList.toggle("is-active", active);
-      slide.setAttribute("aria-hidden", String(!active));
-      slide.toggleAttribute("inert", !active);
-      slide.tabIndex = active ? 0 : -1;
-      if (active) slide.scrollTop = 0;
-    });
-    tabs.forEach((tab, tabIndex) => {
-      const active = tabIndex === activeSlide;
-      tab.classList.toggle("is-active", active);
-      tab.setAttribute("aria-selected", String(active));
-      tab.tabIndex = active ? 0 : -1;
-    });
-    if (swipeStatus) {
-      swipeStatus.textContent = activeSlide === 0
-        ? "Pagina 1 di 2: Traduzione"
-        : "Pagina 2 di 2: Parole chiave";
-    }
-  }
-
   function open() {
-    helpFocusOrigin = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : questionText;
     workspace.classList.remove("hidden");
     workspace.setAttribute("aria-hidden", "false");
-    document.body.classList.add("quiz-help-open");
-    quizSurface?.setAttribute("inert", "");
-    setSlide(0);
+    questionText?.setAttribute("aria-expanded", "true");
     render();
-    window.requestAnimationFrame(() => workspace.querySelector("[data-help-close]")?.focus());
   }
 
   function close() {
+    const restoreFocus = workspace.contains(document.activeElement);
     requestId += 1;
     workspace.classList.add("hidden");
     workspace.setAttribute("aria-hidden", "true");
-    document.body.classList.remove("quiz-help-open");
-    quizSurface?.removeAttribute("inert");
+    workspace.setAttribute("aria-busy", "false");
+    questionText?.setAttribute("aria-expanded", "false");
     stopWordAudio();
-    const focusTarget = helpFocusOrigin?.isConnected ? helpFocusOrigin : questionText;
-    helpFocusOrigin = null;
-    window.requestAnimationFrame(() => focusTarget?.focus());
+    if (restoreFocus) questionText?.focus({ preventScroll: true });
   }
 
-  questionArea?.addEventListener("click", event => {
-    const questionTrigger = event.target.closest("#question");
-    if (event.target.closest("button, a") && !questionTrigger) return;
+  questionText?.addEventListener("click", () => {
     questionArea.classList.remove("quiz-help-discoverable");
     clickHint?.classList.add("is-dismissed");
-    open();
+    if (workspace.classList.contains("hidden")) open();
+    else close();
   });
   document.querySelectorAll("[data-help-close]").forEach(button => button.addEventListener("click", close));
-  tabs.forEach((tab, index) => {
-    tab.addEventListener("click", () => setSlide(index));
-    tab.addEventListener("keydown", event => {
-      let nextIndex = null;
-      if (event.key === "ArrowLeft") nextIndex = (index - 1 + tabs.length) % tabs.length;
-      if (event.key === "ArrowRight") nextIndex = (index + 1) % tabs.length;
-      if (event.key === "Home") nextIndex = 0;
-      if (event.key === "End") nextIndex = tabs.length - 1;
-      if (nextIndex === null) return;
-      event.preventDefault();
-      setSlide(nextIndex);
-      tabs[nextIndex]?.focus();
-    });
-  });
-
-  slideViewport?.addEventListener("pointerdown", event => {
-    if (!event.isPrimary || !["touch", "pen"].includes(event.pointerType)) return;
-    if (event.target.closest("button, a, input")) return;
-    swipeStart = {
-      pointerId: event.pointerId,
-      x: event.clientX,
-      y: event.clientY
-    };
-    slideViewport.setPointerCapture?.(event.pointerId);
-  });
-
-  slideViewport?.addEventListener("pointerup", event => {
-    if (!swipeStart || swipeStart.pointerId !== event.pointerId) return;
-    const deltaX = event.clientX - swipeStart.x;
-    const deltaY = event.clientY - swipeStart.y;
-    swipeStart = null;
-    slideViewport.releasePointerCapture?.(event.pointerId);
-    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.2) return;
-    setSlide(deltaX < 0 ? 1 : 0);
-  });
-
-  slideViewport?.addEventListener("pointercancel", () => {
-    swipeStart = null;
-  });
-
-  workspace?.addEventListener("click", event => {
-    if (event.target === workspace) close();
-  });
-  document.addEventListener("keydown", event => {
-    if (workspace.classList.contains("hidden")) return;
-    if (event.key === "Escape") {
-      event.preventDefault();
-      close();
-      return;
-    }
-    if (event.key !== "Tab") return;
-    const focusable = Array.from(shell?.querySelectorAll(
-      'button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    ) || []).filter(element => !element.closest("[inert]") && element.getClientRects().length > 0);
-    if (!focusable.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
+  workspace?.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    event.stopPropagation();
+    close();
   });
   new MutationObserver(() => {
     if (!workspace.classList.contains("hidden")) render();

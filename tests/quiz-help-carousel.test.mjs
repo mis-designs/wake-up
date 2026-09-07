@@ -18,46 +18,31 @@ function functionSource(source, name, nextName) {
   return source.slice(start, end);
 }
 
-test("live quiz help uses one card with two dot-selected panels on every viewport", () => {
-  assert.match(page, /class="quiz-help-shell" role="dialog" aria-modal="true"/u);
-  assert.equal((page.match(/class="quiz-help-shell"/gu) || []).length, 1);
-  assert.match(page, /id="quiz-help-translation-panel"[^>]*role="tabpanel"[^>]*aria-labelledby="quiz-help-translation-tab"/u);
-  assert.match(page, /id="quiz-help-keywords-panel"[^>]*role="tabpanel"[^>]*aria-labelledby="quiz-help-keywords-tab"/u);
-  assert.match(page, /id="quiz-help-translation-tab"[^>]*aria-controls="quiz-help-translation-panel"/u);
-  assert.match(page, /id="quiz-help-keywords-tab"[^>]*aria-controls="quiz-help-keywords-panel"/u);
-  assert.match(page, /id="question"[^>]*aria-describedby="quiz-help-trigger-description"/u);
-  assert.match(page, /id="quiz-help-trigger-description" class="sr-only">Apri la traduzione Bangla e le parole chiave\.<\/span>/u);
-  assert.match(helpStyles, /\.quiz-help-shell\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*minmax\(0, 1fr\) 48px;/u);
-  assert.match(helpStyles, /(?:^|\n)\.sr-only\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?width:\s*1px;[\s\S]*?clip-path:\s*inset\(50%\);/u);
-  assert.doesNotMatch(helpStyles, /\.quiz-help-workspace \.sr-only/u);
-  assert.match(helpStyles, /\.quiz-help-slides\s*\{[\s\S]*?display:\s*flex;[\s\S]*?translate3d\(calc\(var\(--quiz-help-slide-index\) \* -100%\)/u);
-  assert.match(helpStyles, /\.quiz-help-slides\s*\{[\s\S]*?grid-row:\s*1;[\s\S]*?grid-column:\s*1;/u);
-  assert.match(helpStyles, /\.quiz-help-tabs\s*\{[\s\S]*?grid-row:\s*2;[\s\S]*?grid-column:\s*1;/u);
-  assert.match(helpStyles, /\.quiz-help-tab\s*\{[\s\S]*?width:\s*44px;[\s\S]*?height:\s*44px;/u);
-  assert.match(helpStyles, /\.quiz-help-tab::before\s*\{[\s\S]*?width:\s*9px;[\s\S]*?border-radius:\s*50%;/u);
-  assert.doesNotMatch(helpStyles, /\.quiz-help-slide\s*\{[^}]*position:\s*fixed;/u);
-  assert.doesNotMatch(helpScript, /makeCardDraggable|bringCardToFront|clampCard/u);
+test("live quiz translation sits below the question in one glass panel with text keyword buttons", () => {
+  const question = page.indexOf('id="question"');
+  const help = page.indexOf('id="quiz-help-workspace"');
+  const recorder = page.indexOf('id="quiz-audio-recorder"');
+  assert.ok(question < help && help < recorder);
+  assert.match(page, /class="quiz-help-workspace magic-glass-panel hidden"/u);
+  assert.match(page, /id="question"[^>]*aria-expanded="false"[^>]*aria-controls="quiz-help-workspace"/u);
+  assert.match(page, /id="quiz-help-words"[^>]*role="group"/u);
+  assert.doesNotMatch(page, /quiz-help-shell|data-help-slide|data-help-tab|data-help-swipe-zone/u);
+  assert.match(helpStyles, /\.quiz-help-workspace\s*\{[^}]*position:\s*relative;[^}]*flex:\s*0 0 auto;/u);
+  assert.doesNotMatch(helpStyles, /position:\s*fixed|body\.quiz-help-open/u);
+  assert.match(helpScript, /button.className = "quiz-help-word magic-glass-chip"/u);
+  assert.match(helpScript, /button.append\(italian\)/u);
 });
 
-test("the shared help card supports swipe, tabs, modal focus and a native question trigger", () => {
-  const setSlide = functionSource(helpScript, "setSlide", "open");
+test("inline help keeps the quiz usable and exposes native disclosure controls", () => {
   const open = functionSource(helpScript, "open", "close");
-  const close = functionSource(helpScript, "close");
-
-  assert.match(page, /<button id="question" type="button"[^>]*aria-haspopup="dialog"[^>]*aria-controls="quiz-help-workspace"/u);
-  assert.match(setSlide, /--quiz-help-slide-index/u);
-  assert.match(setSlide, /slide\.toggleAttribute\("inert", !active\)/u);
-  assert.match(setSlide, /tab\.setAttribute\("aria-selected", String\(active\)\)/u);
-  assert.match(helpScript, /\["touch", "pen"\]\.includes\(event\.pointerType\)/u);
-  assert.match(helpScript, /Math\.abs\(deltaX\) < 48/u);
-  assert.match(helpScript, /Math\.abs\(deltaX\) <= Math\.abs\(deltaY\) \* 1\.2/u);
-  assert.match(helpScript, /event\.key === "ArrowLeft"[\s\S]*?event\.key === "ArrowRight"[\s\S]*?event\.key === "Home"[\s\S]*?event\.key === "End"/u);
-  assert.match(open, /quizSurface\?\.setAttribute\("inert", ""\)/u);
-  assert.match(open, /\[data-help-close\][\s\S]*?\.focus\(\)/u);
-  assert.match(close, /quizSurface\?\.removeAttribute\("inert"\)/u);
-  assert.match(close, /focusTarget\?\.focus\(\)/u);
-  assert.match(helpScript, /event\.key !== "Tab"[\s\S]*?document\.activeElement === first[\s\S]*?document\.activeElement === last/u);
-  assert.match(helpStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.quiz-help-slides\s*\{\s*transition:\s*none;/u);
+  assert.match(open, /setAttribute\("aria-expanded", "true"\)/u);
+  assert.doesNotMatch(helpScript, /setSlide|quizSurface|helpFocusOrigin|setPointerCapture|event.key !== "Tab"/u);
+  assert.match(helpScript, /workspace\?\.addEventListener\("keydown"[\s\S]*?event.key !== "Escape"/u);
+  assert.match(helpScript, /workspace.contains\(document.activeElement\)/u);
+  assert.match(helpScript, /questionText\?\.focus\(\{ preventScroll: true \}\)/u);
+  assert.match(helpScript, /button.setAttribute\("aria-controls", "quiz-help-word-detail"\)/u);
+  assert.match(helpScript, /wordDetail.classList.toggle\("hidden", wasOpen\)/u);
+  assert.doesNotMatch(helpScript, /wordsList.innerHTML =/u);
 });
 
 test("the correct-answer marker is private to signed Admin quiz sessions", () => {
@@ -78,11 +63,11 @@ test("the correct-answer marker is private to signed Admin quiz sessions", () =>
 test("the bilingual card and Admin marker ship through fresh PWA assets", () => {
   assert.match(page, /mystyle\.css\?v=51-question-footer-reflow/u);
   assert.match(page, /quiz\.js\?v=80-numberless-figures/u);
-  assert.match(page, /quiz-help\.css\?v=20260905-question-footer-reflow/u);
-  assert.match(page, /quiz-help\.js\?v=20260903-audio-focus/u);
+  assert.match(page, /quiz-help\.css\?v=20260907-inline-glass/u);
+  assert.match(page, /quiz-help\.js\?v=20260907-inline-glass/u);
   assert.match(worker, /magicbook-pwa-v161-numberless-figures/u);
   assert.match(worker, /mystyle\.css\?v=51-question-footer-reflow/u);
   assert.match(worker, /quiz\.js\?v=80-numberless-figures/u);
-  assert.match(worker, /quiz-help\.css\?v=20260905-question-footer-reflow/u);
-  assert.match(worker, /quiz-help\.js\?v=20260903-audio-focus/u);
+  assert.match(worker, /quiz-help\.css\?v=20260907-inline-glass/u);
+  assert.match(worker, /quiz-help\.js\?v=20260907-inline-glass/u);
 });

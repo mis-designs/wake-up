@@ -216,7 +216,7 @@ test("review translation asset versions match between the page and service worke
   const expected = new Map([
     ["mystyle.css", "51-question-footer-reflow"],
     ["quiz.js", "80-numberless-figures"],
-    ["quiz-help.js", "20260903-audio-focus"]
+    ["quiz-help.js", "20260907-inline-glass"]
   ]);
 
   for (const [asset, version] of expected) {

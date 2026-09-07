@@ -25,7 +25,7 @@ test("the Admin exposes a clean, static Bengali font library route", () => {
   assert.match(page, /<a class="font-library-back" href="\/admin" aria-label="Torna al pannello Admin">/u);
   assert.match(page, /<main class="font-library-main" aria-labelledby="font-library-title">/u);
   assert.match(page, /\/assets\/fonts\/magicbook-bangla-fonts\.css\?v=1-adorsho/u);
-  assert.match(page, /\/libreria-font\.css\?v=2-magic-styles/u);
+  assert.match(page, /\/libreria-font\.css\?v=3-glass-specimen/u);
   assert.doesNotMatch(page, /banglawebfonts\.pages\.dev/u);
   const scripts = [...page.matchAll(/<script\b[^>]*src="([^"]+)"[^>]*><\/script>/gu)].map(match => match[1]);
   assert.deepEqual(scripts, [
@@ -101,7 +101,7 @@ test("the library fonts are valid, pinned local WOFF2 assets and cached offline"
 
   assert.match(worker, /magicbook-pwa-v161-numberless-figures/u);
   assert.match(worker, /\/libreria-font\.html/u);
-  assert.match(worker, /\/libreria-font\.css\?v=2-magic-styles/u);
+  assert.match(worker, /\/libreria-font\.css\?v=3-glass-specimen/u);
   assert.match(worker, /\/assets\/fonts\/magicbook-bangla-fonts\.css\?v=1-adorsho/u);
   assert.match(worker, /\/assets\/fonts\/hadi-rounded\/hadi-rounded-regular\.woff2\?v=1/u);
   assert.match(worker, /\/assets\/fonts\/adorsho-lipi\/adorsho-lipi-regular\.woff2\?v=1/u);
