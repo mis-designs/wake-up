@@ -266,7 +266,7 @@ function figureUrl(figure) {
   const params = new URLSearchParams({
     kind: "figure",
     figure: value,
-    presentation: "numberless-v1"
+    presentation: "numberless-v2"
   });
   return `/api/asset?${params}`;
 }

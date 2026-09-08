@@ -4,6 +4,11 @@ import identityTools from "../quiz-audio-identity.cjs";
 import { LOCAL_QUIZ_ROWS, normalizeLocalAnswer } from "./local-quiz-bank.mjs";
 import { applyQuizFigureCorrections } from "./quiz-figure-corrections.mjs";
 
+// Keep the literal require visible to Vercel's dependency tracer. Calling
+// createRequire(...)(...) inline omits this JSON from the deployed function.
+const require = createRequire(import.meta.url);
+const legacyRegistrySource = require("../data/quiz-audio-legacy-collisions-v1.json");
+
 const { getQuizAudioIdentity, normalizeQuizAudioFigure, filterQuizAudioCollisionRegistry } = identityTools;
 const exactText = value => String(value ?? "").normalize("NFC").trim().replace(/\s+/gu, " ");
 
@@ -71,7 +76,7 @@ export const quizAudioCatalog = createAudioCatalog(LOCAL_QUIZ_ROWS);
 // Book figures are no longer competing candidates; All Books candidates must
 // remain because the audio database is shared with that application.
 export const quizAudioLegacyRegistry = filterQuizAudioCollisionRegistry(
-  createRequire(import.meta.url)("../data/quiz-audio-legacy-collisions-v1.json"),
+  legacyRegistrySource,
   quizAudioCatalog.rows.map(quizAudioCatalog.identityFor),
   { preserveSources: ["all-books"] }
 );

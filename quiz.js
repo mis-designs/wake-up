@@ -108,7 +108,7 @@ if (!TRIAL_MODE && !hasCurrentClientAuthResetVersion()) {
 
 const QUIZ_API = "/api/quiz";
 const ASSET_API = "/api/asset";
-const QUIZ_FIGURE_PRESENTATION = "numberless-v1";
+const QUIZ_FIGURE_PRESENTATION = "numberless-v2";
 const EXPLANATION_EXTENSIONS = ["png", "webp", "jpg", "jpeg"];
 const EXPLANATION_FIGURES_CACHE_KEY = "magicbook_explanation_figures_v1";
 const QUIZ_MODE_CONFIG = {

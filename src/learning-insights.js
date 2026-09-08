@@ -119,7 +119,7 @@
     const params = new URLSearchParams({
       kind: "figure",
       figure: String(figureId || ""),
-      presentation: "numberless-v1"
+      presentation: "numberless-v2"
     });
     return `/api/asset?${params}`;
   }

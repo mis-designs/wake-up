@@ -86,7 +86,8 @@ function getDynamicAsset(query = {}) {
 
     return {
       path: `Figure/${figure}.jpg`,
-      contentType: "image/jpeg",
+      contentType: "image/png",
+      figure,
       figurePresentation: QUIZ_FIGURE_PRESENTATION_VERSION
     };
   }
@@ -147,7 +148,7 @@ export default async function handler(req, res) {
     }
 
     const responseBuffer = selectedAsset.figurePresentation === QUIZ_FIGURE_PRESENTATION_VERSION
-      ? await renderNumberlessQuizFigure(selectedObject.buffer)
+      ? await renderNumberlessQuizFigure(selectedObject.buffer, { figure: selectedAsset.figure })
       : selectedObject.buffer;
 
     res.setHeader("Content-Type", selectedAsset.contentType);

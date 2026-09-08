@@ -148,5 +148,5 @@ test("the synchronized resolver and cache versions are deployed together", () =>
   }
   assert.match(worker, /magicbook-pwa-v164-lavender-gold/u);
   assert.match(worker, /quiz-help\.js\?v=20260907-liquid-glass/u);
-  assert.match(worker, /study-quiz\.js\?v=25-numberless-figures/u);
+  assert.match(worker, /study-quiz\.js\?v=26-intact-figures/u);
 });

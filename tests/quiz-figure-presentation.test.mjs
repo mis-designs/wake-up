@@ -2,105 +2,86 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
-import {
-  getQuizFigureNumberMask,
-  QUIZ_FIGURE_PRESENTATION_VERSION,
-  renderNumberlessQuizFigure
-} from "../api/quiz-figure-image.mjs";
+import { QUIZ_FIGURE_PRESENTATION_VERSION, renderNumberlessQuizFigure } from "../api/quiz-figure-image.mjs";
 
-function source(path) {
-  return readFileSync(new URL(path, import.meta.url), "utf8");
-}
+const source = path => readFileSync(new URL(path, import.meta.url), "utf8");
+const pixels = input => sharp(input).flatten({ background: "white" }).toColourspace("srgb").removeAlpha().raw().toBuffer({ resolveWithObject: true });
+const fixtures = [
+  { id: 40, label: [48, 40, 106, 84] },
+  { id: 698, label: [10, 12, 100, 59] },
+  { id: 552, label: [48, 40, 131, 84] },
+  { id: 704, label: [50, 60, 395, 225] }
+];
 
-function pixelAt(data, info, x, y) {
-  const offset = (y * info.width + x) * info.channels;
-  return Array.from(data.subarray(offset, offset + 3));
-}
-
-test("the shared figure owner removes the embedded catalog number in source pixels", async () => {
-  assert.equal(QUIZ_FIGURE_PRESENTATION_VERSION, "numberless-v1");
-  assert.deepEqual(getQuizFigureNumberMask(800, 600), {
-    left: 0,
-    top: 0,
-    width: 192,
-    height: 120
-  });
-  assert.deepEqual(getQuizFigureNumberMask(375, 281), {
-    left: 0,
-    top: 0,
-    width: 90,
-    height: 57
-  });
-
-  const input = await sharp({
-    create: { width: 800, height: 600, channels: 3, background: "#ffffff" }
-  }).composite([
-    {
-      input: await sharp({ create: { width: 120, height: 70, channels: 3, background: "#000000" } }).png().toBuffer(),
-      left: 24,
-      top: 20
-    },
-    {
-      input: await sharp({ create: { width: 160, height: 120, channels: 3, background: "#ed1b2f" } }).png().toBuffer(),
-      left: 310,
-      top: 250
-    },
-    {
-      input: await sharp({ create: { width: 120, height: 36, channels: 3, background: "#18a56f" } }).png().toBuffer(),
-      left: 36,
-      top: 124
+for (const { id, label } of fixtures) {
+  test(`real figure ${id}: remove the number and preserve every pixel of the drawing`, async () => {
+    const original = readFileSync(new URL(`fixtures/quiz-figures/fig${id}.jpg`, import.meta.url));
+    const input = await pixels(original);
+    const output = await renderNumberlessQuizFigure(original, { figure: `fig${id}` });
+    const result = await pixels(output);
+    assert.equal((await sharp(output).metadata()).format, "png");
+    assert.equal(result.info.width, input.info.width);
+    assert.equal(result.info.height, input.info.height);
+    let removedInk = 0;
+    for (let y = 0; y < input.info.height; y += 1) {
+      for (let x = 0; x < input.info.width; x += 1) {
+        const offset = (y * input.info.width + x) * 3;
+        const inside = x >= label[0] && y >= label[1] && x <= label[2] && y <= label[3];
+        for (let c = 0; c < 3; c += 1) {
+          if (inside) {
+            assert.ok(result.data[offset + c] >= 200, `number remains at ${x},${y}`);
+            if (input.data[offset + c] < 100) removedInk += 1;
+          } else if (result.data[offset + c] !== input.data[offset + c]) {
+            assert.fail(`drawing changed at ${x},${y}`);
+          }
+        }
+      }
     }
-  ]).jpeg({ quality: 100, chromaSubsampling: "4:4:4" }).toBuffer();
+    assert.ok(removedInk > 100);
+  });
+}
 
-  const output = await renderNumberlessQuizFigure(input);
-  const { data, info } = await sharp(output).raw().toBuffer({ resolveWithObject: true });
-  const hiddenNumberPixel = pixelAt(data, info, 60, 45);
-  const preservedFigurePixel = pixelAt(data, info, 360, 300);
-  const preservedBoundaryPixel = pixelAt(data, info, 60, 136);
-
-  assert.ok(hiddenNumberPixel.every(channel => channel >= 250));
-  assert.ok(preservedFigurePixel[0] >= 225);
-  assert.ok(preservedFigurePixel[1] <= 45);
-  assert.ok(preservedFigurePixel[2] <= 65);
-  assert.ok(preservedBoundaryPixel[0] <= 45);
-  assert.ok(preservedBoundaryPixel[1] >= 140);
-  assert.ok(preservedBoundaryPixel[2] >= 80);
-  assert.equal(info.width, 800);
-  assert.equal(info.height, 600);
-
-  for (const width of [80, 320, 1600]) {
-    const resized = await sharp(output).resize({ width }).raw().toBuffer({ resolveWithObject: true });
-    const hiddenAfterScale = pixelAt(
-      resized.data,
-      resized.info,
-      Math.floor(resized.info.width * 0.075),
-      Math.floor(resized.info.height * 0.075)
-    );
-    assert.ok(hiddenAfterScale.every(channel => channel >= 245), `number region leaked at width ${width}`);
+test("the reported yield sign keeps its upper-left corner at alternate source sizes", async () => {
+  const original = readFileSync(new URL("fixtures/quiz-figures/fig40.jpg", import.meta.url));
+  for (const width of [320, 375, 1600]) {
+    const input = await sharp(original).resize({ width }).png().toBuffer();
+    const output = await renderNumberlessQuizFigure(input, { figure: "fig40" });
+    const before = await pixels(input), after = await pixels(output);
+    const corner = { left: Math.round(width * 0.18), top: Math.round(before.info.height * 0.13), width: Math.round(width * 0.15), height: Math.round(before.info.height * 0.15) };
+    assert.deepEqual(await sharp(output).extract(corner).raw().toBuffer(), await sharp(input).extract(corner).raw().toBuffer());
+    const number = (Math.round(before.info.height * 0.10) * width + Math.round(width * 0.08)) * 3;
+    assert.ok(after.data[number] >= 245);
   }
 });
 
-test("figure delivery is fail-closed and owned by the shared API path", async () => {
+test("unlabelled coloured and black drawings in the old cover area are preserved", async () => {
+  for (const fill of ["#ed1b2f", "#000000"]) {
+    const input = await sharp(Buffer.from(`<svg width="800" height="600"><rect width="800" height="600" fill="white"/><path d="M20 20 H600 L310 500 Z" fill="none" stroke="${fill}" stroke-width="20"/></svg>`)).png().toBuffer();
+    const output = await renderNumberlessQuizFigure(input, { figure: "fig40" });
+    assert.deepEqual((await pixels(output)).data, (await pixels(input)).data);
+  }
+});
+
+test("uncertain label detection preserves the figure instead of using a fallback rectangle", async () => {
+  const input = readFileSync(new URL("fixtures/quiz-figures/fig40.jpg", import.meta.url));
+  const output = await renderNumberlessQuizFigure(input, { figure: "fig698" });
+  assert.deepEqual((await pixels(output)).data, (await pixels(input)).data);
+});
+
+test("figure delivery stays in the shared API and returns the correct lossless media type", async () => {
+  assert.equal(QUIZ_FIGURE_PRESENTATION_VERSION, "numberless-v2");
   await assert.rejects(renderNumberlessQuizFigure(Buffer.from("not-an-image")));
-
-  const assetApi = source("../api/asset.js");
-  assert.match(assetApi, /figurePresentation:\s*QUIZ_FIGURE_PRESENTATION_VERSION/u);
-  assert.match(assetApi, /selectedAsset\.figurePresentation === QUIZ_FIGURE_PRESENTATION_VERSION/u);
-  assert.match(assetApi, /await renderNumberlessQuizFigure\(selectedObject\.buffer\)/u);
-  assert.doesNotMatch(assetApi, /renderNumberlessQuizFigure\([^)]*\)\.catch/u);
-  assert.doesNotMatch(assetApi, /catch\s*\([^)]*\)\s*\{[^}]{0,180}return\s+selectedObject\.buffer/u);
+  const api = source("../api/asset.js");
+  assert.match(api, /figurePresentation:\s*QUIZ_FIGURE_PRESENTATION_VERSION/u);
+  assert.match(api, /selectedAsset\.figurePresentation === QUIZ_FIGURE_PRESENTATION_VERSION/u);
+  assert.match(api, /await renderNumberlessQuizFigure\(selectedObject\.buffer, \{ figure: selectedAsset\.figure \}\)/u);
+  assert.match(api, /path: `Figure\/\$\{figure\}\.jpg`,\s*contentType: "image\/png"/u);
 });
 
-test("every current quiz-figure client requests the fresh numberless representation", () => {
-  for (const path of [
-    "../quiz.js",
-    "../study-quiz.js",
-    "../src/learning-insights.js",
-    "../aggiungi-spiegazioni.js"
-  ]) {
-    const client = source(path);
-    assert.match(client, /kind:\s*"figure"[\s\S]{0,180}presentation:\s*(?:QUIZ_FIGURE_PRESENTATION|"numberless-v1")/u, path);
+test("every figure consumer bypasses cached rectangular covers", () => {
+  for (const path of ["../quiz.js", "../study-quiz.js", "../src/learning-insights.js", "../aggiungi-spiegazioni.js"]) {
+    assert.match(source(path), /kind:\s*"figure"[\s\S]{0,180}presentation:\s*(?:QUIZ_FIGURE_PRESENTATION|"numberless-v2")/u, path);
+    assert.doesNotMatch(source(path), /numberless-v1/u);
   }
-
   assert.doesNotMatch(source("../study-quiz.css"), /\.study-figure-frame::after/u);
 });

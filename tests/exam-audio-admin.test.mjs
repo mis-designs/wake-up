@@ -48,7 +48,7 @@ test("Exam 80 button opens all 80 real questions, figures and the shared recorde
   assert.equal(section.children[2].children.length, 80);
   const figures = section.children[2].children.flatMap(row => row.children[0].children).filter(node => node.tag === "img");
   assert.ok(figures.length > 0);
-  assert.ok(figures.every(image => image.src.includes("presentation=numberless-v1")));
+  assert.ok(figures.every(image => image.src.includes("presentation=numberless-v2")));
   const payload = vm.runInContext("quizAudioPayload(state.chapters[25].questions[0])", context);
   assert.match(payload.questionId, /^exam_q/);
   assert.equal(payload.quizAudioIdentityVersion, 2);

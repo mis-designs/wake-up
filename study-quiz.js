@@ -530,7 +530,7 @@
     return `/api/asset?${new URLSearchParams({
       kind: "figure",
       figure: String(figure || "").trim(),
-      presentation: "numberless-v1"
+      presentation: "numberless-v2"
     })}`;
   }
 

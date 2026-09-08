@@ -72,7 +72,7 @@ test("study figures use the shared numberless source and keep their failure reco
 
   assert.match(source, /figure\.className = "study-figure-frame"[\s\S]*?figure\.appendChild\(image\)[\s\S]*?main\.appendChild\(figure\)/u);
   assert.match(source, /image\.addEventListener\("error", \(\) => figure\.remove\(\), \{ once: true \}\)/u);
-  assert.match(source, /kind:\s*"figure"[\s\S]*?presentation:\s*"numberless-v1"/u);
+  assert.match(source, /kind:\s*"figure"[\s\S]*?presentation:\s*"numberless-v2"/u);
   assert.match(styles, /\.study-figure-frame\s*\{[^}]*position:\s*relative;[^}]*overflow:\s*hidden;[^}]*background:\s*#fff;/u);
   assert.doesNotMatch(styles, /\.study-figure-frame::after/u);
 });
@@ -93,7 +93,7 @@ test("study explanation players reuse the supplied artwork with stable responsiv
   assert.match(styles, /@media \(max-width: 430px\)[\s\S]*?\.study-explanation-artwork\s*\{[^}]*flex-basis:\s*44px[^}]*width:\s*44px[^}]*height:\s*44px/u);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.study-explanation-artwork\s*\{\s*animation:\s*none/u);
   assert.match(page, /study-quiz\.css\?v=26-numberless-figures/u);
-  assert.match(page, /study-quiz\.js\?v=25-numberless-figures/u);
+  assert.match(page, /study-quiz\.js\?v=26-intact-figures/u);
   assert.match(worker, /magicbook-pwa-v164-lavender-gold/u);
   assert.match(worker, /\/icons\/explain_quiz\.svg/u);
 });
