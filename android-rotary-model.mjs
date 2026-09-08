@@ -14,6 +14,16 @@ export function dialLabelPosition(chapter, preview) {
   return { x: 150 + 125 * Math.cos(radians), y: 150 + 125 * Math.sin(radians), rotation: degrees - 180 };
 }
 
+// Tapping the dial's numbered arc is the pointer alternative to dragging.
+export function chapterAtAngle(selected, angle) {
+  return clampChapter(selected - angleDelta(180, angle) / DETENT_DEGREES);
+}
+
+export function homeGreetings(hour) {
+  const greeting = hour >= 5 && hour < 12 ? "Buongiorno" : hour >= 12 && hour < 18 ? "Buon pomeriggio" : "Buonasera";
+  return ["Assalamu alaikum", greeting, "Ciao!"];
+}
+
 // One pointer owns a gesture. No wrapping, inertia, timers, or navigation side effects.
 export class ChapterDial {
   constructor(value = 1) { this.selected = clampChapter(value); this.gesture = null; }

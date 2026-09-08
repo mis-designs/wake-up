@@ -108,7 +108,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <link rel="stylesheet" href="src/learning-insights.css?v=9-card-spacing&ui=10">
 <link rel="stylesheet" href="mobile-experience.css?v=4-admin-scroll">
 <link rel="stylesheet" href="/android-app-theme.css?v=5-lavender-gold">
-<link rel="stylesheet" href="/android-study-shell.css?v=2-fit">
+<link rel="stylesheet" href="/android-study-shell.css?v=3-gestures">
 </head>
 <body>
 
@@ -694,9 +694,10 @@ gtag('config', 'G-C5JPY9HFHD', {
 <!-- Instantiated only by the installed Android shell; browser markup is untouched. -->
 <template id="androidStudyTemplate">
   <section class="native-home" aria-labelledby="nativeHomeTitle">
-    <h1 id="nativeHomeTitle" tabindex="-1">Ciao!</h1>
+    <h1 id="nativeHomeTitle" tabindex="-1" aria-label="Benvenuto in Magic Book"><span class="native-greeting-rail" aria-hidden="true"><span>Ciao!</span></span></h1>
     <button class="native-book" type="button" data-native-action="chapters" aria-label="Apri Magic Book e scegli il capitolo">
-      <img src="/icons/mg_book.svg" width="280" height="390" alt="Magic Book" decoding="async">
+      <img class="native-book-art" src="/icons/mg_book.svg" width="280" height="390" alt="Magic Book" decoding="async">
+      <img class="native-tap-cue" src="/icons/clich_here.svg" width="40" height="40" alt="" aria-hidden="true">
     </button>
   </section>
   <section class="native-chapters" aria-labelledby="nativeChaptersTitle">
@@ -711,14 +712,15 @@ gtag('config', 'G-C5JPY9HFHD', {
       </div>
       <output id="nativeSelectedNumber" class="native-selected-number" aria-hidden="true">01</output>
       <div id="nativeChapterDial" class="native-dial" role="slider" tabindex="0" aria-label="Capitolo" aria-valuemin="1" aria-valuemax="25" aria-valuenow="1" aria-orientation="vertical" aria-describedby="nativeDialHint">
-        <svg class="native-dial-face" viewBox="0 0 300 300" aria-hidden="true"><circle class="native-dial-orbit" cx="150" cy="150" r="104"></circle><g id="nativeDialNumbers"></g></svg>
+        <svg class="native-dial-face" viewBox="0 0 300 300" aria-hidden="true"><g id="nativeDialNumbers"></g></svg>
+        <img class="native-rotate-cue is-up" src="/icons/Arrow%20bent%20upword%20icon.svg" alt="" aria-hidden="true" width="22" height="26">
+        <img class="native-rotate-cue is-down" src="/icons/Arrow%20bent%20downward%20icon.svg" alt="" aria-hidden="true" width="22" height="26">
       </div>
-      <div class="native-dial-core"><button id="nativeOpenChapter" type="button" data-native-action="open" aria-label="Apri il capitolo selezionato">Vai<span aria-hidden="true">Open</span></button></div>
+      <button id="nativeOpenChapter" type="button" data-native-action="open" aria-label="Apri il capitolo selezionato">Vai</button>
     </div>
     <div class="native-chapter-caption">
-      <button class="native-step native-step-prev" type="button" data-native-step="-1" aria-label="Capitolo precedente"><span aria-hidden="true"></span></button>
-      <div><h2 id="nativeChapterTitle"></h2><p id="nativeDialHint">Ruota o usa le frecce</p></div>
-      <button class="native-step native-step-next" type="button" data-native-step="1" aria-label="Capitolo successivo"><span aria-hidden="true"></span></button>
+      <h2 id="nativeChapterTitle"></h2>
+      <p id="nativeDialHint" class="native-sr-only">Ruota il selettore o tocca un numero sulla rotella. Con la tastiera usa le frecce, Home e Fine.</p>
     </div>
     <div class="native-actions" aria-label="Studia ed esercitati">
       <button type="button" data-native-action="study" lang="en">Study Quiz</button>
@@ -1298,6 +1300,6 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script src="learning-sync.js?v=2"></script>
 <script src="src/learning-insights.js?v=6-native-progress&ui=9-intact-figures"></script>
 <script src="script.js?v=71-native-study"></script>
-<script type="module" src="android-study-shell.js?v=2-fit"></script>
+<script type="module" src="android-study-shell.js?v=3-gestures"></script>
 </body>
 </html>

@@ -158,7 +158,7 @@ test("responsive, reduced-motion and global scrollbar rules are present", () => 
   assert.match(index, /assets\/daisyui\.css\?v=2-learning-shell/u);
   assert.match(index, /src\/learning-insights\.css\?v=9-card-spacing/u);
   assert.match(index, /src\/learning-insights\.js\?v=6-native-progress/u);
-  assert.match(worker, /magicbook-pwa-v166-native-fit/u);
+  assert.match(worker, /magicbook-pwa-v167-native-gestures/u);
   assert.match(worker, /style\.css\?v=72-solid-profile-controls/u);
   assert.match(worker, /assets\/daisyui\.css\?v=2-learning-shell/u);
   assert.match(worker, /src\/learning-insights\.css\?v=9-card-spacing/u);

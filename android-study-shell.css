@@ -10,6 +10,7 @@
 html.android-webview {
   --native-canvas: #FFFFFF;
   --native-ink: #202023;
+  --native-wheel: #000000;
   --native-dock: #101114;
   --native-blue: #076AE0;
   --native-muted: #595B63;
@@ -100,11 +101,15 @@ html.android-webview .native-home {
   flex-direction: column;
 }
 html.android-webview .native-home h1 {
-  margin: 0;
-  font: 400 clamp(28px, 7vw, 34px)/1 var(--native-display);
+  margin: 0; width: 100%; height: 44px; flex: none; overflow: clip; text-align: center;
+  font: 400 clamp(24px, 6.3vw, 32px)/44px var(--native-display);
   text-transform: uppercase;
 }
+html.android-webview .native-greeting-rail { display: block; animation: native-greeting-rise 9s ease-in-out both; }
+html.android-webview .native-home h1 span { font: inherit; letter-spacing: inherit; }
+html.android-webview .native-greeting-rail > span { display: block; height: 44px; white-space: nowrap; }
 html.android-webview .native-book {
+  position: relative;
   display: grid;
   place-items: center;
   width: min(58vw, 250px);
@@ -116,7 +121,7 @@ html.android-webview .native-book {
   box-shadow: none;
   filter: none;
 }
-html.android-webview .native-book img {
+html.android-webview .native-book-art {
   width: 100%;
   height: auto;
   max-height: 46dvh;
@@ -124,6 +129,11 @@ html.android-webview .native-book img {
   box-shadow: none;
   filter: none;
   animation: native-book-float 5s ease-in-out infinite;
+}
+html.android-webview .native-tap-cue {
+  position: absolute; bottom: -28px; left: calc(50% - 20px); width: 40px; height: 40px;
+  object-fit: contain; pointer-events: none; opacity: 0;
+  animation: native-book-tap 10s ease-in-out infinite;
 }
 html.android-webview .native-motion-toggle {
   display: none;
@@ -198,34 +208,37 @@ html.android-webview .native-image-fallback span { display: block; margin-top: 6
 html.android-webview .native-chapter-preview[data-image-ready] .native-image-fallback { display: none; }
 html.android-webview .native-selected-number {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: grid; place-items: center; width: 64px; height: 44px;
   z-index: 2; font: 400 clamp(28px, 8vw, 40px)/1 var(--native-display);
   color: var(--native-ink);
 }
-html.android-webview .native-dial { right: 0; transform: translate(50%, -50%); background: var(--native-ink); touch-action: none; cursor: grab; user-select: none; }
+html.android-webview .native-dial { right: 0; transform: translate(50%, -50%); background: var(--native-wheel); touch-action: none; cursor: grab; user-select: none; }
 html.android-webview .native-dial.is-dragging { cursor: grabbing; }
 html.android-webview .native-dial:focus-visible { outline-offset: -5px; }
 html.android-webview .native-dial-face { display: block; width: 100%; height: 100%; overflow: visible; }
-html.android-webview .native-dial-orbit { fill: none; stroke: var(--native-line); stroke-width: .8; }
 html.android-webview .native-dial-face text { fill: var(--native-canvas); font: 400 22px var(--native-display); text-anchor: middle; dominant-baseline: central; }
-html.android-webview .native-dial-core {
-  position: absolute; right: 0; top: 50%; transform: translate(50%, -50%);
-  height: 54%; width: auto; aspect-ratio: 1; border-radius: 50%; background: var(--native-canvas);
-  pointer-events: none;
-}
 html.android-webview #nativeOpenChapter {
-  position: absolute; right: calc(50% + 6px); top: 50%; transform: translateY(-50%);
-  width: 54px; min-height: 48px; padding: 6px 3px; border: 0; border-radius: 16px;
-  background: var(--native-canvas); color: var(--native-ink); pointer-events: auto;
+  position: absolute; left: 50%; top: calc(50% + 24px); transform: translateX(-50%); z-index: 3;
+  width: 64px; height: 44px; padding: 6px 3px; border: 0; border-radius: 10px;
+  background: var(--native-canvas); color: var(--native-wheel);
   font: 400 22px/1 var(--native-display); text-transform: uppercase;
 }
-html.android-webview #nativeOpenChapter span { display: block; margin-top: 4px; font-size: 10px; letter-spacing: .1em; }
-html.android-webview #nativeOpenChapter:active:not(:disabled) { transform: translateY(-50%) scale(.94); }
-html.android-webview .native-chapter-caption { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 6px; align-items: center; padding: 8px 20px 0; min-height: 64px; }
-html.android-webview .native-chapter-caption h2 { margin: 0; font: 400 17px/1.2 var(--native-display); text-align: center; text-wrap: balance; }
-html.android-webview .native-chapter-caption p { margin: 7px 0 0; color: var(--native-muted); font-size: 11px; text-align: center; }
-html.android-webview .native-step { width: 44px; height: 44px; padding: 0; color: var(--native-ink); border: 1px solid var(--native-line); border-radius: 50%; background: var(--native-canvas); display: grid; place-items: center; }
-html.android-webview .native-step span { width: 9px; height: 9px; border-top: 2px solid currentColor; border-right: 2px solid currentColor; transform: rotate(45deg); }
-html.android-webview .native-step-prev span { transform: rotate(-135deg); }
+html.android-webview #nativeOpenChapter:active:not(:disabled) { transform: translateX(-50%) scale(.94); }
+html.android-webview .native-chapter-caption { display: grid; place-items: center; padding: 6px 22px; height: 60px; min-height: 0; }
+html.android-webview .native-chapter-caption h2 {
+  display: flex; align-items: center; justify-content: center; width: 100%; height: 48px; min-width: 0;
+  margin: 0; font: 400 var(--native-title-size, 18px)/1.15 var(--native-display);
+  text-align: center; text-wrap: balance; overflow-wrap: anywhere; overflow: auto;
+}
+html.android-webview .native-rotate-cue {
+  position: absolute; left: calc(25% - 42px); width: 22px; height: 26px;
+  object-fit: contain; pointer-events: none; opacity: 0;
+  animation: native-rotate-up 6s ease-in-out infinite;
+}
+html.android-webview .native-rotate-cue.is-up { top: 10%; }
+html.android-webview .native-rotate-cue.is-down { bottom: 10%; animation-name: native-rotate-down; animation-delay: .7s; }
+html.android-webview .native-dial.is-dragging .native-rotate-cue,
+html.android-webview .native-chapters[data-rotary-used] .native-rotate-cue { visibility: hidden; animation: none; }
 html.android-webview .native-actions {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 16px;
   width: min(80%, 360px); margin: 12px auto 8px;
@@ -245,8 +258,6 @@ html.android-webview .native-road-divider .native-roundabout { width: 28px; heig
    when zoom or an unusually short window exceeds this minimum footprint. */
 @media (max-height: 620px) {
   html.android-webview .native-chapters-header { padding-block: 3px; }
-  html.android-webview .native-chapter-caption { min-height: 60px; padding-top: 6px; }
-  html.android-webview .native-chapter-caption h2 { font-size: 15px; }
   html.android-webview .native-actions { margin-block: 8px; gap: 6px 16px; }
   html.android-webview .native-actions > button { min-height: 44px; padding-block: 8px; }
   html.android-webview .native-actions > .native-learning-action { min-height: 52px; }
@@ -287,16 +298,30 @@ html.android-webview[data-app-transition] :is(.native-home, .native-chapters, .n
 html.android-webview[data-app-transition] :is(.native-home, .native-chapters, .native-dock) button { pointer-events: none; }
 @media (hover: hover) {
   html.android-webview .native-actions > button:hover:not(:disabled) { filter: brightness(1.15); }
-  html.android-webview :is(.native-back, .native-step, #nativeOpenChapter):hover:not(:disabled) { background: #EDEEF0; }
-  html.android-webview .native-book:hover img { opacity: .88; }
+  html.android-webview :is(.native-back, #nativeOpenChapter):hover:not(:disabled) { background: #EDEEF0; }
+  html.android-webview .native-book:hover .native-book-art { opacity: .88; }
 }
 @keyframes native-book-float { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-9px) rotate(1deg); } }
 @keyframes native-liquid-wave { from { transform: translate(-7%, 0) rotate(-5deg); } to { transform: translate(9%, 5%) rotate(5deg); } }
-html.android-webview[data-native-motion-paused] :is(.native-book img, .native-liquid-fill > span),
-html.android-webview[data-native-background] :is(.native-book img, .native-liquid-fill > span) { animation-play-state: paused; }
+@keyframes native-greeting-rise { 0%, 27% { transform: translateY(0); } 31%, 63% { transform: translateY(-44px); } 67%, 100% { transform: translateY(-88px); } }
+@keyframes native-book-tap {
+  0%, 12%, 36%, 100% { opacity: 0; transform: translateY(22px) scale(1); }
+  18% { opacity: .7; transform: translateY(4px) scale(1); }
+  26% { opacity: .8; transform: translateY(-48px) scale(1); }
+  29% { opacity: .8; transform: translateY(-48px) scale(.86); }
+  34% { opacity: 0; transform: translateY(-48px) scale(.92); }
+}
+@keyframes native-rotate-up { 0%, 9%, 43%, 100% { opacity: 0; transform: translateY(7px); } 18% { opacity: .55; } 36% { opacity: 0; transform: translateY(-9px); } }
+@keyframes native-rotate-down { 0%, 9%, 43%, 100% { opacity: 0; transform: translateY(-7px); } 18% { opacity: .55; } 36% { opacity: 0; transform: translateY(9px); } }
+html.android-webview[data-native-motion-paused] :is(.native-book-art, .native-liquid-fill > span, .native-greeting-rail, .native-tap-cue, .native-rotate-cue),
+html.android-webview[data-native-background] :is(.native-book-art, .native-liquid-fill > span, .native-greeting-rail, .native-tap-cue, .native-rotate-cue) { animation-play-state: paused; }
+html.android-webview[data-native-motion-paused] .native-greeting-rail { animation: none; transform: translateY(-44px); }
+html.android-webview[data-native-motion-paused] :is(.native-tap-cue, .native-rotate-cue) { animation: none; opacity: .4; transform: none; }
 @media (prefers-reduced-motion: reduce) {
-  html.android-webview .native-book img,
+  html.android-webview .native-book-art,
   html.android-webview .native-liquid-fill > span { animation: none; }
+  html.android-webview .native-greeting-rail { animation: none; transform: translateY(-44px); }
+  html.android-webview :is(.native-tap-cue, .native-rotate-cue) { animation: none; opacity: .4; }
   html.android-webview .native-liquid-fill { transition: none; }
   html.android-webview .native-motion-toggle { visibility: hidden; }
 }

@@ -1,4 +1,4 @@
-import { ChapterDial, clampChapter, dialLabelPosition, progressValue } from "./android-rotary-model.mjs?v=2-fit";
+import { ChapterDial, clampChapter, chapterAtAngle, dialLabelPosition, homeGreetings, progressValue } from "./android-rotary-model.mjs?v=3-gestures";
 
 // Runtime gate is the native shell marker, not screen size or standalone/PWA mode.
 const doc = document;
@@ -47,6 +47,8 @@ function initialize() {
   const model = new ChapterDial(app.selected());
   const utilityAnchors = new Map();
   const labels = [];
+  const titleSizes = new Map();
+  let pointerStart = null;
   let screen = "";
   let frame = 0;
   let pendingPreview = model.selected;
@@ -123,6 +125,7 @@ function initialize() {
     model.selected = clampChapter(value);
     selectedOutput.textContent = String(model.selected).padStart(2, "0");
     chapterTitle.textContent = app.titles[model.selected - 1];
+    fitChapterTitle();
     dial.setAttribute("aria-valuenow", String(model.selected));
     dial.setAttribute("aria-valuetext", `${model.selected} di 25: ${chapterTitle.textContent}`);
     doc.getElementById("nativeOpenChapter").setAttribute("aria-label", `Apri capitolo ${model.selected}: ${chapterTitle.textContent}`);
@@ -130,9 +133,42 @@ function initialize() {
     if (!model.gesture) { pendingPreview = model.selected; draw(); }
   }
 
+  // Only the text adapts. The caption's fixed row never resizes the wheel.
+  function fitChapterTitle() {
+    if (!chapterTitle.clientWidth) return;
+    const key = `${chapterTitle.clientWidth}:${chapterTitle.clientHeight}:${chapterTitle.textContent}`;
+    let size = titleSizes.get(key);
+    if (!size) {
+      size = 18;
+      chapterTitle.style.setProperty("--native-title-size", `${size}px`);
+      while (size > 13 && (chapterTitle.scrollHeight > chapterTitle.clientHeight || chapterTitle.scrollWidth > chapterTitle.clientWidth)) {
+        size -= .5;
+        chapterTitle.style.setProperty("--native-title-size", `${size}px`);
+      }
+      titleSizes.set(key, size);
+    }
+    chapterTitle.style.setProperty("--native-title-size", `${size}px`);
+  }
+
+  function showGreeting() {
+    const title = doc.getElementById("nativeHomeTitle");
+    const greetings = homeGreetings(new Date().getHours());
+    const rail = doc.createElement("span");
+    rail.className = "native-greeting-rail";
+    rail.setAttribute("aria-hidden", "true");
+    for (const text of greetings) {
+      const line = doc.createElement("span");
+      line.textContent = text;
+      rail.append(line);
+    }
+    title.setAttribute("aria-label", `${greetings[1]}. Benvenuto in Magic Book`);
+    title.replaceChildren(rail);
+  }
+
   function applySelection(result) {
     if (!result) return;
     if (result.changed) {
+      chapters.dataset.rotaryUsed = "true";
       app.select(result.selected);
       refreshSelected(result.selected);
       feedback("selection");
@@ -150,6 +186,7 @@ function initialize() {
   }
   function finishGesture(pointerId) {
     if (!model.end(pointerId)) return;
+    pointerStart = null;
     dial.classList.remove("is-dragging");
     if (pointerId !== undefined && dial.hasPointerCapture(pointerId)) dial.releasePointerCapture(pointerId);
     suppressActionsUntil = performance.now() + 120;
@@ -158,6 +195,7 @@ function initialize() {
   dial.addEventListener("pointerdown", event => {
     if (screen !== "chapters" || !canInteract() || event.button !== 0 || !event.isPrimary) return;
     if (!model.begin(event.pointerId, pointerAngle(event))) return;
+    pointerStart = { x: event.clientX, y: event.clientY, chapter: model.selected, dragged: false };
     event.preventDefault();
     dial.setPointerCapture(event.pointerId);
     dial.classList.add("is-dragging");
@@ -165,10 +203,17 @@ function initialize() {
   });
   dial.addEventListener("pointermove", event => {
     if (!canInteract()) { finishGesture(event.pointerId); return; }
+    if (model.gesture?.pointerId !== event.pointerId) return;
+    if (Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) > 6) pointerStart.dragged = true;
     applySelection(model.move(event.pointerId, pointerAngle(event)));
   });
   dial.addEventListener("pointerup", event => {
-    if (canInteract()) applySelection(model.move(event.pointerId, pointerAngle(event)));
+    if (model.gesture?.pointerId !== event.pointerId) return;
+    if (canInteract()) {
+      const angle = pointerAngle(event);
+      const dragged = pointerStart.dragged || Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) > 6;
+      applySelection(dragged ? model.move(event.pointerId, angle) : model.select(chapterAtAngle(pointerStart.chapter, angle)));
+    }
     finishGesture(event.pointerId);
   });
   ["pointercancel", "lostpointercapture"].forEach(type => dial.addEventListener(type, event => finishGesture(event.pointerId)));
@@ -185,8 +230,6 @@ function initialize() {
     app.actions[action]?.();
   }
   [home, chapters, dock].forEach(element => element.addEventListener("click", event => {
-    const step = event.target.closest("[data-native-step]");
-    if (step && canInteract() && !model.gesture) applySelection(model.select(model.selected + Number(step.dataset.nativeStep)));
     const action = event.target.closest("[data-native-action]");
     if (action) runAction(action.dataset.nativeAction);
   }));
@@ -213,6 +256,8 @@ function initialize() {
     html.style.setProperty("--native-dock-reserve", `${reserve}px`);
   }
   new ResizeObserver(syncDockSpace).observe(dock);
+  new ResizeObserver(fitChapterTitle).observe(chapterTitle);
+  doc.fonts.ready.then(() => { titleSizes.clear(); fitChapterTitle(); });
   window.addEventListener("resize", () => {
     finishGesture(model.gesture?.pointerId);
     cancelAnimationFrame(frame);
@@ -282,6 +327,8 @@ function initialize() {
     app.prepareUtilities();
     dock.hidden = false;
     syncDockSpace();
+    if (screen === "home") showGreeting();
+    if (screen === "chapters") delete chapters.dataset.rotaryUsed;
     refreshSelected(app.selected());
     void refreshProgress();
     requestAnimationFrame(() => {

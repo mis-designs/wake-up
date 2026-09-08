@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ChapterDial, angleDelta, clampChapter, dialLabelPosition, progressValue } from "../android-rotary-model.mjs";
+import { ChapterDial, angleDelta, chapterAtAngle, clampChapter, dialLabelPosition, homeGreetings, progressValue } from "../android-rotary-model.mjs";
 
 test("chapter selection is integer bounded, never wraps", () => {
   assert.equal(clampChapter(26), 25);
@@ -54,6 +54,20 @@ test("detent hysteresis rejects tremor around the midpoint without losing revers
     assert.equal(dial.selected, 9);
   }
   assert.equal(dial.move(1, .4 * 33).selected, 8);
+});
+
+test("tapping the wheel selects the visible number without a drag or launch", () => {
+  assert.equal(chapterAtAngle(8, 180), 8);
+  assert.equal(chapterAtAngle(8, 147), 9);
+  assert.equal(chapterAtAngle(8, -147), 7);
+  assert.equal(chapterAtAngle(25, 147), 25);
+  assert.equal(chapterAtAngle(1, -147), 1);
+});
+
+test("Home greeting follows the phone's local hour, with a stable three-line sequence", () => {
+  for (const [hour, greeting] of [[0, "Buonasera"], [4, "Buonasera"], [5, "Buongiorno"], [11, "Buongiorno"], [12, "Buon pomeriggio"], [17, "Buon pomeriggio"], [18, "Buonasera"], [23, "Buonasera"]]) {
+    assert.deepEqual(homeGreetings(hour), ["Assalamu alaikum", greeting, "Ciao!"]);
+  }
 });
 
 test("end-stop emits boundary only on entering and resists without dead travel", () => {
