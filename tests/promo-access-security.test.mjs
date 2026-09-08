@@ -331,7 +331,7 @@ test("landing preserves the dormant promo login without exposing environment val
   assert.match(pageSource, /id="joinPackagesTitle" tabindex="-1">Pacchetti MagicBook/);
   assert.match(scriptSource, /promoConversionErrors = \["promo_already_used", "promo_code_reused", "promo_limit_reached", "promo_campaign_full"\]/);
   assert.match(scriptSource, /function openPromoPackages\(\)[\s\S]*?showJoinScreen\(\)[\s\S]*?joinPackagesTitle/);
-  assert.match(scriptSource, /service-worker\.js\?v=42-promo-desktop-layout/);
+  assert.match(scriptSource, /service-worker\.js\?v=43-native-study/);
   assert.match(styleSource, /\.promo-access-next-step[\s\S]*?\.promo-access-packages-button/);
   assert.match(styleSource, /\.promo-access-packages-button:focus-visible[\s\S]*?outline-color: #075f55/);
   assert.doesNotMatch(pageSource, /class="trial-card"/);

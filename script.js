@@ -3310,6 +3310,7 @@ function showWhatsAppGroupPopup() {
  * UI NAVIGATION
  ***********************/
 function hideAll() {
+  window.MagicBookAndroidStudy?.hide();
   cleanupMagicBookViewer();
   window.MagicBookLearningInsights?.hide();
   ["landing", "about", "join", "login", "home", "chapters", "viewer", "adminPanel", "trialHub", "magicDictionaryScreen", "learningInsightsScreen"].forEach(id => {
@@ -3335,6 +3336,7 @@ function showHome() {
     setAppRoute({ screen: "home" });
     updateAdminEntryVisibility();
     maybeShowWhatsAppGroupPopup();
+    window.MagicBookAndroidStudy?.show("home");
   });
 }
 
@@ -3351,6 +3353,7 @@ function showChapters() {
     setAppRoute({ screen: "chapters" });
     requestAnimationFrame(() => updateCardTrack());
     if (trialGuestMode) decorateGuestTrialUI();
+    window.MagicBookAndroidStudy?.show("chapters");
   });
 }
 
@@ -3519,6 +3522,7 @@ function selectChapter(num) {
   selectedChapter = clampChapter(num);
   updateCardStyles();
   updateCardTrack();
+  window.MagicBookAndroidStudy?.refreshSelected(selectedChapter);
 }
 
 function focusSelectedChapter() {
@@ -6042,7 +6046,7 @@ if (whatsappBtn) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-      .register("/service-worker.js?v=42-promo-desktop-layout", { updateViaCache: "none" })
+      .register("/service-worker.js?v=43-native-study", { updateViaCache: "none" })
         .then(registration => registration.update())
         .catch(() => {});
     });

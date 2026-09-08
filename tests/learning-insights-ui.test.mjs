@@ -84,7 +84,8 @@ test("the UI includes stable loading, empty, offline, error and insufficient sta
   assert.match(client, /getInsightsCache/u);
   assert.match(client, /setInsightsCache/u);
   assert.match(client, /const controller = new AbortController\(\)/u);
-  assert.match(client, /signal: controller\.signal/u);
+  assert.match(client, /requestInsights\(auth, localEvents, controller\.signal\)/u);
+  assert.match(client, /cache: "no-store", signal/u);
   assert.match(client, /let timedOut = false/u);
   assert.match(client, /timedOut = true; controller\.abort\(\)/u);
   assert.match(client, /error\?\.name === "AbortError" && !timedOut/u);
@@ -156,12 +157,12 @@ test("responsive, reduced-motion and global scrollbar rules are present", () => 
   assert.match(index, /style\.css\?v=72-solid-profile-controls/u);
   assert.match(index, /assets\/daisyui\.css\?v=2-learning-shell/u);
   assert.match(index, /src\/learning-insights\.css\?v=9-card-spacing/u);
-  assert.match(index, /src\/learning-insights\.js\?v=5-figure-explanation-ui/u);
-  assert.match(worker, /magicbook-pwa-v164-lavender-gold/u);
+  assert.match(index, /src\/learning-insights\.js\?v=6-native-progress/u);
+  assert.match(worker, /magicbook-pwa-v165-native-study/u);
   assert.match(worker, /style\.css\?v=72-solid-profile-controls/u);
   assert.match(worker, /assets\/daisyui\.css\?v=2-learning-shell/u);
   assert.match(worker, /src\/learning-insights\.css\?v=9-card-spacing/u);
-  assert.match(worker, /src\/learning-insights\.js\?v=5-figure-explanation-ui/u);
+  assert.match(worker, /src\/learning-insights\.js\?v=6-native-progress/u);
   assert.match(worker, /\/icons\/next\.png/u);
   assert.match(worker, /\/icons\/go-back\.png/u);
   assert.match(worker, /\/assets\/admin\/update\.png/u);

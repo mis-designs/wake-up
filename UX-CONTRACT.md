@@ -4,6 +4,9 @@
 
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 | --- | --- | --- | --- | --- |
+| Installed study Home/chapter shell | `android-study-shell.js`, `android-study-shell.css` | Existing `script.js` routing, selectedChapter and action gate | Owner-approved Android-only rotary variant; browser uses unchanged legacy UI | Native/browser gate, 320px reflow, actual route integration, reduced motion |
+| Chapter rotary input | `android-rotary-model.mjs` | `script.js` selectedChapter, bounds 01–25 | Drag, keyboard and labelled previous/next controls; no wrapping | Detent, boundary, multipointer and cancellation tests |
+| Study dock progress | `src/learning-insights.js` readProgress | Authenticated user/device-bound model; quizCoveragePct/catalogQuizCount | Loading, genuine zero, known percentage, saved/offline, error/unknown | No fabricated percentage; abort and session-change guards |
 | Form | Login and dormant Promo access forms | `index.html` `#login .login-form`, `#promoAccessCard` + shared login helpers | Phone access; server-requested admin password; feature-switched promo conversion landing | Login behavior and browser keyboard/failure checks |
 | Scrollbar | Learning screen root | `src/learning-insights.css` | Browser forced-colors only | No nested horizontal scroller; no page overflow at 320px |
 | Statistics workspace | `src/learning-insights.js` | Authenticated learning model | Empty, insufficient, ready, cached, refreshing | Data-state tests and 320–1920 browser verification |
@@ -26,6 +29,9 @@
 
 | Concern | Owner | Contract |
 | --- | --- | --- |
+| Native study navigation | Existing route actions through `android-study-shell.js` | Book to chapters, Vai to selected book; four requested study controls and statistics/errors reuse canonical routes. Profile/Admin elements are moved with listeners and access checks intact. Admin stays unavailable to non-admins. |
+| Native rotary feedback | Android `MagicBookHaptics.kt` + pure `HapticPolicy.kt` | Exact trusted HTTPS main frame only; two fixed command names, no user-supplied timing. Device settings respected; boundary is two ticks. No haptics available is not an interaction failure. |
+| Native study assets | `assets/native-chapter-covers.json`, supplied book/divider SVGs | Approved chapter mapping only; failures preserve frame geometry and show honest fallback. Book SVG receives no extra shadow. |
 | Learning shell | `src/learning-insights.js`, `src/learning-insights.css`, `src/daisyui.css` | Back, refresh, routes, primary/secondary actions, category tabs, and pagination use local `d-`-prefixed daisyUI. Legacy fixed chrome is hidden while the workspace is active. |
 | Learning routes | `script.js` | `/statistiche` and `/errori`; the Errori lens is stored in `tipo`. |
 | Learning data | `src/learning-insights.js` | User-scoped cached rendering plus one abortable request per visible route; stale requests cannot replace newer state. |

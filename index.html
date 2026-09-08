@@ -108,6 +108,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <link rel="stylesheet" href="src/learning-insights.css?v=9-card-spacing&ui=10">
 <link rel="stylesheet" href="mobile-experience.css?v=4-admin-scroll">
 <link rel="stylesheet" href="/android-app-theme.css?v=5-lavender-gold">
+<link rel="stylesheet" href="/android-study-shell.css?v=1-rotary">
 </head>
 <body>
 
@@ -690,6 +691,59 @@ gtag('config', 'G-C5JPY9HFHD', {
 
 
 <!-- HOME -->
+<!-- Instantiated only by the installed Android shell; browser markup is untouched. -->
+<template id="androidStudyTemplate">
+  <section class="native-home" aria-labelledby="nativeHomeTitle">
+    <h1 id="nativeHomeTitle" tabindex="-1">Ciao!</h1>
+    <button class="native-book" type="button" data-native-action="chapters" aria-label="Apri Magic Book e scegli il capitolo">
+      <img src="/icons/mg_book.svg" width="280" height="390" alt="Magic Book" decoding="async">
+    </button>
+    <p class="native-book-hint">Tocca il libro per iniziare</p>
+    <button class="native-motion-toggle" type="button" aria-pressed="false">Pausa animazioni</button>
+  </section>
+  <section class="native-chapters" aria-labelledby="nativeChaptersTitle">
+    <header class="native-chapters-header">
+      <button class="native-back" type="button" data-native-action="home" aria-label="Torna alla Home"><img src="/icons/go-back.png" alt="" width="22" height="22"></button>
+      <h1 id="nativeChaptersTitle" tabindex="-1">Scegli capitolo</h1>
+    </header>
+    <div class="native-orbit-stage">
+      <div class="native-chapter-preview">
+        <img id="nativeChapterImage" alt="" decoding="async" hidden>
+        <span class="native-image-fallback">Magic Book<br><span>Immagine non disponibile</span></span>
+      </div>
+      <output id="nativeSelectedNumber" class="native-selected-number" aria-hidden="true">01</output>
+      <div id="nativeChapterDial" class="native-dial" role="slider" tabindex="0" aria-label="Capitolo" aria-valuemin="1" aria-valuemax="25" aria-valuenow="1" aria-orientation="vertical" aria-describedby="nativeDialHint">
+        <svg class="native-dial-face" viewBox="0 0 300 300" aria-hidden="true"><circle class="native-dial-orbit" cx="150" cy="150" r="104"></circle><g id="nativeDialNumbers"></g></svg>
+      </div>
+      <div class="native-dial-core"><button id="nativeOpenChapter" type="button" data-native-action="open" aria-label="Apri il capitolo selezionato">Vai<span aria-hidden="true">Open</span></button></div>
+    </div>
+    <div class="native-chapter-caption">
+      <button class="native-step native-step-prev" type="button" data-native-step="-1" aria-label="Capitolo precedente"><span aria-hidden="true"></span></button>
+      <div><h2 id="nativeChapterTitle"></h2><p id="nativeDialHint">Ruota o usa le frecce</p></div>
+      <button class="native-step native-step-next" type="button" data-native-step="1" aria-label="Capitolo successivo"><span aria-hidden="true"></span></button>
+    </div>
+    <div class="native-actions" aria-label="Studia ed esercitati">
+      <button type="button" data-native-action="study" lang="en">Study Quiz</button>
+      <button type="button" data-native-action="quiz" class="is-blue" lang="en">Do Quiz</button>
+      <button type="button" data-native-action="dictionary" class="is-blue" lang="en">Dictionary</button>
+      <button type="button" data-native-action="exam" lang="en">Exam</button>
+      <div class="native-road-divider" aria-hidden="true"><img src="/icons/native/lines_left_side.svg" alt=""><img class="native-roundabout" src="/icons/native/roudabout.svg" alt=""><img src="/icons/native/lines_right_side.svg" alt=""></div>
+      <button type="button" data-native-action="statistics" class="native-learning-action">Statistiche</button>
+      <button type="button" data-native-action="errors" class="native-learning-action">Errori</button>
+    </div>
+    <p id="nativeDialStatus" class="native-sr-only" role="status" aria-live="polite"></p>
+  </section>
+  <nav id="nativeStudyDock" class="native-dock" aria-label="Il tuo studio" hidden>
+    <button class="native-progress-link" type="button" data-native-action="statistics" aria-label="Avanzamento dei quiz: in caricamento. Apri Statistiche">
+      <span class="native-liquid-track" role="progressbar" aria-label="Quiz affrontati" aria-valuemin="0" aria-valuemax="100">
+        <span class="native-liquid-fill" aria-hidden="true"><span></span><span></span></span>
+        <span class="native-progress-label" aria-hidden="true">Studio · …</span>
+      </span>
+    </button>
+    <div class="native-dock-utilities"></div>
+    <span id="nativeProgressStatus" class="native-sr-only" role="status" aria-live="polite"></span>
+  </nav>
+</template>
 <div class="card hidden" id="home">
   <div class="home-promo-shell" aria-label="Packages TMM Bangla Patente">
     <div class="home-promo-embed" style="position: relative; width: 100%; height: 0; padding-top: 150.3704%; padding-bottom: 0; box-shadow: 0 2px 8px 0 rgba(63,69,81,0.16); margin-top: 0; margin-bottom: 0; overflow: hidden; border-radius: 8px; will-change: transform;">
@@ -1243,7 +1297,8 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script src="magic-dictionary.js?v=1.2.6-audio-focus"></script>
 <script src="screen-protection.js?v=1.2.0"></script>
 <script src="learning-sync.js?v=2"></script>
-<script src="src/learning-insights.js?v=5-figure-explanation-ui&ui=9-intact-figures"></script>
-<script src="script.js?v=70-aura-fluid-drag"></script>
+<script src="src/learning-insights.js?v=6-native-progress&ui=9-intact-figures"></script>
+<script src="script.js?v=71-native-study"></script>
+<script type="module" src="android-study-shell.js?v=1-rotary"></script>
 </body>
 </html>

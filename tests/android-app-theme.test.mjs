@@ -49,7 +49,7 @@ test("the installed-app palette uses the supplied role colors and stays WebView-
   assert.match(theme, /semantic status colors[\s\S]*remain owned/i);
 });
 
-test("the app marker is applied before styles and the theme loads last on every entry", () => {
+test("the app marker precedes styles; only the native study variant may follow the theme", () => {
   assert.match(marker, /MagicBookViewer/);
   assert.match(marker, /classList\.add\("android-webview"\)/);
   assert.match(marker, /dataset\.appPalette = "aura-fluid"/);
@@ -63,7 +63,14 @@ test("the app marker is applied before styles and the theme loads last on every 
 
     assert.ok(markerIndex >= 0, `${page} must load the WebView marker`);
     assert.ok(markerIndex < firstStylesheetIndex, `${page} must mark the app before CSS`);
-    assert.equal(themeIndex, lastStylesheetIndex + 'rel="stylesheet" href="'.length, `${page} must load the app theme last`);
+    const studyIndex = html.indexOf("/android-study-shell.css?v=1-rotary");
+    if (page === "index.html") {
+      assert.ok(studyIndex > themeIndex);
+      assert.equal(studyIndex, lastStylesheetIndex + 'rel="stylesheet" href="'.length);
+    } else {
+      assert.equal(studyIndex, -1);
+      assert.equal(themeIndex, lastStylesheetIndex + 'rel="stylesheet" href="'.length, `${page} must load the app theme last`);
+    }
   }
 });
 

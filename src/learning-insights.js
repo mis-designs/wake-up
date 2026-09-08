@@ -607,6 +607,39 @@
     try { return await root.MagicBookLearningSync?.getInsightsCache?.(userId) || null; } catch { return null; }
   }
 
+  // Shared authenticated read: the dock and the full statistics screen use one model.
+  async function requestInsights(auth, localEvents, signal) {
+    const response = await root.fetch(CONFIG.endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${auth.accessToken}` },
+      body: JSON.stringify({ device_id: auth.deviceId, local_events: localEvents }),
+      cache: "no-store", signal
+    });
+    return { response, data: await response.json().catch(() => ({})) };
+  }
+
+  async function readProgress({ signal, onCached } = {}) {
+    const auth = readAuth();
+    if (!auth) throw new Error("progress_auth_required");
+    const current = () => !signal?.aborted && readAuth()?.accessToken === auth.accessToken && readAuth()?.userId === auth.userId;
+    const cache = await readCache(auth.userId);
+    if (!current()) throw new DOMException("Cancelled", "AbortError");
+    const cached = isModel(cache?.model) ? { model: cache.model, cached: true } : null;
+    if (cached) onCached?.(cached);
+    if (root.navigator?.onLine === false) {
+      if (cached) return cached;
+      throw new Error("progress_offline");
+    }
+    const localEvents = await localPendingEvents(auth.userId);
+    if (!current()) throw new DOMException("Cancelled", "AbortError");
+    const { response, data } = await requestInsights(auth, localEvents, signal);
+    if (!current()) throw new DOMException("Cancelled", "AbortError");
+    if (response.status === 401) throw new Error("progress_auth_required");
+    if (!response.ok || !isModel(data)) throw new Error("progress_unavailable");
+    await root.MagicBookLearningSync?.setInsightsCache?.(auth.userId, data);
+    return { model: data, cached: false };
+  }
+
   async function load({ force = false } = {}) {
     const auth = readAuth();
     if (!auth) {
@@ -654,14 +687,7 @@
     let timedOut = false;
     const timeout = root.setTimeout(() => { timedOut = true; controller.abort(); }, CONFIG.timeoutMs);
     try {
-      const response = await root.fetch(CONFIG.endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${auth.accessToken}` },
-        body: JSON.stringify({ device_id: auth.deviceId, local_events: localEvents }),
-        cache: "no-store",
-        signal: controller.signal
-      });
-      const data = await response.json().catch(() => ({}));
+      const { response, data } = await requestInsights(auth, localEvents, controller.signal);
       if (requestId !== state.requestId) return;
       if (response.status === 401) {
         state.model = null;
@@ -859,5 +885,5 @@
     state.isRefreshing = false;
   }
 
-  root.MagicBookLearningInsights = Object.freeze({ show, hide, refresh: () => load({ force: true }), handleClick, __testing: { state, isModel } });
+  root.MagicBookLearningInsights = Object.freeze({ show, hide, readProgress, refresh: () => load({ force: true }), handleClick, __testing: { state, isModel } });
 })(typeof window !== "undefined" ? window : globalThis);
