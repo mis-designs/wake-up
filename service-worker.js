@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v165-native-study";
+const CACHE_NAME = "magicbook-pwa-v166-native-fit";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -17,9 +17,9 @@ const STATIC_ASSETS = [
   "/mobile-experience.css?v=4-admin-scroll",
   "/android-webview-mode.js?v=5-lavender-gold",
   "/android-app-theme.css?v=5-lavender-gold",
-  "/android-study-shell.css?v=1-rotary",
-  "/android-study-shell.js?v=1-rotary",
-  "/android-rotary-model.mjs",
+  "/android-study-shell.css?v=2-fit",
+  "/android-study-shell.js?v=2-fit",
+  "/android-rotary-model.mjs?v=2-fit",
   "/assets/native-chapter-covers.json",
   "/assets/fonts/norwester/norwester.woff",
   "/icons/mg_book.svg",

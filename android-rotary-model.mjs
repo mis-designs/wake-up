@@ -7,6 +7,13 @@ export function angleDelta(previous, next) {
   return ((next - previous + 540) % 360) - 180;
 }
 
+// Labels follow the finger: lower chapters above the selection, higher below.
+export function dialLabelPosition(chapter, preview) {
+  const degrees = 180 - (chapter - preview) * DETENT_DEGREES;
+  const radians = degrees * Math.PI / 180;
+  return { x: 150 + 125 * Math.cos(radians), y: 150 + 125 * Math.sin(radians), rotation: degrees - 180 };
+}
+
 // One pointer owns a gesture. No wrapping, inertia, timers, or navigation side effects.
 export class ChapterDial {
   constructor(value = 1) { this.selected = clampChapter(value); this.gesture = null; }
@@ -29,7 +36,9 @@ export class ChapterDial {
     // A little resistance at either end, without accumulating dead travel.
     g.value = Math.max(MIN_CHAPTER - .3, Math.min(MAX_CHAPTER + .3, g.value));
     const edge = g.value < MIN_CHAPTER - .12 ? -1 : g.value > MAX_CHAPTER + .12 ? 1 : 0;
-    const result = this.select(g.value);
+    // A small detent deadband prevents tiny finger tremors from selecting/buzzing
+    // repeatedly on either side of the same half-step.
+    const result = this.select(Math.abs(g.value - this.selected) >= .58 ? g.value : this.selected);
     result.boundary = edge !== 0 && edge !== g.edge;
     result.preview = g.value;
     g.edge = edge;

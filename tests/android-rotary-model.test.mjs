@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ChapterDial, angleDelta, clampChapter, progressValue } from "../android-rotary-model.mjs";
+import { ChapterDial, angleDelta, clampChapter, dialLabelPosition, progressValue } from "../android-rotary-model.mjs";
 
 test("chapter selection is integer bounded, never wraps", () => {
   assert.equal(clampChapter(26), 25);
@@ -29,6 +29,31 @@ test("one pointer owns the wheel, interruption preserves last selection", () => 
   assert.equal(dial.end(1), true);
   assert.equal(dial.selected, 9);
   assert.equal(dial.move(1, 240), null);
+});
+
+test("wheel numbers follow the finger and ascend from top to bottom", () => {
+  assert.ok(dialLabelPosition(7, 8).y < 150);
+  assert.ok(dialLabelPosition(9, 8).y > 150);
+  assert.ok(Math.abs(dialLabelPosition(8, 8).y - 150) < .001);
+  assert.equal(dialLabelPosition(8, 8).x, 25);
+  const dial = new ChapterDial(8);
+  dial.begin(1, 180);
+  const before = dialLabelPosition(9, 8);
+  const result = dial.move(1, 213);
+  const after = dialLabelPosition(9, result.preview);
+  assert.equal(after.rotation - before.rotation, 33, 'number moves with the clockwise finger, not against it');
+  assert.equal(result.selected, 9);
+});
+
+test("detent hysteresis rejects tremor around the midpoint without losing reverse travel", () => {
+  const dial = new ChapterDial(8);
+  dial.begin(1, 0);
+  assert.equal(dial.move(1, .6 * 33).selected, 9);
+  for (const position of [.51, .49, .52, .47]) {
+    assert.equal(dial.move(1, position * 33).changed, false);
+    assert.equal(dial.selected, 9);
+  }
+  assert.equal(dial.move(1, .4 * 33).selected, 8);
 });
 
 test("end-stop emits boundary only on entering and resists without dead travel", () => {

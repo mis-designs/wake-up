@@ -1,4 +1,4 @@
-import { ChapterDial, clampChapter, DETENT_DEGREES, progressValue } from "./android-rotary-model.mjs";
+import { ChapterDial, clampChapter, dialLabelPosition, progressValue } from "./android-rotary-model.mjs?v=2-fit";
 
 // Runtime gate is the native shell marker, not screen size or standalone/PWA mode.
 const doc = document;
@@ -28,9 +28,11 @@ function initialize() {
   const home = fragment.querySelector(".native-home");
   const chapters = fragment.querySelector(".native-chapters");
   const dock = fragment.querySelector(".native-dock");
+  const motionToggle = fragment.querySelector(".native-motion-toggle");
   doc.getElementById("home").append(home);
   doc.getElementById("chapters").append(chapters);
   doc.body.append(dock);
+  doc.getElementById("profilePanel")?.append(motionToggle);
   const dial = doc.getElementById("nativeChapterDial");
   const numbers = doc.getElementById("nativeDialNumbers");
   const selectedOutput = doc.getElementById("nativeSelectedNumber");
@@ -82,15 +84,12 @@ function initialize() {
   function draw(value = model.selected) {
     labels.forEach((label, i) => {
       const distance = i + 1 - value;
-      const degrees = 180 + distance * DETENT_DEGREES;
-      const radians = degrees * Math.PI / 180;
-      const x = 150 + 125 * Math.cos(radians);
-      const y = 150 + 125 * Math.sin(radians);
+      const { x, y, rotation } = dialLabelPosition(i + 1, value);
       label.setAttribute("x", x.toFixed(2));
       label.setAttribute("y", y.toFixed(2));
-      label.setAttribute("transform", `rotate(${degrees - 180} ${x} ${y})`);
+      label.setAttribute("transform", `rotate(${rotation} ${x} ${y})`);
       // Selected value is read in the gap, not duplicated under the open action.
-      label.style.display = Math.abs(distance) < .55 || Math.abs(distance) > 3 ? "none" : "";
+      label.style.display = i + 1 === model.selected || Math.abs(distance) > 3 ? "none" : "";
       label.style.opacity = Math.abs(distance) > 2 ? ".55" : "1";
     });
   }
@@ -128,7 +127,7 @@ function initialize() {
     dial.setAttribute("aria-valuetext", `${model.selected} di 25: ${chapterTitle.textContent}`);
     doc.getElementById("nativeOpenChapter").setAttribute("aria-label", `Apri capitolo ${model.selected}: ${chapterTitle.textContent}`);
     updateImage();
-    if (!model.gesture) draw();
+    if (!model.gesture) { pendingPreview = model.selected; draw(); }
   }
 
   function applySelection(result) {
@@ -168,9 +167,13 @@ function initialize() {
     if (!canInteract()) { finishGesture(event.pointerId); return; }
     applySelection(model.move(event.pointerId, pointerAngle(event)));
   });
-  ["pointerup", "pointercancel", "lostpointercapture"].forEach(type => dial.addEventListener(type, event => finishGesture(event.pointerId)));
+  dial.addEventListener("pointerup", event => {
+    if (canInteract()) applySelection(model.move(event.pointerId, pointerAngle(event)));
+    finishGesture(event.pointerId);
+  });
+  ["pointercancel", "lostpointercapture"].forEach(type => dial.addEventListener(type, event => finishGesture(event.pointerId)));
   dial.addEventListener("keydown", event => {
-    if (!canInteract() || model.gesture) return;
+    if (!canInteract() || model.gesture || event.isComposing) return;
     const targets = { ArrowUp: model.selected + 1, ArrowRight: model.selected + 1, ArrowDown: model.selected - 1, ArrowLeft: model.selected - 1, PageUp: model.selected + 5, PageDown: model.selected - 5, Home: 1, End: 25 };
     if (Object.hasOwn(targets, event.key)) { event.preventDefault(); applySelection(model.select(targets[event.key])); }
     else if (event.key === "Enter") { event.preventDefault(); runAction("open"); }
@@ -188,12 +191,12 @@ function initialize() {
     if (action) runAction(action.dataset.nativeAction);
   }));
 
-  const motionToggle = home.querySelector(".native-motion-toggle");
   try { if (localStorage.getItem("native-study-motion-paused") === "1") html.dataset.nativeMotionPaused = "true"; } catch {}
   function updateMotionLabel() {
     const paused = html.hasAttribute("data-native-motion-paused");
     motionToggle.setAttribute("aria-pressed", String(paused));
-    motionToggle.textContent = paused ? "Riprendi animazioni" : "Pausa animazioni";
+    motionToggle.textContent = paused ? "Animazioni: disattivate" : "Animazioni: attive";
+    motionToggle.setAttribute("aria-label", paused ? "Attiva animazioni" : "Disattiva animazioni");
   }
   motionToggle.addEventListener("click", () => {
     html.toggleAttribute("data-native-motion-paused");
@@ -201,6 +204,22 @@ function initialize() {
     updateMotionLabel();
   });
   updateMotionLabel();
+
+  // Reserve the dock's measured footprint, including system safe-area changes.
+  // The scroll viewport ends here: even enlarged content can never pass under it.
+  function syncDockSpace() {
+    if (!screen || dock.hidden) return;
+    const reserve = Math.ceil(window.innerHeight - dock.getBoundingClientRect().top + 12);
+    html.style.setProperty("--native-dock-reserve", `${reserve}px`);
+  }
+  new ResizeObserver(syncDockSpace).observe(dock);
+  window.addEventListener("resize", () => {
+    finishGesture(model.gesture?.pointerId);
+    cancelAnimationFrame(frame);
+    frame = 0;
+    if (screen) draw(model.selected);
+    syncDockSpace();
+  });
 
   function setProgress(result) {
     const value = progressValue(result?.model);
@@ -262,6 +281,7 @@ function initialize() {
     }
     app.prepareUtilities();
     dock.hidden = false;
+    syncDockSpace();
     refreshSelected(app.selected());
     void refreshProgress();
     requestAnimationFrame(() => {
@@ -272,6 +292,8 @@ function initialize() {
   function hide() {
     screen = "";
     finishGesture(model.gesture?.pointerId);
+    cancelAnimationFrame(frame);
+    frame = 0;
     controller?.abort();
     requestVersion++;
     delete html.dataset.nativeStudyScreen;
@@ -297,6 +319,9 @@ function initialize() {
     }
   });
   window.addEventListener("pagehide", hide);
+  window.addEventListener("pageshow", event => {
+    if (event.persisted && ["home", "chapters"].includes(app.screen())) show(app.screen());
+  });
   window.addEventListener("online", () => { if (screen) void refreshProgress(); });
   window.addEventListener("storage", event => {
     if (["user_session", "session", "accessToken"].includes(event.key) && screen) void refreshProgress();

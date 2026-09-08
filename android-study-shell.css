@@ -16,6 +16,7 @@ html.android-webview {
   --native-line: #777982;
   --native-display: "Norwester", "Arial Narrow", sans-serif;
   --native-body: Arial, sans-serif;
+  --native-dock-reserve: calc(104px + env(safe-area-inset-bottom, 0px));
 }
 
 /* These overrides are intentionally more specific than the legacy app shell. */
@@ -32,10 +33,10 @@ html.android-webview[data-native-study-screen] body.app-mode :is(#home, #chapter
   box-sizing: border-box;
   width: 100%;
   max-width: none;
-  height: 100dvh;
+  height: calc(100dvh - var(--native-dock-reserve));
   min-height: 0;
   margin: 0;
-  padding: 0 0 calc(104px + env(safe-area-inset-bottom, 0px));
+  padding: 0;
   border: 0;
   border-radius: 0;
   background: var(--native-canvas);
@@ -44,15 +45,16 @@ html.android-webview[data-native-study-screen] body.app-mode :is(#home, #chapter
   overscroll-behavior-y: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--native-line) var(--native-canvas);
-  scroll-padding-block: 20px 100px;
+  scroll-padding-block: 12px;
 }
 html.android-webview[data-native-study-screen] body.app-mode #home > :not(.native-home),
 html.android-webview[data-native-study-screen] body.app-mode #chapters > :not(.native-chapters) {
   display: none;
 }
-html.android-webview[data-native-study-screen="home"] body.app-mode #home {
+html.android-webview[data-native-study-screen="home"] body.app-mode {
   background: linear-gradient(180deg, var(--native-canvas) 0%, #F2F2F2 58%, #DFDFDF 100%);
 }
+html.android-webview[data-native-study-screen="home"] body.app-mode #home { background: transparent; }
 html.android-webview :is(.native-home, .native-chapters, .native-dock) {
   box-sizing: border-box;
   color: var(--native-ink);
@@ -76,7 +78,8 @@ html.android-webview :where(.native-home, .native-chapters, .native-dock) button
   transform: none;
 }
 html.android-webview :is(.native-home, .native-chapters, .native-dock) button:focus-visible,
-html.android-webview .native-dial:focus-visible {
+html.android-webview .native-dial:focus-visible,
+html.android-webview .native-motion-toggle:focus-visible {
   outline: 3px solid var(--native-blue);
   outline-offset: 5px;
 }
@@ -89,7 +92,7 @@ html.android-webview :is(.native-home, .native-chapters, .native-dock) button:ac
 }
 html.android-webview .native-home {
   width: min(100%, 540px);
-  min-height: min(650px, calc(100dvh - 104px));
+  min-height: 100%;
   margin: 0 auto;
   padding: clamp(34px, 7dvh, 62px) 24px 28px;
   display: flex;
@@ -122,29 +125,23 @@ html.android-webview .native-book img {
   filter: none;
   animation: native-book-float 5s ease-in-out infinite;
 }
-html.android-webview .native-book-hint {
-  margin: 24px 0 0;
-  color: var(--native-muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
 html.android-webview .native-motion-toggle {
-  margin-top: auto;
-  padding: 12px;
-  min-height: 44px;
-  border: 0;
-  background: none;
-  color: var(--native-muted);
-  font-size: 11px;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  display: none;
 }
-html.android-webview .native-chapters { width: min(100%, 540px); margin: 0 auto; }
+html.android-webview[data-native-study-screen] #profilePanel .native-motion-toggle {
+  display: block; width: 100%; min-height: 44px; margin: 8px 0 0; padding: 10px;
+  background: var(--native-canvas); color: var(--native-ink); border: 1px solid var(--native-line);
+  border-radius: 8px; font: 14px/1.3 var(--native-body); box-shadow: none; cursor: pointer;
+}
+html.android-webview .native-chapters {
+  width: min(100%, 540px); height: 100%; min-height: 0; margin: 0 auto;
+  display: grid; grid-template-rows: auto minmax(144px, 1fr) auto auto;
+}
 html.android-webview .native-chapters-header {
   display: grid;
   grid-template-columns: 44px 1fr 44px;
   align-items: center;
-  padding: 12px 16px 6px;
+  padding: 6px 16px 4px;
 }
 html.android-webview .native-chapters-header h1 {
   margin: 0;
@@ -166,21 +163,24 @@ html.android-webview .native-back img { width: 22px; height: 22px; object-fit: c
 html.android-webview .native-orbit-stage {
   position: relative;
   width: 100%;
-  aspect-ratio: 1.28;
+  height: 100%;
+  max-height: min(78vw, 421px);
+  align-self: center;
   isolation: isolate;
   overflow: clip; /* Intentional half-circle crop, not a page-overflow workaround. */
 }
 html.android-webview .native-chapter-preview,
 html.android-webview .native-dial {
   position: absolute;
-  width: 78%;
+  height: 100%;
+  width: auto;
   aspect-ratio: 1;
   top: 50%;
-  transform: translateY(-50%);
   border-radius: 50%;
 }
 html.android-webview .native-chapter-preview {
-  left: -39%;
+  left: 0;
+  transform: translate(-50%, -50%);
   overflow: clip;
   background: #ECEDEF;
   display: grid;
@@ -190,56 +190,69 @@ html.android-webview .native-chapter-preview img {
   width: 100%; height: 100%; object-fit: cover;
 }
 html.android-webview .native-image-fallback {
-  width: 46%; margin-left: 50%; padding: 14px;
-  font: 400 20px/1.25 var(--native-display);
+  width: 46%; margin-left: 50%; padding: 6px;
+  font: 400 clamp(16px, 4vw, 20px)/1.25 var(--native-display);
   text-align: center;
 }
-html.android-webview .native-image-fallback span { display: block; margin-top: 8px; font: 12px/1.4 var(--native-body); color: var(--native-muted); }
+html.android-webview .native-image-fallback span { display: block; margin-top: 6px; font: 11px/1.35 var(--native-body); color: var(--native-muted); }
 html.android-webview .native-chapter-preview[data-image-ready] .native-image-fallback { display: none; }
 html.android-webview .native-selected-number {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   z-index: 2; font: 400 clamp(28px, 8vw, 40px)/1 var(--native-display);
   color: var(--native-ink);
 }
-html.android-webview .native-dial { right: -39%; background: var(--native-ink); touch-action: none; cursor: grab; user-select: none; }
+html.android-webview .native-dial { right: 0; transform: translate(50%, -50%); background: var(--native-ink); touch-action: none; cursor: grab; user-select: none; }
 html.android-webview .native-dial.is-dragging { cursor: grabbing; }
 html.android-webview .native-dial:focus-visible { outline-offset: -5px; }
 html.android-webview .native-dial-face { display: block; width: 100%; height: 100%; overflow: visible; }
 html.android-webview .native-dial-orbit { fill: none; stroke: var(--native-line); stroke-width: .8; }
 html.android-webview .native-dial-face text { fill: var(--native-canvas); font: 400 22px var(--native-display); text-anchor: middle; dominant-baseline: central; }
 html.android-webview .native-dial-core {
-  position: absolute; right: -21%; top: 50%; transform: translateY(-50%);
-  width: 42%; aspect-ratio: 1; border-radius: 50%; background: var(--native-canvas);
+  position: absolute; right: 0; top: 50%; transform: translate(50%, -50%);
+  height: 54%; width: auto; aspect-ratio: 1; border-radius: 50%; background: var(--native-canvas);
   pointer-events: none;
 }
 html.android-webview #nativeOpenChapter {
   position: absolute; right: calc(50% + 6px); top: 50%; transform: translateY(-50%);
-  width: 64px; min-height: 52px; padding: 9px 3px; border: 0; border-radius: 18px;
+  width: 54px; min-height: 48px; padding: 6px 3px; border: 0; border-radius: 16px;
   background: var(--native-canvas); color: var(--native-ink); pointer-events: auto;
-  font: 400 24px/1 var(--native-display); text-transform: uppercase;
+  font: 400 22px/1 var(--native-display); text-transform: uppercase;
 }
 html.android-webview #nativeOpenChapter span { display: block; margin-top: 4px; font-size: 10px; letter-spacing: .1em; }
 html.android-webview #nativeOpenChapter:active:not(:disabled) { transform: translateY(-50%) scale(.94); }
-html.android-webview .native-chapter-caption { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 6px; align-items: center; padding: 12px 22px 0; min-height: 80px; }
+html.android-webview .native-chapter-caption { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 6px; align-items: center; padding: 8px 20px 0; min-height: 64px; }
 html.android-webview .native-chapter-caption h2 { margin: 0; font: 400 17px/1.2 var(--native-display); text-align: center; text-wrap: balance; }
 html.android-webview .native-chapter-caption p { margin: 7px 0 0; color: var(--native-muted); font-size: 11px; text-align: center; }
 html.android-webview .native-step { width: 44px; height: 44px; padding: 0; color: var(--native-ink); border: 1px solid var(--native-line); border-radius: 50%; background: var(--native-canvas); display: grid; place-items: center; }
 html.android-webview .native-step span { width: 9px; height: 9px; border-top: 2px solid currentColor; border-right: 2px solid currentColor; transform: rotate(45deg); }
 html.android-webview .native-step-prev span { transform: rotate(-135deg); }
 html.android-webview .native-actions {
-  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px 18px;
-  width: min(76%, 360px); margin: clamp(16px, 3dvh, 32px) auto 12px;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 16px;
+  width: min(80%, 360px); margin: 12px auto 8px;
 }
 html.android-webview .native-actions > button {
-  min-height: 52px; padding: 14px 8px; border: 1px solid transparent; border-radius: 11px;
+  min-height: 48px; padding: 10px 8px; border: 1px solid transparent; border-radius: 11px;
   background: var(--native-ink); color: var(--native-canvas);
   font: 400 clamp(14px, 3.8vw, 19px)/1.1 var(--native-display); text-transform: uppercase;
 }
 html.android-webview .native-actions > button.is-blue { background: var(--native-blue); }
-html.android-webview .native-actions > .native-learning-action { min-height: 88px; }
-html.android-webview .native-road-divider { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 34px 1fr; gap: 16px; align-items: center; }
+html.android-webview .native-actions > .native-learning-action { min-height: 64px; }
+html.android-webview .native-road-divider { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 28px 1fr; gap: 16px; align-items: center; }
 html.android-webview .native-road-divider img { display: block; width: 100%; height: auto; }
-html.android-webview .native-road-divider .native-roundabout { width: 34px; height: 34px; }
+html.android-webview .native-road-divider .native-roundabout { width: 28px; height: 28px; }
+
+/* Compact portrait/landscape retains 44px targets; only the content area scrolls
+   when zoom or an unusually short window exceeds this minimum footprint. */
+@media (max-height: 620px) {
+  html.android-webview .native-chapters-header { padding-block: 3px; }
+  html.android-webview .native-chapter-caption { min-height: 60px; padding-top: 6px; }
+  html.android-webview .native-chapter-caption h2 { font-size: 15px; }
+  html.android-webview .native-actions { margin-block: 8px; gap: 6px 16px; }
+  html.android-webview .native-actions > button { min-height: 44px; padding-block: 8px; }
+  html.android-webview .native-actions > .native-learning-action { min-height: 52px; }
+  html.android-webview .native-road-divider { grid-template-columns: 1fr 24px 1fr; }
+  html.android-webview .native-road-divider .native-roundabout { width: 24px; height: 24px; }
+}
 
 html.android-webview .native-dock {
   position: fixed; z-index: 1250; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
@@ -265,7 +278,7 @@ html.android-webview[data-native-study-screen] .native-dock :is(#profileBtn, #ad
 html.android-webview[data-native-study-screen] .native-dock #adminEntryBtn { padding: 3px; }
 html.android-webview[data-native-study-screen] .native-dock #profileBtn img { width: 100%; height: 100%; object-fit: contain; }
 html.android-webview[data-native-study-screen] #profilePanel {
-  top: auto; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); right: max(14px, calc((100vw - 500px) / 2));
+  top: auto; bottom: var(--native-dock-reserve); right: max(14px, calc((100vw - 500px) / 2));
   width: min(300px, calc(100vw - 28px)); max-height: calc(100dvh - 120px); overflow: auto;
   background: var(--native-canvas); color: var(--native-ink); border: 1px solid var(--native-line);
 }

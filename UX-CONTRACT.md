@@ -5,7 +5,7 @@
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 | --- | --- | --- | --- | --- |
 | Installed study Home/chapter shell | `android-study-shell.js`, `android-study-shell.css` | Existing `script.js` routing, selectedChapter and action gate | Owner-approved Android-only rotary variant; browser uses unchanged legacy UI | Native/browser gate, 320px reflow, actual route integration, reduced motion |
-| Chapter rotary input | `android-rotary-model.mjs` | `script.js` selectedChapter, bounds 01–25 | Drag, keyboard and labelled previous/next controls; no wrapping | Detent, boundary, multipointer and cancellation tests |
+| Chapter rotary input | `android-rotary-model.mjs` | `script.js` selectedChapter, bounds 01–25 | Finger-aligned drag, midpoint hysteresis, keyboard and labelled previous/next controls; no wrapping | Direction, detent tremor, boundary, multipointer, cancellation and selected-route tests |
 | Study dock progress | `src/learning-insights.js` readProgress | Authenticated user/device-bound model; quizCoveragePct/catalogQuizCount | Loading, genuine zero, known percentage, saved/offline, error/unknown | No fabricated percentage; abort and session-change guards |
 | Form | Login and dormant Promo access forms | `index.html` `#login .login-form`, `#promoAccessCard` + shared login helpers | Phone access; server-requested admin password; feature-switched promo conversion landing | Login behavior and browser keyboard/failure checks |
 | Scrollbar | Learning screen root | `src/learning-insights.css` | Browser forced-colors only | No nested horizontal scroller; no page overflow at 320px |
@@ -103,6 +103,9 @@
 - Only a signed Admin quiz response may enter uninterrupted overtime. At zero the timer exposes a textual `Tempo supplementare Admin` state and counts upward from `+0:00`. All other roles pause at `0:00` and choose whether to begin another full cycle or close the quiz without grading.
 
 ## Responsive behavior
+
+- Installed rotary Home has no tap hint or visible pause button. Its locally persisted animation control is in the existing Profile panel, only while this app-only shell is active. Reduced-motion remains static.
+- Installed chapter selection sizes the wheel from the height remaining after header, caption and six action buttons. Its only scroller ends 12px above the actual floating dock, including safe-area changes. All 25 chapter titles keep every action visible at 320×568 and larger portrait sizes; landscape/enlarged content scrolls above the dock. Resizing cancels active dragging and page-cache restoration remounts the selected chapter without creating a second route owner.
 
 - Public access: while Promo Code is disabled, logged-out welcome traffic opens the personal login directly. When promo access is enabled, from 1024px its pass uses two columns — campaign title and timer on the left, labelled phone/code form on the right — with Login/Join/About in one compact row below; narrower viewports retain the semantic vertical order.
 - 1280–1920: wide grouped surfaces use the viewport; Statistics is overview/action, chapter matrix/detail; Errori is explorer/plan with master-detail.
