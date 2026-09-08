@@ -1,9 +1,10 @@
 import crypto from "node:crypto";
+import { createRequire } from "node:module";
 import identityTools from "../quiz-audio-identity.cjs";
 import { LOCAL_QUIZ_ROWS, normalizeLocalAnswer } from "./local-quiz-bank.mjs";
 import { applyQuizFigureCorrections } from "./quiz-figure-corrections.mjs";
 
-const { getQuizAudioIdentity, normalizeQuizAudioFigure } = identityTools;
+const { getQuizAudioIdentity, normalizeQuizAudioFigure, filterQuizAudioCollisionRegistry } = identityTools;
 const exactText = value => String(value ?? "").normalize("NFC").trim().replace(/\s+/gu, " ");
 
 // Preserve punctuation and case: the old text-only normalization is too broad
@@ -36,9 +37,17 @@ export function createAudioCatalog(sourceRows) {
     const quizKey = isolated
       ? `q2_${crypto.createHash("sha256").update(`magicph-exact-audio-v1\u001f${signature}`).digest("hex")}`
       : base.quizKey;
-    const legacySafe = !isolated && (legacyGroups.get(base.legacyQuizKey) || [])
+    // Exam was added after the chapter recordings. A differing Exam variant
+    // must not invalidate the established chapter identity or its recordings.
+    const chapterPeers = peers.filter(peer => Number(peer.chapter) !== 0);
+    const establishedChapter = chapterPeers.length > 0
+      && chapterPeers.every(peer => audioContentSignature(peer) === signature);
+    const previousQuizKeys = isolated && establishedChapter ? [base.quizKey] : [];
+    const legacyPeers = (legacyGroups.get(base.legacyQuizKey) || [])
+      .filter(peer => !establishedChapter || Number(peer.chapter) !== 0);
+    const legacySafe = (!isolated || establishedChapter) && legacyPeers
       .every(peer => audioContentSignature(peer) === signature);
-    return { ...base, quizKey, audioKey: `quiz-explanations/v2/${quizKey}/explanation.webm`, legacySafe };
+    return { ...base, quizKey, audioKey: `quiz-explanations/v2/${quizKey}/explanation.webm`, previousQuizKeys, legacySafe };
   }
   function resolve({ questionId, question, figure }) {
     const id = String(questionId ?? "").trim();
@@ -57,3 +66,12 @@ export function createAudioCatalog(sourceRows) {
 }
 
 export const quizAudioCatalog = createAudioCatalog(LOCAL_QUIZ_ROWS);
+
+// Use the same current-catalog filtering as the admin page. Obsolete Magic
+// Book figures are no longer competing candidates; All Books candidates must
+// remain because the audio database is shared with that application.
+export const quizAudioLegacyRegistry = filterQuizAudioCollisionRegistry(
+  createRequire(import.meta.url)("../data/quiz-audio-legacy-collisions-v1.json"),
+  quizAudioCatalog.rows.map(quizAudioCatalog.identityFor),
+  { preserveSources: ["all-books"] }
+);

@@ -15,7 +15,7 @@ import { getExplanationFiguresFromObjectKeys } from "./quiz-explanation-availabi
 import { detectQuizAudioMimeType, normalizeQuizAudioMimeType } from "./audio-mime.mjs";
 import { fetchUpstream, publicApiError, withOperationalTimeout } from "./upstream-fetch.mjs";
 import { normalizeStudyChapter, selectStudyChapterRows } from "./study-quiz.mjs";
-import { quizAudioCatalog } from "./quiz-audio-catalog.mjs";
+import { quizAudioCatalog, quizAudioLegacyRegistry } from "./quiz-audio-catalog.mjs";
 import { matchesQuizAudioIdentityTicket } from "./quiz-audio-ticket.mjs";
 import {
   applyCuratedQuizTranslation,
@@ -37,7 +37,6 @@ const {
   getQuizAudioIdentity,
   normalizeQuizAudioFigure
 } = require("../quiz-audio-identity.cjs");
-const quizAudioLegacyRegistry = require("../data/quiz-audio-legacy-collisions-v1.json");
 
 const ACCESS_GAS_URL = process.env.GAS_ACCESS_URL;
 const ACCESS_GAS_SECRET = process.env.GAS_SECRET;
@@ -272,7 +271,7 @@ function assertQuizAudioIdentityVersion(value) {
 }
 
 function isLegacyQuizAudioAmbiguous(legacyQuizKey) {
-  return Boolean(quizAudioLegacyRegistry?.collisions?.[legacyQuizKey]);
+  return (quizAudioLegacyRegistry?.collisions?.[legacyQuizKey]?.candidates?.length || 0) > 1;
 }
 
 async function requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly = false }) {
@@ -305,6 +304,10 @@ async function getQuizAudioRow(quizKey) {
 async function findQuizAudioRow(identity) {
   const current = await getQuizAudioRow(identity.quizKey);
   if (current) return { row: current, matchedQuizKey: identity.quizKey, legacy: false, requiresReview: false };
+  for (const key of identity.previousQuizKeys || []) {
+    const previous = await getQuizAudioRow(key);
+    if (previous) return { row: previous, matchedQuizKey: key, legacy: false, requiresReview: false };
+  }
   if (identity.legacySafe === false) return { row: null, matchedQuizKey: "", legacy: false, requiresReview: false };
   const legacy = await getQuizAudioRow(identity.legacyQuizKey);
   if (!legacy) return { row: null, matchedQuizKey: "", legacy: false, requiresReview: false };
@@ -490,6 +493,27 @@ async function deleteQuizAudioAssociation(matchedQuizKey, row) {
     }));
   }
   return true;
+}
+
+async function syncPreviousQuizAudioAssociations(identity) {
+  // All Books still uses these established keys. Point them at the confirmed
+  // replacement too, instead of deleting a link used by the other app.
+  for (const key of identity.previousQuizKeys || []) {
+    const sql = getQuizAudioDatabase();
+    await sql`
+      INSERT INTO quiz_audio_explanations (
+        quiz_key, audio_key, audio_mime_type, audio_duration_ms, created_by, created_at, updated_at
+      )
+      SELECT ${key}, audio_key, audio_mime_type, audio_duration_ms, created_by, created_at, updated_at
+      FROM quiz_audio_explanations WHERE quiz_key = ${identity.quizKey}
+      ON CONFLICT (quiz_key) DO UPDATE SET
+        audio_key = EXCLUDED.audio_key,
+        audio_mime_type = EXCLUDED.audio_mime_type,
+        audio_duration_ms = EXCLUDED.audio_duration_ms,
+        created_by = EXCLUDED.created_by,
+        updated_at = EXCLUDED.updated_at
+    `;
+  }
 }
 
 async function retireSafeLegacyAssociation(identity) {
@@ -1325,6 +1349,7 @@ export default async function handler(req, res) {
           created_by = EXCLUDED.created_by,
           updated_at = NOW()
       `;
+      await syncPreviousQuizAudioAssociations(identity);
       await retireSafeLegacyAssociation(identity);
       return res.status(200).json({ ok: true, quizKey });
     }
@@ -1378,6 +1403,7 @@ export default async function handler(req, res) {
           created_by = EXCLUDED.created_by,
           updated_at = NOW()
       `;
+      await syncPreviousQuizAudioAssociations(identity);
       await retireSafeLegacyAssociation(identity);
       return res.status(200).json({ ok: true, quizKey });
     }
@@ -1391,6 +1417,13 @@ export default async function handler(req, res) {
       const deleted = result.row
         ? await deleteQuizAudioAssociation(result.matchedQuizKey, result.row)
         : false;
+      if (deleted) {
+        const sql = getQuizAudioDatabase();
+        for (const key of identity.previousQuizKeys || []) {
+          await sql`DELETE FROM quiz_audio_explanations WHERE quiz_key = ${key}`;
+        }
+        await retireSafeLegacyAssociation(identity);
+      }
       return res.status(200).json({ ok: true, deleted, quizKey: identity.quizKey });
     }
 

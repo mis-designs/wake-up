@@ -60,6 +60,6 @@ test("only a server-authorized Admin enters uninterrupted overtime", () => {
 
 test("the Admin overtime timer ships in fresh quiz and PWA assets", () => {
   assert.match(page, /quiz\.js\?v=80-numberless-figures/u);
-  assert.match(worker, /magicbook-pwa-v161-numberless-figures/u);
+  assert.match(worker, /magicbook-pwa-v164-lavender-gold/u);
   assert.match(worker, /quiz\.js\?v=80-numberless-figures/u);
 });

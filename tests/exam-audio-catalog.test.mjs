@@ -3,12 +3,53 @@ import assert from "node:assert/strict";
 import vm from "node:vm";
 import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
-import { audioContentSignature, createAudioCatalog, quizAudioCatalog } from "../api/quiz-audio-catalog.mjs";
+import { audioContentSignature, createAudioCatalog, quizAudioCatalog, quizAudioLegacyRegistry } from "../api/quiz-audio-catalog.mjs";
 import identityTools from "../quiz-audio-identity.cjs";
 
 const base = { id: "chapter", chapter: 1, question: "Il segnale indica una curva.", figure: "fig37", correct: 1 };
 const exam = { ...base, id: "exam", chapter: 0 };
 const request = row => ({ questionId: row.id, question: row.question, figure: row.figure });
+
+test("chapter recordings keep their pre-Exam lookup without lending it to conflicting Exam content", () => {
+  for (const id of ["cap1_q17", "cap2_q33", "cap11_q5", "cap20_q4", "cap25_q16"]) {
+    const row = quizAudioCatalog.rows.find(row => row.id === id);
+    const identity = quizAudioCatalog.identityFor(row);
+    const previousKey = identityTools.getQuizAudioIdentity(row.question, row.figure).quizKey;
+    assert.ok(identity.previousQuizKeys.includes(previousKey), id);
+    assert.equal(identity.legacySafe, true, id);
+    for (const other of quizAudioCatalog.rows.filter(other => audioContentSignature(other) !== audioContentSignature(row))) {
+      const otherIdentity = quizAudioCatalog.identityFor(other);
+      assert.ok(![otherIdentity.quizKey, ...otherIdentity.previousQuizKeys].includes(previousKey), other.id);
+    }
+  }
+  const conflictingChapters = createAudioCatalog([base, { ...base, id: "chapter2", correct: 0 }]);
+  assert.deepEqual(conflictingChapters.identityFor(base).previousQuizKeys, []);
+});
+
+test("obsolete chapter figures stop blocking legacy playback; real All Books collisions remain protected", async () => {
+  const row = quizAudioCatalog.rows.find(row => row.id === "cap1_q1");
+  const identity = quizAudioCatalog.identityFor(row);
+  const original = JSON.parse(readFileSync(new URL("../data/quiz-audio-legacy-collisions-v1.json", import.meta.url), "utf8"));
+  assert.equal(original.collisions[identity.legacyQuizKey].candidates.length, 2);
+  assert.equal(quizAudioLegacyRegistry.collisions[identity.legacyQuizKey].candidates.length, 1);
+  const source = readFileSync(new URL("../api/quiz.js", import.meta.url), "utf8");
+  const find = source.slice(source.indexOf("async function findQuizAudioRow("), source.indexOf("async function getCanonicalQuizAudioCandidates("));
+  const ambiguous = source.slice(source.indexOf("function isLegacyQuizAudioAmbiguous("), source.indexOf("async function requireQuizAudioAccess("));
+  const stored = new Map([[identity.legacyQuizKey, { audio_key: "original-recording.webm" }]]);
+  const context = vm.createContext({ quizAudioLegacyRegistry, getQuizAudioRow: async key => stored.get(key) || null });
+  vm.runInContext(ambiguous + find, context);
+  assert.equal((await context.findQuizAudioRow(identity)).row.audio_key, "original-recording.webm");
+  const conflict = quizAudioCatalog.identityFor(quizAudioCatalog.rows.find(row => row.id === "cap1_q12"));
+  stored.set(conflict.legacyQuizKey, { audio_key: "unassigned.webm" });
+  const protectedResult = await context.findQuizAudioRow(conflict);
+  assert.equal(protectedResult.row, null);
+  assert.equal(protectedResult.requiresReview, true);
+  const changed = quizAudioCatalog.identityFor(quizAudioCatalog.rows.find(row => row.id === "cap1_q17"));
+  stored.set(changed.previousQuizKeys[0], { audio_key: "pre-exam-recording.webm" });
+  assert.equal((await context.findQuizAudioRow(changed)).row.audio_key, "pre-exam-recording.webm");
+  stored.set(changed.quizKey, { audio_key: "new-recording.webm" });
+  assert.equal((await context.findQuizAudioRow(changed)).row.audio_key, "new-recording.webm");
+});
 
 test("exact chapter and Exam duplicates share one recording, including canonical figure aliases", () => {
   const alias = { ...exam, figure: "Figure/fig037.jpg" };

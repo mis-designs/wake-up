@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import vm from "node:vm";
 import { readFileSync } from "node:fs";
-import { quizAudioCatalog } from "../api/quiz-audio-catalog.mjs";
+import { quizAudioCatalog, quizAudioLegacyRegistry } from "../api/quiz-audio-catalog.mjs";
 import identityTools from "../quiz-audio-identity.cjs";
 
 function element(tag = "div") {
@@ -73,4 +73,24 @@ test("section changes preserve a recording when cancelled and block navigation d
   await context.openChapter(0);
   assert.equal(context.url, "/aggiungi-spiegazioni?exam=80");
   assert.equal(vm.runInContext("state.selected", context), 25);
+});
+
+test("chapter progress counts 70 stored recordings across current, previous and safe legacy keys", () => {
+  const { context } = setup();
+  const rows = context.fixtureRows.filter(row => row.chapter === 1);
+  // Reproduce a mixed historical database, not a claim about production data.
+  const recorded = rows.filter(row => !["cap1_q12", "cap1_q72"].includes(row.id));
+  context.registryFixture = quizAudioLegacyRegistry;
+  context.storedKeys = recorded.map((row, index) => index < 35
+    ? row.identity.previousQuizKeys[0] || row.quizKey
+    : row.identity.legacyQuizKey);
+  vm.runInContext(`
+    state.collisionRegistry = registryFixture;
+    state.audioKeys = new Set(storedKeys);
+    state.chapters[0].questions.forEach(row => {
+      const candidates = state.collisionRegistry.collisions[row.identity.legacyQuizKey]?.candidates || [];
+      row.identity.legacySafe = row.identity.legacySafe && candidates.length <= 1;
+    });
+  `, context);
+  assert.equal(vm.runInContext("state.chapters[0].questions.filter(row => isIdentityAvailable(row.identity)).length", context), 70);
 });

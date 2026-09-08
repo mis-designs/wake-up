@@ -13,12 +13,23 @@
 
   const syncThemeColor = () => {
     const themeColor = document.querySelector('meta[name="theme-color"]');
-    if (themeColor) themeColor.setAttribute("content", "#5B1E91");
+    // The theme stylesheet owns the color; the marker also preserves the existing drag mode.
+    const primary = getComputedStyle(root).getPropertyValue("--app-palette-primary").trim();
+    if (themeColor && primary) themeColor.setAttribute("content", primary);
+  };
+
+  const attachThemeColor = () => {
+    const stylesheet = document.querySelector('link[href*="/android-app-theme.css"]');
+    // DOMContentLoaded can precede the stylesheet on a cold connection.
+    if (stylesheet && !stylesheet.sheet) {
+      stylesheet.addEventListener("load", syncThemeColor, { once: true });
+    }
+    syncThemeColor();
   };
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", syncThemeColor, { once: true });
+    document.addEventListener("DOMContentLoaded", attachThemeColor, { once: true });
   } else {
-    syncThemeColor();
+    attachThemeColor();
   }
 })();

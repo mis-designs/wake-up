@@ -177,6 +177,7 @@ function legacyCollisionCandidates(legacyQuizKey) {
 function isLegacyAmbiguous(legacyQuizKey) { return legacyCollisionCandidates(legacyQuizKey).length > 1; }
 function isIdentityAvailable(identity) {
   return state.audioKeys.has(identity.quizKey)
+    || (identity.previousQuizKeys || []).some(key => state.audioKeys.has(key))
     || (identity.legacySafe !== false && state.audioKeys.has(identity.legacyQuizKey) && !isLegacyAmbiguous(identity.legacyQuizKey));
 }
 
@@ -896,6 +897,7 @@ async function removeSaved(question, trigger = null) {
   try {
     await api("deleteQuizAudio", quizAudioPayload(question));
     state.audioKeys.delete(question.quizKey);
+    (question.identity.previousQuizKeys || []).forEach(key => state.audioKeys.delete(key));
     state.audioKeys.delete(question.identity.legacyQuizKey);
     if (state.inline?.key === question.quizKey) closeInline();
     renderChapters(); renderChapter();
@@ -928,7 +930,8 @@ async function migrateSafeLegacyAudios() {
       const targetFigure = QuizAudioIdentity.normalizeFigure(candidates[0].figureKey);
       return choices.find(question => question.identity.figureKey === targetFigure);
     })
-    .filter(question => question && question.identity.legacySafe !== false && !state.audioKeys.has(question.identity.quizKey))
+    .filter(question => question && question.identity.legacySafe !== false
+      && ![question.identity.quizKey, ...(question.identity.previousQuizKeys || [])].some(key => state.audioKeys.has(key)))
     .filter(Boolean);
   for (const question of pending) {
     try {

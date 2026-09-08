@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v161-numberless-figures";
+const CACHE_NAME = "magicbook-pwa-v164-lavender-gold";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -15,8 +15,8 @@ const STATIC_ASSETS = [
   "/loading-ui.css?v=1-shared-gif-loader",
   "/style.css?v=72-solid-profile-controls",
   "/mobile-experience.css?v=4-admin-scroll",
-  "/android-webview-mode.js?v=2-aura-fluid",
-  "/android-app-theme.css?v=2-aura-fluid",
+  "/android-webview-mode.js?v=5-lavender-gold",
+  "/android-app-theme.css?v=5-lavender-gold",
   "/magic-dictionary.css?v=1.2.5-settings-layout",
   "/screen-protection.css?v=1.1.0",
   "/offline-notice.css?v=1.0.0",

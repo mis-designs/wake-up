@@ -38,8 +38,8 @@ function contrast(foreground, background) {
   return (light + 0.05) / (dark + 0.05);
 }
 
-test("the Aura installed-app palette uses the supplied colors and stays WebView-scoped", () => {
-  for (const token of ["#5B1E91", "#FFFFFF", "#EB0000", "#BDB5E9", "#111827", "#4B5563", "#AFAFB6"]) {
+test("the installed-app palette uses the supplied role colors and stays WebView-scoped", () => {
+  for (const token of ["#A79CFF", "#F4B942", "#F9F8F5", "#88C999", "#111827", "#333B4A", "#6B7280"]) {
     assert.match(theme, new RegExp(token, "i"));
   }
 
@@ -56,9 +56,9 @@ test("the app marker is applied before styles and the theme loads last on every 
 
   for (const page of pages) {
     const html = read(page);
-    const markerIndex = html.indexOf("/android-webview-mode.js?v=2-aura-fluid");
+    const markerIndex = html.indexOf("/android-webview-mode.js?v=5-lavender-gold");
     const firstStylesheetIndex = html.indexOf('rel="stylesheet"');
-    const themeIndex = html.indexOf("/android-app-theme.css?v=2-aura-fluid");
+    const themeIndex = html.indexOf("/android-app-theme.css?v=5-lavender-gold");
     const lastStylesheetIndex = html.lastIndexOf('rel="stylesheet"');
 
     assert.ok(markerIndex >= 0, `${page} must load the WebView marker`);
@@ -68,15 +68,30 @@ test("the app marker is applied before styles and the theme loads last on every 
 });
 
 test("the app theme assets are available offline", () => {
-  assert.match(worker, /\/android-webview-mode\.js\?v=2-aura-fluid/);
-  assert.match(worker, /\/android-app-theme\.css\?v=2-aura-fluid/);
+  assert.match(worker, /\/android-webview-mode\.js\?v=5-lavender-gold/);
+  assert.match(worker, /\/android-app-theme\.css\?v=5-lavender-gold/);
 });
 
 test("primary app color pairings meet WCAG AA for normal text", () => {
-  assert.ok(contrast("#FFFFFF", "#5B1E91") >= 4.5, "white text on Aura purple must pass AA");
-  assert.ok(contrast("#111827", "#BDB5E9") >= 4.5, "dark text on lilac surface must pass AA");
-  assert.ok(contrast("#4B5563", "#FFFFFF") >= 4.5, "muted text on white must pass AA");
-  assert.ok(contrast("#FFFFFF", "#EB0000") >= 4.5, "white text on the danger accent must pass AA");
+  const token = (name) => {
+    const match = theme.match(new RegExp("--app-palette-" + name + ":\\s*(#[0-9a-f]{6});", "i"));
+    assert.ok(match, `missing literal palette token: ${name}`);
+    return match[1];
+  };
+  for (const role of ["primary", "secondary", "accent", "surface", "background", "paper"]) {
+    assert.ok(contrast(token("text"), token(role)) >= 4.5, `dark text on ${role} must pass AA`);
+    assert.ok(contrast(token("muted"), token(role)) >= 4.5, `supporting text on ${role} must pass AA`);
+  }
+  assert.ok(contrast(token("border"), token("background")) >= 3, "structural border must be visible");
+  const mix = theme.match(/--app-palette-primary-strong:\s*color-mix\(in srgb, var\(--app-palette-primary\) (\d+)%/);
+  assert.ok(mix, "readable brand foreground must derive from the canonical primary");
+  const weight = Number(mix[1]) / 100;
+  const strong = "#" + rgb(token("primary")).map((channel, index) =>
+    Math.round(channel * weight + rgb(token("text"))[index] * (1 - weight)).toString(16).padStart(2, "0")
+  ).join("");
+  assert.ok(contrast(strong, token("background")) >= 4.5, "brand foreground must pass AA on the canvas");
+  assert.match(theme, /\.privacy-hero h1 em,[^{}]+\{\s*color: var\(--app-palette-primary-strong\)/);
+  assert.match(marker, /getComputedStyle\(root\)\.getPropertyValue\("--app-palette-primary"\)/);
 });
 
 test("Aura drag follows the pointer, resists edges and keeps a non-drag alternative", () => {

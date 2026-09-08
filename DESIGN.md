@@ -23,7 +23,7 @@ canonical_ui:
 design_context:
   owner: Magic Book
   last_updated: 2026-09-07
-  revision_notes: The Android WebView Admin route now owns one touch-safe vertical scroller, while ordinary browser scrolling remains unchanged. Existing Admin identity, numberless figure delivery, in-flow Quiz utilities, Aura Fluid palette, and direct-manipulation chapter behavior remain intact.
+  revision_notes: The approved Android WebView palette now uses lavender primary, gold secondary/accent, ivory background, sage supporting surfaces, and dark ink. Only color roles change from the restored layout; the existing scroll, navigation, audio, and chapter interaction owners remain intact.
 ---
 
 # Magic Book design context
@@ -43,12 +43,13 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 - Icon rule: no Unicode characters as UI icons. Use repository assets, text labels, or decorative CSS marks hidden from assistive technology.
 - Avoid giant headings, oversized empty surfaces, decorative gradients, neon, game styling, generic KPI-card grids, traffic-sign decoration, and horizontal scrollers.
 - Android WebView compactness is owned by `mobile-experience.css`; it may reduce decoration and spacing without changing route meaning or hiding required controls. Header titles stay visually centered through symmetric live utility rails, and short Home content uses auto margins that collapse safely when vertical scrolling is needed.
-- Installed-app color is owned by `android-app-theme.css` behind the `html.android-webview` marker. Aura purple chrome, lilac supporting surfaces, white reading canvas, and restrained red signal details distinguish the Android app while the ordinary browser version keeps its current palette. Route structure, density, typography, and business behavior stay with their existing owners.
+- Installed-app color is owned by `android-app-theme.css` behind the `html.android-webview` marker. Lavender chrome, gold secondary actions, an ivory background, sage supporting surfaces, and white reading paper distinguish the Android app while the ordinary browser version keeps its current palette. Route structure, density, typography, and business behavior stay with their existing owners.
 
 ## Tokens
 
 - Brand action: `--li-action: var(--color-primary)`; dark action `#263bd4`.
-- Android installed palette: Aura purple `#5B1E91`, white canvas `#FFFFFF`, lilac surface `#BDB5E9`, red signal/danger `#EB0000`, primary ink `#111827`, muted ink `#4B5563`, and structural border `#AFAFB6`. Purple uses white text, lilac uses dark ink, and red remains a sparse signal rather than a competing primary action.
+- Android installed palette: primary `#A79CFF`, secondary `#F4B942`, accent `#F4B942`, background `#F9F8F5`, surface `#88C999`, primary text `#111827`, muted text `#333B4A`, structural border `#6B7280`, and reading paper `#FFFFFF`. Primary, secondary, accent, and surface all use dark ink. Gold is a brand emphasis, never a danger color. Background, supporting surface, reading paper, text, and border remain separate roles.
+- Token mapping (model B): `android-app-theme.css` owns `--app-palette-*`, maps them to existing route aliases and shared components, and supplies the browser theme-color metadata through `android-webview-mode.js`. The `aura-fluid` dataset value remains a compatibility switch for existing chapter drag behavior, not the palette source. Layout, sizes, order, fonts, and motion are unchanged by this palette update.
 - Semantic colors are independent of the installed palette: correct/positive remains green, incorrect/error remains red, and warning/limited data remains amber.
 - Ink/navy: `#17233a` / `#12315f`.
 - Positive: `--li-teal: #138f86`; attention: `--li-coral: #c84f4b`; limited data: `--li-amber: #a96c16`.
