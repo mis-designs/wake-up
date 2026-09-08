@@ -28,7 +28,7 @@ const STATIC_ASSETS = [
   "/src/learning-insights.js?v=5-figure-explanation-ui&ui=9-intact-figures",
   "/homebg.css?v=3",
   "/mystyle.css?v=51-question-footer-reflow",
-  "/audio-player-ui.css?v=5-audio-focus",
+  "/audio-player-ui.css?v=6-admin-unified",
   "/script.js?v=70-aura-fluid-drag",
   "/study-quiz.html",
   "/study-quiz.css?v=26-numberless-figures",

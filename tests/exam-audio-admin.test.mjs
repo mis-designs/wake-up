@@ -30,10 +30,45 @@ function setup() {
   context.fixtureRows = quizAudioCatalog.rows.map(row => ({ ...row, identity: quizAudioCatalog.identityFor(row), quizKey: quizAudioCatalog.identityFor(row).quizKey }));
   vm.runInContext(`state.chapters = [...Array(25)].map((_, i) => ({ key: String(i + 1), name: 'Capitolo ' + (i + 1), questions: fixtureRows.filter(row => row.chapter === i + 1) })); state.chapters.push({ key: '0', name: 'Exam 80', questions: fixtureRows.filter(row => row.chapter === 0) });`, context);
   context.createQuestionHelpDisclosure = () => ({ button: element("button"), panel: element() });
+  context.realCreateAudioPlayer = context.createAudioPlayer;
   context.createItalianQuestionPlayer = () => element("button");
   context.createAudioPlayer = () => element("audio");
   return { context, nodes };
 }
+
+test("Admin and legacy players keep shared icons, accessible playback state, speed and seeking", () => {
+  const { context } = setup();
+  const audios = [];
+  context.Audio = class {
+    constructor() { this.events = {}; this.paused = true; this.duration = 100; this.currentTime = 0; audios.push(this); }
+    addEventListener(name, callback) { this.events[name] = callback; }
+  };
+  context.requestAnimationFrame = () => 1;
+  context.cancelAnimationFrame = () => {};
+  for (const legacy of [false, true]) {
+    const player = context.realCreateAudioPlayer({}, { legacy });
+    const [play, progress, speed] = player.children;
+    const audio = audios.at(-1);
+    assert.match(play.innerHTML, /audio-player-icon--play[\s\S]*audio-player-icon--pause/);
+    assert.equal(play.attributes["aria-label"], "Riproduci spiegazione");
+    audio.paused = false;
+    audio.events.play();
+    assert.ok(player.classList.contains("is-playing"));
+    assert.ok(play.classList.contains("is-playing"));
+    assert.equal(play.attributes["aria-label"], "Metti in pausa la spiegazione");
+    audio.events.pause();
+    assert.equal(player.classList.contains("is-playing"), false);
+    assert.equal(play.attributes["aria-pressed"], "false");
+    speed.click();
+    assert.equal(audio.playbackRate, 0.5);
+    assert.equal(speed.textContent, "0,5×");
+    progress.value = "60";
+    progress.input();
+    assert.equal(audio.currentTime, 60);
+    audio.events.ended();
+    assert.equal(progress.value, "0");
+  }
+});
 
 test("Exam 80 button opens all 80 real questions, figures and the shared recorder payload", async () => {
   const { context, nodes } = setup();

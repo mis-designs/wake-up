@@ -696,11 +696,14 @@ function createItalianQuestionPlayer(question) {
 function createAudioPlayer(question, { legacy = false } = {}) {
   const player = document.createElement("div"); player.className = "audio-admin-player"; player.setAttribute("aria-label", "Player spiegazione audio");
   const button = document.createElement("button"); button.type = "button"; button.className = "audio-admin-player-play magic-loading-control"; button.setAttribute("aria-label", "Riproduci spiegazione");
+  button.innerHTML = "<svg class=\"audio-player-icon audio-player-icon--play\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\" focusable=\"false\">\n        <path d=\"M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n        <path d=\"M9.5 8.96533C9.5 8.48805 9.5 8.24941 9.59974 8.11618C9.68666 8.00007 9.81971 7.92744 9.96438 7.9171C10.1304 7.90525 10.3311 8.03429 10.7326 8.29239L15.4532 11.3271C15.8016 11.551 15.9758 11.663 16.0359 11.8054C16.0885 11.9298 16.0885 12.0702 16.0359 12.1946C15.9758 12.337 15.8016 12.449 15.4532 12.6729L10.7326 15.7076C10.3311 15.9657 10.1304 16.0948 9.96438 16.0829C9.81971 16.0726 9.68666 15.9999 9.59974 15.8838C9.5 15.7506 9.5 15.512 9.5 15.0347V8.96533Z\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n      </svg>\n      <svg class=\"audio-player-icon audio-player-icon--pause\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\" focusable=\"false\">\n        <path d=\"M9.5 15V9M14.5 15V9M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n      </svg>";
   const progress = document.createElement("input"); progress.type = "range"; progress.min = "0"; progress.max = "100"; progress.step = "0.1"; progress.value = "0"; progress.className = "audio-admin-player-progress"; progress.setAttribute("aria-label", "Avanzamento audio"); progress.setAttribute("aria-valuemin", "0"); progress.setAttribute("aria-valuemax", "100"); progress.setAttribute("aria-valuenow", "0");
   const speed = document.createElement("button"); speed.type = "button"; speed.className = "audio-admin-player-speed"; speed.textContent = "1×"; speed.title = "Cambia velocità";
-  const audio = new Audio(); audio.preload = "metadata"; let loading = null; let objectUrl = ""; let speedValue = 1; let frame = 0; let seeking = false; let durationHint = 0; let sourceMode = ""; let blobFallbackTried = false;
+  const audio = new Audio(); audio.preload = "metadata"; let loading = null; let objectUrl = ""; let speedValue = 1; let speedStep = 0; const speedSteps = [1, 0.5, 1, 1.25, 1.5, 2]; let frame = 0; let seeking = false; let durationHint = 0; let sourceMode = ""; let blobFallbackTried = false;
   const clearSource = () => { audio.pause(); if (objectUrl) URL.revokeObjectURL(objectUrl); objectUrl = ""; audio.removeAttribute("src"); audio.load(); };
   const instance = { audio, button };
+  const setPlaying = playing => { button.classList.toggle("is-playing", playing); player.classList.toggle("is-playing", playing); button.setAttribute("aria-pressed", String(playing)); button.setAttribute("aria-label", playing ? "Metti in pausa la spiegazione" : "Riproduci spiegazione"); };
+  setPlaying(false);
   const duration = () => { const nativeDuration = Number(audio.duration); return Number.isFinite(nativeDuration) && nativeDuration > 0 ? nativeDuration : durationHint; };
   const paint = () => { if (seeking) return; const total = duration(); const currentTime = Number(audio.currentTime); const percent = Number.isFinite(total) && total > 0 && Number.isFinite(currentTime) ? Math.max(0, Math.min(100, currentTime / total * 100)) : 0; progress.value = String(percent); progress.setAttribute("aria-valuenow", percent.toFixed(1)); progress.style.setProperty("--progress", `${percent}%`); };
   const seek = () => { const total = duration(); if (!Number.isFinite(total) || total <= 0) return; const percent = Math.max(0, Math.min(100, Number(progress.value) || 0)); try { audio.currentTime = total * percent / 100; } catch (_) { return; } progress.style.setProperty("--progress", `${percent}%`); };
@@ -721,15 +724,15 @@ function createAudioPlayer(question, { legacy = false } = {}) {
   const load = async () => {
     if (audio.src) return;
     if (!loading) {
-      button.classList.add("is-loading");
+      button.classList.add("is-loading"); player.classList.add("is-loading"); player.classList.remove("is-error"); player.setAttribute("aria-busy", "true");
       // Use the same-origin blob path directly. It is the reliable path already
       // used by the quiz and avoids signed-URL/CSP playback differences here.
       loading = loadBlob()
-        .finally(() => { loading = null; button.classList.remove("is-loading"); });
+        .finally(() => { loading = null; button.classList.remove("is-loading"); player.classList.remove("is-loading"); player.setAttribute("aria-busy", "false"); });
     }
     return loading;
   };
-  button.addEventListener("click", async () => { const requestId = ++state.playbackRequestId; try { if (!audio.src) await load(); if (requestId !== state.playbackRequestId) return; if (audio.paused) { try { await waitForReady(); stopCurrentPlayer(instance); state.playing = instance; await audio.play(); } catch (error) { if (sourceMode !== "signed" || blobFallbackTried) throw error; blobFallbackTried = true; clearSource(); await loadBlob(); if (requestId !== state.playbackRequestId) return; await waitForReady(); stopCurrentPlayer(instance); state.playing = instance; await audio.play(); } } else audio.pause(); } catch (error) { loading = null; clearSource(); await showProblem("Audio non disponibile", "Il sito non riesce a recuperare questa spiegazione.", error); } });
+  button.addEventListener("click", async () => { const requestId = ++state.playbackRequestId; try { if (!audio.src) await load(); if (requestId !== state.playbackRequestId) return; if (audio.paused) { try { await waitForReady(); stopCurrentPlayer(instance); state.playing = instance; await audio.play(); } catch (error) { if (sourceMode !== "signed" || blobFallbackTried) throw error; blobFallbackTried = true; clearSource(); await loadBlob(); if (requestId !== state.playbackRequestId) return; await waitForReady(); stopCurrentPlayer(instance); state.playing = instance; await audio.play(); } } else audio.pause(); } catch (error) { loading = null; clearSource(); setPlaying(false); player.classList.add("is-error"); await showProblem("Audio non disponibile", "Il sito non riesce a recuperare questa spiegazione.", error); } });
   progress.addEventListener("pointerdown", event => { seeking = true; progress.setPointerCapture?.(event.pointerId); });
   progress.addEventListener("touchstart", () => { seeking = true; }, { passive: true });
   progress.addEventListener("input", seek);
@@ -737,10 +740,10 @@ function createAudioPlayer(question, { legacy = false } = {}) {
   progress.addEventListener("pointerup", () => { seek(); seeking = false; paint(); });
   progress.addEventListener("pointercancel", () => { seek(); seeking = false; paint(); });
   progress.addEventListener("touchend", () => { seek(); seeking = false; paint(); }, { passive: true });
-  speed.addEventListener("click", () => { speedValue = [1, 1.25, 1.5, 2][([1, 1.25, 1.5, 2].indexOf(speedValue) + 1) % 4]; audio.playbackRate = speedValue; speed.textContent = `${String(speedValue).replace(".", ",")}×`; });
-  audio.addEventListener("play", () => { button.classList.add("is-playing"); stopFrame(); tick(); });
-  audio.addEventListener("pause", () => { button.classList.remove("is-playing"); stopFrame(); });
-  audio.addEventListener("ended", () => { button.classList.remove("is-playing"); stopFrame(); seeking = false; progress.value = "0"; progress.style.setProperty("--progress", "0%"); if (state.playing === instance) state.playing = null; });
+  speed.addEventListener("click", () => { speedStep = (speedStep + 1) % speedSteps.length; speedValue = speedSteps[speedStep]; audio.playbackRate = speedValue; speed.textContent = `${String(speedValue).replace(".", ",")}×`; });
+  audio.addEventListener("play", () => { setPlaying(true); stopFrame(); tick(); });
+  audio.addEventListener("pause", () => { setPlaying(false); stopFrame(); });
+  audio.addEventListener("ended", () => { setPlaying(false); stopFrame(); seeking = false; progress.value = "0"; progress.style.setProperty("--progress", "0%"); if (state.playing === instance) state.playing = null; });
   ["loadedmetadata", "durationchange", "canplay", "timeupdate", "seeking", "seeked"].forEach(eventName => audio.addEventListener(eventName, paint));
   player.append(button, progress, speed); return player;
 }
