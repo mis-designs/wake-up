@@ -31,13 +31,20 @@ test("rotary route keeps the native gate and canonical selected-chapter action",
   assert.doesNotMatch(js, /(?:window\.)?(?:alert|confirm|prompt)\s*\(/u);
 });
 
-test("chapter title adapts inside fixed geometry; wheel has no old core or side arrows", () => {
+test("chapter title adapts inside fixed geometry; black wheel separates outer numbers from its inner readout", () => {
   const css = read("android-study-shell.css");
   const template = read("index.html").split('<template id="androidStudyTemplate">')[1].split('</template>')[0];
-  assert.doesNotMatch(template, /data-native-step|native-dial-core|native-dial-orbit|Ruota o usa le frecce/u);
+  assert.doesNotMatch(template, /data-native-step|native-dial-core|Ruota o usa le frecce/u);
+  assert.match(template, /<circle class="native-dial-orbit" cx="150" cy="150" r="100"\//u);
+  assert.match(template, /id="nativeChapterDial"[^]*id="nativeSelectedNumber"[^]*<\/div>\s*<button id="nativeOpenChapter"/u);
+  assert.match(css, /\.native-dial-orbit\s*\{[^}]*fill: none;[^}]*stroke: var\(--native-line\)/u);
+  assert.match(css, /\.native-selected-number\s*\{[^}]*color: var\(--native-canvas\); pointer-events: none/u);
+  assert.match(css, /#nativeOpenChapter\s*\{[^}]*top: 50%; transform: translate\(-50%, -50%\)/u);
+  assert.doesNotMatch(read("android-study-shell.js"), /label\.style\.opacity|label\.style\.display = i \+ 1 === model\.selected/u);
   assert.match(css, /\.native-chapter-caption\s*\{[^}]*height: 60px;/u);
   assert.match(css, /--native-title-size/u);
   assert.match(css, /--native-wheel: #000000/u);
+  assert.match(css, /@media \(max-height: 620px\)\s*\{\s*html\.android-webview \.native-selected-number \{ font-size: 28px; \}/u);
   assert.match(read("android-study-shell.js"), /chapterTitle\.scrollHeight > chapterTitle\.clientHeight/u);
 });
 
@@ -56,10 +63,10 @@ test("provided gesture assets ship offline and never own pointer input", () => {
 test("changed native files are versioned together in the offline shell", () => {
   const index = read("index.html");
   const worker = read("service-worker.js");
-  for (const asset of ["android-study-shell.css?v=3-gestures", "android-study-shell.js?v=3-gestures"]) {
+  for (const asset of ["android-study-shell.css?v=4-readout", "android-study-shell.js?v=4-readout"]) {
     assert.ok(index.includes(asset));
     assert.ok(worker.includes(asset));
   }
-  assert.ok(worker.includes("android-rotary-model.mjs?v=3-gestures"));
-  assert.ok(read("android-study-shell.js").includes("android-rotary-model.mjs?v=3-gestures"));
+  assert.ok(worker.includes("android-rotary-model.mjs?v=4-readout"));
+  assert.ok(read("android-study-shell.js").includes("android-rotary-model.mjs?v=4-readout"));
 });

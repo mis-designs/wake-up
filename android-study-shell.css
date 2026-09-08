@@ -207,23 +207,25 @@ html.android-webview .native-image-fallback {
 html.android-webview .native-image-fallback span { display: block; margin-top: 6px; font: 11px/1.35 var(--native-body); color: var(--native-muted); }
 html.android-webview .native-chapter-preview[data-image-ready] .native-image-fallback { display: none; }
 html.android-webview .native-selected-number {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  display: grid; place-items: center; width: 64px; height: 44px;
+  /* The visible inner semicircle spans 1/6 to 1/2 of the dial width. */
+  position: absolute; left: 33.333333%; top: 50%; transform: translate(-50%, -50%);
+  display: grid; place-items: center; width: 33.333333%; height: 44px;
   z-index: 2; font: 400 clamp(28px, 8vw, 40px)/1 var(--native-display);
-  color: var(--native-ink);
+  color: var(--native-canvas); pointer-events: none;
 }
 html.android-webview .native-dial { right: 0; transform: translate(50%, -50%); background: var(--native-wheel); touch-action: none; cursor: grab; user-select: none; }
 html.android-webview .native-dial.is-dragging { cursor: grabbing; }
 html.android-webview .native-dial:focus-visible { outline-offset: -5px; }
 html.android-webview .native-dial-face { display: block; width: 100%; height: 100%; overflow: visible; }
+html.android-webview .native-dial-orbit { fill: none; stroke: var(--native-line); stroke-width: 1.25; vector-effect: non-scaling-stroke; pointer-events: none; }
 html.android-webview .native-dial-face text { fill: var(--native-canvas); font: 400 22px var(--native-display); text-anchor: middle; dominant-baseline: central; }
 html.android-webview #nativeOpenChapter {
-  position: absolute; left: 50%; top: calc(50% + 24px); transform: translateX(-50%); z-index: 3;
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 3;
   width: 64px; height: 44px; padding: 6px 3px; border: 0; border-radius: 10px;
   background: var(--native-canvas); color: var(--native-wheel);
   font: 400 22px/1 var(--native-display); text-transform: uppercase;
 }
-html.android-webview #nativeOpenChapter:active:not(:disabled) { transform: translateX(-50%) scale(.94); }
+html.android-webview #nativeOpenChapter:active:not(:disabled) { transform: translate(-50%, -50%) scale(.94); }
 html.android-webview .native-chapter-caption { display: grid; place-items: center; padding: 6px 22px; height: 60px; min-height: 0; }
 html.android-webview .native-chapter-caption h2 {
   display: flex; align-items: center; justify-content: center; width: 100%; height: 48px; min-width: 0;
@@ -257,6 +259,7 @@ html.android-webview .native-road-divider .native-roundabout { width: 28px; heig
 /* Compact portrait/landscape retains 44px targets; only the content area scrolls
    when zoom or an unusually short window exceeds this minimum footprint. */
 @media (max-height: 620px) {
+  html.android-webview .native-selected-number { font-size: 28px; }
   html.android-webview .native-chapters-header { padding-block: 3px; }
   html.android-webview .native-actions { margin-block: 8px; gap: 6px 16px; }
   html.android-webview .native-actions > button { min-height: 44px; padding-block: 8px; }
@@ -328,6 +331,8 @@ html.android-webview[data-native-motion-paused] :is(.native-tap-cue, .native-rot
 @media (forced-colors: active) {
   html.android-webview .native-dial { background: CanvasText; forced-color-adjust: none; }
   html.android-webview .native-dial-face text { fill: Canvas; }
+  html.android-webview .native-selected-number { color: Canvas; }
+  html.android-webview .native-dial-orbit { stroke: Canvas; }
   html.android-webview .native-dock { border-color: CanvasText; }
   html.android-webview .native-liquid-track { border: 1px solid CanvasText; }
   html.android-webview .native-liquid-fill { background: Highlight; }

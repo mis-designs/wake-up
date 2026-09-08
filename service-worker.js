@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v167-native-gestures";
+const CACHE_NAME = "magicbook-pwa-v168-inner-readout";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -17,9 +17,9 @@ const STATIC_ASSETS = [
   "/mobile-experience.css?v=4-admin-scroll",
   "/android-webview-mode.js?v=5-lavender-gold",
   "/android-app-theme.css?v=5-lavender-gold",
-  "/android-study-shell.css?v=3-gestures",
-  "/android-study-shell.js?v=3-gestures",
-  "/android-rotary-model.mjs?v=3-gestures",
+  "/android-study-shell.css?v=4-readout",
+  "/android-study-shell.js?v=4-readout",
+  "/android-rotary-model.mjs?v=4-readout",
   "/assets/native-chapter-covers.json",
   "/assets/fonts/norwester/norwester.woff",
   "/icons/mg_book.svg",

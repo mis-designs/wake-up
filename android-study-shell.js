@@ -1,4 +1,4 @@
-import { ChapterDial, clampChapter, chapterAtAngle, dialLabelPosition, homeGreetings, progressValue } from "./android-rotary-model.mjs?v=3-gestures";
+import { ChapterDial, clampChapter, chapterAtAngle, dialLabelPosition, homeGreetings, progressValue } from "./android-rotary-model.mjs?v=4-readout";
 
 // Runtime gate is the native shell marker, not screen size or standalone/PWA mode.
 const doc = document;
@@ -90,9 +90,8 @@ function initialize() {
       label.setAttribute("x", x.toFixed(2));
       label.setAttribute("y", y.toFixed(2));
       label.setAttribute("transform", `rotate(${rotation} ${x} ${y})`);
-      // Selected value is read in the gap, not duplicated under the open action.
-      label.style.display = i + 1 === model.selected || Math.abs(distance) > 3 ? "none" : "";
-      label.style.opacity = Math.abs(distance) > 2 ? ".55" : "1";
+      // Keep the numbered outer band complete; the inner readout stays stationary.
+      label.style.display = Math.abs(distance) > 3 ? "none" : "";
     });
   }
 
