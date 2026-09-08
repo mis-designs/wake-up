@@ -15,7 +15,7 @@ test("installed Home omits instructional/pause copy; motion control belongs to P
 test("installed content bounds reserve the actual floating dock, not just padding behind it", () => {
   const css = read("android-study-shell.css");
   assert.match(css, /height: calc\(100dvh - var\(--native-dock-reserve\)\)/u);
-  assert.match(css, /grid-template-rows: auto minmax\(144px, 1fr\) auto auto/u);
+  assert.match(css, /grid-template-rows: auto minmax\(210px, 1fr\) auto/u);
   assert.match(css, /prefers-reduced-motion: reduce/u);
   const js = read("android-study-shell.js");
   assert.match(js, /new ResizeObserver\(syncDockSpace\)\.observe\(dock\)/u);
@@ -31,21 +31,18 @@ test("rotary route keeps the native gate and canonical selected-chapter action",
   assert.doesNotMatch(js, /(?:window\.)?(?:alert|confirm|prompt)\s*\(/u);
 });
 
-test("chapter title adapts inside fixed geometry; black wheel separates outer numbers from its inner readout", () => {
+test("transparent numbered arc uses one blue selected value beside a stable title/artwork slot", () => {
   const css = read("android-study-shell.css");
   const template = read("index.html").split('<template id="androidStudyTemplate">')[1].split('</template>')[0];
   assert.doesNotMatch(template, /data-native-step|native-dial-core|Ruota o usa le frecce/u);
   assert.match(template, /<circle class="native-dial-orbit" cx="150" cy="150" r="100"\//u);
-  assert.match(template, /id="nativeChapterDial"[^]*id="nativeSelectedNumber"[^]*<\/div>\s*<button id="nativeOpenChapter"/u);
-  assert.match(css, /\.native-dial-orbit\s*\{[^}]*fill: none;[^}]*stroke: var\(--native-line\)/u);
-  assert.match(css, /\.native-selected-number\s*\{[^}]*color: var\(--native-wheel\); pointer-events: none/u);
-  assert.match(css, /\.native-selected-number\s*\{[^}]*aspect-ratio: 1;[^}]*border-radius: 35%; background: var\(--native-canvas\)/u);
-  assert.match(css, /#nativeOpenChapter\s*\{[^}]*top: 50%; transform: translate\(-50%, -50%\)/u);
-  assert.doesNotMatch(read("android-study-shell.js"), /label\.style\.opacity|label\.style\.display = i \+ 1 === model\.selected/u);
-  assert.match(css, /\.native-chapter-caption\s*\{[^}]*height: 60px;/u);
+  assert.doesNotMatch(template, /nativeSelectedNumber|native-image-fallback/u);
+  assert.match(css, /\.native-dial-orbit\s*\{[^}]*fill: none;[^}]*stroke: var\(--app-palette-divider\)/u);
+  assert.match(css, /\.native-dial-face text\.is-selected \{ fill: var\(--native-blue\)/u);
+  assert.match(css, /\.native-dial \{[^}]*background: transparent/u);
+  assert.match(css, /\.native-chapter-detail\s*\{[^}]*grid-template-rows: minmax\(0, 1fr\) 44px/u);
   assert.match(css, /--native-title-size/u);
-  assert.match(css, /--native-wheel: #000000/u);
-  assert.match(css, /font: 400 clamp\(22px, 4dvh, 32px\)/u);
+  assert.match(css, /font-family: "El Messiri"/u);
   assert.match(read("android-study-shell.js"), /chapterTitle\.scrollHeight > chapterTitle\.clientHeight/u);
 });
 
@@ -59,8 +56,22 @@ test("provided gesture assets ship offline and never own pointer input", () => {
   }
   assert.match(read("android-study-shell.css"), /\.native-rotate-cue\s*\{[^}]*pointer-events: none/u);
   assert.match(read("android-study-shell.css"), /\.native-tap-cue\s*\{[^}]*pointer-events: none/u);
-  assert.match(read("android-study-shell.css"), /\.native-rotate-guide\s*\{[^}]*inset: -28px;[^}]*pointer-events: none/u);
-  assert.match(read("android-study-shell.css"), /@keyframes native-rotate-up[^\n]*rotate\(18deg\)[^\n]*rotate\(32deg\)/u);
+  assert.match(read("android-study-shell.css"), /\.native-rotate-guide\s*\{[^}]*inset: -20px;[^}]*pointer-events: none/u);
+  assert.match(read("android-study-shell.css"), /@keyframes native-rotate-up[^\n]*rotate\(-24deg\)[^\n]*rotate\(-40deg\)/u);
+  assert.match(read("android-study-shell.css"), /native-book-tap 5s/u);
+  assert.match(read("android-study-shell.css"), /native-rotate-up 3\.8s/u);
+  assert.match(read("android-study-shell.css"), /filter: brightness\(0\) invert\(1\)/u);
+});
+
+test("title-to-artwork presentation is bounded, interruptible and selection-versioned", () => {
+  const js = read("android-study-shell.js");
+  assert.match(js, /1800 - \(performance\.now\(\) - started\)/u);
+  assert.match(js, /await image\.decode\(\)/u);
+  assert.match(js, /clearTimeout\(imageLoadTimer\)/u);
+  assert.match(js, /clearTimeout\(imageRevealTimer\)/u);
+  assert.match(js, /function hide\(\)[^]*cancelImagePresentation\(\)/u);
+  assert.match(js, /function scheduleDraw[^]*\(now - started\) \/ 220/u);
+  assert.match(js, /if \(result\.boundary\)[^]*else if \(result\.changed\) \{\s*feedback\("selection"\)/u);
 });
 
 test("all 25 mapped All Books covers exist as lightweight WebP assets", () => {
@@ -83,10 +94,19 @@ test("all 25 mapped All Books covers exist as lightweight WebP assets", () => {
 test("changed native files are versioned together in the offline shell", () => {
   const index = read("index.html");
   const worker = read("service-worker.js");
-  for (const asset of ["android-study-shell.css?v=5-card-cues", "android-study-shell.js?v=5-card-cues"]) {
+  for (const asset of ["android-study-shell.css?v=6-transparent", "android-study-shell.js?v=6-transparent"]) {
     assert.ok(index.includes(asset));
     assert.ok(worker.includes(asset));
   }
-  assert.ok(worker.includes("android-rotary-model.mjs?v=5-card-cues"));
-  assert.ok(read("android-study-shell.js").includes("android-rotary-model.mjs?v=5-card-cues"));
+  assert.ok(worker.includes("android-rotary-model.mjs?v=6-transparent"));
+  assert.ok(read("android-study-shell.js").includes("android-rotary-model.mjs?v=6-transparent"));
+});
+
+test("ornamental title font is self-hosted, licensed and cached with a remeasure after loading", () => {
+  const font = readFileSync(new URL('../assets/fonts/el-messiri/ElMessiri.ttf', import.meta.url));
+  assert.equal(font.readUInt32BE(0), 0x00010000);
+  assert.match(read('assets/fonts/el-messiri/OFL.txt'), /SIL OPEN FONT LICENSE/);
+  assert.ok(read('service-worker.js').includes('/assets/fonts/el-messiri/ElMessiri.ttf'));
+  assert.match(read('android-study-shell.js'), /fonts\.load\('500 28px "El Messiri"'\)/);
+  assert.match(read('android-study-shell.js'), /reducedMotion\.addEventListener\("change"/);
 });

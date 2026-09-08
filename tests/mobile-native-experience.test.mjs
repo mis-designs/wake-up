@@ -10,7 +10,7 @@ test("Android WebView is detected before the responsive stylesheet paints", () =
   const marker = read("android-webview-mode.js");
 
   for (const page of [index, quiz]) {
-    assert.match(page, /android-webview-mode\.js\?v=5-lavender-gold/u);
+    assert.match(page, /android-webview-mode\.js\?v=6-pearl-blue/u);
     assert.match(page, /mobile-experience\.css\?v=4-admin-scroll/u);
   }
 

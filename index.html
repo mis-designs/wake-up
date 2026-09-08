@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="google" content="notranslate">
-<script src="/android-webview-mode.js?v=5-lavender-gold"></script>
+<script src="/android-webview-mode.js?v=6-pearl-blue"></script>
 <script>
 if (window.location.pathname === "/index.html") {
   window.location.replace("/");
@@ -107,8 +107,8 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script src="/offline-notice.js?v=1.0.0" defer></script>
 <link rel="stylesheet" href="src/learning-insights.css?v=9-card-spacing&ui=10">
 <link rel="stylesheet" href="mobile-experience.css?v=4-admin-scroll">
-<link rel="stylesheet" href="/android-app-theme.css?v=5-lavender-gold">
-<link rel="stylesheet" href="/android-study-shell.css?v=5-card-cues">
+<link rel="stylesheet" href="/android-app-theme.css?v=6-pearl-blue">
+<link rel="stylesheet" href="/android-study-shell.css?v=6-transparent">
 </head>
 <body>
 
@@ -706,22 +706,20 @@ gtag('config', 'G-C5JPY9HFHD', {
       <h1 id="nativeChaptersTitle" tabindex="-1">Scegli capitolo</h1>
     </header>
     <div class="native-orbit-stage">
-      <div class="native-chapter-preview">
-        <img id="nativeChapterImage" alt="" decoding="async" hidden>
-        <span class="native-image-fallback">Magic Book<br><span>Immagine non disponibile</span></span>
-      </div>
       <div id="nativeChapterDial" class="native-dial" role="slider" tabindex="0" aria-label="Capitolo" aria-valuemin="1" aria-valuemax="25" aria-valuenow="1" aria-orientation="vertical" aria-describedby="nativeDialHint">
         <svg class="native-dial-face" viewBox="0 0 300 300" aria-hidden="true"><circle class="native-dial-orbit" cx="150" cy="150" r="100"/><g id="nativeDialNumbers"></g></svg>
-        <output id="nativeSelectedNumber" class="native-selected-number" aria-hidden="true">01</output>
         <span class="native-rotate-guide is-up" aria-hidden="true"><img class="native-rotate-cue" src="/icons/Arrow%20bent%20upword%20icon.svg" alt="" width="22" height="26"></span>
         <span class="native-rotate-guide is-down" aria-hidden="true"><img class="native-rotate-cue" src="/icons/Arrow%20bent%20downward%20icon.svg" alt="" width="22" height="26"></span>
       </div>
-      <button id="nativeOpenChapter" type="button" data-native-action="open" aria-label="Apri il capitolo selezionato">Vai</button>
+      <div class="native-chapter-detail">
+        <div class="native-chapter-preview" data-phase="title">
+          <h2 id="nativeChapterTitle"></h2>
+          <div class="native-chapter-art" aria-hidden="true"><img id="nativeChapterImage" alt="" decoding="async"></div>
+        </div>
+        <button id="nativeOpenChapter" type="button" data-native-action="open" aria-label="Apri il capitolo selezionato">Vai</button>
+      </div>
     </div>
-    <div class="native-chapter-caption">
-      <h2 id="nativeChapterTitle"></h2>
-      <p id="nativeDialHint" class="native-sr-only">Ruota il selettore o tocca un numero sulla rotella. Con la tastiera usa le frecce, Home e Fine.</p>
-    </div>
+    <p id="nativeDialHint" class="native-sr-only">Ruota il selettore o tocca un numero sulla rotella. Con la tastiera usa le frecce, Home e Fine.</p>
     <div class="native-actions" aria-label="Studia ed esercitati">
       <button type="button" data-native-action="study" lang="en">Study Quiz</button>
       <button type="button" data-native-action="quiz" class="is-blue" lang="en">Do Quiz</button>
@@ -1298,8 +1296,8 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script src="magic-dictionary.js?v=1.2.6-audio-focus"></script>
 <script src="screen-protection.js?v=1.2.0"></script>
 <script src="learning-sync.js?v=2"></script>
-<script src="src/learning-insights.js?v=6-native-progress&ui=9-intact-figures"></script>
+<script src="src/learning-insights.js?v=7-native-chrome&ui=9-intact-figures"></script>
 <script src="script.js?v=71-native-study"></script>
-<script type="module" src="android-study-shell.js?v=5-card-cues"></script>
+<script type="module" src="android-study-shell.js?v=6-transparent"></script>
 </body>
 </html>

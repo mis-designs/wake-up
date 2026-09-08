@@ -200,7 +200,7 @@
       <header class="li-topbar">
         <button class="li-icon-button d-btn d-btn-ghost d-btn-square d-btn-sm" type="button" data-li-action="home" onclick="MagicBookLearningInsights.handleClick(event)" aria-label="Torna alla Home"><img src="icons/go-back.png" alt=""></button>
         <a class="li-brand" href="/home" data-li-action="home" onclick="MagicBookLearningInsights.handleClick(event)">
-          <img src="${iconForMode(mode)}" alt=""><span><strong>Magic Book</strong><small>${isErrors ? "Ripasso e recupero" : "I tuoi risultati"}</small></span>
+          <img src="${iconForMode(mode)}" alt=""><span><strong>${document.documentElement.classList.contains("android-webview") ? (isErrors ? "Errori" : "Statistiche") : "Magic Book"}</strong><small>${isErrors ? "Ripasso e recupero" : "I tuoi risultati"}</small></span>
         </a>
         <button class="li-refresh d-btn d-btn-ghost d-btn-sm" type="button" data-li-action="refresh" onclick="MagicBookLearningInsights.handleClick(event)" aria-label="${state.isRefreshing ? "Aggiornamento in corso" : "Aggiorna i dati"}" aria-busy="${state.isRefreshing}" ${state.isRefreshing ? 'aria-disabled="true"' : ""}><span class="li-refresh-icon" aria-hidden="true"><img src="assets/admin/update.png" alt=""></span><span class="li-refresh-label">${state.isRefreshing ? "Aggiorno" : "Aggiorna"}</span></button>
       </header>

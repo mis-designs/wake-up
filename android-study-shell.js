@@ -1,4 +1,4 @@
-import { ChapterDial, clampChapter, chapterAtAngle, dialLabelPosition, homeGreetings, progressValue } from "./android-rotary-model.mjs?v=5-card-cues";
+import { ChapterDial, clampChapter, chapterAtAngle, dialLabelPosition, homeGreetings, progressValue } from "./android-rotary-model.mjs?v=6-transparent";
 
 // Runtime gate is the native shell marker, not screen size or standalone/PWA mode.
 const doc = document;
@@ -35,10 +35,9 @@ function initialize() {
   doc.getElementById("profilePanel")?.append(motionToggle);
   const dial = doc.getElementById("nativeChapterDial");
   const numbers = doc.getElementById("nativeDialNumbers");
-  const selectedOutput = doc.getElementById("nativeSelectedNumber");
   const chapterTitle = doc.getElementById("nativeChapterTitle");
   const image = doc.getElementById("nativeChapterImage");
-  const preview = image.parentElement;
+  const preview = image.closest(".native-chapter-preview");
   const status = doc.getElementById("nativeDialStatus");
   const progress = dock.querySelector("[role=progressbar]");
   const progressLabel = dock.querySelector(".native-progress-label");
@@ -56,6 +55,14 @@ function initialize() {
   let requestVersion = 0;
   let imageVersion = 0;
   let imageChapter = 0;
+  let renderedChapter = 0;
+  let drawnPreview = model.selected;
+  let imageLoadTimer = 0;
+  let imageRevealTimer = 0;
+  let cueTimer = 0;
+  let titleAnimation = null;
+  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+  const motionAllowed = () => !reducedMotion.matches && !html.hasAttribute("data-native-motion-paused");
   const lastFeedback = { selection: -1000, boundary: -1000 };
   let suppressActionsUntil = 0;
   let covers = {};
@@ -84,52 +91,81 @@ function initialize() {
   }
 
   function draw(value = model.selected) {
+    drawnPreview = value;
     labels.forEach((label, i) => {
       const distance = i + 1 - value;
       const { x, y, rotation } = dialLabelPosition(i + 1, value);
       label.setAttribute("x", x.toFixed(2));
       label.setAttribute("y", y.toFixed(2));
       label.setAttribute("transform", `rotate(${rotation} ${x} ${y})`);
-      // Keep the numbered outer band complete; the inner readout stays stationary.
+      label.classList.toggle("is-selected", i + 1 === model.selected);
+      label.style.fontSize = `${22 + 10 * Math.max(0, 1 - Math.abs(distance))}px`;
       label.style.display = Math.abs(distance) > 3 ? "none" : "";
     });
   }
 
-  function scheduleDraw(value) {
+  function scheduleDraw(value, animate = !model.gesture && motionAllowed()) {
     pendingPreview = value;
-    if (!frame) frame = requestAnimationFrame(() => { frame = 0; draw(pendingPreview); });
-  }
-
-  function updateImage() {
-    if (imageChapter === model.selected) return;
-    imageChapter = model.selected;
-    const version = ++imageVersion;
-    const path = covers[String(model.selected).padStart(2, "0")];
-    image.hidden = true;
-    image.removeAttribute("src");
-    delete preview.dataset.imageReady;
-    if (typeof path !== "string" || !path.startsWith("/assets/chapter-covers/") || path.includes("..")) return;
-    const loader = new Image();
-    loader.onload = () => {
-      if (version !== imageVersion) return;
-      image.src = path;
-      image.alt = `Capitolo ${String(model.selected).padStart(2, "0")}: ${app.titles[model.selected - 1]}`;
-      image.hidden = false;
-      preview.dataset.imageReady = "true";
+    cancelAnimationFrame(frame);
+    const from = drawnPreview;
+    const started = performance.now();
+    const paint = now => {
+      const amount = animate ? Math.min(1, (now - started) / 220) : 1;
+      draw(from + (pendingPreview - from) * (1 - (1 - amount) ** 3));
+      frame = amount < 1 ? requestAnimationFrame(paint) : 0;
     };
-    loader.src = path;
+    frame = requestAnimationFrame(paint);
   }
 
-  function refreshSelected(value) {
+  function cancelImagePresentation() {
+    clearTimeout(imageLoadTimer);
+    clearTimeout(imageRevealTimer);
+    imageVersion++;
+  }
+
+  function updateImage(force = false) {
+    if (!force && imageChapter === model.selected) return;
+    cancelImagePresentation();
+    imageChapter = model.selected;
+    const version = imageVersion;
+    const path = covers[String(model.selected).padStart(2, "0")];
+    preview.dataset.phase = "title";
+    // The title remains the fallback. There is no permanent card or empty placeholder.
+    if (screen !== "chapters" || model.gesture || doc.hidden || html.hasAttribute("data-native-motion-paused")) return;
+    if (typeof path !== "string" || !path.startsWith("/assets/chapter-covers/") || path.includes("..")) return;
+    const started = performance.now();
+    imageLoadTimer = setTimeout(() => {
+      const loader = new Image();
+      loader.onload = () => {
+        if (version !== imageVersion) return;
+        imageRevealTimer = setTimeout(async () => {
+          if (version !== imageVersion || screen !== "chapters" || model.gesture || doc.hidden) return;
+          image.src = path;
+          try { await image.decode(); } catch { return; }
+          if (version !== imageVersion || screen !== "chapters" || doc.hidden) return;
+          preview.dataset.phase = "image";
+        }, Math.max(0, 1800 - (performance.now() - started)));
+      };
+      loader.onerror = () => { /* Keep the current title; artwork is optional. */ };
+      loader.src = path;
+    }, 120);
+  }
+
+  function refreshSelected(value, { force = false } = {}) {
     model.selected = clampChapter(value);
-    selectedOutput.textContent = String(model.selected).padStart(2, "0");
-    chapterTitle.textContent = app.titles[model.selected - 1];
+    const changed = renderedChapter !== model.selected;
+    if (changed) {
+      renderedChapter = model.selected;
+      chapterTitle.textContent = app.titles[model.selected - 1];
+      titleAnimation?.cancel();
+      if (screen === "chapters" && motionAllowed()) titleAnimation = chapterTitle.animate([{ opacity: .25 }, { opacity: 1 }], { duration: 180, easing: "ease-out" });
+    }
     fitChapterTitle();
     dial.setAttribute("aria-valuenow", String(model.selected));
     dial.setAttribute("aria-valuetext", `${model.selected} di 25: ${chapterTitle.textContent}`);
     doc.getElementById("nativeOpenChapter").setAttribute("aria-label", `Apri capitolo ${model.selected}: ${chapterTitle.textContent}`);
-    updateImage();
-    if (!model.gesture) { pendingPreview = model.selected; draw(); }
+    updateImage(force);
+    if (!model.gesture) scheduleDraw(model.selected);
   }
 
   // Only the text adapts. The caption's fixed row never resizes the wheel.
@@ -138,9 +174,9 @@ function initialize() {
     const key = `${chapterTitle.clientWidth}:${chapterTitle.clientHeight}:${chapterTitle.textContent}`;
     let size = titleSizes.get(key);
     if (!size) {
-      size = 18;
+      size = 28;
       chapterTitle.style.setProperty("--native-title-size", `${size}px`);
-      while (size > 13 && (chapterTitle.scrollHeight > chapterTitle.clientHeight || chapterTitle.scrollWidth > chapterTitle.clientWidth)) {
+      while (size > 16 && (chapterTitle.scrollHeight > chapterTitle.clientHeight || chapterTitle.scrollWidth > chapterTitle.clientWidth)) {
         size -= .5;
         chapterTitle.style.setProperty("--native-title-size", `${size}px`);
       }
@@ -170,12 +206,14 @@ function initialize() {
       chapters.dataset.rotaryUsed = "true";
       app.select(result.selected);
       refreshSelected(result.selected);
-      feedback("selection");
     }
     if (result.boundary) {
       feedback("boundary");
       status.textContent = model.selected === 25 ? "Ultimo capitolo: 25. Fine della selezione." : "Primo capitolo: 1.";
-    } else if (result.changed) status.textContent = `Capitolo ${model.selected}: ${chapterTitle.textContent}`;
+    } else if (result.changed) {
+      feedback("selection");
+      status.textContent = `Capitolo ${model.selected}: ${chapterTitle.textContent}`;
+    }
     scheduleDraw(result.preview);
   }
 
@@ -190,10 +228,26 @@ function initialize() {
     if (pointerId !== undefined && dial.hasPointerCapture(pointerId)) dial.releasePointerCapture(pointerId);
     suppressActionsUntil = performance.now() + 120;
     scheduleDraw(model.selected);
+    updateImage(true);
+    scheduleCues();
+  }
+  function scheduleCues() {
+    clearTimeout(cueTimer);
+    chapters.dataset.rotaryUsed = "true";
+    if (screen === "chapters" && !doc.hidden) cueTimer = setTimeout(() => {
+      if (screen === "chapters" && !model.gesture && !doc.hidden) delete chapters.dataset.rotaryUsed;
+    }, 4500);
   }
   dial.addEventListener("pointerdown", event => {
     if (screen !== "chapters" || !canInteract() || event.button !== 0 || !event.isPrimary) return;
     if (!model.begin(event.pointerId, pointerAngle(event))) return;
+    cancelAnimationFrame(frame);
+    frame = 0;
+    draw(model.selected);
+    cancelImagePresentation();
+    preview.dataset.phase = "title";
+    clearTimeout(cueTimer);
+    chapters.dataset.rotaryUsed = "true";
     pointerStart = { x: event.clientX, y: event.clientY, chapter: model.selected, dragged: false };
     event.preventDefault();
     dial.setPointerCapture(event.pointerId);
@@ -219,7 +273,7 @@ function initialize() {
   dial.addEventListener("keydown", event => {
     if (!canInteract() || model.gesture || event.isComposing) return;
     const targets = { ArrowUp: model.selected + 1, ArrowRight: model.selected + 1, ArrowDown: model.selected - 1, ArrowLeft: model.selected - 1, PageUp: model.selected + 5, PageDown: model.selected - 5, Home: 1, End: 25 };
-    if (Object.hasOwn(targets, event.key)) { event.preventDefault(); applySelection(model.select(targets[event.key])); }
+    if (Object.hasOwn(targets, event.key)) { event.preventDefault(); applySelection(model.select(targets[event.key])); scheduleCues(); }
     else if (event.key === "Enter") { event.preventDefault(); runAction("open"); }
   });
 
@@ -244,8 +298,16 @@ function initialize() {
     html.toggleAttribute("data-native-motion-paused");
     try { localStorage.setItem("native-study-motion-paused", html.hasAttribute("data-native-motion-paused") ? "1" : "0"); } catch {}
     updateMotionLabel();
+    titleAnimation?.cancel();
+    if (screen === "chapters") updateImage(true);
   });
   updateMotionLabel();
+  reducedMotion.addEventListener("change", () => {
+    titleAnimation?.cancel();
+    cancelAnimationFrame(frame);
+    frame = 0;
+    if (screen === "chapters") { draw(model.selected); updateImage(true); }
+  });
 
   // Reserve the dock's measured footprint, including system safe-area changes.
   // The scroll viewport ends here: even enlarged content can never pass under it.
@@ -257,6 +319,7 @@ function initialize() {
   new ResizeObserver(syncDockSpace).observe(dock);
   new ResizeObserver(fitChapterTitle).observe(chapterTitle);
   doc.fonts.ready.then(() => { titleSizes.clear(); fitChapterTitle(); });
+  doc.fonts.load('500 28px "El Messiri"').then(() => { titleSizes.clear(); fitChapterTitle(); }).catch(() => {});
   window.addEventListener("resize", () => {
     finishGesture(model.gesture?.pointerId);
     cancelAnimationFrame(frame);
@@ -328,7 +391,7 @@ function initialize() {
     syncDockSpace();
     if (screen === "home") showGreeting();
     if (screen === "chapters") delete chapters.dataset.rotaryUsed;
-    refreshSelected(app.selected());
+    refreshSelected(app.selected(), { force: true });
     void refreshProgress();
     requestAnimationFrame(() => {
       const target = doc.getElementById(nextScreen === "home" ? "nativeHomeTitle" : "nativeChaptersTitle");
@@ -340,6 +403,9 @@ function initialize() {
     finishGesture(model.gesture?.pointerId);
     cancelAnimationFrame(frame);
     frame = 0;
+    cancelImagePresentation();
+    titleAnimation?.cancel();
+    clearTimeout(cueTimer);
     controller?.abort();
     requestVersion++;
     delete html.dataset.nativeStudyScreen;
@@ -348,7 +414,14 @@ function initialize() {
   }
   doc.addEventListener("visibilitychange", () => {
     html.toggleAttribute("data-native-background", doc.hidden);
-    if (doc.hidden) finishGesture(model.gesture?.pointerId);
+    if (doc.hidden) {
+      finishGesture(model.gesture?.pointerId);
+      titleAnimation?.cancel();
+      cancelAnimationFrame(frame);
+      frame = 0;
+      cancelImagePresentation();
+      clearTimeout(cueTimer);
+    } else if (screen === "chapters") { updateImage(true); scheduleCues(); }
   });
   const syncModalIsolation = () => {
     const modal = doc.body.classList.contains("qms-open") || doc.body.classList.contains("magic-word-gate-open");

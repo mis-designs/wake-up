@@ -1,29 +1,31 @@
 /*
- * Installed Android app palette: Lavender, Gold and Sage.
+ * Installed Android app palette: pearl, graphite, neutral gray and blue.
  * Every rule is gated by the native WebView marker so tmmmagic.eu keeps its
  * existing browser presentation. Structural layout and semantic status colors
  * remain owned by their route stylesheets.
  */
 
 html.android-webview {
-  --app-palette-primary: #A79CFF;
-  --app-palette-primary-strong: color-mix(in srgb, var(--app-palette-primary) 32%, var(--app-palette-text));
-  --app-palette-secondary: #F4B942;
-  --app-palette-accent: #F4B942;
-  --app-palette-background: #F9F8F5;
-  --app-palette-surface: #88C999;
+  --app-palette-primary: #076AE0;
+  --app-palette-primary-strong: #0755B3;
+  --app-palette-secondary: #1D1D1F;
+  --app-palette-accent: #007AFF;
+  --app-palette-background: #F5F5F7;
+  --app-palette-surface: #F5F5F7;
+  --app-palette-neutral: #AAAAAA;
+  --app-palette-divider: #D8D8DC;
   --app-palette-surface-soft: color-mix(in srgb, var(--app-palette-surface) 34%, white);
   --app-palette-paper: #FFFFFF;
-  --app-palette-on-primary: var(--app-palette-text);
-  --app-palette-on-secondary: var(--app-palette-text);
+  --app-palette-on-primary: #FFFFFF;
+  --app-palette-on-secondary: #FFFFFF;
   --app-palette-on-surface: var(--app-palette-text);
-  --app-palette-text: #111827;
-  --app-palette-muted: #333B4A;
-  --app-palette-border: #6B7280;
+  --app-palette-text: #1D1D1F;
+  --app-palette-muted: #69696E;
+  --app-palette-border: #76767A;
   --app-palette-primary-soft: color-mix(in srgb, var(--app-palette-primary) 12%, transparent);
   --app-palette-primary-line: color-mix(in srgb, var(--app-palette-primary) 35%, var(--app-palette-border));
   --app-palette-accent-soft: color-mix(in srgb, var(--app-palette-accent) 16%, transparent);
-  --app-palette-shadow: color-mix(in srgb, var(--app-palette-primary) 18%, transparent);
+  --app-palette-shadow: color-mix(in srgb, var(--app-palette-text) 8%, transparent);
 
   /* Shared legacy tokens used by Home, Capitoli and Quiz. */
   --color-primary: var(--app-palette-primary);
@@ -37,8 +39,8 @@ html.android-webview {
   --color-shadow: var(--app-palette-shadow);
   --color-card-glow: var(--app-palette-primary-soft);
   --color-soft-shadow: 0 18px 42px var(--app-palette-shadow);
-  --gradient-main: linear-gradient(135deg, color-mix(in srgb, var(--app-palette-primary) 82%, white) 0%, var(--app-palette-primary) 100%);
-  --gradient-dark: linear-gradient(145deg, color-mix(in srgb, var(--app-palette-primary) 78%, white) 0%, var(--app-palette-primary) 100%);
+  --gradient-main: linear-gradient(var(--app-palette-primary), var(--app-palette-primary));
+  --gradient-dark: linear-gradient(var(--app-palette-primary), var(--app-palette-primary));
 
   /* Studia quiz tokens. Correct/incorrect states intentionally stay semantic. */
   --ink: var(--app-palette-text);
@@ -85,12 +87,12 @@ html.android-webview :where(a, button, input, select, textarea):focus-visible {
   outline-color: var(--app-palette-primary-strong);
 }
 
-/* Native shell: lavender chrome, gold accent line and dark readable labels. */
+/* Thin neutral chrome; blue belongs to selection and actions. */
 html.android-webview .app-header,
 html.android-webview .menu-header {
-  border-bottom: 2px solid var(--app-palette-accent);
-  background: var(--app-palette-primary);
-  box-shadow: 0 5px 18px var(--app-palette-shadow);
+  border-bottom: 1px solid var(--app-palette-divider);
+  background: var(--app-palette-background);
+  box-shadow: none;
 }
 
 html.android-webview .header-btn:hover,
@@ -103,7 +105,7 @@ html.android-webview .menu-close-btn:focus-visible {
 html.android-webview .chapter-status,
 html.android-webview .menu-brand,
 html.android-webview .menu-close-btn {
-  color: var(--app-palette-on-primary);
+  color: var(--app-palette-text);
 }
 
 html.android-webview .header-btn img,
@@ -302,7 +304,7 @@ html.android-webview body.app-mode .lesson-tool-exam {
 html.android-webview body.app-mode .lesson-tool-quiz {
   border-color: var(--app-palette-border);
   background: var(--app-palette-secondary);
-  color: var(--app-palette-text);
+  color: var(--app-palette-on-secondary);
   text-shadow: none;
   box-shadow: 0 12px 26px var(--app-palette-shadow);
 }
@@ -325,8 +327,8 @@ html.android-webview .modal-card {
 }
 
 html.android-webview #timer {
-  background: var(--app-palette-accent) !important;
-  color: var(--app-palette-on-secondary);
+  background: var(--app-palette-primary) !important; /* Override the legacy live timer's inline emphasis. */
+  color: var(--app-palette-on-primary);
 }
 
 html.android-webview .progress-dot--current,
@@ -388,7 +390,7 @@ html.android-webview .study-explanation-play {
 }
 
 html.android-webview .audio-player-icon {
-  filter: brightness(0);
+  filter: brightness(0) invert(1);
 }
 
 html.android-webview .quiz-audio-progress,
@@ -422,10 +424,10 @@ html.android-webview body.study-page {
 
 html.android-webview .study-header,
 html.android-webview .font-library-header {
-  border-bottom-color: var(--app-palette-accent);
-  background: var(--app-palette-primary);
-  color: var(--app-palette-on-primary);
-  box-shadow: 0 5px 20px var(--app-palette-shadow);
+  border-bottom-color: var(--app-palette-divider);
+  background: var(--app-palette-background);
+  color: var(--app-palette-text);
+  box-shadow: none;
 }
 
 html.android-webview .study-heading small,
@@ -522,18 +524,18 @@ html.android-webview .magic-dictionary-screen {
 }
 
 html.android-webview .magic-dictionary-header {
-  border-bottom-color: var(--app-palette-accent);
-  background: var(--app-palette-primary);
+  border-bottom-color: var(--app-palette-divider);
+  background: var(--app-palette-background);
 }
 
 html.android-webview .magic-dictionary-header h1 {
-  color: var(--app-palette-on-primary);
+  color: var(--app-palette-text);
 }
 
 html.android-webview .magic-dictionary-language-badge {
   border-color: color-mix(in srgb, var(--app-palette-surface) 72%, white);
   background: rgba(255, 255, 255, 0.14);
-  color: var(--app-palette-on-primary);
+  color: var(--app-palette-text);
 }
 
 html.android-webview .magic-dictionary-language-badge i,
@@ -542,11 +544,9 @@ html.android-webview .magic-dictionary-eyebrow i {
 }
 
 html.android-webview .magic-dictionary-overview {
-  color: var(--app-palette-on-primary);
+  color: var(--app-palette-text);
   border-color: var(--app-palette-primary-line);
-  background:
-    radial-gradient(circle at 91% 12%, color-mix(in srgb, var(--app-palette-surface) 42%, transparent), transparent 32%),
-    var(--gradient-dark);
+  background: var(--app-palette-paper);
   box-shadow: 0 20px 42px var(--app-palette-shadow);
 }
 
@@ -591,12 +591,12 @@ html.android-webview #learningInsightsScreen {
 }
 
 html.android-webview #learningInsightsScreen .li-topbar {
-  border-bottom-color: var(--app-palette-accent);
-  background: var(--app-palette-primary);
+  border-bottom-color: var(--app-palette-divider);
+  background: var(--app-palette-background);
 }
 
 html.android-webview #learningInsightsScreen .li-brand strong {
-  color: var(--app-palette-on-primary);
+  color: var(--app-palette-text);
 }
 
 html.android-webview #learningInsightsScreen .li-brand small {
@@ -624,13 +624,13 @@ html.android-webview #learningInsightsScreen .li-review-now .li-bangla-title {
 }
 
 html.android-webview #learningInsightsScreen .li-primary-action.d-btn img {
-  filter: brightness(0);
+  filter: brightness(0) invert(1);
 }
 
 html.android-webview #learningInsightsScreen .li-review-now {
   border-color: var(--app-palette-primary-strong);
-  background: var(--gradient-dark);
-  color: var(--app-palette-on-primary);
+  background: var(--app-palette-paper);
+  color: var(--app-palette-text);
 }
 
 html.android-webview #learningInsightsScreen .li-chapter-cell.is-selected {
@@ -647,9 +647,9 @@ html.android-webview body.audio-admin-page {
 }
 
 html.android-webview .privacy-header {
-  border-bottom-color: var(--app-palette-accent);
-  background: var(--app-palette-primary);
-  color: var(--app-palette-on-primary);
+  border-bottom-color: var(--app-palette-divider);
+  background: var(--app-palette-background);
+  color: var(--app-palette-text);
 }
 
 html.android-webview .privacy-brand-copy small,
@@ -697,6 +697,32 @@ html.android-webview .audio-admin-filter.is-open .audio-admin-filter-trigger {
   border-color: var(--app-palette-primary-strong);
   box-shadow: 0 0 0 3px var(--app-palette-primary-soft);
 }
+
+/* Section-only top bars: shared native variant, never regular browser geometry. */
+html.android-webview .app-header { height: 48px; }
+html.android-webview body.app-mode { padding-top: 48px; }
+html.android-webview body.app-mode #home { height: calc(100dvh - 48px); }
+html.android-webview :is(.profile-btn, .admin-entry) { top: calc(env(safe-area-inset-top, 0px) + 2px); }
+html.android-webview :is(.study-header, .font-library-header, .magic-dictionary-header) {
+  min-height: 52px; padding: 4px 12px; gap: 10px;
+  border-bottom: 1px solid var(--app-palette-divider); backdrop-filter: none;
+}
+html.android-webview :is(.study-heading, .font-library-heading) :is(small, p),
+html.android-webview .magic-dictionary-header-title > small,
+html.android-webview #learningInsightsScreen .li-brand small { display: none; }
+html.android-webview :is(.study-heading, .font-library-heading) h1,
+html.android-webview .magic-dictionary-header h1 { margin: 0; font-size: 18px; line-height: 1.2; color: var(--app-palette-text); }
+html.android-webview :is(.study-icon-button, .font-library-back) { width: 44px; height: 44px; border-radius: 12px; box-shadow: none; }
+html.android-webview #learningInsightsScreen { --li-topbar-height: 52px; }
+html.android-webview #learningInsightsScreen .li-topbar { height: calc(var(--li-topbar-height) + var(--li-safe-top)); }
+html.android-webview #learningInsightsScreen .li-topbar .d-btn { min-height: 44px; }
+html.android-webview #learningInsightsScreen .li-brand img { width: 28px; height: 28px; }
+html.android-webview #learningInsightsScreen .li-brand strong { font-size: 18px; }
+html.android-webview .admin-topbar { min-height: 52px; margin-bottom: 12px; }
+html.android-webview .admin-title small { display: none; }
+html.android-webview .admin-title span { font-size: 18px; line-height: 1.2; }
+html.android-webview .admin-title .admin-profile-logo { width: 28px; height: 28px; box-shadow: none; }
+html.android-webview .admin-icon-btn { box-shadow: none; border-radius: 12px; }
 
 @media (forced-colors: active) {
   html.android-webview :where(a, button, input, select, textarea):focus-visible {
