@@ -100,6 +100,28 @@ test("roundabout alternates direction and includes a slower double turn with qui
   assert.match(css, /button:focus-visible \.native-label-rail \{ animation-play-state: paused/u);
 });
 
+test("six supplied action icons stay outside the animated label rail and ship offline", () => {
+  const template = read("index.html").split('<template id="androidStudyTemplate">')[1].split('</template>')[0];
+  const worker = read("service-worker.js");
+  for (const [action, name] of [["study","study_quiz.svg"],["quiz","do_quiz.svg"],["dictionary","dictionary.svg"],["exam","exam.svg"],["statistics","Statistics.png"],["errors","errors.png"]]) {
+    const button = template.split(`data-native-action="${action}"`)[1].split('</button>')[0];
+    assert.ok(button.includes(`src="/icons/${name}"`));
+    assert.match(button, /alt="" aria-hidden="true" draggable="false"/u);
+    assert.ok(worker.includes(`/icons/${name}`));
+    const bytes = readFileSync(new URL(`../icons/${name}`, import.meta.url));
+    if (name.endsWith('.svg')) {
+      assert.match(bytes.toString(), /viewBox="0 0 24 24"/u);
+      assert.doesNotMatch(bytes.toString(), /<script|<foreignObject|https?:\/\/(?!www\.w3\.org)/u);
+    } else assert.equal(bytes.subarray(1,4).toString(), 'PNG');
+  }
+  const js = read("android-study-shell.js");
+  assert.match(js, /button\.querySelector\("\.native-action-icon"\)/u);
+  assert.match(js, /button\.replaceChildren\(accessible, \.\.\.\(icon \? \[icon\] : \[\]\), viewport\)/u);
+  const css = read("android-study-shell.css");
+  assert.match(css, /\.native-action-icon \{[^}]*width: 24px; height: 24px;[^}]*pointer-events: none/u);
+  assert.match(css, /\.native-action-icon\.is-symbol \{[^}]*filter: brightness\(0\) invert\(1\)/u);
+});
+
 test("title-to-artwork presentation is bounded, interruptible and selection-versioned", () => {
   const js = read("android-study-shell.js");
   assert.match(js, /1800 - \(performance\.now\(\) - started\)/u);
@@ -131,7 +153,7 @@ test("all 25 mapped All Books covers exist as lightweight WebP assets", () => {
 test("changed native files are versioned together in the offline shell", () => {
   const index = read("index.html");
   const worker = read("service-worker.js");
-  for (const asset of ["android-study-shell.css?v=8-square-cards", "android-study-shell.js?v=7-right-bilingual"]) {
+  for (const asset of ["android-study-shell.css?v=9-action-icons", "android-study-shell.js?v=8-action-icons"]) {
     assert.ok(index.includes(asset));
     assert.ok(worker.includes(asset));
   }

@@ -72,6 +72,7 @@ function initialize() {
   // only the decorative visual copy moves, never the target or its event owner.
   chapters.querySelectorAll("[data-native-bn]").forEach(button => {
     const original = button.textContent.trim();
+    const icon = button.querySelector(".native-action-icon");
     const language = button.lang || "it";
     button.removeAttribute("lang");
     const textSpan = (text, lang) => { const span = doc.createElement("span"); span.textContent = text; span.lang = lang; return span; };
@@ -85,7 +86,8 @@ function initialize() {
     rail.className = "native-label-rail";
     rail.append(textSpan(original, language), textSpan(button.dataset.nativeBn, "bn"), textSpan(original, language));
     viewport.append(rail);
-    button.replaceChildren(accessible, viewport);
+    // Keep the supplied decorative icon outside the moving language rail.
+    button.replaceChildren(accessible, ...(icon ? [icon] : []), viewport);
   });
   for (let i = 0; i < 25; i++) {
     const label = doc.createElementNS("http://www.w3.org/2000/svg", "text");

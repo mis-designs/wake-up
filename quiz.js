@@ -563,6 +563,11 @@ let quiz = [];
 let answers = [];
 let current = 0;
 let quizMode = getRequestedQuizMode();
+function syncNativeQuizSection() {
+  if (!document.documentElement.classList.contains("android-webview")) return;
+  document.documentElement.dataset.nativeQuizSection = isExamQuizMode() ? "exam" : "quiz";
+}
+syncNativeQuizSection();
 setQuizTitle(`MagicBook | ${getQuizModeConfig(quizMode).title || "Quiz"}`);
 let quizDurationMinutes = getQuizModeConfig(quizMode).timerMinutes;
 let time = quizDurationMinutes * 60;
@@ -2293,6 +2298,7 @@ async function loadQuiz() {
     const chapters = routeInfo.chapters || "";
     if (TRIAL_MODE && !TRIAL_ALLOWED_CHAPTERS.has(chapters)) throw new Error("trial_chapter_forbidden");
     quizMode = getRequestedQuizMode();
+    syncNativeQuizSection();
     const url = buildQuizApiUrl("getQuiz", { chapters, mode: quizMode === "default" ? "" : quizMode });
     const data = await fetchQuizJson(url, { cache: "no-store" });
 

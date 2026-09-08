@@ -112,6 +112,9 @@
   }
 
   function iconForMode(mode) {
+    if (document.documentElement.classList.contains("android-webview")) {
+      return mode === "errors" ? "icons/errors.png" : "icons/Statistics.png";
+    }
     return mode === "errors" ? "icons/errori-patente.png" : "icons/statistiche-patente.png";
   }
 
@@ -205,8 +208,8 @@
         <button class="li-refresh d-btn d-btn-ghost d-btn-sm" type="button" data-li-action="refresh" onclick="MagicBookLearningInsights.handleClick(event)" aria-label="${state.isRefreshing ? "Aggiornamento in corso" : "Aggiorna i dati"}" aria-busy="${state.isRefreshing}" ${state.isRefreshing ? 'aria-disabled="true"' : ""}><span class="li-refresh-icon" aria-hidden="true"><img src="assets/admin/update.png" alt=""></span><span class="li-refresh-label">${state.isRefreshing ? "Aggiorno" : "Aggiorna"}</span></button>
       </header>
       <nav class="li-route-nav" aria-label="Statistiche e ripasso">
-        <button class="d-btn d-btn-ghost d-btn-sm" type="button" data-li-route="statistics" onclick="MagicBookLearningInsights.handleClick(event)" ${!isErrors ? 'aria-current="page"' : ""}><img src="icons/statistiche-patente.png" alt=""><span>Statistiche</span></button>
-        <button class="d-btn d-btn-ghost d-btn-sm" type="button" data-li-route="errors" onclick="MagicBookLearningInsights.handleClick(event)" ${isErrors ? 'aria-current="page"' : ""}><img src="icons/errori-patente.png" alt=""><span>Errori</span></button>
+        <button class="d-btn d-btn-ghost d-btn-sm" type="button" data-li-route="statistics" onclick="MagicBookLearningInsights.handleClick(event)" ${!isErrors ? 'aria-current="page"' : ""}><img src="${iconForMode("statistics")}" alt=""><span>Statistiche</span></button>
+        <button class="d-btn d-btn-ghost d-btn-sm" type="button" data-li-route="errors" onclick="MagicBookLearningInsights.handleClick(event)" ${isErrors ? 'aria-current="page"' : ""}><img src="${iconForMode("errors")}" alt=""><span>Errori</span></button>
       </nav>`;
   }
 

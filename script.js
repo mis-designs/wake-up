@@ -3927,7 +3927,8 @@ function showAppHeader(context = "chapter", param = null) {
 
   if (context === "exam") {
     if (nameEl) nameEl.textContent = "Esame Finale";
-    if (iconEl) iconEl.src = "icons/true.png";
+    if (iconEl) iconEl.src = document.documentElement.classList.contains("android-webview")
+      ? "icons/exam.svg" : "icons/true.png";
     backBtn?.classList.remove("back-hidden");
     return;
   }

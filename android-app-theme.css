@@ -724,6 +724,76 @@ html.android-webview .admin-title span { font-size: 18px; line-height: 1.2; }
 html.android-webview .admin-title .admin-profile-logo { width: 28px; height: 28px; box-shadow: none; }
 html.android-webview .admin-icon-btn { box-shadow: none; border-radius: 12px; }
 
+/* Reuse the chapter-action symbols in section chrome. Empty mask content is
+   decorative; the existing title remains the only accessible heading. */
+html.android-webview .study-heading { --section-icon: url("/icons/study_quiz.svg"); }
+html.android-webview .magic-dictionary-header-title { --section-icon: url("/icons/dictionary.svg"); }
+html.android-webview .top-bar h2,
+html.android-webview #quizModeOverlay .qms-title { --section-icon: url("/icons/do_quiz.svg"); }
+html.android-webview[data-native-quiz-section="exam"] .top-bar h2,
+html.android-webview #examModeOverlay .qms-title { --section-icon: url("/icons/exam.svg"); }
+
+html.android-webview :is(.study-heading, .magic-dictionary-header-title, .top-bar h2, .qms-title) {
+  position: relative;
+  min-width: 0;
+  padding-inline-start: 28px;
+}
+html.android-webview :is(.study-heading, .magic-dictionary-header-title, .top-bar h2, .qms-title)::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  transform: translateY(-50%);
+  background-color: currentColor;
+  -webkit-mask: var(--section-icon) center / contain no-repeat;
+  mask: var(--section-icon) center / contain no-repeat;
+  pointer-events: none;
+}
+html.android-webview :is(.study-heading, .magic-dictionary-header-title, .qms-title) {
+  color: var(--app-palette-text);
+}
+html.android-webview .magic-dictionary-header h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Reserve separate columns: the new symbol must never cover timer or A-/A+. */
+html.android-webview .top-bar {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 6px;
+}
+html.android-webview .top-bar h2 {
+  left: auto;
+  transform: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: start;
+  font-size: 18px;
+  color: var(--app-palette-text);
+}
+html.android-webview .top-bar .exit-btn { margin-right: 0; }
+html.android-webview .qms-header {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 10px;
+}
+html.android-webview .qms-back { width: 44px; height: 44px; }
+html.android-webview .qms-title {
+  left: auto;
+  transform: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html.android-webview #learningInsightsScreen :is(.li-brand, .li-route-nav) img {
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
 @media (forced-colors: active) {
   html.android-webview :where(a, button, input, select, textarea):focus-visible {
     outline-color: Highlight;

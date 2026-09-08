@@ -253,16 +253,23 @@ html.android-webview .native-rotate-guide.is-down .native-rotate-cue { transform
 html.android-webview .native-dial.is-dragging .native-rotate-guide,
 html.android-webview .native-chapters[data-rotary-used] .native-rotate-guide { filter: opacity(0); animation-play-state: paused; }
 html.android-webview .native-actions {
-  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 16px;
-  width: min(80%, 360px); margin: 12px auto 8px;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 12px;
+  width: min(90%, 380px); margin: 12px auto 8px;
 }
 html.android-webview .native-actions > button {
-  min-height: 48px; min-width: 0; padding: 0 8px; border: 1px solid transparent; border-radius: 11px;
+  display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: center; column-gap: 6px;
+  min-height: 48px; min-width: 0; padding: 0 4px; border: 1px solid transparent; border-radius: 11px;
   background: var(--native-ink); color: var(--app-palette-paper);
   font: 400 clamp(14px, 3.8vw, 19px)/1.1 var(--native-display); text-transform: uppercase;
 }
 html.android-webview .native-actions > button.is-blue { background: var(--native-blue); }
 html.android-webview .native-actions > .native-learning-action { min-height: 64px; }
+html.android-webview .native-action-icon {
+  display: block; justify-self: center; width: 24px; height: 24px; object-fit: contain;
+  pointer-events: none; user-select: none;
+}
+/* Recolor only the monochrome SVGs; preserve the supplied PNG artwork. */
+html.android-webview .native-action-icon.is-symbol { width: 20px; height: 20px; filter: brightness(0) invert(1); }
 html.android-webview .native-label-window { display: block; width: 100%; height: 40px; overflow: clip; pointer-events: none; font: inherit; }
 html.android-webview .native-label-rail { display: block; font: inherit; }
 html.android-webview .native-label-rail > span { display: grid; place-items: center; height: 40px; white-space: nowrap; font: inherit; }
@@ -277,7 +284,7 @@ html.android-webview .native-road-divider .native-roundabout { width: 28px; heig
    when zoom or an unusually short window exceeds this minimum footprint. */
 @media (max-height: 620px) {
   html.android-webview .native-chapters-header { padding-block: 3px; }
-  html.android-webview .native-actions { margin-block: 8px; gap: 6px 16px; }
+  html.android-webview .native-actions { margin-block: 8px; gap: 6px 12px; }
   html.android-webview .native-actions > button { min-height: 44px; padding-block: 0; }
   html.android-webview .native-actions > .native-learning-action { min-height: 52px; }
   html.android-webview .native-road-divider { grid-template-columns: 1fr 24px 1fr; }
