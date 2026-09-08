@@ -217,7 +217,7 @@ html.android-webview .native-chapter-art {
 html.android-webview .native-chapter-art img {
   /* Full source card: no zoom/crop, including the original artwork footer. */
   display: block; width: auto; height: auto; max-width: 100%; max-height: 100%;
-  object-fit: contain; border-radius: 16px;
+  object-fit: contain; border-radius: 0;
 }
 html.android-webview .native-chapter-preview[data-phase="image"] #nativeChapterTitle { opacity: 0; transform: translateY(-5px); }
 html.android-webview .native-chapter-preview[data-phase="image"] .native-chapter-art { opacity: 1; transform: translateY(0); }

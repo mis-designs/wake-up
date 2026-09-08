@@ -41,7 +41,7 @@ test("transparent numbered arc uses one blue selected value beside a stable titl
   assert.match(css, /\.native-dial-face text\.is-selected \{ fill: var\(--native-blue\)/u);
   assert.match(css, /\.native-dial \{[^}]*background: transparent/u);
   assert.match(css, /\.native-chapter-detail\s*\{[^}]*left: 6%; right: 54%/u);
-  assert.match(css, /object-fit: contain; border-radius: 16px/u);
+  assert.match(css, /object-fit: contain; border-radius: 0/u);
   assert.match(css, /--native-title-size/u);
   assert.match(css, /font-family: "El Messiri"/u);
   assert.match(read("android-study-shell.js"), /chapterTitle\.scrollHeight > chapterTitle\.clientHeight/u);
@@ -131,7 +131,7 @@ test("all 25 mapped All Books covers exist as lightweight WebP assets", () => {
 test("changed native files are versioned together in the offline shell", () => {
   const index = read("index.html");
   const worker = read("service-worker.js");
-  for (const asset of ["android-study-shell.css?v=7-right-bilingual", "android-study-shell.js?v=7-right-bilingual"]) {
+  for (const asset of ["android-study-shell.css?v=8-square-cards", "android-study-shell.js?v=7-right-bilingual"]) {
     assert.ok(index.includes(asset));
     assert.ok(worker.includes(asset));
   }

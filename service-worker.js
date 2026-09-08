@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v171-right-bilingual";
+const CACHE_NAME = "magicbook-pwa-v172-square-cards";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -17,7 +17,7 @@ const STATIC_ASSETS = [
   "/mobile-experience.css?v=4-admin-scroll",
   "/android-webview-mode.js?v=6-pearl-blue",
   "/android-app-theme.css?v=6-pearl-blue",
-  "/android-study-shell.css?v=7-right-bilingual",
+  "/android-study-shell.css?v=8-square-cards",
   "/android-study-shell.js?v=7-right-bilingual",
   "/android-rotary-model.mjs?v=7-right-bilingual",
   "/assets/native-chapter-covers.json",
