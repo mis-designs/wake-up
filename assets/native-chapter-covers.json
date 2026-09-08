@@ -1,4 +1,31 @@
 {
-  "description": "Approved chapter photographs, keyed 01–25. Awaiting the original chapter-image folder; do not substitute protected book pages or unrelated quiz figures.",
-  "covers": {}
+  "description": "Existing All Books public Quiz Book cards, reused for the Android chapter preview at the owner's request. Chapter order verified against QUIZBOOK_CHAPTERS and Magic Book CHAPTER_TITLES; UI shows the illustration area only.",
+  "source": "All Books / quiz_cards / Capitolo_01.png … Capitolo_25.png",
+  "covers": {
+    "01": "/assets/chapter-covers/chapter-01.webp",
+    "02": "/assets/chapter-covers/chapter-02.webp",
+    "03": "/assets/chapter-covers/chapter-03.webp",
+    "04": "/assets/chapter-covers/chapter-04.webp",
+    "05": "/assets/chapter-covers/chapter-05.webp",
+    "06": "/assets/chapter-covers/chapter-06.webp",
+    "07": "/assets/chapter-covers/chapter-07.webp",
+    "08": "/assets/chapter-covers/chapter-08.webp",
+    "09": "/assets/chapter-covers/chapter-09.webp",
+    "10": "/assets/chapter-covers/chapter-10.webp",
+    "11": "/assets/chapter-covers/chapter-11.webp",
+    "12": "/assets/chapter-covers/chapter-12.webp",
+    "13": "/assets/chapter-covers/chapter-13.webp",
+    "14": "/assets/chapter-covers/chapter-14.webp",
+    "15": "/assets/chapter-covers/chapter-15.webp",
+    "16": "/assets/chapter-covers/chapter-16.webp",
+    "17": "/assets/chapter-covers/chapter-17.webp",
+    "18": "/assets/chapter-covers/chapter-18.webp",
+    "19": "/assets/chapter-covers/chapter-19.webp",
+    "20": "/assets/chapter-covers/chapter-20.webp",
+    "21": "/assets/chapter-covers/chapter-21.webp",
+    "22": "/assets/chapter-covers/chapter-22.webp",
+    "23": "/assets/chapter-covers/chapter-23.webp",
+    "24": "/assets/chapter-covers/chapter-24.webp",
+    "25": "/assets/chapter-covers/chapter-25.webp"
+  }
 }

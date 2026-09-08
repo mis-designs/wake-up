@@ -1,4 +1,4 @@
-import { ChapterDial, clampChapter, chapterAtAngle, dialLabelPosition, homeGreetings, progressValue } from "./android-rotary-model.mjs?v=4-readout";
+import { ChapterDial, clampChapter, chapterAtAngle, dialLabelPosition, homeGreetings, progressValue } from "./android-rotary-model.mjs?v=5-card-cues";
 
 // Runtime gate is the native shell marker, not screen size or standalone/PWA mode.
 const doc = document;

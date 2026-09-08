@@ -23,6 +23,6 @@ test("the MagicBook action uses the green horizontal OPEN design", () => {
 
 test("the OPEN cue ships in a fresh PWA cache", () => {
   assert.match(index, /style\.css\?v=72-solid-profile-controls/u);
-  assert.match(worker, /magicbook-pwa-v168-inner-readout/u);
+  assert.match(worker, /magicbook-pwa-v169-card-cues/u);
   assert.match(worker, /style\.css\?v=72-solid-profile-controls/u);
 });

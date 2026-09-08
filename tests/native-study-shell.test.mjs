@@ -38,13 +38,14 @@ test("chapter title adapts inside fixed geometry; black wheel separates outer nu
   assert.match(template, /<circle class="native-dial-orbit" cx="150" cy="150" r="100"\//u);
   assert.match(template, /id="nativeChapterDial"[^]*id="nativeSelectedNumber"[^]*<\/div>\s*<button id="nativeOpenChapter"/u);
   assert.match(css, /\.native-dial-orbit\s*\{[^}]*fill: none;[^}]*stroke: var\(--native-line\)/u);
-  assert.match(css, /\.native-selected-number\s*\{[^}]*color: var\(--native-canvas\); pointer-events: none/u);
+  assert.match(css, /\.native-selected-number\s*\{[^}]*color: var\(--native-wheel\); pointer-events: none/u);
+  assert.match(css, /\.native-selected-number\s*\{[^}]*aspect-ratio: 1;[^}]*border-radius: 35%; background: var\(--native-canvas\)/u);
   assert.match(css, /#nativeOpenChapter\s*\{[^}]*top: 50%; transform: translate\(-50%, -50%\)/u);
   assert.doesNotMatch(read("android-study-shell.js"), /label\.style\.opacity|label\.style\.display = i \+ 1 === model\.selected/u);
   assert.match(css, /\.native-chapter-caption\s*\{[^}]*height: 60px;/u);
   assert.match(css, /--native-title-size/u);
   assert.match(css, /--native-wheel: #000000/u);
-  assert.match(css, /@media \(max-height: 620px\)\s*\{\s*html\.android-webview \.native-selected-number \{ font-size: 28px; \}/u);
+  assert.match(css, /font: 400 clamp\(22px, 4dvh, 32px\)/u);
   assert.match(read("android-study-shell.js"), /chapterTitle\.scrollHeight > chapterTitle\.clientHeight/u);
 });
 
@@ -58,15 +59,34 @@ test("provided gesture assets ship offline and never own pointer input", () => {
   }
   assert.match(read("android-study-shell.css"), /\.native-rotate-cue\s*\{[^}]*pointer-events: none/u);
   assert.match(read("android-study-shell.css"), /\.native-tap-cue\s*\{[^}]*pointer-events: none/u);
+  assert.match(read("android-study-shell.css"), /\.native-rotate-guide\s*\{[^}]*inset: -28px;[^}]*pointer-events: none/u);
+  assert.match(read("android-study-shell.css"), /@keyframes native-rotate-up[^\n]*rotate\(18deg\)[^\n]*rotate\(32deg\)/u);
+});
+
+test("all 25 mapped All Books covers exist as lightweight WebP assets", () => {
+  const manifest = JSON.parse(read("assets/native-chapter-covers.json"));
+  assert.equal(Object.keys(manifest.covers).length, 25);
+  let totalBytes = 0;
+  for (let n = 1; n <= 25; n++) {
+    const chapter = String(n).padStart(2, "0");
+    const path = `/assets/chapter-covers/chapter-${chapter}.webp`;
+    assert.equal(manifest.covers[chapter], path);
+    const bytes = readFileSync(new URL(`..${path}`, import.meta.url));
+    assert.equal(bytes.subarray(8, 12).toString(), "WEBP");
+    assert.ok(bytes.length < 150000);
+    totalBytes += bytes.length;
+  }
+  assert.ok(totalBytes < 2 * 1024 * 1024);
+  assert.match(read("android-study-shell.js"), /if \(version !== imageVersion\) return/u);
 });
 
 test("changed native files are versioned together in the offline shell", () => {
   const index = read("index.html");
   const worker = read("service-worker.js");
-  for (const asset of ["android-study-shell.css?v=4-readout", "android-study-shell.js?v=4-readout"]) {
+  for (const asset of ["android-study-shell.css?v=5-card-cues", "android-study-shell.js?v=5-card-cues"]) {
     assert.ok(index.includes(asset));
     assert.ok(worker.includes(asset));
   }
-  assert.ok(worker.includes("android-rotary-model.mjs?v=4-readout"));
-  assert.ok(read("android-study-shell.js").includes("android-rotary-model.mjs?v=4-readout"));
+  assert.ok(worker.includes("android-rotary-model.mjs?v=5-card-cues"));
+  assert.ok(read("android-study-shell.js").includes("android-rotary-model.mjs?v=5-card-cues"));
 });
