@@ -28,6 +28,7 @@
 | Native bilingual action labels | `android-study-shell.js`, `android-study-shell.css` | Existing six action buttons, owner-supplied icons and exact Bangla strings | Stationary decorative icon beside fixed40px original/Bangla/original rail; white SVGs, original-color PNGs; static bilingual reduced-motion/pause | Icon assets/cache, no icon or target movement, six translations, font, 320px fit and motion preferences |
 | Native traffic divider motion | `android-study-shell.css` | Existing supplied blue roundabout SVG | Variable clockwise/counterclockwise and occasional double turns; lines stay still | Sampled angular travel, reduced motion and explicit pause |
 | Native section icons | `android-app-theme.css`, existing `script.js`/`quiz.js`/`src/learning-insights.js` header owners | Same six assets as native chapter actions; active Quiz/Exam mode | Decorative title masks for SVGs; existing image slots for PNGs and Exam PDF; original browser assets unchanged | Six mappings, native/browser gate, narrow header geometry, Quiz/Exam switching, offline assets and missing-image stability |
+| Native chapter spacing | `android-study-shell.css`, inert `#androidStudyTemplate` | Existing chapter selector, six actions and dock | One bounded selection/action group; equal48px (compact44px) targets; start-aligned labels beside stationary icons; quieter divider | Stable25-title geometry, complete cards, Latin/Bangla fit,320px portrait and short-landscape scroll above dock |
 
 ## Feature ownership
 

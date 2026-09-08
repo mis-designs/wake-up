@@ -15,7 +15,8 @@ test("installed Home omits instructional/pause copy; motion control belongs to P
 test("installed content bounds reserve the actual floating dock, not just padding behind it", () => {
   const css = read("android-study-shell.css");
   assert.match(css, /height: calc\(100dvh - var\(--native-dock-reserve\)\)/u);
-  assert.match(css, /grid-template-rows: auto minmax\(210px, 1fr\) auto/u);
+  assert.match(css, /grid-template-rows: minmax\(210px, 1fr\) auto/u);
+  assert.match(css, /\.native-chapter-workspace \{[^}]*min-height: 420px;[^}]*margin-block: auto/u);
   assert.match(css, /prefers-reduced-motion: reduce/u);
   const js = read("android-study-shell.js");
   assert.match(js, /new ResizeObserver\(syncDockSpace\)\.observe\(dock\)/u);
@@ -118,8 +119,20 @@ test("six supplied action icons stay outside the animated label rail and ship of
   assert.match(js, /button\.querySelector\("\.native-action-icon"\)/u);
   assert.match(js, /button\.replaceChildren\(accessible, \.\.\.\(icon \? \[icon\] : \[\]\), viewport\)/u);
   const css = read("android-study-shell.css");
-  assert.match(css, /\.native-action-icon \{[^}]*width: 24px; height: 24px;[^}]*pointer-events: none/u);
+  assert.match(css, /\.native-action-icon \{[^}]*width: 22px; height: 22px;[^}]*pointer-events: none/u);
   assert.match(css, /\.native-action-icon\.is-symbol \{[^}]*filter: brightness\(0\) invert\(1\)/u);
+});
+
+test("native chapter actions share one compact rhythm with labels beside their icons", () => {
+  const css = read("android-study-shell.css");
+  const html = read("index.html").split('<template id="androidStudyTemplate">')[1].split('</template>')[0];
+  assert.match(html, /class="native-chapter-workspace"[^]*class="native-orbit-stage"[^]*class="native-actions"/u);
+  assert.match(css, /\.native-actions \{[^}]*width: min\(88%, 380px\)/u);
+  assert.match(css, /\.native-actions > button \{[^}]*grid-template-columns: 22px minmax\(0, 1fr\);[^}]*column-gap: 6px;[^}]*min-height: 48px/u);
+  assert.doesNotMatch(css, /\.native-learning-action\s*\{[^}]*min-height/u);
+  assert.match(css, /\.native-label-rail > span \{[^}]*justify-items: start;[^}]*height: 40px/u);
+  assert.match(css, /\.native-road-divider \.native-roundabout \{ width: 22px; height: 22px/u);
+  assert.match(css, /\.native-road-divider img:not\(\.native-roundabout\) \{ opacity: \.45/u);
 });
 
 test("title-to-artwork presentation is bounded, interruptible and selection-versioned", () => {
@@ -153,7 +166,7 @@ test("all 25 mapped All Books covers exist as lightweight WebP assets", () => {
 test("changed native files are versioned together in the offline shell", () => {
   const index = read("index.html");
   const worker = read("service-worker.js");
-  for (const asset of ["android-study-shell.css?v=9-action-icons", "android-study-shell.js?v=8-action-icons"]) {
+  for (const asset of ["android-study-shell.css?v=10-balanced-chapters", "android-study-shell.js?v=8-action-icons"]) {
     assert.ok(index.includes(asset));
     assert.ok(worker.includes(asset));
   }
