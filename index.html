@@ -108,7 +108,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <link rel="stylesheet" href="src/learning-insights.css?v=9-card-spacing&ui=10">
 <link rel="stylesheet" href="mobile-experience.css?v=4-admin-scroll">
 <link rel="stylesheet" href="/android-app-theme.css?v=6-pearl-blue">
-<link rel="stylesheet" href="/android-study-shell.css?v=6-transparent">
+<link rel="stylesheet" href="/android-study-shell.css?v=7-right-bilingual">
 </head>
 <body>
 
@@ -707,7 +707,7 @@ gtag('config', 'G-C5JPY9HFHD', {
     </header>
     <div class="native-orbit-stage">
       <div id="nativeChapterDial" class="native-dial" role="slider" tabindex="0" aria-label="Capitolo" aria-valuemin="1" aria-valuemax="25" aria-valuenow="1" aria-orientation="vertical" aria-describedby="nativeDialHint">
-        <svg class="native-dial-face" viewBox="0 0 300 300" aria-hidden="true"><circle class="native-dial-orbit" cx="150" cy="150" r="100"/><g id="nativeDialNumbers"></g></svg>
+        <svg class="native-dial-face" viewBox="0 0 300 300" aria-hidden="true"><circle class="native-dial-orbit" cx="150" cy="150" r="100"/><g id="nativeDialNumbers"></g><circle id="nativeDialMarker" cx="50" cy="150" r="3"/></svg>
         <span class="native-rotate-guide is-up" aria-hidden="true"><img class="native-rotate-cue" src="/icons/Arrow%20bent%20upword%20icon.svg" alt="" width="22" height="26"></span>
         <span class="native-rotate-guide is-down" aria-hidden="true"><img class="native-rotate-cue" src="/icons/Arrow%20bent%20downward%20icon.svg" alt="" width="22" height="26"></span>
       </div>
@@ -716,18 +716,18 @@ gtag('config', 'G-C5JPY9HFHD', {
           <h2 id="nativeChapterTitle"></h2>
           <div class="native-chapter-art" aria-hidden="true"><img id="nativeChapterImage" alt="" decoding="async"></div>
         </div>
-        <button id="nativeOpenChapter" type="button" data-native-action="open" aria-label="Apri il capitolo selezionato">Vai</button>
       </div>
+      <div class="native-dial-interior"><button id="nativeOpenChapter" type="button" data-native-action="open" aria-label="Apri il capitolo selezionato">Vai</button></div>
     </div>
     <p id="nativeDialHint" class="native-sr-only">Ruota il selettore o tocca un numero sulla rotella. Con la tastiera usa le frecce, Home e Fine.</p>
     <div class="native-actions" aria-label="Studia ed esercitati">
-      <button type="button" data-native-action="study" lang="en">Study Quiz</button>
-      <button type="button" data-native-action="quiz" class="is-blue" lang="en">Do Quiz</button>
-      <button type="button" data-native-action="dictionary" class="is-blue" lang="en">Dictionary</button>
-      <button type="button" data-native-action="exam" lang="en">Exam</button>
+      <button type="button" data-native-action="study" data-native-bn="কুইজ পড়ুন" lang="en">Study Quiz</button>
+      <button type="button" data-native-action="quiz" data-native-bn="কুইজ করুন" class="is-blue" lang="en">Do Quiz</button>
+      <button type="button" data-native-action="dictionary" data-native-bn="শব্দার্থ" class="is-blue" lang="en">Dictionary</button>
+      <button type="button" data-native-action="exam" data-native-bn="কঠিন প্রশ্নগুলো" lang="en">Exam</button>
       <div class="native-road-divider" aria-hidden="true"><img src="/icons/native/lines_left_side.svg" alt=""><img class="native-roundabout" src="/icons/native/roudabout.svg" alt=""><img src="/icons/native/lines_right_side.svg" alt=""></div>
-      <button type="button" data-native-action="statistics" class="native-learning-action">Statistiche</button>
-      <button type="button" data-native-action="errors" class="native-learning-action">Errori</button>
+      <button type="button" data-native-action="statistics" data-native-bn="আমার অগ্রগতি" class="native-learning-action">Statistiche</button>
+      <button type="button" data-native-action="errors" data-native-bn="ভুলগুলো" class="native-learning-action">Errori</button>
     </div>
     <p id="nativeDialStatus" class="native-sr-only" role="status" aria-live="polite"></p>
   </section>
@@ -1298,6 +1298,6 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script src="learning-sync.js?v=2"></script>
 <script src="src/learning-insights.js?v=7-native-chrome&ui=9-intact-figures"></script>
 <script src="script.js?v=71-native-study"></script>
-<script type="module" src="android-study-shell.js?v=6-transparent"></script>
+<script type="module" src="android-study-shell.js?v=7-right-bilingual"></script>
 </body>
 </html>

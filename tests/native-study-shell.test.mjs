@@ -40,7 +40,8 @@ test("transparent numbered arc uses one blue selected value beside a stable titl
   assert.match(css, /\.native-dial-orbit\s*\{[^}]*fill: none;[^}]*stroke: var\(--app-palette-divider\)/u);
   assert.match(css, /\.native-dial-face text\.is-selected \{ fill: var\(--native-blue\)/u);
   assert.match(css, /\.native-dial \{[^}]*background: transparent/u);
-  assert.match(css, /\.native-chapter-detail\s*\{[^}]*grid-template-rows: minmax\(0, 1fr\) 44px/u);
+  assert.match(css, /\.native-chapter-detail\s*\{[^}]*left: 6%; right: 54%/u);
+  assert.match(css, /object-fit: contain; border-radius: 16px/u);
   assert.match(css, /--native-title-size/u);
   assert.match(css, /font-family: "El Messiri"/u);
   assert.match(read("android-study-shell.js"), /chapterTitle\.scrollHeight > chapterTitle\.clientHeight/u);
@@ -57,10 +58,46 @@ test("provided gesture assets ship offline and never own pointer input", () => {
   assert.match(read("android-study-shell.css"), /\.native-rotate-cue\s*\{[^}]*pointer-events: none/u);
   assert.match(read("android-study-shell.css"), /\.native-tap-cue\s*\{[^}]*pointer-events: none/u);
   assert.match(read("android-study-shell.css"), /\.native-rotate-guide\s*\{[^}]*inset: -20px;[^}]*pointer-events: none/u);
-  assert.match(read("android-study-shell.css"), /@keyframes native-rotate-up[^\n]*rotate\(-24deg\)[^\n]*rotate\(-40deg\)/u);
+  assert.match(read("android-study-shell.css"), /@keyframes native-rotate-up[^\n]*rotate\(24deg\)[^\n]*rotate\(40deg\)/u);
   assert.match(read("android-study-shell.css"), /native-book-tap 5s/u);
   assert.match(read("android-study-shell.css"), /native-rotate-up 3\.8s/u);
   assert.match(read("android-study-shell.css"), /filter: brightness\(0\) invert\(1\)/u);
+});
+
+test("right-hand wheel has a projected blue marker and a semantic blue launch button inside", () => {
+  const html = read("index.html").split('<template id="androidStudyTemplate">')[1].split('</template>')[0];
+  const css = read("android-study-shell.css");
+  assert.match(html, /id="nativeDialMarker"[^>]*cx="50"[^>]*cy="150"/u);
+  assert.match(html, /class="native-dial-interior"[^]*<button[^>]*id="nativeOpenChapter"/u);
+  assert.match(css, /\.native-dial \{ right: 0; transform: translate\(50%, -50%\)/u);
+  assert.match(css, /#nativeOpenChapter \{[^}]*left: 33\.333333%; top: 50%;[^}]*background: var\(--native-blue\); color: var\(--app-palette-on-primary\)/u);
+  assert.match(read("android-study-shell.js"), /dialLabelPosition\(model.selected, value, 100\)/u);
+});
+
+test("six bilingual action rails preserve labels, font roles and fixed target geometry", () => {
+  const html = read("index.html");
+  for (const label of ["কুইজ পড়ুন", "কুইজ করুন", "শব্দার্থ", "কঠিন প্রশ্নগুলো", "আমার অগ্রগতি", "ভুলগুলো"]) {
+    assert.ok(html.includes(`data-native-bn="${label}"`));
+  }
+  const js = read("android-study-shell.js");
+  assert.match(js, /viewport\.setAttribute\("aria-hidden", "true"\)/u);
+  assert.match(js, /accessible\.append\(textSpan\(original, language\)/u);
+  assert.match(js, /textSpan\(button\.dataset\.nativeBn, "bn"\)/u);
+  const css = read("android-study-shell.css");
+  assert.match(css, /\.native-label-window \{[^}]*height: 40px; overflow: clip/u);
+  assert.match(css, /\.native-label-rail > \[lang="bn"\][^}]*var\(--font-bn-support\)/u);
+  assert.match(css, /native-label-go-up 9\.2s/u);
+  assert.match(css, /@keyframes native-label-go-up \{ 0%, 30%[^\n]*36%, 72%[^\n]*78%, 100%/u);
+  assert.match(css, /\[data-native-motion-paused\] :is\(\.native-label-rail, \.native-roundabout\) \{ animation: none/u);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[^]*\.native-label-rail > span:last-child \{ display: none/u);
+});
+
+test("roundabout alternates direction and includes a slower double turn with quiet pauses", () => {
+  const css = read("android-study-shell.css");
+  assert.match(css, /native-roundabout-turn 40s/u);
+  assert.match(css, /@keyframes native-roundabout-turn[^\n]*rotate\(360deg\)[^\n]*rotate\(0\)[^\n]*rotate\(-720deg\)/u);
+  assert.match(css, /\[data-native-background\] :is\(\.native-label-rail, \.native-roundabout\)/u);
+  assert.match(css, /button:focus-visible \.native-label-rail \{ animation-play-state: paused/u);
 });
 
 test("title-to-artwork presentation is bounded, interruptible and selection-versioned", () => {
@@ -94,12 +131,12 @@ test("all 25 mapped All Books covers exist as lightweight WebP assets", () => {
 test("changed native files are versioned together in the offline shell", () => {
   const index = read("index.html");
   const worker = read("service-worker.js");
-  for (const asset of ["android-study-shell.css?v=6-transparent", "android-study-shell.js?v=6-transparent"]) {
+  for (const asset of ["android-study-shell.css?v=7-right-bilingual", "android-study-shell.js?v=7-right-bilingual"]) {
     assert.ok(index.includes(asset));
     assert.ok(worker.includes(asset));
   }
-  assert.ok(worker.includes("android-rotary-model.mjs?v=6-transparent"));
-  assert.ok(read("android-study-shell.js").includes("android-rotary-model.mjs?v=6-transparent"));
+  assert.ok(worker.includes("android-rotary-model.mjs?v=7-right-bilingual"));
+  assert.ok(read("android-study-shell.js").includes("android-rotary-model.mjs?v=7-right-bilingual"));
 });
 
 test("ornamental title font is self-hosted, licensed and cached with a remeasure after loading", () => {

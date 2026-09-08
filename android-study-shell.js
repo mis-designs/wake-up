@@ -1,4 +1,4 @@
-import { ChapterDial, clampChapter, chapterAtAngle, dialLabelPosition, homeGreetings, progressValue } from "./android-rotary-model.mjs?v=6-transparent";
+import { ChapterDial, clampChapter, chapterAtAngle, dialLabelPosition, homeGreetings, progressValue } from "./android-rotary-model.mjs?v=7-right-bilingual";
 
 // Runtime gate is the native shell marker, not screen size or standalone/PWA mode.
 const doc = document;
@@ -35,6 +35,7 @@ function initialize() {
   doc.getElementById("profilePanel")?.append(motionToggle);
   const dial = doc.getElementById("nativeChapterDial");
   const numbers = doc.getElementById("nativeDialNumbers");
+  const marker = doc.getElementById("nativeDialMarker");
   const chapterTitle = doc.getElementById("nativeChapterTitle");
   const image = doc.getElementById("nativeChapterImage");
   const preview = image.closest(".native-chapter-preview");
@@ -67,6 +68,25 @@ function initialize() {
   let suppressActionsUntil = 0;
   let covers = {};
   const canInteract = () => Boolean(screen && app.screen() === screen && !app.busy() && !doc.hidden);
+  // One fixed label rail per action. Both languages stay in the accessible name;
+  // only the decorative visual copy moves, never the target or its event owner.
+  chapters.querySelectorAll("[data-native-bn]").forEach(button => {
+    const original = button.textContent.trim();
+    const language = button.lang || "it";
+    button.removeAttribute("lang");
+    const textSpan = (text, lang) => { const span = doc.createElement("span"); span.textContent = text; span.lang = lang; return span; };
+    const accessible = doc.createElement("span");
+    accessible.className = "native-sr-only";
+    accessible.append(textSpan(original, language), doc.createTextNode(" · "), textSpan(button.dataset.nativeBn, "bn"));
+    const viewport = doc.createElement("span");
+    viewport.className = "native-label-window";
+    viewport.setAttribute("aria-hidden", "true");
+    const rail = doc.createElement("span");
+    rail.className = "native-label-rail";
+    rail.append(textSpan(original, language), textSpan(button.dataset.nativeBn, "bn"), textSpan(original, language));
+    viewport.append(rail);
+    button.replaceChildren(accessible, viewport);
+  });
   for (let i = 0; i < 25; i++) {
     const label = doc.createElementNS("http://www.w3.org/2000/svg", "text");
     label.textContent = String(i + 1).padStart(2, "0");
@@ -92,6 +112,9 @@ function initialize() {
 
   function draw(value = model.selected) {
     drawnPreview = value;
+    const point = dialLabelPosition(model.selected, value, 100);
+    marker.setAttribute("cx", point.x.toFixed(2));
+    marker.setAttribute("cy", point.y.toFixed(2));
     labels.forEach((label, i) => {
       const distance = i + 1 - value;
       const { x, y, rotation } = dialLabelPosition(i + 1, value);

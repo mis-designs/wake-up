@@ -49,7 +49,7 @@ test("popup presentation belongs to shared CSS and ships in the current cache", 
   assert.doesNotMatch(script, /icon\.textContent\s*=/u);
   assert.match(page, /style\.css\?v=72-solid-profile-controls/u);
   assert.match(page, /script\.js\?v=71-native-study/u);
-  assert.match(worker, /magicbook-pwa-v170-transparent/u);
+  assert.match(worker, /magicbook-pwa-v171-right-bilingual/u);
   assert.match(worker, /style\.css\?v=72-solid-profile-controls/u);
   assert.match(worker, /script\.js\?v=71-native-study/u);
 });

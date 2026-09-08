@@ -8,15 +8,15 @@ export function angleDelta(previous, next) {
 }
 
 // Labels follow the finger: lower chapters above the selection, higher below.
-export function dialLabelPosition(chapter, preview) {
+export function dialLabelPosition(chapter, preview, radius = 125) {
   const degrees = (chapter - preview) * DETENT_DEGREES;
   const radians = degrees * Math.PI / 180;
-  return { x: 150 + 125 * Math.cos(radians), y: 150 + 125 * Math.sin(radians), rotation: degrees };
+  return { x: 150 - radius * Math.cos(radians), y: 150 + radius * Math.sin(radians), rotation: -degrees };
 }
 
 // Tapping the dial's numbered arc is the pointer alternative to dragging.
 export function chapterAtAngle(selected, angle) {
-  return clampChapter(selected + angleDelta(0, angle) / DETENT_DEGREES);
+  return clampChapter(selected - angleDelta(180, angle) / DETENT_DEGREES);
 }
 
 export function homeGreetings(hour) {
@@ -41,7 +41,7 @@ export class ChapterDial {
   move(pointerId, angle) {
     const g = this.gesture;
     if (!g || g.pointerId !== pointerId) return null;
-    g.value -= angleDelta(g.angle, angle) / DETENT_DEGREES;
+    g.value += angleDelta(g.angle, angle) / DETENT_DEGREES;
     g.angle = angle;
     // A little resistance at either end, without accumulating dead travel.
     g.value = Math.max(MIN_CHAPTER - .3, Math.min(MAX_CHAPTER + .3, g.value));
