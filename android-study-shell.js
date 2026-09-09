@@ -38,6 +38,7 @@ function initialize() {
   const marker = doc.getElementById("nativeDialMarker");
   const chapterTitle = doc.getElementById("nativeChapterTitle");
   const image = doc.getElementById("nativeChapterImage");
+  const card = doc.getElementById("nativeChapterCard");
   const preview = image.closest(".native-chapter-preview");
   const status = doc.getElementById("nativeDialStatus");
   const progress = dock.querySelector("[role=progressbar]");
@@ -67,7 +68,11 @@ function initialize() {
   const lastFeedback = { selection: -1000, boundary: -1000 };
   let suppressActionsUntil = 0;
   let covers = {};
-  const canInteract = () => Boolean(screen && app.screen() === screen && !app.busy() && !doc.hidden);
+  const surfaceAvailable = () => Boolean(screen && app.screen() === screen && !doc.hidden && !(screen === "chapters" ? chapters : home).inert);
+  const canInteract = () => surfaceAvailable() && !app.busy();
+  // Selection is local: accept the first touch while the already-visible chapter
+  // screen finishes its entry animation, but never bypass the launch action gate.
+  const canRotate = () => screen === "chapters" && surfaceAvailable() && (!app.busy() || html.dataset.appTransition === "show-chapters");
   // One fixed label rail per action. Both languages stay in the accessible name;
   // only the decorative visual copy moves, never the target or its event owner.
   chapters.querySelectorAll("[data-native-bn]").forEach(button => {
@@ -93,6 +98,29 @@ function initialize() {
     if (icon) emblem.append(icon);
     button.replaceChildren(accessible, ...(icon ? [emblem] : []), viewport);
   });
+  // Visual contact only: some touch engines defer CSS :active until tap
+  // recognition. Never capture, prevent scrolling, delay or dispatch an action.
+  let actionPress = null;
+  function clearActionPress(pointerId) {
+    if (!actionPress || (pointerId !== undefined && actionPress.id !== pointerId)) return;
+    actionPress.button.removeAttribute("data-native-pressed");
+    actionPress = null;
+  }
+  chapters.addEventListener("pointerdown", event => {
+    const button = event.target.closest(".native-actions > button");
+    if (!button || button.disabled || !event.isPrimary || event.button !== 0 || !canInteract() || model.gesture) return;
+    if (actionPress && actionPress.type !== event.pointerType) return;
+    clearActionPress();
+    actionPress = { button, id: event.pointerId, type: event.pointerType, x: event.clientX, y: event.clientY };
+    button.setAttribute("data-native-pressed", "");
+  }, { passive: true });
+  window.addEventListener("pointermove", event => {
+    if (actionPress?.id !== event.pointerId) return;
+    if (!canInteract() || actionPress.button.disabled || Math.hypot(event.clientX - actionPress.x, event.clientY - actionPress.y) > 6) clearActionPress();
+  }, { capture: true, passive: true });
+  for (const type of ["pointerup", "pointercancel"]) window.addEventListener(type, event => clearActionPress(event.pointerId), true);
+  for (const type of ["blur", "resize"]) window.addEventListener(type, () => clearActionPress());
+  new MutationObserver(() => { if (app.busy()) clearActionPress(); }).observe(html, { attributes: true, attributeFilter: ["data-app-transition"] });
   for (let i = 0; i < 25; i++) {
     const label = doc.createElementNS("http://www.w3.org/2000/svg", "text");
     label.textContent = String(i + 1).padStart(2, "0");
@@ -150,6 +178,11 @@ function initialize() {
     clearTimeout(imageLoadTimer);
     clearTimeout(imageRevealTimer);
     imageVersion++;
+    if (doc.activeElement === card) dial.focus({ preventScroll: true });
+    card.disabled = true;
+    card.setAttribute("aria-hidden", "true");
+    delete card.dataset.chapter;
+    preview.dataset.phase = "title";
   }
 
   function updateImage(force = false) {
@@ -158,7 +191,6 @@ function initialize() {
     imageChapter = model.selected;
     const version = imageVersion;
     const path = covers[String(model.selected).padStart(2, "0")];
-    preview.dataset.phase = "title";
     // The title remains the fallback. There is no permanent card or empty placeholder.
     if (screen !== "chapters" || model.gesture || doc.hidden || html.hasAttribute("data-native-motion-paused")) return;
     if (typeof path !== "string" || !path.startsWith("/assets/chapter-covers/") || path.includes("..")) return;
@@ -173,6 +205,9 @@ function initialize() {
           try { await image.decode(); } catch { return; }
           if (version !== imageVersion || screen !== "chapters" || doc.hidden) return;
           preview.dataset.phase = "image";
+          card.dataset.chapter = String(model.selected);
+          card.removeAttribute("aria-hidden");
+          card.disabled = false;
         }, Math.max(0, 1800 - (performance.now() - started)));
       };
       loader.onerror = () => { /* Keep the current title; artwork is optional. */ };
@@ -193,6 +228,7 @@ function initialize() {
     dial.setAttribute("aria-valuenow", String(model.selected));
     dial.setAttribute("aria-valuetext", `${model.selected} di 25: ${chapterTitle.textContent}`);
     doc.getElementById("nativeOpenChapter").setAttribute("aria-label", `Apri capitolo ${model.selected}: ${chapterTitle.textContent}`);
+    card.setAttribute("aria-label", `Apri capitolo ${model.selected}: ${chapterTitle.textContent}`);
     updateImage(force);
     if (!model.gesture) scheduleDraw(model.selected);
   }
@@ -253,10 +289,13 @@ function initialize() {
     return Math.atan2(event.clientY - box.top - box.height / 2, event.clientX - box.left - box.width / 2) * 180 / Math.PI;
   }
   function finishGesture(pointerId) {
+    const capturedId = model.gesture?.pointerId;
     if (!model.end(pointerId)) return;
     pointerStart = null;
     dial.classList.remove("is-dragging");
-    if (pointerId !== undefined && dial.hasPointerCapture(pointerId)) dial.releasePointerCapture(pointerId);
+    // Clear ownership first: release may synchronously dispatch lost capture or
+    // fail after WebView interruption. Neither may strand the next interaction.
+    try { if (dial.hasPointerCapture(capturedId)) dial.releasePointerCapture(capturedId); } catch {}
     suppressActionsUntil = performance.now() + 120;
     scheduleDraw(model.selected);
     updateImage(true);
@@ -270,39 +309,54 @@ function initialize() {
     }, 4500);
   }
   dial.addEventListener("pointerdown", event => {
-    if (screen !== "chapters" || !canInteract() || event.button !== 0 || !event.isPrimary) return;
+    if (!canRotate() || event.button !== 0 || !event.isPrimary) return;
+    if (model.gesture) {
+      // A fresh primary down of the same device type starts a new sequence;
+      // secondary fingers and concurrent mouse/pen input never steal ownership.
+      if (pointerStart?.pointerType !== event.pointerType) return;
+      finishGesture();
+    }
     if (!model.begin(event.pointerId, pointerAngle(event))) return;
     cancelAnimationFrame(frame);
     frame = 0;
     draw(model.selected);
     cancelImagePresentation();
-    preview.dataset.phase = "title";
     clearTimeout(cueTimer);
     chapters.dataset.rotaryUsed = "true";
-    pointerStart = { x: event.clientX, y: event.clientY, chapter: model.selected, dragged: false };
+    pointerStart = { x: event.clientX, y: event.clientY, chapter: model.selected, dragged: false, pointerType: event.pointerType };
     event.preventDefault();
-    dial.setPointerCapture(event.pointerId);
     dial.classList.add("is-dragging");
+    // Window tracking below also works when capture is unavailable/interrupted.
+    try { dial.setPointerCapture(event.pointerId); } catch {}
     dial.focus({ preventScroll: true });
   });
-  dial.addEventListener("pointermove", event => {
-    if (!canInteract()) { finishGesture(event.pointerId); return; }
+  window.addEventListener("pointermove", event => {
     if (model.gesture?.pointerId !== event.pointerId) return;
+    if (!canRotate() || (event.pointerType === "mouse" && event.buttons === 0)) { finishGesture(event.pointerId); return; }
     if (Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) > 6) pointerStart.dragged = true;
     applySelection(model.move(event.pointerId, pointerAngle(event)));
-  });
-  dial.addEventListener("pointerup", event => {
+  }, true);
+  window.addEventListener("pointerup", event => {
     if (model.gesture?.pointerId !== event.pointerId) return;
-    if (canInteract()) {
-      const angle = pointerAngle(event);
-      const dragged = pointerStart.dragged || Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) > 6;
-      applySelection(dragged ? model.move(event.pointerId, angle) : model.select(chapterAtAngle(pointerStart.chapter, angle)));
+    try {
+      if (canRotate()) {
+        const angle = pointerAngle(event);
+        const dragged = pointerStart.dragged || Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) > 6;
+        applySelection(dragged ? model.move(event.pointerId, angle) : model.select(chapterAtAngle(pointerStart.chapter, angle)));
+      }
+    } finally {
+      finishGesture(event.pointerId);
     }
-    finishGesture(event.pointerId);
+  }, true);
+  window.addEventListener("pointercancel", event => finishGesture(event.pointerId), true);
+  dial.addEventListener("lostpointercapture", event => {
+    // A bubbled loss from an SVG child (or an older capture transfer) must not
+    // cancel the same pointer after the dial has successfully captured it.
+    if (!dial.hasPointerCapture(event.pointerId)) finishGesture(event.pointerId);
   });
-  ["pointercancel", "lostpointercapture"].forEach(type => dial.addEventListener(type, event => finishGesture(event.pointerId)));
+  window.addEventListener("blur", () => finishGesture());
   dial.addEventListener("keydown", event => {
-    if (!canInteract() || model.gesture || event.isComposing) return;
+    if (!canRotate() || model.gesture || event.isComposing) return;
     const targets = { ArrowUp: model.selected + 1, ArrowRight: model.selected + 1, ArrowDown: model.selected - 1, ArrowLeft: model.selected - 1, PageUp: model.selected + 5, PageDown: model.selected - 5, Home: 1, End: 25 };
     if (Object.hasOwn(targets, event.key)) { event.preventDefault(); applySelection(model.select(targets[event.key])); scheduleCues(); }
     else if (event.key === "Enter") { event.preventDefault(); runAction("open"); }
@@ -315,7 +369,9 @@ function initialize() {
   }
   [home, chapters, dock].forEach(element => element.addEventListener("click", event => {
     const action = event.target.closest("[data-native-action]");
-    if (action) runAction(action.dataset.nativeAction);
+    if (!action || action.disabled) return;
+    if (action === card && (preview.dataset.phase !== "image" || card.dataset.chapter !== String(model.selected))) return;
+    runAction(action.dataset.nativeAction);
   }));
 
   try { if (localStorage.getItem("native-study-motion-paused") === "1") html.dataset.nativeMotionPaused = "true"; } catch {}
@@ -405,6 +461,7 @@ function initialize() {
 
   function show(nextScreen) {
     if (!["home", "chapters"].includes(nextScreen)) return;
+    clearActionPress();
     screen = nextScreen;
     html.dataset.nativeStudyScreen = screen;
     for (const id of ["profileBtn", "adminEntryBtn"]) {
@@ -430,6 +487,7 @@ function initialize() {
     });
   }
   function hide() {
+    clearActionPress();
     screen = "";
     finishGesture(model.gesture?.pointerId);
     cancelAnimationFrame(frame);
@@ -446,6 +504,7 @@ function initialize() {
   doc.addEventListener("visibilitychange", () => {
     html.toggleAttribute("data-native-background", doc.hidden);
     if (doc.hidden) {
+      clearActionPress();
       finishGesture(model.gesture?.pointerId);
       titleAnimation?.cancel();
       cancelAnimationFrame(frame);
@@ -456,6 +515,7 @@ function initialize() {
   });
   const syncModalIsolation = () => {
     const modal = doc.body.classList.contains("qms-open") || doc.body.classList.contains("magic-word-gate-open");
+    if (modal) { finishGesture(); clearActionPress(); }
     [home, chapters, dock].forEach(element => { element.inert = modal; });
   };
   new MutationObserver(syncModalIsolation).observe(doc.body, { attributes: true, attributeFilter: ["class"] });

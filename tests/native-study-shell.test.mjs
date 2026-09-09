@@ -150,13 +150,47 @@ test("chapter title fits complete words without hyphenation or changing the fram
   assert.match(js, /titleSizes\.clear\(\); fitChapterTitle\(\)/u);
 });
 
-test("native instrument controls share a decorative recess and motion-safe tactile states", () => {
+test("native layered controls preserve targets and motion-safe tactile states", () => {
   const css = read("android-study-shell.css");
   assert.match(css, /\.native-action-emblem \{[^}]*width: 30px; height: 30px;[^}]*pointer-events: none/u);
-  assert.match(css, /\.native-chapters \.native-actions > button:active:not\(:disabled\) \{[^}]*transform: translateY\(1px\)/u);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[^]*\.native-actions > button:active:not\(:disabled\) \{ transform: none/u);
-  assert.match(css, /@media \(forced-colors: active\)[^]*\.native-action-emblem \{ border-color: ButtonText/u);
+  assert.match(css, /\.native-chapters \.native-actions > button:is\(:active, \[data-native-pressed\]\):not\(:disabled\) \{[^}]*transform: none/u);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[^]*\.native-actions > button:is\(:active, \[data-native-pressed\]\):not\(:disabled\) \{ transform: none/u);
+  assert.match(css, /@media \(forced-colors: active\)[^]*\.native-action-emblem::before \{ display: none/u);
   assert.match(css, /\[data-app-transition\][^\n]*button \{ pointer-events: none/u);
+});
+
+test("layered action icons derive clear-front and tilted-plate styling from native palette tokens", () => {
+  const css = read("android-study-shell.css");
+  assert.match(css, /--native-emblem-base: var\(--native-blue\)/u);
+  assert.match(css, /button\.is-blue \.native-action-emblem \{ --native-emblem-base: var\(--native-ink\)/u);
+  assert.match(css, /--native-emblem-glass-top: color-mix\(in srgb, var\(--app-palette-paper\)/u);
+  assert.match(css, /\.native-action-emblem::before,[^]*content: ""; position: absolute; inset: 2px; border-radius: 8px;\s*pointer-events: none/u);
+  assert.match(css, /@media \(hover: hover\) and \(pointer: fine\)/u);
+  assert.doesNotMatch(css, /--native-control-recess/u);
+});
+
+test("icon-layer motion honors both system and profile preferences without changing labels", () => {
+  const css = read("android-study-shell.css");
+  for (const marker of ['[data-native-motion-paused] .native-chapters .native-actions > button .native-action-emblem', '@media (prefers-reduced-motion: reduce)']) {
+    const rules = css.slice(css.indexOf(marker));
+    assert.match(rules, /--native-emblem-back: rotate\(12deg\); --native-emblem-front: none; --native-emblem-symbol: none; --native-emblem-duration: 0ms/u);
+  }
+  assert.match(css, /\.native-label-window \{[^}]*height: 40px/u);
+  assert.match(css, /\.native-action-icon \{[^}]*z-index: 2;[^}]*pointer-events: none/u);
+});
+
+test("touch contact styling is visual-only, primary-pointer-owned and interruption-safe", () => {
+  const js = read("android-study-shell.js");
+  const contact = js.split('let actionPress = null;')[1].split('for (let i = 0; i < 25; i++)')[0];
+  assert.match(contact, /button\.disabled \|\| !event\.isPrimary[^]*!canInteract\(\) \|\| model\.gesture/u);
+  assert.match(contact, /actionPress\.id !== pointerId/u);
+  assert.match(contact, /Math\.hypot[^]*> 6\) clearActionPress\(\)/u);
+  assert.match(contact, /\["pointerup", "pointercancel"\]/u);
+  assert.match(contact, /\["blur", "resize"\]/u);
+  assert.match(contact, /if \(app\.busy\(\)\) clearActionPress\(\)/u);
+  assert.doesNotMatch(contact, /preventDefault|setPointerCapture|runAction|\.click\(|setTimeout/u);
+  assert.match(js, /function hide\(\) \{\s*clearActionPress\(\)/u);
+  assert.match(js, /if \(doc\.hidden\) \{\s*clearActionPress\(\)/u);
 });
 
 test("title-to-artwork presentation is bounded, interruptible and selection-versioned", () => {
@@ -168,6 +202,42 @@ test("title-to-artwork presentation is bounded, interruptible and selection-vers
   assert.match(js, /function hide\(\)[^]*cancelImagePresentation\(\)/u);
   assert.match(js, /function scheduleDraw[^]*\(now - started\) \/ 220/u);
   assert.match(js, /if \(result\.boundary\)[^]*else if \(result\.changed\) \{\s*feedback\("selection"\)/u);
+});
+
+test("presented chapter artwork is a semantic current-chapter launch through the shared gate", () => {
+  const html = read("index.html");
+  assert.match(html, /<button id="nativeChapterCard"[^>]*type="button"[^>]*data-native-action="open"[^>]*aria-hidden="true" disabled>/u);
+  assert.match(html, /id="nativeChapterImage"[^>]*draggable="false"/u);
+  const js = read("android-study-shell.js");
+  assert.match(js, /card\.setAttribute\("aria-label", `Apri capitolo \$\{model.selected\}/u);
+  assert.match(js, /await image\.decode\(\)[^]*card\.dataset\.chapter = String\(model\.selected\)[^]*card\.disabled = false/u);
+  assert.match(js, /function cancelImagePresentation\(\)[^]*card\.disabled = true/u);
+  assert.match(js, /if \(!action \|\| action\.disabled\) return/u);
+  assert.match(js, /card\.dataset\.chapter !== String\(model\.selected\)/u);
+  const css = read("android-study-shell.css");
+  assert.match(css, /\.native-chapter-art:disabled \{ opacity: 0; pointer-events: none/u);
+  assert.match(css, /\.native-chapter-art \{[^}]*border: 0; border-radius: 0; background: transparent; box-shadow: none/u);
+});
+
+test("rotary first touch is accepted during entry without bypassing launch ownership", () => {
+  const js = read("android-study-shell.js");
+  assert.match(js, /const canInteract = \(\) => surfaceAvailable\(\) && !app\.busy\(\)/u);
+  assert.match(js, /const canRotate = [^\n]*app\.busy\(\) \|\| html\.dataset\.appTransition === "show-chapters"/u);
+  assert.match(js, /function runAction\(action\) \{\s*if \(!canInteract\(\)/u);
+  assert.match(js, /pointerdown", event => \{\s*if \(!canRotate\(\)/u);
+});
+
+test("interrupted rotary pointers always release ownership and allow a fresh primary touch", () => {
+  const js = read("android-study-shell.js");
+  assert.match(js, /window\.addEventListener\("pointermove"/u);
+  assert.match(js, /window\.addEventListener\("pointerup"[^]*finally \{\s*finishGesture\(event\.pointerId\)/u);
+  assert.match(js, /window\.addEventListener\("pointercancel", event => finishGesture\(event\.pointerId\), true\)/u);
+  assert.match(js, /window\.addEventListener\("blur", \(\) => finishGesture\(\)\)/u);
+  assert.match(js, /try \{ dial\.setPointerCapture\(event\.pointerId\); \} catch/u);
+  assert.match(js, /if \(!dial\.hasPointerCapture\(event\.pointerId\)\) finishGesture\(event\.pointerId\)/u);
+  assert.match(js, /if \(pointerStart\?\.pointerType !== event\.pointerType\) return;\s*finishGesture\(\)/u);
+  assert.match(js, /if \(modal\) \{ finishGesture\(\); clearActionPress\(\)/u);
+  assert.match(js, /const capturedId = model\.gesture\?\.pointerId;\s*if \(!model\.end\(pointerId\)\) return/u);
 });
 
 test("all 25 mapped All Books covers exist as lightweight WebP assets", () => {
@@ -190,7 +260,7 @@ test("all 25 mapped All Books covers exist as lightweight WebP assets", () => {
 test("changed native files are versioned together in the offline shell", () => {
   const index = read("index.html");
   const worker = read("service-worker.js");
-  for (const asset of ["android-study-shell.css?v=11-wordfit-controls", "android-study-shell.js?v=9-wordfit-controls"]) {
+  for (const asset of ["android-study-shell.css?v=13-layered-icons", "android-study-shell.js?v=11-layered-icons"]) {
     assert.ok(index.includes(asset));
     assert.ok(worker.includes(asset));
   }
