@@ -83,6 +83,13 @@ html.android-webview body {
   background-color: var(--app-palette-background);
 }
 
+/* Reuse the exact explanation-player sticker only in the installed login.
+   CSS image replacement keeps the browser source and login behavior intact. */
+html.android-webview #login .login-hero-img {
+  content: url("/icons/explain_quiz.svg");
+  aspect-ratio: 1; object-fit: contain; filter: none;
+}
+
 html.android-webview :where(a, button, input, select, textarea):focus-visible {
   outline-color: var(--app-palette-primary-strong);
 }

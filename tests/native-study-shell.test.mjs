@@ -145,9 +145,9 @@ test("native chapter actions share one compact rhythm with labels beside their i
   const html = read("index.html").split('<template id="androidStudyTemplate">')[1].split('</template>')[0];
   assert.match(html, /class="native-chapter-workspace"[^]*class="native-orbit-stage"[^]*class="native-actions"/u);
   assert.match(css, /\.native-actions \{[^}]*width: min\(92%, 392px\)/u);
-  assert.match(css, /\.native-actions > button \{[^}]*grid-template-columns: 30px minmax\(0, 1fr\);[^}]*column-gap: 8px;[^}]*min-height: 48px/u);
+  assert.match(css, /\.native-actions > button \{[^}]*grid-template-columns: 30px minmax\(0, max-content\); justify-content: center;[^}]*column-gap: 8px;[^}]*min-height: 48px/u);
   assert.doesNotMatch(css, /\.native-learning-action\s*\{[^}]*min-height/u);
-  assert.match(css, /\.native-label-rail > span \{[^}]*justify-items: start;[^}]*height: 40px/u);
+  assert.match(css, /\.native-label-rail > span \{[^}]*justify-items: center;[^}]*height: 40px/u);
   assert.match(css, /\.native-road-divider \.native-roundabout \{ width: 22px; height: 22px/u);
   assert.match(css, /\.native-road-divider img:not\(\.native-roundabout\) \{ opacity: \.45/u);
 });
@@ -165,23 +165,22 @@ test("chapter title fits complete words without hyphenation or changing the fram
   assert.match(js, /titleSizes\.clear\(\); fitChapterTitle\(\)/u);
 });
 
-test("native layered controls preserve targets and motion-safe tactile states", () => {
+test("native matte controls preserve targets and motion-safe tactile states", () => {
   const css = read("android-study-shell.css");
   assert.match(css, /\.native-action-emblem \{[^}]*width: 30px; height: 30px;[^}]*pointer-events: none/u);
   assert.match(css, /\.native-chapters \.native-actions > button:is\(:active, \[data-native-pressed\]\):not\(:disabled\) \{[^}]*transform: none/u);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[^]*\.native-actions > button:is\(:active, \[data-native-pressed\]\):not\(:disabled\) \{ transform: none/u);
-  assert.match(css, /@media \(forced-colors: active\)[^]*\.native-action-emblem::before \{ display: none/u);
+  assert.match(css, /@media \(forced-colors: active\)[^]*\.native-action-emblem::before \{[^}]*forced-color-adjust: none/u);
   assert.match(css, /\[data-app-transition\][^\n]*button \{ pointer-events: none/u);
 });
 
-test("layered action icons derive clear-front and tilted-plate styling from native palette tokens", () => {
+test("matte action icons use one solid palette-derived scallop, without glass", () => {
   const css = read("android-study-shell.css");
   assert.match(css, /--native-emblem-base: var\(--native-blue\)/u);
   assert.match(css, /button\.is-blue \.native-action-emblem \{ --native-emblem-base: var\(--native-ink\)/u);
-  assert.match(css, /--native-emblem-glass-top: color-mix\(in srgb, var\(--app-palette-paper\)/u);
-  assert.match(css, /\.native-action-emblem::before,[^]*content: ""; position: absolute; inset: 1px; border: 0; border-radius: 0;[^}]*pointer-events: none/u);
-  assert.match(css, /@media \(hover: hover\) and \(pointer: fine\)/u);
-  assert.doesNotMatch(css, /--native-control-recess/u);
+  assert.match(css, /\.native-action-emblem::before \{[^}]*content: ""; position: absolute; inset: 1px; border: 0; border-radius: 0;[^}]*pointer-events: none/u);
+  assert.match(css, /\.native-actions > button \{[^}]*background-image: none; box-shadow: none/u);
+  assert.doesNotMatch(css, /--native-emblem-(glass|front|back)|\.native-action-emblem::after|backdrop-filter: blur/u);
 });
 
 test("native icon backings share an offline scalloped silhouette without an outer ring", () => {
@@ -198,14 +197,19 @@ test("native icon backings share an offline scalloped silhouette without an oute
   assert.ok(read("service-worker.js").includes('"/icons/native-action-scallop.svg"'));
 });
 
-test("icon-layer motion honors both system and profile preferences without changing labels", () => {
+test("matte icon motion honors both system and profile preferences without changing labels", () => {
   const css = read("android-study-shell.css");
   for (const marker of ['[data-native-motion-paused] .native-chapters .native-actions > button .native-action-emblem', '@media (prefers-reduced-motion: reduce)']) {
     const rules = css.slice(css.indexOf(marker));
-    assert.match(rules, /--native-emblem-back: rotate\(12deg\); --native-emblem-front: none; --native-emblem-symbol: none; --native-emblem-duration: 0ms/u);
+    assert.match(rules, /--native-emblem-scale: 1; transition: none/u);
   }
   assert.match(css, /\.native-label-window \{[^}]*height: 40px/u);
   assert.match(css, /\.native-action-icon \{[^}]*z-index: 2;[^}]*pointer-events: none/u);
+});
+
+test("wheel and card lift together only when vertical space permits", () => {
+  const css = read("android-study-shell.css");
+  assert.match(css, /@media \(min-height: 621px\) \{\s*html\.android-webview \.native-orbit-stage \{ transform: translateY\(-14px\)/u);
 });
 
 test("touch contact styling is visual-only, primary-pointer-owned and interruption-safe", () => {
@@ -289,7 +293,7 @@ test("all 25 mapped All Books covers exist as lightweight WebP assets", () => {
 test("changed native files are versioned together in the offline shell", () => {
   const index = read("index.html");
   const worker = read("service-worker.js");
-  for (const asset of ["android-study-shell.css?v=15-scalloped-vai", "android-study-shell.js?v=11-layered-icons"]) {
+  for (const asset of ["android-study-shell.css?v=16-matte-actions", "android-study-shell.js?v=11-layered-icons"]) {
     assert.ok(index.includes(asset));
     assert.ok(worker.includes(asset));
   }

@@ -9,6 +9,14 @@ const daisySource = readFileSync(new URL("../src/daisyui.css", import.meta.url),
 const daisyBuild = readFileSync(new URL("../assets/daisyui.css", import.meta.url), "utf8");
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
+test("installed login reuses the exact explanation sticker without changing browser artwork", () => {
+  const theme = readFileSync(new URL("../android-app-theme.css", import.meta.url), "utf8");
+  assert.match(page, /class="login-hero-img" src="icons\/login_img\.svg" alt=""/u);
+  assert.match(theme, /html\.android-webview #login \.login-hero-img \{\s*content: url\("\/icons\/explain_quiz\.svg"\);[^}]*object-fit: contain; filter: none/u);
+  assert.match(readFileSync(new URL("../quiz.html", import.meta.url), "utf8"), /id="quiz-audio-artwork"[^>]*src="icons\/explain_quiz\.svg"/u);
+  assert.match(readFileSync(new URL("../service-worker.js", import.meta.url), "utf8"), /"\/icons\/explain_quiz\.svg"/u);
+});
+
 test("login uses locally compiled, scoped daisyUI components", () => {
   assert.ok(page.indexOf("assets/daisyui.css?v=2-learning-shell") < page.indexOf("style.css?v=72-solid-profile-controls"));
   assert.match(page, /id="login" data-theme="magicbook"/);

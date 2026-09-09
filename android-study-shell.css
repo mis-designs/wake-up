@@ -24,12 +24,6 @@ html.android-webview {
   --native-ornament: "El Messiri", Georgia, serif;
   --native-display: "Norwester", "Arial Narrow", sans-serif;
   --native-body: Arial, sans-serif;
-  --native-control-edge: color-mix(in srgb, var(--app-palette-paper) 17%, transparent);
-  --native-control-edge-active: color-mix(in srgb, var(--app-palette-paper) 32%, transparent);
-  --native-control-highlight: color-mix(in srgb, var(--app-palette-paper) 4%, transparent);
-  --native-control-shadow: color-mix(in srgb, var(--native-ink) 14%, transparent);
-  --native-emblem-glass-top: color-mix(in srgb, var(--app-palette-paper) 18%, transparent);
-  --native-emblem-glass-bottom: color-mix(in srgb, var(--app-palette-paper) 5%, transparent);
   --native-emblem-shape: url("/icons/native-action-scallop.svg");
   --native-dock-reserve: calc(104px + env(safe-area-inset-bottom, 0px));
 }
@@ -203,6 +197,11 @@ html.android-webview .native-orbit-stage {
   isolation: isolate;
   overflow: clip; /* Intentional half-circle crop, not a page-overflow workaround. */
 }
+/* Move card and wheel as one unit, without moving the six controls or dock.
+   Compact screens retain their existing header clearance and scroll ownership. */
+@media (min-height: 621px) {
+  html.android-webview .native-orbit-stage { transform: translateY(-14px); }
+}
 html.android-webview :is(.native-dial, .native-dial-interior) {
   position: absolute;
   height: 100%;
@@ -295,76 +294,50 @@ html.android-webview .native-actions {
 }
 html.android-webview .native-actions > button {
   position: relative; isolation: isolate;
-  display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: center; column-gap: 8px;
-  min-height: 48px; min-width: 0; padding: 0 8px; border: 1px solid var(--native-control-edge); border-radius: 13px;
+  display: grid; grid-template-columns: 30px minmax(0, max-content); justify-content: center; align-items: center; column-gap: 8px;
+  min-height: 48px; min-width: 0; padding: 0 8px; border: 1px solid transparent; border-radius: 13px;
   background-color: var(--native-ink); color: var(--app-palette-paper);
-  background-image: linear-gradient(160deg, var(--native-control-highlight), transparent 62%);
-  box-shadow: inset 0 1px 0 var(--native-control-highlight), 0 2px 3px var(--native-control-shadow);
+  background-image: none; box-shadow: none;
   font: 400 clamp(14px, 3.8vw, 18px)/1.1 var(--native-display); text-transform: uppercase;
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  transition: filter 160ms ease;
   -webkit-tap-highlight-color: transparent;
 }
 html.android-webview .native-actions > button.is-blue { background-color: var(--native-blue); }
-/* Owner-approved scalloped icon backing: no outer circle or rectangular frame.
-   Both layers stay inside the existing icon slot, never the moving label rail.
-   Decorative contact feedback never delays or intercepts the canonical action. */
+/* One solid scalloped backing, no glass front, reflections or outer frame.
+   Icon and both language widths keep a centered, stable group in each button. */
 html.android-webview .native-action-emblem {
   --native-emblem-base: var(--native-blue);
-  --native-emblem-back: rotate(12deg);
-  --native-emblem-front: translate3d(0, 0, 0);
-  --native-emblem-symbol: translateY(0);
-  --native-emblem-duration: 220ms;
-  position: relative; isolation: isolate; perspective: 120px;
+  --native-emblem-scale: 1;
+  position: relative; isolation: isolate;
   display: grid; place-items: center; width: 30px; height: 30px;
   border: 0; border-radius: 0; background: transparent;
   pointer-events: none;
+  transform: scale(var(--native-emblem-scale)); transition: transform 160ms ease;
 }
 html.android-webview .native-actions > button.is-blue .native-action-emblem { --native-emblem-base: var(--native-ink); }
-html.android-webview .native-action-emblem::before,
-html.android-webview .native-action-emblem::after {
+html.android-webview .native-action-emblem::before {
   content: ""; position: absolute; inset: 1px; border: 0; border-radius: 0;
   -webkit-mask: var(--native-emblem-shape) center / contain no-repeat;
   mask: var(--native-emblem-shape) center / contain no-repeat;
   pointer-events: none;
-  transition: transform var(--native-emblem-duration) cubic-bezier(.22,.7,.25,1);
-}
-html.android-webview .native-action-emblem::before {
   z-index: 0; background: var(--native-emblem-base);
-  transform: var(--native-emblem-back);
-}
-html.android-webview .native-action-emblem::after {
-  z-index: 1;
-  background: linear-gradient(145deg, var(--native-emblem-glass-top), var(--native-emblem-glass-bottom));
-  transform: var(--native-emblem-front);
-}
-/* The masked gradient is the no-blur fallback; only this 28px shape samples
-   its backdrop. No animated blur or whole-button compositing surface. */
-@supports ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
-  html.android-webview .native-action-emblem::after { -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
 }
 html.android-webview .native-chapters .native-actions > button:is(:active, [data-native-pressed]):not(:disabled) {
-  transform: none;
-  box-shadow: inset 0 2px 4px var(--native-control-shadow);
-  border-color: var(--native-control-edge-active);
+  transform: none; filter: brightness(.88);
 }
 html.android-webview .native-chapters .native-actions > button:is(:active, [data-native-pressed]):not(:disabled) .native-action-emblem {
-  --native-emblem-back: translateY(1px) rotate(4deg);
-  --native-emblem-front: translate3d(0, 1px, 0);
-  --native-emblem-symbol: translateY(1px);
-  --native-emblem-duration: 120ms;
+  --native-emblem-scale: .94;
 }
 html.android-webview .native-action-icon {
   position: relative; z-index: 2;
   display: block; justify-self: center; width: 22px; height: 22px; object-fit: contain;
   pointer-events: none; user-select: none;
-  transform: var(--native-emblem-symbol);
-  transition: transform var(--native-emblem-duration) cubic-bezier(.22,.7,.25,1);
 }
 /* Recolor only the monochrome SVGs; preserve the supplied PNG artwork. */
 html.android-webview .native-action-icon.is-symbol { width: 20px; height: 20px; filter: brightness(0) invert(1); }
-html.android-webview .native-label-window { display: block; width: 100%; height: 40px; overflow: clip; pointer-events: none; font: inherit; }
+html.android-webview .native-label-window { display: block; min-width: 0; width: 100%; height: 40px; overflow: clip; pointer-events: none; font: inherit; }
 html.android-webview .native-label-rail { display: block; font: inherit; }
-html.android-webview .native-label-rail > span { display: grid; align-items: center; justify-items: start; height: 40px; white-space: nowrap; font: inherit; text-align: start; }
+html.android-webview .native-label-rail > span { display: grid; align-items: center; justify-items: center; height: 40px; white-space: nowrap; font: inherit; text-align: center; }
 html.android-webview .native-label-rail > [lang="bn"] { font: 400 clamp(14px, 4.1vw, 18px)/1.4 var(--font-bn-support); letter-spacing: 0; text-transform: none; }
 html.android-webview[data-native-study-screen="chapters"] .native-label-rail { animation: native-label-go-up 9.2s cubic-bezier(.22,.7,.25,1) infinite; }
 html.android-webview[data-native-study-screen="chapters"] .native-roundabout { animation: native-roundabout-turn 40s cubic-bezier(.4,0,.25,1) infinite; }
@@ -416,20 +389,12 @@ html.android-webview[data-app-transition] :is(.native-home, .native-chapters, .n
 @media (hover: hover) {
   html.android-webview .native-chapters .native-chapter-art:hover:not(:disabled) { opacity: .93; }
   html.android-webview .native-actions > button:hover:not(:disabled) {
-    border-color: var(--native-control-edge-active);
-    box-shadow: inset 0 1px 0 var(--native-control-highlight), 0 3px 6px var(--native-control-shadow);
+    filter: brightness(.95);
   }
   html.android-webview .native-back:hover:not(:disabled) { background: #EDEEF0; }
   html.android-webview #nativeOpenChapter:hover:not(:disabled) { filter: brightness(.92); }
   html.android-webview .native-actions > button:hover .native-label-rail { animation-play-state: paused; }
   html.android-webview .native-book:hover .native-book-art { opacity: .88; }
-}
-@media (hover: hover) and (pointer: fine) {
-  html.android-webview .native-actions > button:hover:not(:disabled) .native-action-emblem {
-    --native-emblem-back: translate(-1px, -1px) rotate(18deg);
-    --native-emblem-front: translate3d(0, -1px, 2px);
-    --native-emblem-symbol: translateY(-1px);
-  }
 }
 @keyframes native-book-float { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-9px) rotate(1deg); } }
 @keyframes native-liquid-wave { from { transform: translate(-7%, 0) rotate(-5deg); } to { transform: translate(9%, 5%) rotate(5deg); } }
@@ -464,13 +429,13 @@ html.android-webview[data-native-motion-paused] .native-chapters .native-chapter
 html.android-webview[data-native-motion-paused] .native-chapters #nativeOpenChapter { --native-open-press-scale: 1; transition: none; }
 html.android-webview[data-native-motion-paused] .native-chapters .native-actions > button .native-action-emblem,
 html.android-webview[data-native-motion-paused] .native-chapters .native-actions > button:is(:hover, :active, [data-native-pressed]):not(:disabled) .native-action-emblem {
-  --native-emblem-back: rotate(12deg); --native-emblem-front: none; --native-emblem-symbol: none; --native-emblem-duration: 0ms;
+  --native-emblem-scale: 1; transition: none;
 }
 @media (prefers-reduced-motion: reduce) {
   html.android-webview .native-chapters #nativeOpenChapter { --native-open-press-scale: 1; transition: none; }
   html.android-webview .native-chapters .native-actions > button .native-action-emblem,
   html.android-webview .native-chapters .native-actions > button:is(:hover, :active, [data-native-pressed]):not(:disabled) .native-action-emblem {
-    --native-emblem-back: rotate(12deg); --native-emblem-front: none; --native-emblem-symbol: none; --native-emblem-duration: 0ms;
+    --native-emblem-scale: 1; transition: none;
   }
   html.android-webview .native-chapters .native-chapter-art:active:not(:disabled) { transform: none; }
   html.android-webview .native-actions > button { transition: none; }
@@ -500,8 +465,7 @@ html.android-webview[data-native-motion-paused] .native-chapters .native-actions
   html.android-webview .native-liquid-fill > span { display: none; }
   html.android-webview .native-progress-label { background: Canvas; color: CanvasText; margin-inline: auto; padding: 2px; }
   html.android-webview .native-actions > button { border-color: ButtonText; }
-  html.android-webview .native-action-emblem::before { display: none; }
-  html.android-webview .native-action-emblem::after {
+  html.android-webview .native-action-emblem::before {
     background: var(--native-ink); forced-color-adjust: none;
     box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
   }

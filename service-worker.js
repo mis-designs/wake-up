@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v180-scalloped-vai";
+const CACHE_NAME = "magicbook-pwa-v181-matte-actions";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -16,8 +16,8 @@ const STATIC_ASSETS = [
   "/style.css?v=72-solid-profile-controls",
   "/mobile-experience.css?v=4-admin-scroll",
   "/android-webview-mode.js?v=6-pearl-blue",
-  "/android-app-theme.css?v=7-section-icons",
-  "/android-study-shell.css?v=15-scalloped-vai",
+  "/android-app-theme.css?v=8-login-sticker",
+  "/android-study-shell.css?v=16-matte-actions",
   "/android-study-shell.js?v=11-layered-icons",
   "/android-rotary-model.mjs?v=7-right-bilingual",
   "/assets/native-chapter-covers.json",
