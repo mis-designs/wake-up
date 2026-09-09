@@ -71,7 +71,7 @@ test("timeout dialog uses the shared emerald pill language and fresh cached asse
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/u);
   assert.match(page, /mystyle\.css\?v=51-question-footer-reflow/u);
   assert.match(page, /quiz\.js\?v=82-section-icons/u);
-  assert.match(worker, /magicbook-pwa-v182-login-glass/u);
+  assert.match(worker, /magicbook-pwa-v183-shared-login/u);
   assert.match(worker, /mystyle\.css\?v=51-question-footer-reflow/u);
   assert.match(worker, /quiz\.js\?v=82-section-icons/u);
 });

@@ -8,41 +8,65 @@ const script = readFileSync(new URL("../script.js", import.meta.url), "utf8");
 const daisySource = readFileSync(new URL("../src/daisyui.css", import.meta.url), "utf8");
 const daisyBuild = readFileSync(new URL("../assets/daisyui.css", import.meta.url), "utf8");
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+const loginStyles = readFileSync(new URL("../login-experience.css", import.meta.url), "utf8");
 
-test("installed login reuses the exact Home book without changing browser artwork", () => {
-  const theme = readFileSync(new URL("../android-app-theme.css", import.meta.url), "utf8");
-  assert.match(page, /class="login-hero-img" src="icons\/login_img\.svg" alt=""/u);
-  assert.match(theme, /html\.android-webview #login \.login-hero-img \{\s*content: url\("\/icons\/mg_book\.svg"\);[^}]*object-fit: contain; filter: none; box-shadow: none/u);
+test("web and Android login reuse the same intact Home book", () => {
+  assert.match(page, /class="login-hero-img" src="\/icons\/mg_book\.svg" width="280" height="390" alt=""/u);
+  assert.match(loginStyles, /#login \.login-hero-img \{[^}]*object-fit: contain; filter: none; box-shadow: none/u);
   assert.match(page, /class="native-book-art" src="\/icons\/mg_book\.svg"/u);
   assert.match(readFileSync(new URL("../service-worker.js", import.meta.url), "utf8"), /"\/icons\/mg_book\.svg"/u);
 });
 
-test("installed glass login hides only visual labels and preserves canonical form semantics", () => {
-  const theme = readFileSync(new URL("../android-app-theme.css", import.meta.url), "utf8");
-  assert.match(theme, /html\.android-webview #login > \.login-pass \{[^}]*backdrop-filter: blur\(16px\)/u);
-  assert.match(theme, /html\.android-webview #login :is\(\.login-kicker, \.login-greeting-cloud, \.login-road\) \{ display: none/u);
-  const label = theme.match(/html\.android-webview #login \.login-label\[for="user"\] \{([^}]+)\}/u)[1];
+test("shared glass login hides only visual labels and preserves canonical form semantics", () => {
+  assert.match(loginStyles, /#login > \.login-pass \{[^}]*backdrop-filter: blur\(16px\)/u);
+  assert.match(loginStyles, /#login :is\(\.login-kicker, \.login-greeting-cloud, \.login-road\) \{ display: none/u);
+  const label = loginStyles.match(/#login \.login-label\[for="user"\] \{([^}]+)\}/u)[1];
   assert.match(label, /clip-path: inset\(50%\)/u);
   assert.doesNotMatch(label, /display: none|visibility: hidden/u);
-  assert.match(theme, /\.login-brand,\s*html\.android-webview #login > \.watermark-link \{[^}]*Norwester/u);
+  assert.match(loginStyles, /--login-display: "Norwester"/u);
 });
 
-test("installed greeting rails share local-time copy and keep Bangla accessible and motion-safe", () => {
-  const shell = readFileSync(new URL("../android-study-shell.js", import.meta.url), "utf8");
-  const theme = readFileSync(new URL("../android-app-theme.css", import.meta.url), "utf8");
+test("shared greeting rails keep local-time copy, Bangla and motion-safe stable geometry", () => {
+  const shell = readFileSync(new URL("../login-experience.js", import.meta.url), "utf8");
+  const renderer = readFileSync(new URL("../greeting-view.mjs", import.meta.url), "utf8");
   const nativeCss = readFileSync(new URL("../android-study-shell.css", import.meta.url), "utf8");
-  assert.match(shell, /line\.lang = .*\? "bn" : "it"/u);
-  assert.match(shell, /rail\.setAttribute\("aria-hidden", "true"\)/u);
+  assert.match(renderer, /line\.lang = .*\? "bn" : "it"/u);
+  assert.match(renderer, /rail\.setAttribute\("aria-hidden", "true"\)/u);
   assert.match(shell, /\["Bentornato\.", \.\.\.homeGreetings\(new Date\(\)\.getHours\(\)\), "Bentornato\."\]/u);
   assert.match(shell, /MutationObserver\(syncLoginGreeting\).*attributeFilter: \["class"\]/u);
-  assert.match(theme, /native-login-greeting-rise 16s[^;]+infinite/u);
-  assert.match(theme, /#login #loginTitle \{\s*height: 48px; overflow: hidden/u);
-  assert.match(theme, /#loginTitle \.native-login-greeting-rail > \[lang="bn"\] \{[^}]*var\(--font-bn-title\)/u);
+  assert.match(loginStyles, /login-greeting-rise 16s[^;]+infinite/u);
+  assert.match(loginStyles, /#login #loginTitle \{\s*height: 48px; overflow: hidden/u);
+  assert.match(loginStyles, /#loginTitle \.login-greeting-rail > \[lang="bn"\] \{[^}]*var\(--font-bn-title\)/u);
   assert.match(nativeCss, /\.native-home h1 \.native-greeting-rail > \[lang="bn"\] \{[^}]*var\(--font-bn-title\)/u);
-  assert.match(theme, /#login:is\(\.hidden, :focus-within\)/u);
-  assert.match(theme, /data-native-background\] #login/u);
-  assert.match(theme, /data-native-motion-paused\] #login[^}]*animation: none; transform: none/u);
-  assert.match(theme, /prefers-reduced-motion: reduce\) \{[^}]*native-login-greeting-rail \{ animation: none; transform: none/u);
+  assert.match(loginStyles, /#login:is\(\.hidden, :focus-within, \[data-login-background\]\)/u);
+  assert.match(shell, /document\.hidden/u);
+  assert.match(loginStyles, /data-native-motion-paused\] #login[^}]*animation: none; transform: none/u);
+  assert.match(loginStyles, /prefers-reduced-motion: reduce\) \{[^}]*login-greeting-rail\) \{ animation: none; transform: none/u);
+});
+
+test("login uses the original logo and an animated two-line Norwester wordmark", () => {
+  assert.match(page, /class="login-watermark-logo" src="\/icons\/mdesignstextlogo\.png" width="512" height="137" alt="MiskatDesigns"/u);
+  assert.match(page, /class="login-brand" aria-label="MagicBook"><span aria-hidden="true">Magic<\/span><span aria-hidden="true">Book<\/span>/u);
+  assert.match(loginStyles, /\.login-brand \{[^}]*flex-direction: column;[^}]*login-brand-drift 6s/u);
+  assert.match(loginStyles, /\.login-brand > span \{[^}]*font: inherit/u);
+  assert.match(loginStyles, /\.login-watermark-logo \{[^}]*aspect-ratio: 512 \/ 137; object-fit: contain/u);
+  assert.match(loginStyles, /watermark-link:focus-visible/);
+});
+
+test("shared login ships offline without exposing Android Home to browsers", () => {
+  const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
+  const native = readFileSync(new URL("../android-study-shell.js", import.meta.url), "utf8");
+  const theme = readFileSync(new URL("../android-app-theme.css", import.meta.url), "utf8");
+  const login = readFileSync(new URL("../login-experience.js", import.meta.url), "utf8");
+  for (const asset of ["login-experience.css?v=1-shared-login", "login-experience.js?v=1-shared-login"]) {
+    assert.ok(page.includes(asset)); assert.ok(worker.includes(asset));
+  }
+  for (const asset of ["greeting-view.mjs?v=1-shared-login", "/icons/mdesignstextlogo.png", "/assets/fonts/norwester/norwester.woff"]) assert.ok(worker.includes(asset));
+  assert.match(native, /classList\.contains\("android-webview"\) && template/u);
+  assert.doesNotMatch(native, /syncLoginGreeting|function renderGreeting/u);
+  assert.doesNotMatch(login, /initialize\(|MagicBookAndroidAdapter|fetch\(|setInterval/u);
+  const palette = theme.match(/html\.android-webview, #login \{([^}]+)\}/u)[1];
+  assert.ok(palette.split('\n').filter(s => s.trim()).every(s => s.trim().startsWith('--')));
 });
 
 test("login uses locally compiled, scoped daisyUI components", () => {

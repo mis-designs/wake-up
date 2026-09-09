@@ -293,7 +293,7 @@ test("all 25 mapped All Books covers exist as lightweight WebP assets", () => {
 test("changed native files are versioned together in the offline shell", () => {
   const index = read("index.html");
   const worker = read("service-worker.js");
-  for (const asset of ["android-study-shell.css?v=17-login-glass", "android-study-shell.js?v=12-bangla-greetings"]) {
+  for (const asset of ["android-study-shell.css?v=18-shared-login", "android-study-shell.js?v=13-shared-login"]) {
     assert.ok(index.includes(asset));
     assert.ok(worker.includes(asset));
   }
