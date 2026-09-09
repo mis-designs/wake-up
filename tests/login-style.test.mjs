@@ -9,12 +9,40 @@ const daisySource = readFileSync(new URL("../src/daisyui.css", import.meta.url),
 const daisyBuild = readFileSync(new URL("../assets/daisyui.css", import.meta.url), "utf8");
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
-test("installed login reuses the exact explanation sticker without changing browser artwork", () => {
+test("installed login reuses the exact Home book without changing browser artwork", () => {
   const theme = readFileSync(new URL("../android-app-theme.css", import.meta.url), "utf8");
   assert.match(page, /class="login-hero-img" src="icons\/login_img\.svg" alt=""/u);
-  assert.match(theme, /html\.android-webview #login \.login-hero-img \{\s*content: url\("\/icons\/explain_quiz\.svg"\);[^}]*object-fit: contain; filter: none/u);
-  assert.match(readFileSync(new URL("../quiz.html", import.meta.url), "utf8"), /id="quiz-audio-artwork"[^>]*src="icons\/explain_quiz\.svg"/u);
-  assert.match(readFileSync(new URL("../service-worker.js", import.meta.url), "utf8"), /"\/icons\/explain_quiz\.svg"/u);
+  assert.match(theme, /html\.android-webview #login \.login-hero-img \{\s*content: url\("\/icons\/mg_book\.svg"\);[^}]*object-fit: contain; filter: none; box-shadow: none/u);
+  assert.match(page, /class="native-book-art" src="\/icons\/mg_book\.svg"/u);
+  assert.match(readFileSync(new URL("../service-worker.js", import.meta.url), "utf8"), /"\/icons\/mg_book\.svg"/u);
+});
+
+test("installed glass login hides only visual labels and preserves canonical form semantics", () => {
+  const theme = readFileSync(new URL("../android-app-theme.css", import.meta.url), "utf8");
+  assert.match(theme, /html\.android-webview #login > \.login-pass \{[^}]*backdrop-filter: blur\(16px\)/u);
+  assert.match(theme, /html\.android-webview #login :is\(\.login-kicker, \.login-greeting-cloud, \.login-road\) \{ display: none/u);
+  const label = theme.match(/html\.android-webview #login \.login-label\[for="user"\] \{([^}]+)\}/u)[1];
+  assert.match(label, /clip-path: inset\(50%\)/u);
+  assert.doesNotMatch(label, /display: none|visibility: hidden/u);
+  assert.match(theme, /\.login-brand,\s*html\.android-webview #login > \.watermark-link \{[^}]*Norwester/u);
+});
+
+test("installed greeting rails share local-time copy and keep Bangla accessible and motion-safe", () => {
+  const shell = readFileSync(new URL("../android-study-shell.js", import.meta.url), "utf8");
+  const theme = readFileSync(new URL("../android-app-theme.css", import.meta.url), "utf8");
+  const nativeCss = readFileSync(new URL("../android-study-shell.css", import.meta.url), "utf8");
+  assert.match(shell, /line\.lang = .*\? "bn" : "it"/u);
+  assert.match(shell, /rail\.setAttribute\("aria-hidden", "true"\)/u);
+  assert.match(shell, /\["Bentornato\.", \.\.\.homeGreetings\(new Date\(\)\.getHours\(\)\), "Bentornato\."\]/u);
+  assert.match(shell, /MutationObserver\(syncLoginGreeting\).*attributeFilter: \["class"\]/u);
+  assert.match(theme, /native-login-greeting-rise 16s[^;]+infinite/u);
+  assert.match(theme, /#login #loginTitle \{\s*height: 48px; overflow: hidden/u);
+  assert.match(theme, /#loginTitle \.native-login-greeting-rail > \[lang="bn"\] \{[^}]*var\(--font-bn-title\)/u);
+  assert.match(nativeCss, /\.native-home h1 \.native-greeting-rail > \[lang="bn"\] \{[^}]*var\(--font-bn-title\)/u);
+  assert.match(theme, /#login:is\(\.hidden, :focus-within\)/u);
+  assert.match(theme, /data-native-background\] #login/u);
+  assert.match(theme, /data-native-motion-paused\] #login[^}]*animation: none; transform: none/u);
+  assert.match(theme, /prefers-reduced-motion: reduce\) \{[^}]*native-login-greeting-rail \{ animation: none; transform: none/u);
 });
 
 test("login uses locally compiled, scoped daisyUI components", () => {

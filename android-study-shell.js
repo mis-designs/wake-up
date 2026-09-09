@@ -1,4 +1,4 @@
-import { ChapterDial, clampChapter, chapterAtAngle, dialLabelPosition, homeGreetings, progressValue } from "./android-rotary-model.mjs?v=7-right-bilingual";
+import { ChapterDial, clampChapter, chapterAtAngle, dialLabelPosition, homeGreetings, progressValue } from "./android-rotary-model.mjs?v=8-bangla-greetings";
 
 // Runtime gate is the native shell marker, not screen size or standalone/PWA mode.
 const doc = document;
@@ -252,19 +252,41 @@ function initialize() {
     chapterTitle.style.setProperty("--native-title-size", `${size}px`);
   }
 
-  function showGreeting() {
-    const title = doc.getElementById("nativeHomeTitle");
-    const greetings = homeGreetings(new Date().getHours());
+  // A decorative rail, not a live region: changing copy never announces over
+  // form entry or changes the heading's accessible name / reserved geometry.
+  function renderGreeting(title, greetings, className, accessibleName) {
     const rail = doc.createElement("span");
-    rail.className = "native-greeting-rail";
+    rail.className = className;
     rail.setAttribute("aria-hidden", "true");
     for (const text of greetings) {
       const line = doc.createElement("span");
       line.textContent = text;
+      line.lang = /[\u0980-\u09ff]/u.test(text) ? "bn" : "it";
       rail.append(line);
     }
-    title.setAttribute("aria-label", `${greetings[1]}. Benvenuto in Magic Book`);
+    title.setAttribute("aria-label", accessibleName);
     title.replaceChildren(rail);
+  }
+
+  function showGreeting() {
+    const greetings = homeGreetings(new Date().getHours());
+    renderGreeting(doc.getElementById("nativeHomeTitle"), greetings, "native-greeting-rail", `${greetings[1]}. Benvenuto in Magic Book`);
+  }
+
+  const loginScreen = doc.getElementById("login");
+  let loginVisible = false;
+  function syncLoginGreeting() {
+    const visible = loginScreen && !loginScreen.classList.contains("hidden");
+    if (visible && !loginVisible) {
+      // Four readable resting frames; the duplicate first row closes the loop.
+      // Recompute local time on entry, without adding timers or auth callbacks.
+      renderGreeting(doc.getElementById("loginTitle"), ["Bentornato.", ...homeGreetings(new Date().getHours()), "Bentornato."], "native-login-greeting-rail", "Bentornato in MagicBook");
+    }
+    loginVisible = Boolean(visible);
+  }
+  if (loginScreen) {
+    new MutationObserver(syncLoginGreeting).observe(loginScreen, { attributes: true, attributeFilter: ["class"] });
+    syncLoginGreeting();
   }
 
   function applySelection(result) {

@@ -293,12 +293,12 @@ test("all 25 mapped All Books covers exist as lightweight WebP assets", () => {
 test("changed native files are versioned together in the offline shell", () => {
   const index = read("index.html");
   const worker = read("service-worker.js");
-  for (const asset of ["android-study-shell.css?v=16-matte-actions", "android-study-shell.js?v=11-layered-icons"]) {
+  for (const asset of ["android-study-shell.css?v=17-login-glass", "android-study-shell.js?v=12-bangla-greetings"]) {
     assert.ok(index.includes(asset));
     assert.ok(worker.includes(asset));
   }
-  assert.ok(worker.includes("android-rotary-model.mjs?v=7-right-bilingual"));
-  assert.ok(read("android-study-shell.js").includes("android-rotary-model.mjs?v=7-right-bilingual"));
+  assert.ok(worker.includes("android-rotary-model.mjs?v=8-bangla-greetings"));
+  assert.ok(read("android-study-shell.js").includes("android-rotary-model.mjs?v=8-bangla-greetings"));
 });
 
 test("ornamental title font is self-hosted, licensed and cached with a remeasure after loading", () => {

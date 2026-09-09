@@ -10,7 +10,8 @@ test("native section symbols reuse cached action assets and reserve decorative g
   for (const file of ["study_quiz.svg", "do_quiz.svg", "dictionary.svg", "exam.svg", "Statistics.png", "errors.png"]) {
     assert.ok(read("service-worker.js").includes(`"/icons/${file}"`));
   }
-  const sectionRules = theme.slice(theme.indexOf("/* Reuse the chapter-action symbols"), theme.indexOf("@media (forced-colors: active)"));
+  const sectionStart = theme.indexOf("/* Reuse the chapter-action symbols");
+  const sectionRules = theme.slice(sectionStart, theme.indexOf("@media (forced-colors: active)", sectionStart));
   for (const selector of sectionRules.replace(/\/\*[\s\S]*?\*\//g, "").split("}")) {
     if (!selector.trim()) continue;
     assert.match(selector.trim(), /^html\.android-webview/);

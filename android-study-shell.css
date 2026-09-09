@@ -117,6 +117,10 @@ html.android-webview .native-home h1 {
 html.android-webview .native-greeting-rail { display: block; animation: native-greeting-rise 9s ease-in-out both; }
 html.android-webview .native-home h1 span { font: inherit; letter-spacing: inherit; }
 html.android-webview .native-greeting-rail > span { display: block; height: 44px; white-space: nowrap; }
+html.android-webview .native-home h1 .native-greeting-rail > [lang="bn"] {
+  font: 700 clamp(23px, 6vw, 29px)/44px var(--font-bn-title);
+  letter-spacing: 0; text-transform: none;
+}
 html.android-webview .native-book {
   position: relative;
   display: grid;

@@ -81,7 +81,7 @@ test("tapping the wheel selects the visible number without a drag or launch", ()
 
 test("Home greeting follows the phone's local hour, with a stable three-line sequence", () => {
   for (const [hour, greeting] of [[0, "Buonasera"], [4, "Buonasera"], [5, "Buongiorno"], [11, "Buongiorno"], [12, "Buon pomeriggio"], [17, "Buon pomeriggio"], [18, "Buonasera"], [23, "Buonasera"]]) {
-    assert.deepEqual(homeGreetings(hour), ["Assalamu alaikum", greeting, "Ciao!"]);
+    assert.deepEqual(homeGreetings(hour), ["আসসালামু আলাইকুম", greeting, "Ciao!"]);
   }
 });
 

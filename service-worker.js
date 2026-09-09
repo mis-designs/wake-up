@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v181-matte-actions";
+const CACHE_NAME = "magicbook-pwa-v182-login-glass";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -16,10 +16,10 @@ const STATIC_ASSETS = [
   "/style.css?v=72-solid-profile-controls",
   "/mobile-experience.css?v=4-admin-scroll",
   "/android-webview-mode.js?v=6-pearl-blue",
-  "/android-app-theme.css?v=8-login-sticker",
-  "/android-study-shell.css?v=16-matte-actions",
-  "/android-study-shell.js?v=11-layered-icons",
-  "/android-rotary-model.mjs?v=7-right-bilingual",
+  "/android-app-theme.css?v=9-login-glass",
+  "/android-study-shell.css?v=17-login-glass",
+  "/android-study-shell.js?v=12-bangla-greetings",
+  "/android-rotary-model.mjs?v=8-bangla-greetings",
   "/assets/native-chapter-covers.json",
   "/assets/fonts/norwester/norwester.woff",
   "/assets/fonts/el-messiri/ElMessiri.ttf",
