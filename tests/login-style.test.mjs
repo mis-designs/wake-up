@@ -10,63 +10,58 @@ const daisyBuild = readFileSync(new URL("../assets/daisyui.css", import.meta.url
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 const loginStyles = readFileSync(new URL("../login-experience.css", import.meta.url), "utf8");
 
-test("web and Android login reuse the same intact Home book", () => {
+
+test("web and Android login reuse the intact Home book without a duplicate brand", () => {
   assert.match(page, /class="login-hero-img" src="\/icons\/mg_book\.svg" width="280" height="390" alt=""/u);
-  assert.match(loginStyles, /#login \.login-hero-img \{[^}]*object-fit: contain; filter: none; box-shadow: none/u);
+  assert.match(loginStyles, /object-fit: contain; filter: none; box-shadow: none/u);
   assert.match(page, /class="native-book-art" src="\/icons\/mg_book\.svg"/u);
-  assert.match(readFileSync(new URL("../service-worker.js", import.meta.url), "utf8"), /"\/icons\/mg_book\.svg"/u);
+  assert.doesNotMatch(page, /class="login-brand"|class="login-heading"|id="phoneHelp"/u);
 });
 
-test("shared glass login hides only visual labels and preserves canonical form semantics", () => {
-  assert.match(loginStyles, /#login > \.login-pass \{[^}]*backdrop-filter: blur\(16px\)/u);
-  assert.match(loginStyles, /#login :is\(\.login-kicker, \.login-greeting-cloud, \.login-road\) \{ display: none/u);
-  const label = loginStyles.match(/#login \.login-label\[for="user"\] \{([^}]+)\}/u)[1];
-  assert.match(label, /clip-path: inset\(50%\)/u);
-  assert.doesNotMatch(label, /display: none|visibility: hidden/u);
-  assert.match(loginStyles, /--login-display: "Norwester"/u);
+test("shared unibody login retains accessible names and a direct phone form", () => {
+  assert.match(loginStyles, /#login > \.login-pass \{[^}]*border: 0;[^}]*background: transparent;[^}]*box-shadow: none/u);
+  assert.match(loginStyles, /#login #loginTitle, #login \.login-label\[for="user"\] \{[^}]*clip-path: inset\(50%\)/u);
+  assert.match(page, /id="loginTitle">Accedi a Magic Book/u);
+  assert.doesNotMatch(page, /Inserisci il numero collegato a MagicBook|Puoi scriverlo con o senza il prefisso/u);
+  assert.match(loginStyles, /@media \(min-width: 900px\)/u);
+  assert.match(loginStyles, /min-height: 100svh; min-height: 100dvh/u);
+  assert.ok(loginStyles.includes('#login:not(.hidden) ~ #chapterMenu:not(.menu-open) { box-shadow: none; }'));
 });
 
-test("shared greeting rails keep local-time copy, Bangla and motion-safe stable geometry", () => {
+test("sign presentation is bounded, motion-safe and never owns authentication", () => {
   const shell = readFileSync(new URL("../login-experience.js", import.meta.url), "utf8");
-  const renderer = readFileSync(new URL("../greeting-view.mjs", import.meta.url), "utf8");
-  const nativeCss = readFileSync(new URL("../android-study-shell.css", import.meta.url), "utf8");
-  assert.match(renderer, /line\.lang = .*\? "bn" : "it"/u);
-  assert.match(renderer, /rail\.setAttribute\("aria-hidden", "true"\)/u);
-  assert.match(shell, /\["Bentornato\.", \.\.\.homeGreetings\(new Date\(\)\.getHours\(\)\), "Bentornato\."\]/u);
-  assert.match(shell, /MutationObserver\(syncLoginGreeting\).*attributeFilter: \["class"\]/u);
-  assert.match(loginStyles, /login-greeting-rise 16s[^;]+infinite/u);
-  assert.match(loginStyles, /#login #loginTitle \{\s*height: 48px; overflow: hidden/u);
-  assert.match(loginStyles, /#loginTitle \.login-greeting-rail > \[lang="bn"\] \{[^}]*var\(--font-bn-title\)/u);
-  assert.match(nativeCss, /\.native-home h1 \.native-greeting-rail > \[lang="bn"\] \{[^}]*var\(--font-bn-title\)/u);
-  assert.match(loginStyles, /#login:is\(\.hidden, :focus-within, \[data-login-background\]\)/u);
+  assert.match(shell, /SIGN_HOLD_MS/u);
+  assert.match(shell, /pending\?\.abort\(\)/u);
+  assert.match(shell, /ticket !== revision/u);
+  assert.match(shell, /image\.decode\(\)/u);
+  assert.match(shell, /clearTimeout\(timeout\)/u);
+  assert.match(shell, /pagehide/u);
   assert.match(shell, /document\.hidden/u);
-  assert.match(loginStyles, /data-native-motion-paused\] #login[^}]*animation: none; transform: none/u);
-  assert.match(loginStyles, /prefers-reduced-motion: reduce\) \{[^}]*login-greeting-rail\) \{ animation: none; transform: none/u);
+  assert.match(shell, /visualViewport/u);
+  assert.match(shell, /viewport\.scale - 1/u);
+  assert.match(shell, /--login-keyboard-inset/u);
+  assert.doesNotMatch(shell, /fetch\(|setInterval|requestAuthAction|localStorage\.setItem|completeLogin\(/u);
+  assert.match(loginStyles, /prefers-reduced-motion: reduce/u);
+  assert.match(loginStyles, /data-native-motion-paused/u);
+  assert.match(page, /id="loginMotionToggle"[^>]*aria-label="Pausa animazioni"[^>]*aria-pressed="false"/u);
 });
 
-test("login uses the original logo and an animated two-line Norwester wordmark", () => {
+test("original signature remains small and readable without a black container", () => {
   assert.match(page, /class="login-watermark-logo" src="\/icons\/mdesignstextlogo\.png" width="512" height="137" alt="MiskatDesigns"/u);
-  assert.match(page, /class="login-brand" aria-label="MagicBook"><span aria-hidden="true">Magic<\/span><span aria-hidden="true">Book<\/span>/u);
-  assert.match(loginStyles, /\.login-brand \{[^}]*flex-direction: column;[^}]*login-brand-drift 6s/u);
-  assert.match(loginStyles, /\.login-brand > span \{[^}]*font: inherit/u);
-  assert.match(loginStyles, /\.login-watermark-logo \{[^}]*aspect-ratio: 512 \/ 137; object-fit: contain/u);
-  assert.match(loginStyles, /watermark-link:focus-visible/);
+  assert.match(loginStyles, /#login \.watermark-link \{[^}]*min-height: 44px;[^}]*background: transparent/u);
+  assert.match(loginStyles, /\.login-watermark-logo \{[^}]*width: 132px;[^}]*aspect-ratio: 512 \/ 137/u);
+  assert.match(loginStyles, /watermark-link:focus-visible/u);
 });
 
-test("shared login ships offline without exposing Android Home to browsers", () => {
+test("shared login assets are versioned without exposing Android Home to browsers", () => {
   const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
   const native = readFileSync(new URL("../android-study-shell.js", import.meta.url), "utf8");
-  const theme = readFileSync(new URL("../android-app-theme.css", import.meta.url), "utf8");
-  const login = readFileSync(new URL("../login-experience.js", import.meta.url), "utf8");
-  for (const asset of ["login-experience.css?v=1-shared-login", "login-experience.js?v=1-shared-login"]) {
+  for (const asset of ["login-experience.css?v=2-unibody", "login-experience.js?v=2-unibody"]) {
     assert.ok(page.includes(asset)); assert.ok(worker.includes(asset));
   }
-  for (const asset of ["greeting-view.mjs?v=1-shared-login", "/icons/mdesignstextlogo.png", "/assets/fonts/norwester/norwester.woff"]) assert.ok(worker.includes(asset));
+  for (const asset of ["login-signs.mjs?v=1", "/icons/mdesignstextlogo.png", "/assets/fonts/norwester/norwester.woff"]) assert.ok(worker.includes(asset));
   assert.match(native, /classList\.contains\("android-webview"\) && template/u);
-  assert.doesNotMatch(native, /syncLoginGreeting|function renderGreeting/u);
-  assert.doesNotMatch(login, /initialize\(|MagicBookAndroidAdapter|fetch\(|setInterval/u);
-  const palette = theme.match(/html\.android-webview, #login \{([^}]+)\}/u)[1];
-  assert.ok(palette.split('\n').filter(s => s.trim()).every(s => s.trim().startsWith('--')));
+  assert.match(loginStyles, /font-family: "Norwester"/u);
 });
 
 test("login uses locally compiled, scoped daisyUI components", () => {
@@ -95,21 +90,19 @@ test("login uses locally compiled, scoped daisyUI components", () => {
   assert.equal(packageJson.devDependencies.daisyui, "^5.7.0");
 });
 
-test("login keeps the Magic Book type, route motif, and teal-to-lime action", () => {
-  assert.match(page, /family=Rubik:wght@400;500;600;700;800/);
-  assert.match(styles, /#login,\s*#login \*[\s\S]*?font-family: "Rubik", "Inter", sans-serif/);
-  assert.match(page, /class="login-road" aria-hidden="true"/);
-  assert.match(styles, /LOGIN — DAISYUI STUDY PASS/);
-  assert.match(styles, /#login > \.login-pass[\s\S]*?grid-template-columns/);
-  assert.match(styles, /#login \.login-submit,[\s\S]*?radial-gradient\([\s\S]*?201, 244, 29[\s\S]*?linear-gradient\(112deg[\s\S]*?#0a8270/);
-  assert.match(styles, /@keyframes loginGradientBlend/);
-  assert.match(styles, /prefers-reduced-motion: reduce[\s\S]*?#login \.login-submit \{ animation: none; \}/);
+
+test("unibody controls use canonical blue with stable busy and disabled geometry", () => {
+  assert.match(loginStyles, /#login \.d-btn\.login-submit \{[^}]*height: 58px;[^}]*var\(--app-palette-primary\)/u);
+  assert.match(loginStyles, /#login \.login-submit:disabled \{[^}]*var\(--app-palette-divider\)/u);
+  assert.match(loginStyles, /#login \.login-submit\.is-loading \{[^}]*var\(--app-palette-primary\)/u);
+  assert.match(loginStyles, /#login \.login-submit-spinner \{ position: absolute;/u);
+  assert.match(loginStyles, /#login \.login-input\.d-input \{[^}]*height: 60px;/u);
 });
 
 test("login form owns validation and exposes accessible field states", () => {
   assert.match(page, /<form class="login-form d-fieldset"[^>]*novalidate/);
   assert.match(page, /<label class="login-label d-label" for="user">Numero di telefono<\/label>/);
-  assert.match(page, /id="user"[^>]*autocomplete="tel"[^>]*aria-describedby="phoneHelp err"/);
+  assert.match(page, /id="user"[^>]*autocomplete="tel"[^>]*aria-describedby="err"/);
   assert.match(page, /id="adminPassword"[^>]*type="password"[^>]*autocomplete="current-password"/);
   assert.match(page, /id="adminPasswordToggle"[^>]*aria-label="Mostra password amministratore"[^>]*aria-pressed="false"/);
   assert.match(page, /id="err"[^>]*role="status"[^>]*aria-live="polite"/);
@@ -125,19 +118,13 @@ test("login form owns validation and exposes accessible field states", () => {
   assert.match(script, /Nascondi password amministratore/);
 });
 
-test("login fills the upper space with restrained multilingual greetings", () => {
-  for (const greeting of ["Ciao!", "Hello", "Welcome back", "Assalamu alaikum", "স্বাগতম"]) {
-    assert.match(page, new RegExp(greeting));
-  }
-  assert.match(page, /login-greeting-cloud" aria-hidden="true"/);
-  assert.match(script, /function updateLoginTimeGreeting/);
-  for (const greeting of ["Good morning", "Good afternoon", "Good evening", "Good night"]) {
-    assert.match(script, new RegExp(greeting));
-  }
-  assert.match(script, /showLoginScreen[\s\S]*?updateLoginTimeGreeting\(\)/);
-  assert.match(styles, /login-greeting-ciao[\s\S]*?font-family: "Bodoni Moda"/);
-  assert.match(styles, /login-greeting-bangla[\s\S]*?font-family: "Ekush"/);
-  assert.match(styles, /prefers-reduced-motion: reduce[\s\S]*?login-greeting-cloud/);
+
+test("sign captions use the existing Bangla title face without changing native Home", () => {
+  assert.match(page, /id="loginSign"[^>]*aria-label="Dare precedenza"/u);
+  assert.match(page, /<figcaption lang="bn">অগ্রাধিকার দিতে হবে<\/figcaption>/u);
+  assert.match(loginStyles, /#login \.login-sign figcaption \{[^}]*var\(--font-bn-title\)/u);
+  assert.match(loginStyles, /grid-template-rows: 112px 70px/u);
+  assert.match(readFileSync(new URL("../android-study-shell.css", import.meta.url), "utf8"), /\.native-home h1 \.native-greeting-rail > \[lang="bn"\]/u);
 });
 
 test("main login no longer presents the finished optional promo-code field", () => {

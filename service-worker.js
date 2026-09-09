@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v183-shared-login";
+const CACHE_NAME = "magicbook-pwa-v184-unibody-login";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -15,8 +15,9 @@ const STATIC_ASSETS = [
   "/loading-ui.css?v=1-shared-gif-loader",
   "/style.css?v=72-solid-profile-controls",
   "/mobile-experience.css?v=4-admin-scroll",
-  "/login-experience.css?v=1-shared-login",
-  "/login-experience.js?v=1-shared-login",
+  "/login-experience.css?v=2-unibody",
+  "/login-experience.js?v=2-unibody",
+  "/login-signs.mjs?v=1",
   "/greeting-view.mjs?v=1-shared-login",
   "/icons/mdesignstextlogo.png",
   "/android-webview-mode.js?v=6-pearl-blue",

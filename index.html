@@ -107,7 +107,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script src="/offline-notice.js?v=1.0.0" defer></script>
 <link rel="stylesheet" href="src/learning-insights.css?v=9-card-spacing&ui=10">
 <link rel="stylesheet" href="mobile-experience.css?v=4-admin-scroll">
-<link rel="stylesheet" href="/login-experience.css?v=1-shared-login">
+<link rel="stylesheet" href="/login-experience.css?v=2-unibody">
 <link rel="stylesheet" href="/android-app-theme.css?v=10-shared-login">
 <link rel="stylesheet" href="/android-study-shell.css?v=18-shared-login">
 </head>
@@ -610,38 +610,20 @@ gtag('config', 'G-C5JPY9HFHD', {
 <!-- LOGIN -->
 <div class="card hidden" id="login" data-theme="magicbook">
   <main class="login-pass d-card" aria-labelledby="loginTitle">
+    <h1 id="loginTitle">Accedi a Magic Book</h1>
     <section class="login-story" aria-label="MagicBook TMM Bangla Patente">
-      <div class="login-greeting-cloud" aria-hidden="true">
-        <span class="login-greeting login-greeting-ciao">Ciao!</span>
-        <span class="login-greeting login-greeting-hello">Hello</span>
-        <span class="login-greeting login-greeting-welcome">Welcome back</span>
-        <span class="login-greeting login-greeting-time" data-login-time-greeting>Good day</span>
-        <span class="login-greeting login-greeting-bangla" lang="bn">স্বাগতম</span>
-        <span class="login-greeting login-greeting-salaam">Assalamu alaikum</span>
-      </div>
-
       <div class="login-story-body">
         <img class="login-hero-img" src="/icons/mg_book.svg" width="280" height="390" alt="">
-        <div class="login-story-copy">
-          <p class="login-brand" aria-label="MagicBook"><span aria-hidden="true">Magic</span><span aria-hidden="true">Book</span></p>
-          <p class="login-story-text">Libro, quiz e ripasso degli errori: il tuo percorso patente continua da qui.</p>
+        <div class="login-sign-stage">
+          <figure class="login-sign" id="loginSign" aria-label="Dare precedenza" data-nosnippet>
+            <div class="login-sign-art"><img width="160" height="120" alt="" decoding="async"></div>
+            <figcaption lang="bn">অগ্রাধিকার দিতে হবে</figcaption>
+          </figure>
         </div>
-      </div>
-
-      <div class="login-road" aria-hidden="true">
-        <span class="login-road-start"></span>
-        <span class="login-road-line"></span>
-        <span class="login-road-finish"></span>
       </div>
     </section>
 
     <section class="login-panel d-card-body">
-      <div class="login-heading">
-        <p class="login-kicker">ACCESSO AL PERCORSO</p>
-        <h1 id="loginTitle">Bentornato.</h1>
-        <p class="login-subtitle">Inserisci il numero collegato a MagicBook per riprendere esattamente da dove eri rimasto.</p>
-      </div>
-
       <form class="login-form d-fieldset" data-nosnippet novalidate onsubmit="event.preventDefault(); login();">
         <div class="login-field">
           <label class="login-label d-label" for="user">Numero di telefono</label>
@@ -649,9 +631,8 @@ gtag('config', 'G-C5JPY9HFHD', {
             <svg class="login-input-icon" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M7.2 3.5 9.5 8l-1.8 1.7c.8 2 2.5 3.7 4.6 4.6l1.7-1.8 4.5 2.3-.7 3.2c-.2.9-1 1.5-1.9 1.5A15.4 15.4 0 0 1 4.5 8.1c0-.9.6-1.7 1.5-1.9l1.2-2.7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <input class="login-input d-input d-input-lg" id="user" type="tel" placeholder="320 123 4567" autocomplete="tel" inputmode="tel" aria-describedby="phoneHelp err" aria-required="true">
+            <input class="login-input d-input d-input-lg" id="user" type="tel" placeholder="320 123 4567" autocomplete="tel" inputmode="tel" aria-describedby="err" aria-required="true">
           </div>
-          <p class="login-help" id="phoneHelp">Puoi scriverlo con o senza il prefisso +39.</p>
         </div>
 
         <div class="login-field admin-password-group hidden" id="adminPasswordGroup">
@@ -677,17 +658,20 @@ gtag('config', 'G-C5JPY9HFHD', {
         <p class="login-feedback d-alert d-alert-error d-alert-soft" id="err" data-nosnippet role="status" aria-live="polite"></p>
       </div>
 
+      <footer class="login-footer">
       <p class="login-device-note">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5.5 5.7v5.8c0 4.2 2.7 7.8 6.5 9.5 3.8-1.7 6.5-5.3 6.5-9.5V5.7L12 3Z" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="m9.4 12 1.7 1.7 3.6-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Accesso protetto e associato al tuo dispositivo.
       </p>
+      <a class="watermark-link" data-nosnippet href="https://www.facebook.com/share/14aaeMyWJGw/" target="_blank" rel="noopener noreferrer">
+      <img class="login-watermark-logo" src="/icons/mdesignstextlogo.png" width="512" height="137" alt="MiskatDesigns">
+      </a>
+      <button type="button" class="login-motion-toggle" id="loginMotionToggle" aria-label="Pausa animazioni" aria-pressed="false" title="Pausa animazioni">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path class="login-motion-pause" d="M8 6v12M16 6v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="login-motion-play" d="m9 6 9 6-9 6Z" fill="currentColor"/></svg>
+      </button>
+      </footer>
     </section>
   </main>
-
-    <a class="watermark-link" data-nosnippet href="https://www.facebook.com/share/14aaeMyWJGw/" target="_blank" rel="noopener noreferrer">
-      <img class="login-watermark-logo" src="/icons/mdesignstextlogo.png" width="512" height="137" alt="MiskatDesigns">
-      <span class="watermark-tip">Visit</span>
-    </a>
 </div>
 
 
@@ -1301,7 +1285,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script src="learning-sync.js?v=2"></script>
 <script src="src/learning-insights.js?v=8-section-icons&ui=9-intact-figures"></script>
 <script src="script.js?v=72-section-icons"></script>
-<script type="module" src="login-experience.js?v=1-shared-login"></script>
+<script type="module" src="login-experience.js?v=2-unibody"></script>
 <script type="module" src="android-study-shell.js?v=13-shared-login"></script>
 </body>
 </html>
