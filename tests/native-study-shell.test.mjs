@@ -71,8 +71,23 @@ test("right-hand wheel has a projected blue marker and a semantic blue launch bu
   assert.match(html, /id="nativeDialMarker"[^>]*cx="50"[^>]*cy="150"/u);
   assert.match(html, /class="native-dial-interior"[^]*<button[^>]*id="nativeOpenChapter"/u);
   assert.match(css, /\.native-dial \{ right: 0; transform: translate\(50%, -50%\)/u);
-  assert.match(css, /#nativeOpenChapter \{[^}]*left: 33\.333333%; top: 50%;[^}]*background: var\(--native-blue\); color: var\(--app-palette-on-primary\)/u);
+  assert.match(css, /#nativeOpenChapter \{[^}]*left: 33\.333333%; top: 50%;[^}]*background: transparent; color: var\(--app-palette-on-primary\)/u);
+  assert.match(css, /#nativeOpenChapter::before \{[^}]*background: var\(--native-blue\);[^}]*mask: var\(--native-emblem-shape\)/u);
   assert.match(read("android-study-shell.js"), /dialLabelPosition\(model.selected, value, 100\)/u);
+});
+
+test("Vai shares the scalloped shape without clipping its label, focus or touch target", () => {
+  const css = read("android-study-shell.css");
+  const button = css.split("#nativeOpenChapter {")[1].split("}")[0];
+  assert.match(button, /width: clamp\(56px, 22%, 72px\); height: auto; aspect-ratio: 1/u);
+  assert.match(button, /border: 0; border-radius: 0; pointer-events: auto/u);
+  assert.doesNotMatch(button, /(?:clip-path|mask):/u);
+  assert.match(css, /\.native-open-label \{[^}]*background: var\(--native-blue\);[^}]*white-space: nowrap; pointer-events: none/u);
+  assert.match(css, /\.native-open-label \{[^}]*font: inherit; letter-spacing: inherit/u);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[^]*#nativeOpenChapter \{ --native-open-press-scale: 1; transition: none/u);
+  assert.match(css, /\[data-native-motion-paused\][^\n]*#nativeOpenChapter \{ --native-open-press-scale: 1; transition: none/u);
+  assert.match(css, /@media \(forced-colors: active\)[^]*\.native-open-label \{ background: Highlight; color: HighlightText/u);
+  assert.match(read("index.html"), /id="nativeOpenChapter"[^>]*data-native-action="open"[^>]*><span class="native-open-label">Vai<\/span>/u);
 });
 
 test("six bilingual action rails preserve labels, font roles and fixed target geometry", () => {
@@ -164,9 +179,23 @@ test("layered action icons derive clear-front and tilted-plate styling from nati
   assert.match(css, /--native-emblem-base: var\(--native-blue\)/u);
   assert.match(css, /button\.is-blue \.native-action-emblem \{ --native-emblem-base: var\(--native-ink\)/u);
   assert.match(css, /--native-emblem-glass-top: color-mix\(in srgb, var\(--app-palette-paper\)/u);
-  assert.match(css, /\.native-action-emblem::before,[^]*content: ""; position: absolute; inset: 2px; border-radius: 8px;\s*pointer-events: none/u);
+  assert.match(css, /\.native-action-emblem::before,[^]*content: ""; position: absolute; inset: 1px; border: 0; border-radius: 0;[^}]*pointer-events: none/u);
   assert.match(css, /@media \(hover: hover\) and \(pointer: fine\)/u);
   assert.doesNotMatch(css, /--native-control-recess/u);
+});
+
+test("native icon backings share an offline scalloped silhouette without an outer ring", () => {
+  const css = read("android-study-shell.css");
+  assert.match(css, /--native-emblem-shape: url\("\/icons\/native-action-scallop\.svg"\)/u);
+  for (const property of ["-webkit-mask", "mask"]) {
+    assert.ok(css.includes(`${property}: var(--native-emblem-shape) center / contain no-repeat;`));
+  }
+  assert.doesNotMatch(css, /--native-emblem-(edge|reflection)/u);
+  const shape = read("icons/native-action-scallop.svg");
+  assert.match(shape, /viewBox="0 0 32 32"/u);
+  assert.equal((shape.match(/<path\b/gu) || []).length, 1);
+  assert.doesNotMatch(shape, /<(circle|rect|image|script)\b|stroke=/u);
+  assert.ok(read("service-worker.js").includes('"/icons/native-action-scallop.svg"'));
 });
 
 test("icon-layer motion honors both system and profile preferences without changing labels", () => {
@@ -260,7 +289,7 @@ test("all 25 mapped All Books covers exist as lightweight WebP assets", () => {
 test("changed native files are versioned together in the offline shell", () => {
   const index = read("index.html");
   const worker = read("service-worker.js");
-  for (const asset of ["android-study-shell.css?v=13-layered-icons", "android-study-shell.js?v=11-layered-icons"]) {
+  for (const asset of ["android-study-shell.css?v=15-scalloped-vai", "android-study-shell.js?v=11-layered-icons"]) {
     assert.ok(index.includes(asset));
     assert.ok(worker.includes(asset));
   }

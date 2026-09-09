@@ -63,7 +63,7 @@ test("the app marker precedes styles; only the native study variant may follow t
 
     assert.ok(markerIndex >= 0, `${page} must load the WebView marker`);
     assert.ok(markerIndex < firstStylesheetIndex, `${page} must mark the app before CSS`);
-    const studyIndex = html.indexOf("/android-study-shell.css?v=13-layered-icons");
+    const studyIndex = html.indexOf("/android-study-shell.css?v=15-scalloped-vai");
     if (page === "index.html") {
       assert.ok(studyIndex > themeIndex);
       assert.equal(studyIndex, lastStylesheetIndex + 'rel="stylesheet" href="'.length);

@@ -65,7 +65,7 @@ test("the bilingual card and Admin marker ship through fresh PWA assets", () => 
   assert.match(page, /quiz\.js\?v=82-section-icons/u);
   assert.match(page, /quiz-help\.css\?v=20260907-liquid-glass/u);
   assert.match(page, /quiz-help\.js\?v=20260907-liquid-glass/u);
-  assert.match(worker, /magicbook-pwa-v178-layered-icons/u);
+  assert.match(worker, /magicbook-pwa-v180-scalloped-vai/u);
   assert.match(worker, /mystyle\.css\?v=51-question-footer-reflow/u);
   assert.match(worker, /quiz\.js\?v=82-section-icons/u);
   assert.match(worker, /quiz-help\.css\?v=20260907-liquid-glass/u);
