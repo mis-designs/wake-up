@@ -87,7 +87,11 @@ function initialize() {
     rail.append(textSpan(original, language), textSpan(button.dataset.nativeBn, "bn"), textSpan(original, language));
     viewport.append(rail);
     // Keep the supplied decorative icon outside the moving language rail.
-    button.replaceChildren(accessible, ...(icon ? [icon] : []), viewport);
+    const emblem = doc.createElement("span");
+    emblem.className = "native-action-emblem";
+    emblem.setAttribute("aria-hidden", "true");
+    if (icon) emblem.append(icon);
+    button.replaceChildren(accessible, ...(icon ? [emblem] : []), viewport);
   });
   for (let i = 0; i < 25; i++) {
     const label = doc.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -193,10 +197,12 @@ function initialize() {
     if (!model.gesture) scheduleDraw(model.selected);
   }
 
-  // Only the text adapts. The caption's fixed row never resizes the wheel.
+  // Only the text adapts. CSS preserves whole words, so width checks also catch
+  // the longest word rather than accepting broken final letters as a valid fit.
   function fitChapterTitle() {
     if (!chapterTitle.clientWidth) return;
-    const key = `${chapterTitle.clientWidth}:${chapterTitle.clientHeight}:${chapterTitle.textContent}`;
+    const face = getComputedStyle(chapterTitle).fontFamily;
+    const key = `${face}:${chapterTitle.clientWidth}:${chapterTitle.clientHeight}:${chapterTitle.textContent}`;
     let size = titleSizes.get(key);
     if (!size) {
       size = 28;

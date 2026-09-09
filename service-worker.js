@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v175-balanced-chapters";
+const CACHE_NAME = "magicbook-pwa-v176-wordfit-controls";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -17,8 +17,8 @@ const STATIC_ASSETS = [
   "/mobile-experience.css?v=4-admin-scroll",
   "/android-webview-mode.js?v=6-pearl-blue",
   "/android-app-theme.css?v=7-section-icons",
-  "/android-study-shell.css?v=10-balanced-chapters",
-  "/android-study-shell.js?v=8-action-icons",
+  "/android-study-shell.css?v=11-wordfit-controls",
+  "/android-study-shell.js?v=9-wordfit-controls",
   "/android-rotary-model.mjs?v=7-right-bilingual",
   "/assets/native-chapter-covers.json",
   "/assets/fonts/norwester/norwester.woff",

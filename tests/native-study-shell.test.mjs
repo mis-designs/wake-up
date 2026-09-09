@@ -117,7 +117,9 @@ test("six supplied action icons stay outside the animated label rail and ship of
   }
   const js = read("android-study-shell.js");
   assert.match(js, /button\.querySelector\("\.native-action-icon"\)/u);
-  assert.match(js, /button\.replaceChildren\(accessible, \.\.\.\(icon \? \[icon\] : \[\]\), viewport\)/u);
+  assert.match(js, /emblem\.setAttribute\("aria-hidden", "true"\)/u);
+  assert.match(js, /if \(icon\) emblem\.append\(icon\)/u);
+  assert.match(js, /button\.replaceChildren\(accessible, \.\.\.\(icon \? \[emblem\] : \[\]\), viewport\)/u);
   const css = read("android-study-shell.css");
   assert.match(css, /\.native-action-icon \{[^}]*width: 22px; height: 22px;[^}]*pointer-events: none/u);
   assert.match(css, /\.native-action-icon\.is-symbol \{[^}]*filter: brightness\(0\) invert\(1\)/u);
@@ -127,12 +129,34 @@ test("native chapter actions share one compact rhythm with labels beside their i
   const css = read("android-study-shell.css");
   const html = read("index.html").split('<template id="androidStudyTemplate">')[1].split('</template>')[0];
   assert.match(html, /class="native-chapter-workspace"[^]*class="native-orbit-stage"[^]*class="native-actions"/u);
-  assert.match(css, /\.native-actions \{[^}]*width: min\(88%, 380px\)/u);
-  assert.match(css, /\.native-actions > button \{[^}]*grid-template-columns: 22px minmax\(0, 1fr\);[^}]*column-gap: 6px;[^}]*min-height: 48px/u);
+  assert.match(css, /\.native-actions \{[^}]*width: min\(92%, 392px\)/u);
+  assert.match(css, /\.native-actions > button \{[^}]*grid-template-columns: 30px minmax\(0, 1fr\);[^}]*column-gap: 8px;[^}]*min-height: 48px/u);
   assert.doesNotMatch(css, /\.native-learning-action\s*\{[^}]*min-height/u);
   assert.match(css, /\.native-label-rail > span \{[^}]*justify-items: start;[^}]*height: 40px/u);
   assert.match(css, /\.native-road-divider \.native-roundabout \{ width: 22px; height: 22px/u);
   assert.match(css, /\.native-road-divider img:not\(\.native-roundabout\) \{ opacity: \.45/u);
+});
+
+test("chapter title fits complete words without hyphenation or changing the frame", () => {
+  const css = read("android-study-shell.css").split('html.android-webview #nativeChapterTitle {')[1].split('}')[0];
+  assert.match(css, /position: absolute; inset: 0/u);
+  assert.match(css, /grid-template-columns: minmax\(0, 1fr\)/u);
+  assert.match(css, /overflow-wrap: normal; word-break: normal; hyphens: none/u);
+  assert.doesNotMatch(css, /(?:overflow-wrap|word-break):\s*(?:anywhere|break-all|break-word)/u);
+  const js = read("android-study-shell.js");
+  assert.match(js, /chapterTitle\.scrollWidth > chapterTitle\.clientWidth/u);
+  assert.match(js, /getComputedStyle\(chapterTitle\)\.fontFamily/u);
+  assert.match(js, /size > 16/u);
+  assert.match(js, /titleSizes\.clear\(\); fitChapterTitle\(\)/u);
+});
+
+test("native instrument controls share a decorative recess and motion-safe tactile states", () => {
+  const css = read("android-study-shell.css");
+  assert.match(css, /\.native-action-emblem \{[^}]*width: 30px; height: 30px;[^}]*pointer-events: none/u);
+  assert.match(css, /\.native-chapters \.native-actions > button:active:not\(:disabled\) \{[^}]*transform: translateY\(1px\)/u);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[^]*\.native-actions > button:active:not\(:disabled\) \{ transform: none/u);
+  assert.match(css, /@media \(forced-colors: active\)[^]*\.native-action-emblem \{ border-color: ButtonText/u);
+  assert.match(css, /\[data-app-transition\][^\n]*button \{ pointer-events: none/u);
 });
 
 test("title-to-artwork presentation is bounded, interruptible and selection-versioned", () => {
@@ -166,7 +190,7 @@ test("all 25 mapped All Books covers exist as lightweight WebP assets", () => {
 test("changed native files are versioned together in the offline shell", () => {
   const index = read("index.html");
   const worker = read("service-worker.js");
-  for (const asset of ["android-study-shell.css?v=10-balanced-chapters", "android-study-shell.js?v=8-action-icons"]) {
+  for (const asset of ["android-study-shell.css?v=11-wordfit-controls", "android-study-shell.js?v=9-wordfit-controls"]) {
     assert.ok(index.includes(asset));
     assert.ok(worker.includes(asset));
   }
