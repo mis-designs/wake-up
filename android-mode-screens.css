@@ -1,0 +1,183 @@
+/* Full-page mode picker: the existing Quiz/Exam workflow, installed Android only. */
+html.android-webview .native-mode-screen {
+  --mode-canvas: var(--app-palette-background);
+  --mode-paper: var(--app-palette-paper);
+  --mode-ink: var(--app-palette-text);
+  --mode-muted: var(--app-palette-muted);
+  --mode-blue: var(--app-palette-primary);
+  --mode-focus: var(--app-palette-primary-strong);
+  --mode-line: var(--app-palette-divider);
+  --mode-clover: url("/icons/native-chapter-clover.svg");
+  align-items: stretch;
+  background: var(--mode-canvas);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: var(--mode-ink);
+  transition: opacity 180ms ease;
+  font-family: var(--native-body);
+}
+html.android-webview .native-mode-screen.hidden { display: none; }
+/* Route presentation wins over legacy utility display declarations. */
+html.android-webview body.native-mode-open :is(#home, #chapters, #learningInsightsScreen, #magicDictionaryScreen, #appHeader, #chapterMenu, #profileBtn, #profilePanel, #adminEntryBtn, #whatsappBtn, .native-dock) { display: none !important; }
+html.android-webview .native-mode-screen .qms-sheet {
+  width: 100%; max-width: none; height: 100%; max-height: none;
+  min-height: 0; border-radius: 0; border: 0;
+  background: var(--mode-canvas); box-shadow: none;
+  transform: translateX(14px); transition: transform 240ms cubic-bezier(.22,.7,.25,1);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+html.android-webview .native-mode-screen.qms-visible .qms-sheet { transform: none; }
+/* Native trial eligibility is already stated in the panel subtitle, without color-only instructions. */
+html.android-webview .native-mode-screen :is(.qms-drag-handle, #qmsCardStudy, .qms-card-badge, .qms-new-tag, .qms-free-guide) { display: none; }
+html.android-webview .native-mode-screen .qms-header {
+  width: min(100%, 540px); margin: 0 auto; min-height: 60px;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 8px;
+  padding: 8px 16px; box-sizing: border-box;
+}
+html.android-webview .native-mode-screen .qms-title {
+  position: static; justify-self: center; margin: 0; overflow: visible;
+  transform: none;
+  white-space: normal; text-wrap: balance; text-align: center;
+  color: var(--mode-ink); font: 400 22px/1.15 var(--native-display);
+  padding-inline-start: 0; letter-spacing: .01em;
+}
+html.android-webview .native-mode-screen .qms-title::before { content: none; }
+html.android-webview .native-mode-screen .qms-back {
+  background: none; border: 0; border-radius: 12px; width: 44px; height: 44px;
+}
+html.android-webview .native-mode-screen .qms-back:hover { background: var(--mode-line); }
+html.android-webview .native-mode-screen .native-mode-tabs {
+  display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 4px;
+  width: min(calc(100% - 32px), 508px); margin: 4px auto 0;
+  padding: 4px; box-sizing: border-box; border: 1px solid var(--mode-line);
+  border-radius: 16px; background: var(--mode-paper); flex-shrink: 0;
+}
+html.android-webview .native-mode-screen .native-mode-tabs button {
+  border: 0; border-radius: 11px; min-height: 44px; padding: 8px 4px;
+  background: transparent; color: var(--mode-muted); box-shadow: none;
+  font: 400 18px/1.2 var(--native-display); cursor: pointer;
+  transition: background-color 160ms, color 160ms;
+}
+html.android-webview .native-mode-screen .native-mode-tabs button[aria-selected="true"] { background: var(--mode-ink); color: var(--mode-paper); }
+html.android-webview .native-mode-screen .native-mode-tabs button:hover:not([aria-selected="true"]) { color: var(--mode-ink); background: var(--mode-canvas); }
+html.android-webview .native-mode-screen .qms-body {
+  width: 100%; max-width: 540px; margin: 0 auto; box-sizing: border-box;
+  flex: 1; min-height: 0; gap: 0;
+  padding: 24px 22px max(18px, env(safe-area-inset-bottom, 0px));
+  scroll-padding: 18px; scrollbar-gutter: stable;
+  scrollbar-color: var(--app-palette-border) var(--mode-canvas); scrollbar-width: thin;
+}
+html.android-webview .native-mode-screen .qms-card {
+  /* Cancel the canonical sheet's !important active-card frame, not its state. */
+  display: flex; flex-direction: column; flex: 1 0 auto; gap: 20px;
+  padding: 0; min-height: 100%; box-sizing: border-box; border: 0 !important;
+  border-radius: 0; background: transparent; box-shadow: none !important;
+  opacity: 1; transform: none; filter: none; transition: none;
+}
+html.android-webview .native-mode-screen .qms-card[hidden] { display: none; }
+html.android-webview .native-mode-screen .qms-card::before,
+html.android-webview .native-mode-screen .qms-card::after { content: none; }
+html.android-webview .native-mode-screen .qms-card-header { display: block; margin: 0; }
+html.android-webview .native-mode-screen .qms-card-title {
+  color: var(--mode-ink); font: 400 28px/1.15 var(--native-display);
+  letter-spacing: 0; overflow-wrap: normal; word-break: normal;
+}
+html.android-webview .native-mode-screen .qms-card-sub {
+  margin-top: 7px; color: var(--mode-muted); font: 400 14px/1.5 var(--native-body);
+}
+html.android-webview .native-mode-screen .native-mode-metric {
+  flex: 1; min-height: 170px; display: flex; align-items: center; justify-content: center;
+  gap: 18px; flex-wrap: wrap; align-content: center; padding: 16px 0;
+}
+html.android-webview .native-mode-screen .native-mode-metric strong {
+  display: grid; place-items: center; width: 114px; height: 130px;
+  border-radius: 57px 57px 18px 18px; background: var(--mode-paper);
+  color: var(--mode-blue); font: 400 62px/1 var(--native-display);
+}
+html.android-webview .native-mode-screen .native-mode-metric span {
+  color: var(--mode-muted); max-width: 105px; font-size: 15px; line-height: 1.5;
+}
+html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) {
+  display: grid; grid-template-columns: repeat(5,minmax(44px,1fr)); gap: 8px;
+  width: 100%; max-width: 360px; margin: 0 auto;
+}
+html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) .qms-pill {
+  position: relative; isolation: isolate; display: grid; place-items: center;
+  width: 100%; min-width: 44px; height: 52px; margin: 0; padding: 0;
+  border: 0; border-radius: 0; background: transparent; box-shadow: none;
+  color: var(--mode-ink); font: 400 24px/1 var(--native-display);
+  font-variant-numeric: tabular-nums; letter-spacing: 0; cursor: pointer;
+  opacity: 1; filter: none; transform: none;
+  transition: color 160ms, transform 160ms;
+}
+html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) .qms-pill::before,
+html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) .qms-pill::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; display: block;
+  pointer-events: none; transform: none; transition: opacity 160ms, background-color 160ms;
+}
+html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) .qms-pill::before {
+  border-radius: 50% 50% 14% 14%; background: var(--mode-paper); border: 1px solid var(--mode-line);
+}
+html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) .qms-pill::after {
+  background: var(--mode-blue); mask: var(--mode-clover) center/100% 100% no-repeat;
+  -webkit-mask: var(--mode-clover) center/100% 100% no-repeat; opacity: 0;
+}
+html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) .qms-pill.is-selected { background: none; color: var(--mode-paper); }
+/* The blue core remains readable even if the decorative shape cannot load. */
+html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) .qms-pill.is-selected::before { inset: 14%; border: 0; border-radius: 25%; background: var(--mode-blue); }
+html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) .qms-pill.is-selected::after { opacity: 1; }
+html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) .qms-pill:hover::before { border-color: var(--mode-blue); }
+html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) .qms-pill:active { transform: scale(.94); }
+html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) .qms-pill.guest-qms-locked { color: var(--mode-muted); }
+html.android-webview .native-mode-screen :is(.qms-hint, .native-selection-status) {
+  margin: 0; min-height: 24px; color: var(--mode-muted); font: 400 13px/1.5 var(--native-body);
+  text-align: center; letter-spacing: 0;
+}
+html.android-webview .native-mode-screen .qms-hint.is-ok { color: var(--mode-focus); }
+html.android-webview .native-mode-screen .qms-start {
+  min-height: 54px; flex-shrink: 0; margin-top: auto; border: 0;
+  padding: 14px 18px; border-radius: 16px;
+  background: var(--mode-blue); color: var(--mode-paper);
+  box-shadow: none; filter: none; transform: none; cursor: pointer;
+  transition: background-color 160ms, transform 160ms;
+}
+html.android-webview .native-mode-screen .qms-start::before,
+html.android-webview .native-mode-screen .qms-start::after { content: none; }
+html.android-webview .native-mode-screen .qms-start-label { font: 400 20px/1.2 var(--native-display); letter-spacing: .01em; }
+html.android-webview .native-mode-screen .qms-start-arrow { width: 22px; height: 22px; background: none; border: 0; padding: 0; }
+html.android-webview .native-mode-screen .qms-start-arrow svg { width: 22px; height: 22px; }
+html.android-webview .native-mode-screen .qms-start:disabled { background: var(--mode-line); color: var(--mode-muted); opacity: 1; cursor: default; }
+html.android-webview .native-mode-screen .qms-start:not(:disabled):hover { background: var(--mode-focus); }
+html.android-webview .native-mode-screen .qms-start:not(:disabled):active { transform: scale(.985); }
+html.android-webview .native-mode-screen button:focus-visible { outline: 3px solid var(--mode-focus); outline-offset: 3px; }
+html.android-webview .native-mode-screen[data-launching] .qms-start:disabled { background: var(--mode-blue); color: var(--mode-paper); }
+html.android-webview .native-mode-screen[data-launching] .qms-start-arrow { background: url("/icons/loading.gif") center/contain no-repeat; }
+html.android-webview .native-mode-screen[data-launching] .qms-start-arrow svg { visibility: hidden; }
+@media (max-width: 350px), (max-height: 660px) {
+  html.android-webview .native-mode-screen .qms-body { padding: 18px 16px max(14px, env(safe-area-inset-bottom, 0px)); }
+  html.android-webview .native-mode-screen .qms-card { gap: 14px; }
+  html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) { gap: 6px; }
+  html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) .qms-pill { height: 46px; font-size: 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Accessibility override includes inherited legacy micro-interactions. */
+  html.android-webview .native-mode-screen,
+  html.android-webview .native-mode-screen *,
+  html.android-webview .native-mode-screen *::before,
+  html.android-webview .native-mode-screen *::after { transition: none !important; animation: none !important; transform: none !important; }
+  html.android-webview .native-mode-screen[data-launching] .qms-start-arrow { background-image: none; border: 2px solid currentColor; border-radius: 50%; }
+}
+/* The existing user pause has the same priority as the system preference. */
+html.android-webview[data-native-motion-paused] .native-mode-screen,
+html.android-webview[data-native-motion-paused] .native-mode-screen *,
+html.android-webview[data-native-motion-paused] .native-mode-screen *::before,
+html.android-webview[data-native-motion-paused] .native-mode-screen *::after { transition: none !important; animation: none !important; transform: none !important; }
+html.android-webview[data-native-motion-paused] .native-mode-screen[data-launching] .qms-start-arrow { background-image: none; border: 2px solid currentColor; border-radius: 50%; }
+@media (forced-colors: active) {
+  html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) .qms-pill { border: 1px solid ButtonText; border-radius: 8px; }
+  html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) .qms-pill.is-selected { background: Highlight; color: HighlightText; }
+  html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) .qms-pill::before,
+  html.android-webview .native-mode-screen :is(#qmsCapPills, #qmsMultiPills) .qms-pill::after { content: none; }
+  html.android-webview .native-mode-screen .native-mode-tabs button[aria-selected="true"] { border: 2px solid Highlight; }
+}

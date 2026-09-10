@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v184-unibody-login";
+const CACHE_NAME = "magicbook-pwa-v186-native-mode-pages";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -24,6 +24,9 @@ const STATIC_ASSETS = [
   "/android-app-theme.css?v=10-shared-login",
   "/android-study-shell.css?v=18-shared-login",
   "/android-study-shell.js?v=13-shared-login",
+  "/android-mode-screens.css?v=1",
+  "/android-mode-screens.js?v=1",
+  "/icons/native-chapter-clover.svg",
   "/android-rotary-model.mjs?v=8-bangla-greetings",
   "/assets/native-chapter-covers.json",
   "/assets/fonts/norwester/norwester.woff",
@@ -50,11 +53,11 @@ const STATIC_ASSETS = [
   "/italian-display.js?v=1",
   "/audio-focus.js?v=1-resumable-tts",
   "/src/learning-insights.css?v=9-card-spacing&ui=10",
-  "/src/learning-insights.js?v=8-section-icons&ui=9-intact-figures",
+  "/src/learning-insights.js?v=9-session-storage-recovery&ui=9-intact-figures",
   "/homebg.css?v=3",
   "/mystyle.css?v=51-question-footer-reflow",
   "/audio-player-ui.css?v=6-admin-unified",
-  "/script.js?v=72-section-icons",
+  "/script.js?v=73-native-mode-pages",
   "/study-quiz.html",
   "/study-quiz.css?v=26-numberless-figures",
   "/study-quiz.js?v=26-intact-figures",

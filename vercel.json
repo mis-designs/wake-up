@@ -16,6 +16,14 @@
       ]
     },
     {
+      "source": "/scegli-quiz",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
+    },
+    {
+      "source": "/scegli-exam",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
+    },
+    {
       "source": "/",
       "headers": [
         {
@@ -233,6 +241,14 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/scegli-quiz",
+      "destination": "/"
+    },
+    {
+      "source": "/scegli-exam",
+      "destination": "/"
+    },
     {
       "source": "/home",
       "destination": "/"

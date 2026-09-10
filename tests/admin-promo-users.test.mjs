@@ -121,8 +121,8 @@ test("promo metadata is lazy, gets enough time and never appears as a false empt
 
 test("promo admin UI ships with fresh PWA assets", () => {
   assert.match(page, /style\.css\?v=72-solid-profile-controls/u);
-  assert.match(page, /script\.js\?v=72-section-icons/u);
-  assert.match(worker, /magicbook-pwa-v184-unibody-login/u);
+  assert.match(page, /script\.js\?v=73-native-mode-pages/u);
+  assert.match(worker, /magicbook-pwa-v186-native-mode-pages/u);
   assert.match(worker, /style\.css\?v=72-solid-profile-controls/u);
-  assert.match(worker, /script\.js\?v=72-section-icons/u);
+  assert.match(worker, /script\.js\?v=73-native-mode-pages/u);
 });

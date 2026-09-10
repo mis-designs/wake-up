@@ -56,6 +56,8 @@ function getAppRoute(state = {}) {
   if (state.screen === "trialHub") return "/prova-gratis";
   if (state.screen === "home") return "/home";
   if (state.screen === "chapters") return "/magic-book";
+  if (state.screen === "quizMode") return "/scegli-quiz";
+  if (state.screen === "examMode") return "/scegli-exam";
   if (state.screen === "dictionary") return "/dizionario";
   if (state.screen === "statistics") return "/statistiche";
   if (state.screen === "errors") return "/errori";
@@ -72,6 +74,8 @@ function getRouteTitle(state = {}) {
   if (state.screen === "about") return `${APP_TITLE} | About`;
   if (state.screen === "home") return `${APP_TITLE} | Home`;
   if (state.screen === "chapters") return `${APP_TITLE} | Capitoli`;
+  if (state.screen === "quizMode") return `${APP_TITLE} | Scegli il quiz`;
+  if (state.screen === "examMode") return `${APP_TITLE} | Scegli Exam`;
   if (state.screen === "dictionary") return `${APP_TITLE} | Dizionario`;
   if (state.screen === "statistics") return `${APP_TITLE} | Statistiche`;
   if (state.screen === "errors") return `${APP_TITLE} | Errori`;
@@ -199,6 +203,10 @@ function scheduleExclusiveAppNavigation(name, beforeNavigate, navigate, delay = 
 
 function getRouteStateFromLocation() {
   const path = normalizeRoutePath();
+  if (window.MagicBookModeScreens) {
+    if (path === "/scegli-quiz") return { screen: "quizMode" };
+    if (path === "/scegli-exam") return { screen: "examMode" };
+  }
   if (path === "/prova-gratis" || /^\/prova-gratis\/libro-(1|3)$/.test(path)) {
     return { screen: "welcome" };
   }
@@ -222,6 +230,7 @@ function getRouteStateFromLocation() {
 function openRouteState(state = getRouteStateFromLocation()) {
   // Browser Back/Forward always wins over a pending delayed tap.
   appActionGate.cancel();
+  window.MagicBookModeScreens?.reset();
   const publicScreens = ["welcome", "login", "join", "about"];
   const requestedState = publicScreens.includes(state.screen)
     ? { screen: "home" }
@@ -240,6 +249,10 @@ function openRouteState(state = getRouteStateFromLocation()) {
       showAdminPanel();
     } else if (nextState.screen === "chapters") {
       showChapters();
+    } else if (nextState.screen === "quizMode") {
+      openQuizModeScreen();
+    } else if (nextState.screen === "examMode") {
+      openExam();
     } else if (nextState.screen === "dictionary") {
       showMagicDictionary({ replace: true });
     } else if (nextState.screen === "statistics") {
@@ -3310,6 +3323,7 @@ function showWhatsAppGroupPopup() {
  * UI NAVIGATION
  ***********************/
 function hideAll() {
+  window.MagicBookModeScreens?.reset();
   window.MagicBookAndroidStudy?.hide();
   cleanupMagicBookViewer();
   window.MagicBookLearningInsights?.hide();
@@ -3827,10 +3841,12 @@ function openExamModeScreen() {
     requestAnimationFrame(() => overlay.classList.add("qms-visible"));
     document.body.classList.add("qms-open");
     currentScreen = "examMode";
+    window.MagicBookModeScreens?.open("exam");
   }, { holdMs: 320 });
 }
 
-function closeExamModeScreen() {
+function closeExamModeScreen(options = {}) {
+  if (window.MagicBookModeScreens?.close("exam", options)) return;
   const overlay = document.getElementById("examModeOverlay");
   if (!overlay) return;
   overlay.classList.remove("qms-visible");
@@ -3846,7 +3862,7 @@ function startExamQuiz(mode) {
   if (!validModes.has(mode)) return;
   scheduleExclusiveAppNavigation(
     `start-${mode}`,
-    () => closeExamModeScreen(),
+    () => closeExamModeScreen({ forNavigation: true }),
     () => { window.location.href = getQuizPath({ mode }); }
   );
 }
@@ -3854,7 +3870,7 @@ function startExamQuiz(mode) {
 function startExamPdf() {
   scheduleExclusiveAppNavigation(
     "start-exam-pdf",
-    () => closeExamModeScreen(),
+    () => closeExamModeScreen({ forNavigation: true }),
     () => openMagicBookPages({ type: "exam" })
   );
 }
@@ -4043,6 +4059,19 @@ function goHome() {
 }
 
 window.addEventListener("popstate", () => {
+  // A validated in-document guest trial keeps its native Quiz/history surface.
+  // URL alone never grants trial access, and ordinary browsers keep their owner.
+  if (window.MagicBookModeScreens && trialGuestMode) {
+    const nativeState = getRouteStateFromLocation();
+    if (normalizeRoutePath() === "/prova-gratis") {
+      openRouteState({ screen: "trialHub" });
+      return;
+    }
+    if (nativeState.screen === "quizMode") {
+      openRouteState(nativeState);
+      return;
+    }
+  }
   if (readStoredSession() || Storage.get(KEYS.loggedIn) === "true") {
     openRouteState(getRouteStateFromLocation());
   } else {
@@ -4576,6 +4605,7 @@ function openQuizModeScreen() {
     document.body.classList.add("qms-open");
     currentScreen = "quizMode";
     decorateGuestQuizUI();
+    window.MagicBookModeScreens?.open("quiz");
   }, { holdMs: 320 });
 }
 
@@ -4600,7 +4630,8 @@ function decorateGuestQuizUI() {
   }
 }
 
-function closeQuizModeScreen() {
+function closeQuizModeScreen(options = {}) {
+  if (window.MagicBookModeScreens?.close("quiz", options)) return;
   const overlay = document.getElementById("quizModeOverlay");
   if (!overlay) return;
   overlay.classList.remove("qms-visible");
@@ -4675,6 +4706,7 @@ function _qmsUpdateCardStates() {
     cardMix?.classList.add("qms-card--inactive");
     cardCap?.classList.add("qms-card--inactive");
   }
+  window.MagicBookModeScreens?.syncSelection();
 }
 
 // ── Pill builders (run once) ───────────────────────────────────────────────
@@ -4773,7 +4805,7 @@ function startStudyQuiz() {
   const destination = trialGuestMode ? "/studia-quiz/prova-gratis" : "/studia-quiz";
   scheduleExclusiveAppNavigation(
     "start-study-quiz",
-    () => closeQuizModeScreen(),
+    () => closeQuizModeScreen({ forNavigation: true }),
     () => { window.location.href = destination; }
   );
 }
@@ -4786,7 +4818,7 @@ function startMixQuiz() {
       "start-trial-mix-quiz",
       () => {
         setTrialMixAttempts(attempts + 1);
-        closeQuizModeScreen();
+        closeQuizModeScreen({ forNavigation: true });
       },
       () => { window.location.href = "/quiz/prova-gratis?chapter=1&mix=1"; }
     );
@@ -4794,7 +4826,7 @@ function startMixQuiz() {
   }
   scheduleExclusiveAppNavigation(
     "start-mix-quiz",
-    () => closeQuizModeScreen(),
+    () => closeQuizModeScreen({ forNavigation: true }),
     () => { window.location.href = getQuizPath(); }
   );
 }
@@ -4808,7 +4840,7 @@ function startCapQuiz() {
     : getQuizPath({ chapters: String(ch) });
   scheduleExclusiveAppNavigation(
     `start-chapter-quiz-${ch}`,
-    () => closeQuizModeScreen(),
+    () => closeQuizModeScreen({ forNavigation: true }),
     () => { window.location.href = destination; }
   );
 }
@@ -4819,7 +4851,7 @@ function startMultiQuiz() {
   const chapters = Array.from(qmsMultiSelected).sort((a, b) => a - b).join(",");
   scheduleExclusiveAppNavigation(
     `start-multi-quiz-${chapters}`,
-    () => closeQuizModeScreen(),
+    () => closeQuizModeScreen({ forNavigation: true }),
     () => { window.location.href = getQuizPath({ chapters }); }
   );
 }

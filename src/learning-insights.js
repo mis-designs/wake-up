@@ -4,6 +4,7 @@
   const CONFIG = Object.freeze({
     endpoint: "/api/learning-insights",
     timeoutMs: 14_000,
+    localStorageTimeoutMs: 1_500,
     pageSize: 8,
     maxLocalEvents: 250,
     validLenses: ["figure", "quiz", "parole", "argomenti", "capitoli"]
@@ -597,9 +598,22 @@
     });
   }
 
+  // A cache is optional: an unavailable WebView database must not block the server.
+  // Do not clear the database or switch the durable outbox to memory on a slow read.
+  async function localOperation(work, fallback) {
+    let timeout;
+    try {
+      return await Promise.race([
+        Promise.resolve().then(work),
+        new Promise(resolve => { timeout = root.setTimeout(() => resolve(fallback), CONFIG.localStorageTimeoutMs); })
+      ]);
+    } catch { return fallback; }
+    finally { root.clearTimeout(timeout); }
+  }
+
   async function localPendingEvents(userId) {
     try {
-      const records = await root.MagicBookLearningSync?.getLocalEvents?.();
+      const records = await localOperation(() => root.MagicBookLearningSync?.getLocalEvents?.(), []);
       return (Array.isArray(records) ? records : []).filter(record => normalizedUserId(record.user_id) === userId).filter(record => record.event_type === "answer_event").filter(record => ["pending", "retry", "sending"].includes(record.status)).slice(-CONFIG.maxLocalEvents).map(({ event_id, event_type, user_id, payload }) => ({ event_id, event_type, user_id, payload }));
     } catch {
       return [];
@@ -607,24 +621,64 @@
   }
 
   async function readCache(userId) {
-    try { return await root.MagicBookLearningSync?.getInsightsCache?.(userId) || null; } catch { return null; }
+    return await localOperation(() => root.MagicBookLearningSync?.getInsightsCache?.(userId), null) || null;
+  }
+
+  function sameAccount(auth) {
+    const current = readAuth();
+    return current && current.userId === auth.userId && current.deviceId === auth.deviceId;
+  }
+
+  function assertCurrent(auth, signal) {
+    if (signal?.aborted || !sameAccount(auth)) throw new DOMException("Cancelled", "AbortError");
+  }
+
+  function abortable(promise, signal) {
+    if (!signal) return promise;
+    return new Promise((resolve, reject) => {
+      const cancel = () => reject(new DOMException("Cancelled", "AbortError"));
+      if (signal.aborted) cancel();
+      else signal.addEventListener("abort", cancel, { once: true });
+      promise.then(resolve, reject).finally(() => signal.removeEventListener("abort", cancel));
+    });
+  }
+
+  let authRenewal = null;
+  function renewLearningAccess(auth) {
+    const key = `${auth.userId}:${auth.deviceId}`;
+    if (authRenewal?.key === key) return authRenewal.promise;
+    const entry = { key };
+    // Reuse the app's session validation; never register a device or bypass revocation.
+    entry.promise = Promise.resolve().then(() => root.ensureAccessToken({ force: true }))
+      .finally(() => { if (authRenewal === entry) authRenewal = null; });
+    authRenewal = entry;
+    return entry.promise;
   }
 
   // Shared authenticated read: the dock and the full statistics screen use one model.
-  async function requestInsights(auth, localEvents, signal) {
+  async function requestInsights(auth, localEvents, signal, canRenew = true) {
+    assertCurrent(auth, signal);
     const response = await root.fetch(CONFIG.endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${auth.accessToken}` },
       body: JSON.stringify({ device_id: auth.deviceId, local_events: localEvents }),
       cache: "no-store", signal
     });
-    return { response, data: await response.json().catch(() => ({})) };
+    const data = await response.json().catch(() => ({}));
+    assertCurrent(auth, signal);
+    if (canRenew && response.status === 401 && data.error === "token_expired" && typeof root.ensureAccessToken === "function") {
+      const latest = readAuth();
+      const renewed = latest.accessToken !== auth.accessToken || await abortable(renewLearningAccess(auth), signal);
+      assertCurrent(auth, signal);
+      if (renewed) return requestInsights(readAuth(), localEvents, signal, false);
+    }
+    return { response, data, auth };
   }
 
   async function readProgress({ signal, onCached } = {}) {
-    const auth = readAuth();
+    let auth = readAuth();
     if (!auth) throw new Error("progress_auth_required");
-    const current = () => !signal?.aborted && readAuth()?.accessToken === auth.accessToken && readAuth()?.userId === auth.userId;
+    const current = () => !signal?.aborted && sameAccount(auth) && readAuth()?.accessToken === auth.accessToken;
     const cache = await readCache(auth.userId);
     if (!current()) throw new DOMException("Cancelled", "AbortError");
     const cached = isModel(cache?.model) ? { model: cache.model, cached: true } : null;
@@ -635,11 +689,14 @@
     }
     const localEvents = await localPendingEvents(auth.userId);
     if (!current()) throw new DOMException("Cancelled", "AbortError");
-    const { response, data } = await requestInsights(auth, localEvents, signal);
+    const result = await requestInsights(auth, localEvents, signal);
+    const { response, data } = result;
+    auth = result.auth;
     if (!current()) throw new DOMException("Cancelled", "AbortError");
     if (response.status === 401) throw new Error("progress_auth_required");
     if (!response.ok || !isModel(data)) throw new Error("progress_unavailable");
-    await root.MagicBookLearningSync?.setInsightsCache?.(auth.userId, data);
+    await localOperation(() => root.MagicBookLearningSync?.setInsightsCache?.(auth.userId, data), false);
+    if (!current()) throw new DOMException("Cancelled", "AbortError");
     return { model: data, cached: false };
   }
 
@@ -702,7 +759,8 @@
       state.model = data;
       state.cachedAt = Date.now();
       state.isCached = false;
-      await root.MagicBookLearningSync?.setInsightsCache?.(auth.userId, data);
+      await localOperation(() => root.MagicBookLearningSync?.setInsightsCache?.(auth.userId, data), false);
+      if (requestId !== state.requestId || !sameAccount(auth)) return;
       announce("Statistiche aggiornate.");
     } catch (error) {
       if (requestId !== state.requestId) return;
