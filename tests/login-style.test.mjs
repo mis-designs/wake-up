@@ -56,12 +56,13 @@ test("original signature remains small and readable without a black container", 
 test("shared login assets are versioned without exposing Android Home to browsers", () => {
   const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
   const native = readFileSync(new URL("../android-study-shell.js", import.meta.url), "utf8");
-  for (const asset of ["login-experience.css?v=2-unibody", "login-experience.js?v=2-unibody"]) {
+  for (const asset of ["login-experience.css?v=3-shared-font", "login-experience.js?v=2-unibody"]) {
     assert.ok(page.includes(asset)); assert.ok(worker.includes(asset));
   }
   for (const asset of ["login-signs.mjs?v=1", "/icons/mdesignstextlogo.png", "/assets/fonts/norwester/norwester.woff"]) assert.ok(worker.includes(asset));
   assert.match(native, /classList\.contains\("android-webview"\) && template/u);
-  assert.match(loginStyles, /font-family: "Norwester"/u);
+  assert.match(loginStyles, /@import url\("\/assets\/fonts\/magicbook-latin-fonts\.css\?v=1"\)/u);
+  assert.match(readFileSync(new URL("../assets/fonts/magicbook-latin-fonts.css", import.meta.url), "utf8"), /font-family: "Norwester"/u);
 });
 
 test("login uses locally compiled, scoped daisyUI components", () => {

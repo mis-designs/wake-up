@@ -194,7 +194,7 @@ function formatTimer(totalSeconds) {
 function getQuizTimerPresentation(remainingSeconds, adminMode = false) {
   const normalizedSeconds = Math.trunc(Number(remainingSeconds) || 0);
   const isOvertime = adminMode && normalizedSeconds <= 0;
-  const displayedTime = formatTimer(isOvertime ? Math.abs(normalizedSeconds) : normalizedSeconds);
+  const displayedTime = formatTimer(isOvertime ? Math.abs(normalizedSeconds) : normalizedSeconds).replace(":", " : ");
   return {
     text: isOvertime ? `+${displayedTime}` : displayedTime,
     ariaLabel: isOvertime
@@ -3296,9 +3296,10 @@ explanationModal?.addEventListener("click", event => {
 
 function buildProgressBar() {
   const bar = document.getElementById("progress");
-  bar.innerHTML = "";
+  bar.replaceChildren();
   quiz.forEach((_, i) => {
     const btn = document.createElement("button");
+    btn.type = "button";
     btn.className = "progress-dot progress-dot--unanswered";
     btn.textContent = i + 1;
     btn.setAttribute("aria-label", `Vai alla domanda ${i + 1}`);
@@ -3315,19 +3316,18 @@ function updateProgressBar() {
   const dots = document.querySelectorAll(".progress-dot");
   dots.forEach((dot, i) => {
     dot.classList.remove("progress-dot--answered", "progress-dot--current", "progress-dot--unanswered");
-    if (i === current) {
-      dot.classList.add("progress-dot--current");
-    } else if (answers[i]?.answer !== null) {
-      dot.classList.add("progress-dot--answered");
-    } else {
-      dot.classList.add("progress-dot--unanswered");
-    }
+    const answered = answers[i]?.answer === 0 || answers[i]?.answer === 1;
+    dot.classList.add(answered ? "progress-dot--answered" : "progress-dot--unanswered");
+    dot.classList.toggle("progress-dot--current", i === current);
+    if (i === current) dot.setAttribute("aria-current", "step");
+    else dot.removeAttribute("aria-current");
+    dot.setAttribute("aria-label", `Domanda ${i + 1}, ${answered ? "risposta data" : "non risposta"}`);
   });
 
   // Scroll current dot into view
   const currentDot = dots[current];
   if (currentDot) {
-    currentDot.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    currentDot.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "nearest", inline: "center" });
   }
 }
 
@@ -3343,19 +3343,54 @@ function updateFinishButtonState() {
   prevButton.disabled = current === 0;
 }
 
+let exitQuizPending = false;
 async function exitQuiz() {
-  const confirmed = await showConfirm(
-    "Uscire dal quiz?",
-    "Se esci adesso, tornerai al libro e il quiz non verra completato.",
-    "Esci",
-    "Resta qui"
-  );
+  if (exitQuizPending || document.body.classList.contains("loading-open")) return;
+  exitQuizPending = true;
+  try {
+    const confirmed = await showConfirm(
+      "Uscire dal quiz?",
+      "Se esci adesso, tornerai al libro e il quiz non verra completato.",
+      "Esci",
+      "Resta qui"
+    );
 
-  if (!confirmed) return;
+    if (!confirmed) return;
 
-  stopAllAudio();
-  returnToBook();
+    stopAllAudio();
+    returnToBook();
+  } finally {
+    exitQuizPending = false;
+  }
 }
+
+// Android delegates Back to WebView history. Keep one same-document guard;
+// existing owners still control dismissals and confirmation, never data loss.
+function installNativeQuizBack() {
+  if (!document.documentElement.classList.contains("android-webview")) return;
+  const guard = () => history.pushState({ ...history.state, magicQuizBack: true }, "", location.href);
+  if (!history.state?.magicQuizBack) guard();
+  document.documentElement.classList.add("native-quiz-back-ready");
+  window.addEventListener("popstate", () => {
+    guard();
+    if (document.body.classList.contains("loading-open")) return;
+    if (!modal.classList.contains("hidden")) {
+      if (modalCancel.style.display !== "none") closeModal(false);
+      else modalConfirm.focus({ preventScroll: true });
+      return;
+    }
+    if (explanationModal && !explanationModal.classList.contains("hidden")) {
+      closeExplanation();
+      return;
+    }
+    if (document.getElementById("quiz-help-workspace")?.getAttribute("aria-hidden") === "false") {
+      window.dispatchEvent(new Event("magicbook:quiz-help-close"));
+      return;
+    }
+    void exitQuiz();
+  });
+}
+installNativeQuizBack();
 
 // MOSTRA DOMANDA
 function updateAdminCorrectDots(question) {
@@ -3386,6 +3421,7 @@ function updateAdminCorrectDots(question) {
 
 function showQuestion() {
   const q = quiz[current];
+  window.dispatchEvent(new Event("magicbook:quiz-question-change"));
   markLearningQuestionVisible();
   if (inlineAudioRecording && inlineAudioRecording.questionIndex !== current) closeInlineAudioRecorder();
   quizAudioAdminTools?.classList.toggle("hidden", !isAdmin || TRIAL_MODE);
@@ -3405,6 +3441,8 @@ function showQuestion() {
   falsoBtn.classList.remove("selected", "tap-feedback");
 
   // evidenzia risposta salvata
+  veroBtn.setAttribute("aria-pressed", String(answers[current].answer === 1));
+  falsoBtn.setAttribute("aria-pressed", String(answers[current].answer === 0));
   if (answers[current].answer === 1) {
     veroBtn.classList.add("selected");
   } else if (answers[current].answer === 0) {
@@ -3423,6 +3461,8 @@ function answer(val) {
   const otherBtn = val === 1 ? falsoBtn : veroBtn;
 
   answers[current].answer = val;
+  veroBtn.setAttribute("aria-pressed", String(val === 1));
+  falsoBtn.setAttribute("aria-pressed", String(val === 0));
   queueLearningAnswer(val);
 
   // mantiene una sola risposta selezionata per volta

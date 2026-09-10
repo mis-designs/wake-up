@@ -26,34 +26,34 @@
     <style>@import url('https://banglawebfonts.pages.dev/css/un-bangla.css');</style>
     <link href="https://banglawebfonts.pages.dev/css/tiro-bangla.css" rel="stylesheet">
     <link rel="stylesheet" href="loading-ui.css?v=1-shared-gif-loader">
-  <link rel="stylesheet" href="mystyle.css?v=51-question-footer-reflow">
-    <link rel="stylesheet" href="audio-player-ui.css?v=6-admin-unified">
+  <link rel="stylesheet" href="mystyle.css?v=52-focused-quiz">
+    <link rel="stylesheet" href="audio-player-ui.css?v=7-compact-quiz">
     <link rel="stylesheet" href="/magic-styles.css?v=3-liquid-glass">
-    <link rel="stylesheet" href="quiz-help.css?v=20260907-liquid-glass">
+    <link rel="stylesheet" href="quiz-help.css?v=20260910-explicit-help">
     <link rel="stylesheet" href="magic-dictionary.css?v=1.2.5-settings-layout">
     <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
     <link rel="stylesheet" href="/offline-notice.css?v=1.0.0">
     <link rel="stylesheet" href="mobile-experience.css?v=4-admin-scroll">
-    <link rel="stylesheet" href="/android-app-theme.css?v=10-shared-login">
+    <link rel="stylesheet" href="/android-app-theme.css?v=11-shared-quiz">
     <script src="/offline-notice.js?v=1.0.0" defer></script>
 </head>
 
-<body class="quiz-page" data-screen-protection="always">
+<body class="quiz-page quiz-focus" data-screen-protection="always">
 
     <div class="quiz-container">
 
         <div class="top-bar">
-            <button class="icon-btn exit-btn" onclick="exitQuiz()" aria-label="Esci dal quiz">
-                <img src="icons/exit.png" alt="">
+            <button class="icon-btn exit-btn" type="button" onclick="exitQuiz()" aria-label="Torna al libro">
+                <img src="icons/go-back.png" alt="">
             </button>
             <h2>Quiz</h2>
-            <div class="top-bar-tools">
+            <div class="top-bar-tools" role="group" aria-label="Tempo e dimensione del testo">
                 <div class="text-size-control notranslate" translate="no" role="group" aria-label="Dimensione del testo">
                     <button id="text-size-decrease" type="button" aria-label="Riduci il testo">A−</button>
                     <span id="text-size-value" aria-live="polite" aria-label="Dimensione testo">100%</span>
                     <button id="text-size-increase" type="button" aria-label="Ingrandisci il testo">A+</button>
                 </div>
-                <div id="timer" class="notranslate" translate="no" aria-label="Tempo rimanente">20:00</div>
+                <div id="timer" class="notranslate" translate="no" aria-label="Tempo rimanente">20 : 00</div>
             </div>
         </div>
 
@@ -74,12 +74,14 @@
                     <div class="quiz-help-heading">
                         <h2 id="quiz-help-title" class="sr-only">Traduzione e parole chiave</h2>
                         <span class="quiz-help-kicker" lang="bn">বাংলা</span>
-                        <button class="quiz-help-close magic-glass-chip" type="button" data-help-close>Chiudi</button>
+                        <button class="quiz-help-close magic-glass-chip" type="button" data-help-close aria-label="Chiudi traduzione">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                        </button>
                     </div>
                     <p id="quiz-help-translation-text" class="quiz-help-translation-text notranslate" translate="no" lang="bn"></p>
                     <p id="quiz-help-translation-status" class="quiz-help-status" role="status"></p>
-                    <div id="quiz-help-words" class="quiz-help-words notranslate" translate="no" role="group" aria-label="Parole chiave della domanda"></div>
                     <div id="quiz-help-word-detail" class="quiz-help-word-detail hidden notranslate" translate="no" role="region" aria-label="Significato della parola"></div>
+                    <div id="quiz-help-words" class="quiz-help-words notranslate" translate="no" role="group" aria-label="Parole chiave della domanda"></div>
                     <details id="quiz-help-context" class="quiz-help-context hidden notranslate" translate="no">
                         <summary>Capitolo e argomento</summary>
                         <div><strong id="quiz-help-chapter-it"></strong><span id="quiz-help-chapter-bn" lang="bn"></span></div>
@@ -173,7 +175,6 @@
                         <input id="quiz-audio-progress" class="quiz-audio-progress" type="range" min="0" max="100" step="0.1" value="0" aria-label="Avanzamento spiegazione">
                         <button id="quiz-audio-speed" class="quiz-audio-speed" type="button" aria-label="Velocità 1x">1×</button>
                     </div>
-                    <img id="quiz-audio-artwork" class="quiz-audio-artwork" src="icons/explain_quiz.svg" alt="" aria-hidden="true">
                 </div>
             </div>
 
@@ -182,15 +183,13 @@
                     <img src="icons/back.png" alt="">
                 </button>
                 <div class="answer-wrapper notranslate" data-answer-value="1" translate="no" lang="it">
-                    <button id="vero" onclick="answer(1)" aria-label="Vero">
-                        <img src="icons/true.png" alt="">
+                    <button id="vero" type="button" onclick="answer(1)" aria-label="Vero" aria-pressed="false">
                         <span class="answer-label">Vero</span>
                     </button>
                     <div class="admin-correct-dot-slot"></div>
                 </div>
                 <div class="answer-wrapper notranslate" data-answer-value="0" translate="no" lang="it">
-                    <button id="falso" onclick="answer(0)" aria-label="Falso">
-                        <img src="icons/false.png" alt="">
+                    <button id="falso" type="button" onclick="answer(0)" aria-label="Falso" aria-pressed="false">
                         <span class="answer-label">Falso</span>
                     </button>
                     <div class="admin-correct-dot-slot"></div>
@@ -287,8 +286,8 @@
     <script src="screen-protection.js?v=1.2.0"></script>
     <script src="learning-sync.js?v=2"></script>
     <script src="italian-display.js?v=1"></script>
-    <script src="quiz.js?v=82-section-icons"></script>
-    <script src="quiz-help.js?v=20260907-liquid-glass"></script>
+    <script src="quiz.js?v=83-focused-quiz"></script>
+    <script src="quiz-help.js?v=20260910-explicit-help"></script>
 </body>
 
 </html>

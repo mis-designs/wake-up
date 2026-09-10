@@ -118,10 +118,10 @@
 ## Aiuto bilingue durante il quiz
 
 - Translation and keywords occupy one glass panel directly after the Italian question inside its existing scroll region. The surrounding quiz remains fully usable.
-- The full Bangla translation is followed by real Italian keyword text buttons. Each button expands its Bangla meaning, explanations and audio below the pills; a second activation closes that detail.
-- The question button exposes aria-expanded and toggles the inline panel. Tab follows normal document order. Escape inside the panel and its Chiudi button close it; focus returns to the question only when it was within the panel. Closing invalidates pending help requests; changing question clears stale content and word playback before loading its own help.
+- The full Bangla translation is followed by the expanded word detail, then real Italian keyword text buttons. Each button opens its Bangla meaning, explanations and audio above the keyword list; a second activation closes the detail. Reveal it within the same question scroller without moving keyboard focus.
+- The question button, including its spare blank space above/below the text, exposes aria-expanded and toggles the inline panel. Tab follows document order. Escape inside the panel and its labelled X close it; focus returns to the question only when it was within the panel. Closing and every question change invalidate pending help and word audio. A new question always starts with help closed; only an explicit activation opens it.
 - Only a signed Admin quiz response may contain the correct answer. The low green/red marker is absent for learners and cannot be inferred from empty reserved layout space.
-- Only a signed Admin quiz response may enter uninterrupted overtime. At zero the timer exposes a textual `Tempo supplementare Admin` state and counts upward from `+0:00`. All other roles pause at `0:00` and choose whether to begin another full cycle or close the quiz without grading.
+- Only a signed Admin quiz response may enter uninterrupted overtime. At zero the timer exposes a textual `Tempo supplementare Admin` state and counts upward from `+0 : 00`. All other roles pause at `0 : 00` and choose whether to begin another full cycle or close the quiz without grading.
 
 ## Responsive behavior
 
@@ -169,3 +169,10 @@
 - The existing chapter-button and inline recorder owners in `aggiungi-spiegazioni.js` also own Exam 80, placed after the 25 chapters with `?exam=80` navigation and the same search, filter, figure, draft, playback, and save controls.
 - `api/quiz-audio-catalog.mjs` resolves all 868 questions on the server. Sharing requires identical Italian text (preserving punctuation and case), canonical figure and correct answer. Chapter location and row ID are not content. Unverified Exam content and conflicting normalized keys use isolated identities; ambiguous legacy audio never becomes playable merely because a request is signed. The Admin catalog supplies the same identities used by upload, deletion and playback.
 - Existing chapter-only catalog consumers still receive 788 questions. Only the authenticated Admin audio catalog includes the 80 Exam rows and private answer values.
+
+### Focused live Quiz (shared web / Android)
+
+- Live Quiz and Exam share one compact page on Android and the public website. Dedicated mode selectors remain unchanged. Question, figure, translation, audio-focus, timer, grading and signed Admin policies keep their canonical owners.
+- Android system Back closes inline translation or the current dismissible layer before invoking the existing quiz-exit confirmation. Loading and noncancellable messages are not bypassed. Ordinary browsers keep a44px back button and unchanged browser history; no native guard is installed there.
+- The compact command area reserves geometry for unavailable/pending audio. Number controls expose answered/unanswered labels and aria-current; Vero/Falso expose aria-pressed, with correct-answer markers still restricted to signed Admin data. No answer correctness is inferred from blue selection.
+- Rollout is the shared `/quiz` document and PWA cache187; deploy both through the existing site pipeline. The installed wrapper loads that same document. Rollback reverts the focused-Quiz changes and ships a newer cache epoch, not a second implementation. Physical Android Back and authenticated production audio require device/release smoke testing.

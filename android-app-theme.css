@@ -1,13 +1,14 @@
 /*
  * Installed Android app palette: pearl, graphite, neutral gray and blue.
- * Every rule is gated by the native WebView marker so tmmmagic.eu keeps its
- * existing browser presentation. Structural layout and semantic status colors
+ * Presentation rules are gated by the native WebView marker. The shared login
+ * and live Quiz explicitly consume the palette tokens on the public site too.
+ * Structural layout and semantic status colors
  * remain owned by their route stylesheets.
  */
 
-/* Canonical colors are also consumed by the shared web/Android login.
+/* Canonical colors are also consumed by shared web/Android login and live Quiz.
    Only custom properties cross that boundary, never native route styling. */
-html.android-webview, #login {
+html.android-webview, #login, body.quiz-focus {
   --app-palette-primary: #076AE0;
   --app-palette-primary-strong: #0755B3;
   --app-palette-secondary: #1D1D1F;
@@ -330,12 +331,12 @@ html.android-webview .modal-card {
   color: var(--app-palette-text);
 }
 
-html.android-webview #timer {
+html.android-webview body:not(.quiz-focus) #timer {
   background: var(--app-palette-primary) !important; /* Override the legacy live timer's inline emphasis. */
   color: var(--app-palette-on-primary);
 }
 
-html.android-webview .progress-dot--current,
+html.android-webview body:not(.quiz-focus) .progress-dot--current,
 html.android-webview .selected,
 html.android-webview .nav-primary.is-finish {
   background: var(--app-palette-primary) !important;

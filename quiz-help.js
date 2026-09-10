@@ -422,6 +422,8 @@
     audio.addEventListener("click", () => playBanglaWord(word.ttsBn || `${word.bangla}। ${word.simpleBn}`, audio));
     wordDetail.append(heading, italian, bangla, audio);
     wordDetail.classList.remove("hidden");
+    // Detail precedes the word list; reveal it inside the question scroller.
+    wordDetail.scrollIntoView({ block: "nearest", behavior: "instant" });
   }
 
   function renderWords(words = []) {
@@ -512,6 +514,8 @@
     else close();
   });
   document.querySelectorAll("[data-help-close]").forEach(button => button.addEventListener("click", close));
+  window.addEventListener("magicbook:quiz-question-change", close);
+  window.addEventListener("magicbook:quiz-help-close", close);
   workspace?.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;
     event.preventDefault();
@@ -519,6 +523,6 @@
     close();
   });
   new MutationObserver(() => {
-    if (!workspace.classList.contains("hidden")) render();
+    if (!workspace.classList.contains("hidden")) close();
   }).observe(questionText, { childList: true, characterData: true, subtree: true });
 })();

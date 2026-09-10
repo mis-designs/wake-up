@@ -22,7 +22,8 @@ function element() {
     querySelectorAll() { return this.children; },
     contains(item) { return this.children.includes(item); },
     addEventListener(event, fn) { this[event] = fn; },
-    focus() { this.focusCount += 1; }
+    focus() { this.focusCount += 1; },
+    scrollIntoView(options) { this.scrollOptions = options; }
   };
 }
 function renderer() {
@@ -104,6 +105,7 @@ test("real keyword text opens and closes its meaning in the same panel", () => {
   chip.click();
   assert.equal(chip.attributes["aria-expanded"], "true");
   assert.equal(wordDetail.classList.contains("hidden"), false);
+  assert.equal(wordDetail.scrollOptions.block, "nearest");
   assert.equal(wordDetail.children[2].textContent, "রাস্তার অংশ");
   chip.click();
   assert.equal(chip.attributes["aria-expanded"], "false");

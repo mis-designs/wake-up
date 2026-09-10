@@ -1,9 +1,5 @@
 /* Canonical shared login, web + Android. Authentication stays in script.js. */
-@font-face {
-  font-family: "Norwester";
-  src: url("/assets/fonts/norwester/norwester.woff") format("woff");
-  font-style: normal; font-weight: 400; font-display: swap;
-}
+@import url("/assets/fonts/magicbook-latin-fonts.css?v=1");
 #login {
   --login-display: "Norwester", "Arial Narrow", sans-serif;
   --login-canvas: color-mix(in srgb, var(--app-palette-background) 65%, var(--app-palette-paper));

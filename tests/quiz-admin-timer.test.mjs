@@ -23,22 +23,22 @@ test("Admin timer changes from the normal countdown to explicit elapsed overtime
   )();
 
   assert.deepEqual(getPresentation(1, true), {
-    text: "0:01",
+    text: "0 : 01",
     ariaLabel: "Tempo rimanente",
     isOvertime: false
   });
   assert.deepEqual(getPresentation(0, true), {
-    text: "+0:00",
-    ariaLabel: "Tempo supplementare Admin: 0:00",
+    text: "+0 : 00",
+    ariaLabel: "Tempo supplementare Admin: 0 : 00",
     isOvertime: true
   });
   assert.deepEqual(getPresentation(-61, true), {
-    text: "+1:01",
-    ariaLabel: "Tempo supplementare Admin: 1:01",
+    text: "+1 : 01",
+    ariaLabel: "Tempo supplementare Admin: 1 : 01",
     isOvertime: true
   });
   assert.deepEqual(getPresentation(0, false), {
-    text: "0:00",
+    text: "0 : 00",
     ariaLabel: "Tempo rimanente",
     isOvertime: false
   });
@@ -59,7 +59,7 @@ test("only a server-authorized Admin enters uninterrupted overtime", () => {
 });
 
 test("the Admin overtime timer ships in fresh quiz and PWA assets", () => {
-  assert.match(page, /quiz\.js\?v=82-section-icons/u);
-  assert.match(worker, /magicbook-pwa-v186-native-mode-pages/u);
-  assert.match(worker, /quiz\.js\?v=82-section-icons/u);
+  assert.match(page, /quiz\.js\?v=83-focused-quiz/u);
+  assert.match(worker, /magicbook-pwa-v187-focused-quiz/u);
+  assert.match(worker, /quiz\.js\?v=83-focused-quiz/u);
 });

@@ -1,0 +1,8 @@
+/* Shared Latin display face: login and focused live Quiz. */
+@font-face {
+  font-family: "Norwester";
+  src: url("/assets/fonts/norwester/norwester.woff") format("woff");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}

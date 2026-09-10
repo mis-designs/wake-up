@@ -8,11 +8,11 @@ const styles = readFileSync(new URL("../mystyle.css", import.meta.url), "utf8");
 const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
 const iconUrl = new URL("../icons/explain_quiz.svg", import.meta.url);
 
-test("explanation artwork is rendered beside the shared audio player", () => {
+test("live Quiz removes its artwork while keeping the result artwork asset", () => {
   assert.equal(existsSync(iconUrl), true);
-  assert.match(html, /id="quiz-audio-artwork"[^>]+src="icons\/explain_quiz\.svg"/u);
-  assert.match(html, /mystyle\.css\?v=51-question-footer-reflow/u);
-  assert.match(html, /quiz\.js\?v=82-section-icons/u);
+  assert.doesNotMatch(html, /id="quiz-audio-artwork"/u);
+  assert.match(html, /mystyle\.css\?v=52-focused-quiz/u);
+  assert.match(html, /quiz\.js\?v=83-focused-quiz/u);
   assert.match(worker, /\/icons\/explain_quiz\.svg/u);
 });
 
