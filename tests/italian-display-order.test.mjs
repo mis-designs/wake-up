@@ -41,7 +41,7 @@ test("keywords precede uppercase chapter and topic tags across help surfaces", (
   assert.equal((reviewPanel.match(/panel\.appendChild\(context\)/gu) || []).length, 1);
   assert.ok(studyHelp.indexOf("wordsSection.appendChild(words)") < studyHelp.indexOf("wordsSection.appendChild(detail)"));
   assert.ok(studyHelp.indexOf("container.appendChild(wordsSection)") < studyHelp.indexOf("if (context) container.appendChild(context)"));
-  assert.match(helpStyles, /\.quiz-help-context\s*\{[^}]*margin-top:\s*13px;/u);
+  assert.match(helpStyles, /\.quiz-help-context\s*\{[^}]*margin-top:\s*8px;/u);
   assert.match(readFileSync(new URL("../study-quiz.css", import.meta.url), "utf8"), /\.study-context span\[lang="it"\]\s*\{\s*text-transform:\s*uppercase;/u);
 });
 
@@ -53,6 +53,6 @@ test("quiz and study renderers use the shared Italian case owner", () => {
 
   assert.ok(quizPage.indexOf("italian-display.js?v=1") < quizPage.indexOf("quiz.js?v=83-focused-quiz"));
   assert.ok(studyPage.indexOf("italian-display.js?v=1") < studyPage.indexOf("study-quiz.js?v=26-intact-figures"));
-  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v187-focused-quiz"/u);
+  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v188-compact-quiz"/u);
   assert.match(worker, /\/italian-display\.js\?v=1/u);
 });

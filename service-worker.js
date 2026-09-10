@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v187-focused-quiz";
+const CACHE_NAME = "magicbook-pwa-v188-compact-quiz";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -57,7 +57,7 @@ const STATIC_ASSETS = [
   "/src/learning-insights.css?v=9-card-spacing&ui=10",
   "/src/learning-insights.js?v=9-session-storage-recovery&ui=9-intact-figures",
   "/homebg.css?v=3",
-  "/mystyle.css?v=52-focused-quiz",
+  "/mystyle.css?v=53-compact-quiz",
   "/audio-player-ui.css?v=6-admin-unified",
   "/audio-player-ui.css?v=7-compact-quiz",
   "/script.js?v=73-native-mode-pages",
@@ -66,7 +66,7 @@ const STATIC_ASSETS = [
   "/study-quiz.js?v=26-intact-figures",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=83-focused-quiz",
-  "/quiz-help.css?v=20260910-explicit-help",
+  "/quiz-help.css?v=20260910-compact-help",
   "/quiz-help.js?v=20260910-explicit-help",
   "/patenteGlossaryResolver.js?v=1.0.0",
   "/patenteContextResolverV3.js?v=4.0.0-glossary-display",

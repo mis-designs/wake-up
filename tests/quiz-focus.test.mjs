@@ -100,3 +100,17 @@ test('the compact player and shapes are limited to the live Quiz variant',()=>{
   assert.match(css,/native-chapter-clover\.svg/);assert.match(css,/native-action-scallop\.svg/);
   assert.match(css,/#question\[aria-expanded="true"\] \{ flex-grow: 0;/);
 });
+
+test('compact reading density preserves touch targets and adjustable translation sizes',()=>{
+  const css=read('mystyle.css'),helpCss=read('quiz-help.css');
+  assert.match(css,/\.quiz-page\.quiz-focus \.progress-dot \{[^}]*width: 44px; height: 44px;[^}]*font: 400 16px\/1/s);
+  assert.match(css,/\.quiz-page\.quiz-focus \.progress-dot::before \{[^}]*inset: 5px;[^}]*pointer-events: none/s);
+  assert.match(css,/\.quiz-page\.quiz-focus #progress \{[^}]*min-height: 50px/s);
+  assert.match(css,/--quiz-question-flow-gap: 6px;\s*padding: clamp\(10px, 2.6vw, 20px\)/);
+  assert.match(helpCss,/\.quiz-help-close\.magic-glass-chip \{[^}]*width: 44px; height: 44px/s);
+  assert.match(helpCss,/\.quiz-help-close svg \{ width: 18px; height: 18px;/);
+  assert.match(helpCss,/font-size: clamp\(1.05rem, 2.5vw, 1.2rem\); line-height: 1.5/);
+  assert.match(helpCss,/html\[data-reader-size="large"\] \.quiz-help-translation-text \{ font-size: 1.32rem/);
+  assert.match(helpCss,/html\[data-reader-size="xlarge"\] \.quiz-help-translation-text \{ font-size: 1.46rem/);
+  assert.match(helpCss,/\.quiz-help-words \{[^}]*margin-top: 10px/s);
+});

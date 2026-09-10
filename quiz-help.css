@@ -77,28 +77,29 @@
   flex: 0 0 auto;
   min-width: 0;
   width: 100%;
-  padding: clamp(15px, 2.4vw, 24px);
+  padding: clamp(10px, 1.8vw, 16px);
   text-align: left;
 }
 .quiz-help-workspace.hidden { display: none; }
-.quiz-help-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
-.quiz-help-kicker { color: var(--magic-glass-ink); font-size: .83rem; }
-.quiz-help-close { margin-inline-start: auto; width: 44px; height: 44px; padding: 10px; display: grid; place-items: center; }
-.quiz-help-close svg { width: 24px; height: 24px; }
-.quiz-help-translation-text { margin: 0; color: var(--magic-glass-ink); font-family: var(--font-bengali); font-size: clamp(1.15rem, 2.8vw, 1.42rem); line-height: 1.68; overflow-wrap: anywhere; }
-.quiz-help-status, .quiz-help-empty { margin: 10px 0 0; color: var(--magic-glass-muted); font-size: .8rem; line-height: 1.5; }
+.quiz-help-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 0; }
+.quiz-help-kicker { color: var(--magic-glass-ink); font-size: .78rem; }
+.quiz-help-close.magic-glass-chip { margin-inline-start: auto; flex: 0 0 44px; width: 44px; height: 44px; padding: 13px; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; box-shadow: none; }
+.quiz-help-close.magic-glass-chip:hover, .quiz-help-close.magic-glass-chip:active { background: rgba(111, 124, 140, .1); box-shadow: none; }
+.quiz-help-close svg { width: 18px; height: 18px; }
+.quiz-help-translation-text { margin: 0; color: var(--magic-glass-ink); font-family: var(--font-bengali); font-size: clamp(1.05rem, 2.5vw, 1.2rem); line-height: 1.5; overflow-wrap: anywhere; }
+.quiz-help-status, .quiz-help-empty { margin: 6px 0 0; color: var(--magic-glass-muted); font-size: .8rem; line-height: 1.5; }
 .quiz-help-status:empty { display: none; }
-.quiz-help-words { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 18px; }
+.quiz-help-words { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
 .quiz-help-words:empty { margin-top: 0; }
 .quiz-help-word { max-width: 100%; text-align: left; font: inherit; }
 .quiz-help-word strong { font-size: .88rem; font-weight: 500; overflow-wrap: anywhere; }
-.quiz-help-word-detail { margin-top: 16px; padding-top: 15px; border-top: 1px solid var(--magic-glass-line); color: var(--magic-glass-ink); line-height: 1.55; overflow-wrap: anywhere; }
+.quiz-help-word-detail { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--magic-glass-line); color: var(--magic-glass-ink); line-height: 1.5; overflow-wrap: anywhere; }
 .quiz-help-word-detail.hidden { display: none; }
 .quiz-help-word-detail strong { font-weight: 600; }
 .quiz-help-word-detail p { margin: 7px 0 0; }
-.quiz-help-word-detail p[lang="bn"] { font-size: 1.1rem; }
-.quiz-help-word-audio { margin-top: 12px; font: inherit; font-size: .8rem; }
-.quiz-help-context { margin-top: 13px; color: var(--magic-glass-muted); font-size: .8rem; }
+.quiz-help-word-detail p[lang="bn"] { font-size: 1rem; }
+.quiz-help-word-audio { margin-top: 8px; font: inherit; font-size: .8rem; }
+.quiz-help-context { margin-top: 8px; color: var(--magic-glass-muted); font-size: .8rem; }
 .quiz-help-context.hidden { display: none; }
 .quiz-help-context summary { width: fit-content; min-height: 44px; align-content: center; cursor: pointer; }
 .quiz-help-context summary:hover { color: var(--magic-glass-ink); text-decoration: underline; }
@@ -106,8 +107,8 @@
 .quiz-help-context > div { margin-top: 8px; }
 .quiz-help-context strong, .quiz-help-context span { display: block; line-height: 1.5; }
 .quiz-help-context span { font-size: 1.05rem; }
-html[data-reader-size="large"] .quiz-help-translation-text { font-size: 1.58rem; }
-html[data-reader-size="xlarge"] .quiz-help-translation-text { font-size: 1.74rem; }
+html[data-reader-size="large"] .quiz-help-translation-text { font-size: 1.32rem; }
+html[data-reader-size="xlarge"] .quiz-help-translation-text { font-size: 1.46rem; }
 @media (forced-colors: active) {
   .quiz-help-word-detail, .quiz-help-word-audio { border-color: CanvasText; }
   .quiz-help-workspace *, .quiz-help-word-audio { color: CanvasText; }

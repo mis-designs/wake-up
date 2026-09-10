@@ -11,7 +11,7 @@ const iconUrl = new URL("../icons/explain_quiz.svg", import.meta.url);
 test("live Quiz removes its artwork while keeping the result artwork asset", () => {
   assert.equal(existsSync(iconUrl), true);
   assert.doesNotMatch(html, /id="quiz-audio-artwork"/u);
-  assert.match(html, /mystyle\.css\?v=52-focused-quiz/u);
+  assert.match(html, /mystyle\.css\?v=53-compact-quiz/u);
   assert.match(html, /quiz\.js\?v=83-focused-quiz/u);
   assert.match(worker, /\/icons\/explain_quiz\.svg/u);
 });
