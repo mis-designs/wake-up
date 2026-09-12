@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="google" content="notranslate">
-    <script src="/android-webview-mode.js?v=6-pearl-blue"></script>
+    <script src="/android-webview-mode.js?v=7-native-only"></script>
     <script>
     if (window.location.pathname === "/quiz.html") {
         window.location.replace("/");
@@ -26,10 +26,10 @@
     <style>@import url('https://banglawebfonts.pages.dev/css/un-bangla.css');</style>
     <link href="https://banglawebfonts.pages.dev/css/tiro-bangla.css" rel="stylesheet">
     <link rel="stylesheet" href="loading-ui.css?v=1-shared-gif-loader">
-  <link rel="stylesheet" href="mystyle.css?v=54-phone-help">
-    <link rel="stylesheet" href="audio-player-ui.css?v=7-compact-quiz">
+  <link rel="stylesheet" href="mystyle.css?v=55-native-quiz">
+    <link rel="stylesheet" href="audio-player-ui.css?v=8-native-quiz">
     <link rel="stylesheet" href="/magic-styles.css?v=3-liquid-glass">
-    <link rel="stylesheet" href="quiz-help.css?v=20260910-phone-help">
+    <link rel="stylesheet" href="quiz-help.css?v=20260912-thumb-close">
     <link rel="stylesheet" href="magic-dictionary.css?v=1.2.5-settings-layout">
     <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
     <link rel="stylesheet" href="/offline-notice.css?v=1.0.0">
@@ -44,7 +44,8 @@
 
         <div class="top-bar">
             <button class="icon-btn exit-btn" type="button" onclick="exitQuiz()" aria-label="Torna al libro">
-                <img src="icons/go-back.png" alt="">
+                <img class="quiz-web-only" src="icons/exit.png" alt="">
+                <img class="quiz-native-only" src="icons/go-back.png" alt="">
             </button>
             <h2>Quiz</h2>
             <div class="top-bar-tools" role="group" aria-label="Tempo e dimensione del testo">
@@ -91,6 +92,11 @@
                         <div><strong id="quiz-help-chapter-it"></strong><span id="quiz-help-chapter-bn" lang="bn"></span></div>
                         <div><strong id="quiz-help-topic-it"></strong><span id="quiz-help-topic-bn" lang="bn"></span></div>
                     </details>
+                    </div>
+                    <div class="quiz-help-thumb-actions">
+                        <button class="quiz-help-close-thumb" type="button" data-help-close aria-label="Chiudi traduzione">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="m5 5 14 14M19 5 5 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                        </button>
                     </div>
                 </section>
                 <section id="quiz-audio-recorder" class="quiz-audio-recorder hidden" aria-label="Registratore spiegazione audio">
@@ -180,6 +186,7 @@
                         <input id="quiz-audio-progress" class="quiz-audio-progress" type="range" min="0" max="100" step="0.1" value="0" aria-label="Avanzamento spiegazione">
                         <button id="quiz-audio-speed" class="quiz-audio-speed" type="button" aria-label="Velocità 1x">1×</button>
                     </div>
+                    <img id="quiz-audio-artwork" class="quiz-audio-artwork quiz-web-only" src="icons/explain_quiz.svg" alt="" aria-hidden="true">
                 </div>
             </div>
 
@@ -189,12 +196,14 @@
                 </button>
                 <div class="answer-wrapper notranslate" data-answer-value="1" translate="no" lang="it">
                     <button id="vero" type="button" onclick="answer(1)" aria-label="Vero" aria-pressed="false">
+                        <img class="quiz-web-only" src="icons/true.png" alt="">
                         <span class="answer-label">Vero</span>
                     </button>
                     <div class="admin-correct-dot-slot"></div>
                 </div>
                 <div class="answer-wrapper notranslate" data-answer-value="0" translate="no" lang="it">
                     <button id="falso" type="button" onclick="answer(0)" aria-label="Falso" aria-pressed="false">
+                        <img class="quiz-web-only" src="icons/false.png" alt="">
                         <span class="answer-label">Falso</span>
                     </button>
                     <div class="admin-correct-dot-slot"></div>
@@ -291,7 +300,7 @@
     <script src="screen-protection.js?v=1.2.0"></script>
     <script src="learning-sync.js?v=2"></script>
     <script src="italian-display.js?v=1"></script>
-    <script src="quiz.js?v=84-phone-help"></script>
+    <script src="quiz.js?v=85-audio-speed"></script>
     <script src="quiz-help.js?v=20260910-phone-help"></script>
 </body>
 

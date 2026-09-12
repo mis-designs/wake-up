@@ -413,10 +413,10 @@
   }
 }
 
-/* Compact live-Quiz variant. Study/Admin and result-row players are unchanged. */
-.quiz-page.quiz-focus .quiz-audio-explanation-shell { display: block; min-width: 0; }
-.quiz-page.quiz-focus .quiz-audio-explanation-shell.hidden { display: none; }
-.quiz-page.quiz-focus .quiz-audio-explanation {
+/* Installed Android live-Quiz variant. Web, Study/Admin and result rows are unchanged. */
+html.android-webview .quiz-page.quiz-focus .quiz-audio-explanation-shell { display: block; min-width: 0; }
+html.android-webview .quiz-page.quiz-focus .quiz-audio-explanation-shell.hidden { display: none; }
+html.android-webview .quiz-page.quiz-focus .quiz-audio-explanation {
   --audio-player-mid: var(--app-palette-primary);
   --audio-player-track: var(--app-palette-divider);
   display: grid; grid-template-columns: 44px minmax(0, 1fr) 48px;
@@ -424,33 +424,33 @@
   padding: 0; gap: 6px; border: 0; border-radius: 12px;
   background: transparent; box-shadow: none;
 }
-.quiz-page.quiz-focus .quiz-audio-play {
+html.android-webview .quiz-page.quiz-focus .quiz-audio-play {
   width: 44px; height: 44px; padding: 9px; border: 0; border-radius: 12px;
   background: var(--app-palette-primary); box-shadow: none; animation: none;
   transform: none;
 }
-.quiz-page.quiz-focus .quiz-audio-play .audio-player-icon { width: 26px; height: 26px; filter: brightness(0) invert(1); }
-.quiz-page.quiz-focus .quiz-audio-progress {
+html.android-webview .quiz-page.quiz-focus .quiz-audio-play .audio-player-icon { width: 26px; height: 26px; filter: brightness(0) invert(1); }
+html.android-webview .quiz-page.quiz-focus .quiz-audio-progress {
   min-width: 0; height: 44px; border-radius: 6px;
   --audio-player-mid: var(--app-palette-primary);
   --audio-player-track: var(--app-palette-divider);
 }
-.quiz-page.quiz-focus .quiz-audio-progress::-webkit-slider-thumb { box-shadow: none; }
-.quiz-page.quiz-focus .quiz-audio-progress::-moz-range-thumb { box-shadow: none; }
-.quiz-page.quiz-focus .quiz-audio-speed {
+html.android-webview .quiz-page.quiz-focus .quiz-audio-progress::-webkit-slider-thumb { box-shadow: none; }
+html.android-webview .quiz-page.quiz-focus .quiz-audio-progress::-moz-range-thumb { box-shadow: none; }
+html.android-webview .quiz-page.quiz-focus .quiz-audio-speed {
   width: 48px; max-width: 48px; height: 44px; padding: 0 2px;
   border: 0; border-radius: 10px; background: transparent;
   color: var(--app-palette-primary-strong); font: 700 14px/1 Arial, sans-serif;
   box-shadow: none; transform: none;
 }
-.quiz-page.quiz-focus .quiz-audio-explanation.is-interrupted .quiz-audio-play { outline: 2px dashed var(--app-palette-border); outline-offset: 2px; }
-.quiz-page.quiz-focus .quiz-audio-explanation.is-error .quiz-audio-play { background: var(--app-palette-secondary); }
-.quiz-page.quiz-focus .quiz-audio-play:hover:not(:disabled) { background: var(--app-palette-primary-strong); }
-.quiz-page.quiz-focus .quiz-audio-speed:hover:not(:disabled) { background: var(--app-palette-paper); }
-.quiz-page.quiz-focus .quiz-audio-play:active:not(:disabled) { transform: scale(.96); }
+html.android-webview .quiz-page.quiz-focus .quiz-audio-explanation.is-interrupted .quiz-audio-play { outline: 2px dashed var(--app-palette-border); outline-offset: 2px; }
+html.android-webview .quiz-page.quiz-focus .quiz-audio-explanation.is-error .quiz-audio-play { background: var(--app-palette-secondary); }
+html.android-webview .quiz-page.quiz-focus .quiz-audio-play:hover:not(:disabled) { background: var(--app-palette-primary-strong); }
+html.android-webview .quiz-page.quiz-focus .quiz-audio-speed:hover:not(:disabled) { background: var(--app-palette-paper); }
+html.android-webview .quiz-page.quiz-focus .quiz-audio-play:active:not(:disabled) { transform: scale(.96); }
 @media (prefers-reduced-motion: reduce) {
-  .quiz-page.quiz-focus .quiz-audio-play:active:not(:disabled) { transform: none; }
+  html.android-webview .quiz-page.quiz-focus .quiz-audio-play:active:not(:disabled) { transform: none; }
 }
 @media (forced-colors: active) {
-  .quiz-page.quiz-focus :is(.quiz-audio-play, .quiz-audio-speed) { border: 1px solid ButtonText; }
+  html.android-webview .quiz-page.quiz-focus :is(.quiz-audio-play, .quiz-audio-speed) { border: 1px solid ButtonText; }
 }

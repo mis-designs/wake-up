@@ -59,9 +59,11 @@ test("Admin and legacy players keep shared icons, accessible playback state, spe
     audio.events.pause();
     assert.equal(player.classList.contains("is-playing"), false);
     assert.equal(play.attributes["aria-pressed"], "false");
-    speed.click();
-    assert.equal(audio.playbackRate, 0.5);
-    assert.equal(speed.textContent, "0,5×");
+    for (const expected of [0.8, 1, 1.25, 1.5, 2, 1, 0.8, 1, 1.25, 1.5, 2, 1]) {
+      speed.click();
+      assert.equal(audio.playbackRate, expected);
+      assert.equal(speed.textContent, `${String(expected).replace('.', ',')}×`);
+    }
     progress.value = "60";
     progress.input();
     assert.equal(audio.currentTime, 60);

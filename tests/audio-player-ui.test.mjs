@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import vm from "node:vm";
 
 const quizPage = readFileSync(new URL("../quiz.html", import.meta.url), "utf8");
 const studyPage = readFileSync(new URL("../study-quiz.html", import.meta.url), "utf8");
@@ -23,7 +24,7 @@ test("Admin explanations and legacy review load the shared player instead of the
 });
 
 test("Quiz and Studia quiz load one shared Admin-derived player skin", () => {
-  assert.ok(quizPage.indexOf("mystyle.css?v=54-phone-help") < quizPage.indexOf("audio-player-ui.css?v=7-compact-quiz"));
+  assert.ok(quizPage.indexOf("mystyle.css?v=55-native-quiz") < quizPage.indexOf("audio-player-ui.css?v=8-native-quiz"));
   assert.ok(studyPage.indexOf("study-quiz.css?v=26-numberless-figures") < studyPage.indexOf("audio-player-ui.css?v=6-admin-unified"));
   assert.match(styles, /\.quiz-audio-explanation,\s*\.study-explanation-player\s*\{[\s\S]*?min-height:\s*56px;[\s\S]*?border:\s*1px solid var\(--audio-player-line\);[\s\S]*?border-radius:\s*999px;[\s\S]*?background:\s*transparent;/u);
   assert.match(styles, /box-shadow:[^;]*0 10px 28px rgba\(5, 150, 105, \.14\);[\s\S]*?backdrop-filter:\s*none;/u);
@@ -48,12 +49,58 @@ test("legacy black states cannot replace the transparent player surface", () => 
   assert.match(styles, /\.quiz-audio-explanation\.is-error,\s*\.study-explanation-player\.is-error\s*\{[\s\S]*?background:\s*transparent;/u);
 });
 
-test("the speed selector slows to 0.5x first and then advances to 2x", () => {
-  assert.match(quizScript, /const SHARED_AUDIO_SPEED_STEPS = \[1, 0\.5, 1, 1\.25, 1\.5, 2\];/u);
+test("the speed selector slows to 0.8x first and then advances to 2x", () => {
+  assert.match(quizScript, /const SHARED_AUDIO_SPEED_STEPS = \[1, 0\.8, 1, 1\.25, 1\.5, 2\];/u);
   assert.match(quizScript, /let sharedAudioSpeedStep = 0;[\s\S]*?function cycleSharedAudioSpeed\(\)[\s\S]*?sharedAudioSpeedStep = \(sharedAudioSpeedStep \+ 1\) % SHARED_AUDIO_SPEED_STEPS\.length;[\s\S]*?formatSharedAudioSpeed\(sharedAudioSpeedValue\)/u);
-  assert.match(studyScript, /const EXPLANATION_AUDIO_SPEED_STEPS = \[1, 0\.5, 1, 1\.25, 1\.5, 2\];/u);
+  assert.match(studyScript, /const EXPLANATION_AUDIO_SPEED_STEPS = \[1, 0\.8, 1, 1\.25, 1\.5, 2\];/u);
   assert.match(studyScript, /speedStep: 0,[\s\S]*?function changeExplanationSpeed\(controls\)[\s\S]*?controls\.speedStep = \(controls\.speedStep \+ 1\) % EXPLANATION_AUDIO_SPEED_STEPS\.length;/u);
   assert.match(studyScript, /String\(controls\.speedValue\)\.replace\("\.", ","\)/u);
+});
+
+const speedButton = () => ({textContent: '1×', attributes: {}, setAttribute(name,value) {this.attributes[name] = value;}});
+const speedClicks = [0.8, 1, 1.25, 1.5, 2, 1, 0.8, 1, 1.25, 1.5, 2, 1];
+
+test("Quiz speed clicks update real playback rate and localized labels through two complete cycles", () => {
+  const context = {
+    sharedAudioSpeedStep: 0, sharedAudioSpeedValue: 1,
+    sharedAudio: {playbackRate: 1}, sharedAudioSpeed: speedButton()
+  };
+  const steps = quizScript.match(/const SHARED_AUDIO_SPEED_STEPS = \[[^\]]+\];/u)[0];
+  const format = quizScript.match(/function formatSharedAudioSpeed\([^]*?\n\}/u)[0];
+  const cycle = quizScript.match(/function cycleSharedAudioSpeed\([^]*?\n\}/u)[0];
+  vm.runInNewContext([steps,format,cycle].join('\n'),context);
+  for (const expected of speedClicks) {
+    context.cycleSharedAudioSpeed();
+    assert.equal(context.sharedAudio.playbackRate,expected);
+    assert.equal(context.sharedAudioSpeed.textContent,`${String(expected).replace('.',',')}×`);
+    assert.equal(context.sharedAudioSpeed.attributes['aria-label'],`Velocità ${expected}x`);
+  }
+  context.sharedAudioSpeed = null;
+  context.cycleSharedAudioSpeed();
+  assert.equal(context.sharedAudio.playbackRate,0.8);
+});
+
+test("Study speed clicks stay synchronized and never alter a different question's audio", () => {
+  const audio = {playbackRate: 1};
+  const context = {activePlayback: {key: 'current', audio}};
+  const controls = {key: 'current', speedStep: 0, speedValue: 1, speed: speedButton()};
+  const steps = studyScript.match(/const EXPLANATION_AUDIO_SPEED_STEPS = \[[^\]]+\];/u)[0];
+  const cycle = studyScript.match(/function changeExplanationSpeed\([^]*?\n  \}/u)[0];
+  vm.runInNewContext([steps,cycle].join('\n'),context);
+  for (const expected of speedClicks) {
+    context.changeExplanationSpeed(controls);
+    assert.equal(audio.playbackRate,expected);
+    assert.equal(controls.speed.textContent,`${String(expected).replace('.',',')}×`);
+    assert.equal(controls.speed.attributes['aria-label'],`Velocità ${expected}x`);
+  }
+  const other = {key: 'other', speedStep: 0, speedValue: 1, speed: speedButton()};
+  context.changeExplanationSpeed(other);
+  assert.equal(other.speedValue,0.8);
+  assert.equal(audio.playbackRate,1);
+  context.activePlayback = null;
+  context.changeExplanationSpeed(controls);
+  assert.equal(controls.speedValue,0.8);
+  assert.equal(controls.speed.textContent,'0,8×');
 });
 
 test("artwork, progress and every speed label stay inside the mobile card", () => {
@@ -80,13 +127,13 @@ test("playback state updates the visible control and its accessible action", () 
 });
 
 test("the shared player ships through the current PWA cache", () => {
-  assert.match(quizPage, /audio-focus\.js\?v=1-resumable-tts[\s\S]*?quiz\.js\?v=84-phone-help/u);
-  assert.match(studyPage, /audio-focus\.js\?v=1-resumable-tts[\s\S]*?study-quiz\.js\?v=26-intact-figures/u);
-  assert.match(quizPage, /quiz\.js\?v=84-phone-help/u);
-  assert.match(studyPage, /study-quiz\.js\?v=26-intact-figures/u);
-  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v191-quiz-thumb"/u);
+  assert.match(quizPage, /audio-focus\.js\?v=1-resumable-tts[\s\S]*?quiz\.js\?v=85-audio-speed/u);
+  assert.match(studyPage, /audio-focus\.js\?v=1-resumable-tts[\s\S]*?study-quiz\.js\?v=27-audio-speed/u);
+  assert.match(quizPage, /quiz\.js\?v=85-audio-speed/u);
+  assert.match(studyPage, /study-quiz\.js\?v=27-audio-speed/u);
+  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v194-native-quiz"/u);
   assert.match(worker, /audio-player-ui\.css\?v=6-admin-unified/u);
   assert.match(worker, /audio-focus\.js\?v=1-resumable-tts/u);
-  assert.match(worker, /quiz\.js\?v=84-phone-help/u);
-  assert.match(worker, /study-quiz\.js\?v=26-intact-figures/u);
+  assert.match(worker, /quiz\.js\?v=85-audio-speed/u);
+  assert.match(worker, /study-quiz\.js\?v=27-audio-speed/u);
 });

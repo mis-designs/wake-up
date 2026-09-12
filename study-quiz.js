@@ -81,7 +81,7 @@
   const QUIZ_SESSION_REFRESH_SKEW_MS = 90 * 1000;
   const STUDY_AUDIO_STATUS_DELAY_MS = 400;
   const STUDY_AUDIO_REQUEST_TIMEOUT_MS = 12000;
-  const EXPLANATION_AUDIO_SPEED_STEPS = [1, 0.5, 1, 1.25, 1.5, 2];
+  const EXPLANATION_AUDIO_SPEED_STEPS = [1, 0.8, 1, 1.25, 1.5, 2];
   const ttsCache = createBoundedCache(48);
   const helpCache = new Map();
   const audioStatusCache = new Map();

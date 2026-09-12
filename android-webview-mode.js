@@ -2,10 +2,13 @@
   "use strict";
 
   const userAgent = navigator.userAgent || "";
-  const isAndroidWebView = /Android/i.test(userAgent)
-    && (/\bwv\b/i.test(userAgent) || /MagicBookViewer/i.test(userAgent));
+  // Android's generic "wv" flag also belongs to Facebook, Messenger and other
+  // embedded browsers. Only our wrapper's explicit product token opts into this UI.
+  // This is a presentation signal, never an authentication or access check.
+  const isMagicBookAndroidApp = /Android/i.test(userAgent)
+    && /(?:^|\s)MagicBookViewer\/\d+(?:\.\d+)*(?=\s|$)/i.test(userAgent);
 
-  if (!isAndroidWebView) return;
+  if (!isMagicBookAndroidApp) return;
 
   const root = document.documentElement;
   root.classList.add("android-webview");

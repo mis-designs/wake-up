@@ -11,14 +11,15 @@ function classes(...initial) {
 }
 function source(name, end) { return script.slice(script.indexOf(`function ${name}`), script.indexOf(end, script.indexOf(`function ${name}`))); }
 
-test('live Quiz has text-only answers, labelled X, and detail before keyword buttons', () => {
+test('live Quiz retains web artwork with native-only text answers and shared help semantics', () => {
   assert.match(html,/class="quiz-page quiz-focus"/);
   for(const id of ['vero','falso']) {
     const button = html.match(new RegExp(`<button id="${id}"[^>]*>[\\s\\S]*?</button>`))[0];
-    assert.doesNotMatch(button,/<img|<svg/);
+    assert.match(button,/<img class="quiz-web-only"/);
     assert.match(button,/aria-pressed="false"/);
   }
-  assert.doesNotMatch(html,/id="quiz-audio-artwork"/);
+  assert.match(html,/id="quiz-audio-artwork" class="quiz-audio-artwork quiz-web-only"/);
+  assert.match(read('mystyle.css'),/html\.android-webview \.quiz-page \.quiz-web-only \{ display: none; \}/);
   assert.match(html,/data-help-close aria-label="Chiudi traduzione">\s*<svg/);
   assert.ok(html.indexOf('id="quiz-help-translation-text"') < html.indexOf('id="quiz-help-word-detail"'));
   assert.ok(html.indexOf('id="quiz-help-word-detail"') < html.indexOf('id="quiz-help-words"'));

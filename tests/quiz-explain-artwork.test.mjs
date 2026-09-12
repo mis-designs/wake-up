@@ -8,11 +8,12 @@ const styles = readFileSync(new URL("../mystyle.css", import.meta.url), "utf8");
 const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
 const iconUrl = new URL("../icons/explain_quiz.svg", import.meta.url);
 
-test("live Quiz removes its artwork while keeping the result artwork asset", () => {
+test("web Quiz keeps its artwork and only installed Android hides it", () => {
   assert.equal(existsSync(iconUrl), true);
-  assert.doesNotMatch(html, /id="quiz-audio-artwork"/u);
-  assert.match(html, /mystyle\.css\?v=54-phone-help/u);
-  assert.match(html, /quiz\.js\?v=84-phone-help/u);
+  assert.match(html, /id="quiz-audio-artwork" class="quiz-audio-artwork quiz-web-only"/u);
+  assert.match(styles, /html\.android-webview \.quiz-page \.quiz-web-only \{ display: none; \}/u);
+  assert.match(html, /mystyle\.css\?v=55-native-quiz/u);
+  assert.match(html, /quiz\.js\?v=85-audio-speed/u);
   assert.match(worker, /\/icons\/explain_quiz\.svg/u);
 });
 

@@ -56,7 +56,7 @@ test("the app marker precedes styles; only the named native variants may follow 
 
   for (const page of pages) {
     const html = read(page);
-    const markerIndex = html.indexOf("/android-webview-mode.js?v=6-pearl-blue");
+    const markerIndex = html.indexOf("/android-webview-mode.js?v=7-native-only");
     const firstStylesheetIndex = html.indexOf('rel="stylesheet"');
     const themeIndex = html.indexOf(page === "quiz.html" ? "/android-app-theme.css?v=11-shared-quiz" : "/android-app-theme.css?v=10-shared-login");
     const lastStylesheetIndex = html.lastIndexOf('rel="stylesheet"');
@@ -77,7 +77,7 @@ test("the app marker precedes styles; only the named native variants may follow 
 });
 
 test("the app theme assets are available offline", () => {
-  assert.match(worker, /\/android-webview-mode\.js\?v=6-pearl-blue/);
+  assert.match(worker, /\/android-webview-mode\.js\?v=7-native-only/);
   assert.match(worker, /\/android-app-theme\.css\?v=10-shared-login/);
 });
 

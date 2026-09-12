@@ -693,6 +693,7 @@ body.loading-open {
 }
 
 /* SELECTED answer state */
+html:not(.android-webview) .selected,
 body:not(.quiz-focus) .selected {
   background: var(--color-accent) !important;
   transform: scale(1.05);
@@ -1617,6 +1618,13 @@ body:not(.quiz-focus) .selected {
 }
 
 @media (max-width: 767px) {
+  /* Keep the restored web title in flow so it cannot sit under A-/A+ on phones. */
+  html:not(.android-webview) .quiz-page .top-bar h2 {
+    position: static;
+    transform: none;
+    min-width: 0;
+    text-align: start;
+  }
   .quiz-container {
     grid-template-rows: auto auto minmax(0, 1fr) auto;
     gap: 9px;
@@ -2392,30 +2400,33 @@ html[data-reader-size="xlarge"] #question { font-size: clamp(1.38rem, 3.9vw, 1.5
   }
 }
 
-/* Focused live Quiz — the same reading workspace on public web and Android.
+/* Focused live Quiz — installed Android only. Web keeps its original layout.
    Route geometry stays here; palette and shared player retain their owners. */
-body.quiz-page.quiz-focus {
+.quiz-page .quiz-native-only { display: none; }
+html.android-webview .quiz-page .quiz-native-only { display: block; }
+html.android-webview .quiz-page .quiz-web-only { display: none; }
+html.android-webview body.quiz-page.quiz-focus {
   --color-primary: var(--app-palette-primary);
   --color-text: var(--app-palette-text);
   --quiz-display: "Norwester", "Arial Narrow", sans-serif;
   background: var(--app-palette-background);
   color: var(--app-palette-text);
 }
-.quiz-page.quiz-focus .quiz-container {
+html.android-webview .quiz-page.quiz-focus .quiz-container {
   width: min(100%, 880px);
   margin-inline: auto;
   padding: calc(env(safe-area-inset-top, 0px) + 8px) 8px calc(env(safe-area-inset-bottom, 0px) + 10px);
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 8px;
 }
-.quiz-page.quiz-focus .top-bar {
+html.android-webview .quiz-page.quiz-focus .top-bar {
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr) auto;
   gap: 6px;
   align-items: center;
   min-height: 48px;
 }
-.quiz-page.quiz-focus .top-bar h2 {
+html.android-webview .quiz-page.quiz-focus .top-bar h2 {
   position: static;
   min-width: 0;
   padding: 0;
@@ -2425,45 +2436,45 @@ body.quiz-page.quiz-focus {
   text-align: start;
   color: var(--app-palette-text);
 }
-.quiz-page.quiz-focus .top-bar h2::before { content: none; }
-.quiz-page.quiz-focus .exit-btn {
+html.android-webview .quiz-page.quiz-focus .top-bar h2::before { content: none; }
+html.android-webview .quiz-page.quiz-focus .exit-btn {
   width: 44px; height: 44px; margin: 0;
   background: transparent; box-shadow: none; border: 0;
 }
-.quiz-page.quiz-focus .exit-btn img { width: 24px; height: 24px; }
-html.native-quiz-back-ready .quiz-focus .exit-btn { display: none; }
-html.native-quiz-back-ready .quiz-focus .top-bar { grid-template-columns: minmax(0, 1fr) auto; }
-.quiz-page.quiz-focus .top-bar-tools {
+html.android-webview .quiz-page.quiz-focus .exit-btn img { width: 24px; height: 24px; }
+html.android-webview.native-quiz-back-ready .quiz-focus .exit-btn { display: none; }
+html.android-webview.native-quiz-back-ready .quiz-focus .top-bar { grid-template-columns: minmax(0, 1fr) auto; }
+html.android-webview .quiz-page.quiz-focus .top-bar-tools {
   height: 48px; gap: 0; padding: 1px;
   border: 1px solid var(--app-palette-divider); border-radius: 14px;
   background: var(--app-palette-paper);
 }
-.quiz-page.quiz-focus .text-size-control {
+html.android-webview .quiz-page.quiz-focus .text-size-control {
   height: 44px; border: 0; border-radius: 12px 0 0 12px;
   box-shadow: none; background: transparent;
 }
-.quiz-page.quiz-focus .text-size-control button { width: 44px; height: 44px; font-size: 16px; }
-.quiz-page.quiz-focus #text-size-value {
+html.android-webview .quiz-page.quiz-focus .text-size-control button { width: 44px; height: 44px; font-size: 16px; }
+html.android-webview .quiz-page.quiz-focus #text-size-value {
   position: absolute; width: 1px; min-width: 0; height: 1px; padding: 0; margin: -1px;
   clip-path: inset(50%); overflow: hidden; white-space: nowrap; display: block;
 }
-.quiz-page.quiz-focus #timer {
+html.android-webview .quiz-page.quiz-focus #timer {
   width: 90px; padding: 0 4px; border-radius: 0;
   border-left: 1px solid var(--app-palette-divider);
   background: transparent; color: var(--app-palette-primary-strong);
   font: 400 21px/32px var(--quiz-display);
   font-variant-numeric: tabular-nums; white-space: nowrap; text-align: center;
 }
-.quiz-page.quiz-focus #timer.is-overtime { color: var(--app-palette-text); }
-.quiz-page.quiz-focus #progress {
+html.android-webview .quiz-page.quiz-focus #timer.is-overtime { color: var(--app-palette-text); }
+html.android-webview .quiz-page.quiz-focus #progress {
   gap: 2px; padding: 2px 2px 4px;
   min-height: 50px;
   scrollbar-width: thin;
   scrollbar-color: var(--app-palette-border) transparent;
 }
-.quiz-page.quiz-focus #progress::-webkit-scrollbar { display: block; height: 3px; }
-.quiz-page.quiz-focus #progress::-webkit-scrollbar-thumb { background: var(--app-palette-border); border-radius: 3px; }
-.quiz-page.quiz-focus .progress-dot {
+html.android-webview .quiz-page.quiz-focus #progress::-webkit-scrollbar { display: block; height: 3px; }
+html.android-webview .quiz-page.quiz-focus #progress::-webkit-scrollbar-thumb { background: var(--app-palette-border); border-radius: 3px; }
+html.android-webview .quiz-page.quiz-focus .progress-dot {
   flex: 0 0 44px; min-width: 44px; max-width: 44px;
   position: relative; isolation: isolate;
   width: 44px; height: 44px; border: 0;
@@ -2473,114 +2484,114 @@ html.native-quiz-back-ready .quiz-focus .top-bar { grid-template-columns: minmax
   transition: color 160ms ease;
 }
 /* The visible 34px circle sits inside an unchanged 44px touch target. */
-.quiz-page.quiz-focus .progress-dot::before {
+html.android-webview .quiz-page.quiz-focus .progress-dot::before {
   content: ""; position: absolute; inset: 5px; z-index: -1;
   box-sizing: border-box;
   border: 1.5px solid var(--app-palette-text); border-radius: 50%;
   background: transparent; pointer-events: none;
   transition: background-color 160ms ease, border-color 160ms ease;
 }
-.quiz-page.quiz-focus .progress-dot--answered {
+html.android-webview .quiz-page.quiz-focus .progress-dot--answered {
   color: var(--app-palette-on-primary);
 }
-.quiz-page.quiz-focus .progress-dot--answered::before {
+html.android-webview .quiz-page.quiz-focus .progress-dot--answered::before {
   background: var(--app-palette-primary); border-color: var(--app-palette-primary);
 }
-.quiz-page.quiz-focus .progress-dot--current::before {
+html.android-webview .quiz-page.quiz-focus .progress-dot--current::before {
   outline: 1.5px solid var(--app-palette-text); outline-offset: 2px;
 }
-.quiz-page.quiz-focus .question-area {
+html.android-webview .quiz-page.quiz-focus .question-area {
   --quiz-question-flow-gap: 6px;
   padding: clamp(10px, 2.6vw, 20px);
   border-radius: 18px; border: 1px solid var(--app-palette-divider);
   background: var(--app-palette-paper); box-shadow: none;
 }
-.quiz-page.quiz-focus #question {
+html.android-webview .quiz-page.quiz-focus #question {
   flex: 1 0 auto; display: grid; align-content: start;
   padding-block: 8px; color: var(--app-palette-text);
   hyphens: none; word-break: normal; overflow-wrap: break-word;
 }
-.quiz-page.quiz-focus #question[aria-expanded="true"] { flex-grow: 0; }
-.quiz-page.quiz-focus .quiz-question-content {
+html.android-webview .quiz-page.quiz-focus #question[aria-expanded="true"] { flex-grow: 0; }
+html.android-webview .quiz-page.quiz-focus .quiz-question-content {
   scroll-padding-block: 8px;
   scrollbar-width: thin; scrollbar-color: var(--app-palette-border) transparent;
 }
-.quiz-page.quiz-focus .quiz-question-content::-webkit-scrollbar { display: block; width: 4px; }
-.quiz-page.quiz-focus .quiz-question-content::-webkit-scrollbar-thumb { background: var(--app-palette-border); border-radius: 4px; }
-.quiz-page.quiz-focus .quiz-question-actions { padding: 0; }
-.quiz-page.quiz-focus .quiz-command-bar {
+html.android-webview .quiz-page.quiz-focus .quiz-question-content::-webkit-scrollbar { display: block; width: 4px; }
+html.android-webview .quiz-page.quiz-focus .quiz-question-content::-webkit-scrollbar-thumb { background: var(--app-palette-border); border-radius: 4px; }
+html.android-webview .quiz-page.quiz-focus .quiz-question-actions { padding: 0; }
+html.android-webview .quiz-page.quiz-focus .quiz-command-bar {
   width: min(100%, 640px); margin-inline: auto;
   grid-template-columns: 92px minmax(0, 1fr) minmax(0, 1fr) 44px;
   grid-template-rows: 44px 56px; gap: 8px 6px;
   align-items: start;
 }
-.quiz-page.quiz-focus .quiz-media-controls .quiz-audio-explanation-shell {
+html.android-webview .quiz-page.quiz-focus .quiz-media-controls .quiz-audio-explanation-shell {
   grid-column: 1 / 4; grid-row: 1; width: 100%; justify-self: stretch;
 }
-.quiz-page.quiz-focus .audio-controls {
+html.android-webview .quiz-page.quiz-focus .audio-controls {
   grid-column: 1; grid-row: 2; width: 92px;
   display: flex; flex-wrap: nowrap; gap: 4px; align-items: center;
 }
-.quiz-page.quiz-focus .audio-btn {
+html.android-webview .quiz-page.quiz-focus .audio-btn {
   position: relative; isolation: isolate; flex: 0 0 44px;
   width: 44px; height: 48px; padding: 8px;
   border: 0; border-radius: 12px; background: transparent; box-shadow: none;
 }
-.quiz-page.quiz-focus .audio-btn::before {
+html.android-webview .quiz-page.quiz-focus .audio-btn::before {
   content: ""; position: absolute; inset: 0; z-index: -1;
   background: var(--app-palette-paper);
   mask: url("/icons/native-chapter-clover.svg") center / contain no-repeat;
   pointer-events: none;
 }
-.quiz-page.quiz-focus .audio-btn:nth-child(2)::before { mask-image: url("/icons/native-action-scallop.svg"); }
-.quiz-page.quiz-focus .audio-btn img { width: 25px; height: 25px; object-fit: contain; }
-.quiz-page.quiz-focus .controls .answer-wrapper:nth-of-type(1) { grid-column: 2; grid-row: 2; }
-.quiz-page.quiz-focus .controls .answer-wrapper:nth-of-type(2) { grid-column: 3; grid-row: 2; }
-.quiz-page.quiz-focus .answer-wrapper { height: 56px; }
-.quiz-page.quiz-focus .quiz-command-bar .controls button {
+html.android-webview .quiz-page.quiz-focus .audio-btn:nth-child(2)::before { mask-image: url("/icons/native-action-scallop.svg"); }
+html.android-webview .quiz-page.quiz-focus .audio-btn img { width: 25px; height: 25px; object-fit: contain; }
+html.android-webview .quiz-page.quiz-focus .controls .answer-wrapper:nth-of-type(1) { grid-column: 2; grid-row: 2; }
+html.android-webview .quiz-page.quiz-focus .controls .answer-wrapper:nth-of-type(2) { grid-column: 3; grid-row: 2; }
+html.android-webview .quiz-page.quiz-focus .answer-wrapper { height: 56px; }
+html.android-webview .quiz-page.quiz-focus .quiz-command-bar .controls button {
   min-width: 0; height: 48px; border: 0; border-radius: 12px;
   box-shadow: none; transition: background-color 160ms ease, transform 160ms ease;
 }
-.quiz-page.quiz-focus .controls :is(#vero, #falso) {
+html.android-webview .quiz-page.quiz-focus .controls :is(#vero, #falso) {
   padding: 0 4px; background: var(--app-palette-secondary); color: var(--app-palette-on-secondary); box-shadow: none;
 }
-.quiz-page.quiz-focus .controls :is(#vero, #falso).selected {
+html.android-webview .quiz-page.quiz-focus .controls :is(#vero, #falso).selected {
   background: var(--app-palette-primary); color: var(--app-palette-on-primary);
   outline: 2px solid var(--app-palette-primary); outline-offset: 2px;
 }
-.quiz-page.quiz-focus .controls .answer-label { font: 400 20px/1 var(--quiz-display); letter-spacing: .015em; color: var(--app-palette-on-secondary); }
-.quiz-page.quiz-focus :is(#vero, #falso).selected .answer-label { color: var(--app-palette-on-primary); }
-.quiz-page.quiz-focus #prev-btn { grid-column: 4; grid-row: 1; }
-.quiz-page.quiz-focus #next-btn { grid-column: 4; grid-row: 2; }
-.quiz-page.quiz-focus :is(#prev-btn, #next-btn) {
+html.android-webview .quiz-page.quiz-focus .controls .answer-label { font: 400 20px/1 var(--quiz-display); letter-spacing: .015em; color: var(--app-palette-on-secondary); }
+html.android-webview .quiz-page.quiz-focus :is(#vero, #falso).selected .answer-label { color: var(--app-palette-on-primary); }
+html.android-webview .quiz-page.quiz-focus #prev-btn { grid-column: 4; grid-row: 1; }
+html.android-webview .quiz-page.quiz-focus #next-btn { grid-column: 4; grid-row: 2; }
+html.android-webview .quiz-page.quiz-focus :is(#prev-btn, #next-btn) {
   width: 44px; height: 44px; padding: 0;
   background: var(--app-palette-paper); color: var(--app-palette-text);
   border: 1px solid var(--app-palette-divider);
   box-shadow: none;
 }
-.quiz-page.quiz-focus :is(#prev-btn, #next-btn) img { width: 22px; height: 22px; }
-.quiz-page.quiz-focus #next-label { font: 400 17px/1 var(--quiz-display); }
-.quiz-page.quiz-focus #next-btn.is-finish { background: var(--app-palette-primary); color: var(--app-palette-on-primary); }
-.quiz-page.quiz-focus .admin-correct-dot-slot { height: 6px; margin-top: 2px; }
-.quiz-page.quiz-focus .admin-correct-dot { width: 6px; height: 6px; box-shadow: none; }
-.quiz-page.quiz-focus button:focus-visible { outline: 2px solid var(--app-palette-primary-strong); outline-offset: 2px; }
-.quiz-page.quiz-focus .progress-dot:focus-visible { outline-offset: -2px; }
-.quiz-page.quiz-focus button:disabled { opacity: .48; cursor: default; }
+html.android-webview .quiz-page.quiz-focus :is(#prev-btn, #next-btn) img { width: 22px; height: 22px; }
+html.android-webview .quiz-page.quiz-focus #next-label { font: 400 17px/1 var(--quiz-display); }
+html.android-webview .quiz-page.quiz-focus #next-btn.is-finish { background: var(--app-palette-primary); color: var(--app-palette-on-primary); }
+html.android-webview .quiz-page.quiz-focus .admin-correct-dot-slot { height: 6px; margin-top: 2px; }
+html.android-webview .quiz-page.quiz-focus .admin-correct-dot { width: 6px; height: 6px; box-shadow: none; }
+html.android-webview .quiz-page.quiz-focus button:focus-visible { outline: 2px solid var(--app-palette-primary-strong); outline-offset: 2px; }
+html.android-webview .quiz-page.quiz-focus .progress-dot:focus-visible { outline-offset: -2px; }
+html.android-webview .quiz-page.quiz-focus button:disabled { opacity: .48; cursor: default; }
 @media (hover: hover) {
-  .quiz-page.quiz-focus :is(.exit-btn, .audio-btn, #prev-btn, #next-btn):hover:not(:disabled) { outline: 1px solid var(--app-palette-border); outline-offset: 1px; }
-  .quiz-page.quiz-focus .progress-dot:hover:not(:disabled)::before { outline: 1.5px solid var(--app-palette-text); outline-offset: 2px; }
+  html.android-webview .quiz-page.quiz-focus :is(.exit-btn, .audio-btn, #prev-btn, #next-btn):hover:not(:disabled) { outline: 1px solid var(--app-palette-border); outline-offset: 1px; }
+  html.android-webview .quiz-page.quiz-focus .progress-dot:hover:not(:disabled)::before { outline: 1.5px solid var(--app-palette-text); outline-offset: 2px; }
 }
 @media (max-height: 460px) {
-  .quiz-page.quiz-focus .quiz-container { gap: 4px; padding-block: 4px; }
-  .quiz-page.quiz-focus .question-area { padding: 8px 12px; }
+  html.android-webview .quiz-page.quiz-focus .quiz-container { gap: 4px; padding-block: 4px; }
+  html.android-webview .quiz-page.quiz-focus .question-area { padding: 8px 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .quiz-page.quiz-focus :is(button, .progress-dot), .quiz-page.quiz-focus .progress-dot::before { animation: none; transition: none; }
+  html.android-webview .quiz-page.quiz-focus :is(button, .progress-dot), html.android-webview .quiz-page.quiz-focus .progress-dot::before { animation: none; transition: none; }
 }
 @media (forced-colors: active) {
-  .quiz-page.quiz-focus :is(.controls button, .audio-btn, .top-bar-tools) { border: 1px solid ButtonText; }
-  .quiz-page.quiz-focus .progress-dot::before { border-color: ButtonText; }
-  .quiz-page.quiz-focus .progress-dot--current::before { outline-color: Highlight; }
-  .quiz-page.quiz-focus .progress-dot--answered::before { border: 3px double Highlight; }
-  .quiz-page.quiz-focus .selected { outline: 2px solid Highlight; outline-offset: -4px; }
+  html.android-webview .quiz-page.quiz-focus :is(.controls button, .audio-btn, .top-bar-tools) { border: 1px solid ButtonText; }
+  html.android-webview .quiz-page.quiz-focus .progress-dot::before { border-color: ButtonText; }
+  html.android-webview .quiz-page.quiz-focus .progress-dot--current::before { outline-color: Highlight; }
+  html.android-webview .quiz-page.quiz-focus .progress-dot--answered::before { border: 3px double Highlight; }
+  html.android-webview .quiz-page.quiz-focus .selected { outline: 2px solid Highlight; outline-offset: -4px; }
 }
