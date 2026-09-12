@@ -2400,7 +2400,73 @@ html[data-reader-size="xlarge"] #question { font-size: clamp(1.38rem, 3.9vw, 1.5
   }
 }
 
-/* Focused live Quiz — installed Android only. Web keeps its original layout.
+/* Open-paper web Quiz. Keep the existing browser controls and reading order;
+   only the installed-app marker selects the separate native presentation. */
+html:not(.android-webview) body.quiz-page {
+  --quiz-web-divider: var(--color-surface-strong);
+  --quiz-web-dot-shadow: 0 2px 5px color-mix(in srgb, var(--color-dark) 18%, transparent);
+  background: var(--color-white);
+}
+html:not(.android-webview) .quiz-page .quiz-container {
+  width: 100%;
+  min-height: 0;
+  height: var(--quiz-viewport-height);
+  max-height: var(--quiz-viewport-height);
+  margin: 0;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) max(clamp(12px, 2.4vw, 32px), env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(clamp(12px, 2.4vw, 32px), env(safe-area-inset-left, 0px));
+  gap: 6px;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-white);
+  box-shadow: none;
+}
+html:not(.android-webview) .quiz-page #progress {
+  /* Reserve real ink space for first/last circles, shadows and keyboard focus. */
+  padding: 10px 8px;
+  align-items: center;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-strong) transparent;
+  scroll-padding-inline: 8px;
+}
+html:not(.android-webview) .quiz-page #progress::-webkit-scrollbar { display: block; height: 4px; }
+html:not(.android-webview) .quiz-page #progress::-webkit-scrollbar-thumb { background: var(--color-surface-strong); border-radius: 4px; }
+html:not(.android-webview) .quiz-page .progress-dot--current {
+  transform: none;
+  box-shadow: var(--quiz-web-dot-shadow);
+}
+html:not(.android-webview) .quiz-page .progress-dot:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+html:not(.android-webview) .quiz-page .question-area {
+  --quiz-question-flow-gap: 12px;
+  padding: 14px 0 10px;
+  border: 0;
+  border-block: 1px solid var(--quiz-web-divider);
+  border-radius: 0;
+  background: var(--color-white);
+  box-shadow: none;
+}
+html:not(.android-webview) .quiz-page .quiz-question-content {
+  /* Inset the content focus ring without restoring a raised question card. */
+  padding: 8px;
+  scroll-padding-block: 8px;
+}
+html:not(.android-webview) .quiz-page .quiz-question-actions { padding-inline: 8px; }
+html:not(.android-webview) .quiz-page .quiz-command-bar:has(.admin-correct-dot-slot.is-visible) {
+  /* Only signed Admin sessions render the marker; don't crop it at the footer. */
+  padding-bottom: 22px;
+}
+@media (max-height: 600px) {
+  html:not(.android-webview) .quiz-page .quiz-container { padding-top: calc(6px + env(safe-area-inset-top, 0px)); gap: 4px; }
+  html:not(.android-webview) .quiz-page .question-area { padding-block: 8px; }
+}
+@media (forced-colors: active) {
+  html:not(.android-webview) .quiz-page .question-area { border-color: CanvasText; }
+  html:not(.android-webview) .quiz-page .progress-dot--current { outline: 2px solid Highlight; outline-offset: 3px; box-shadow: none; }
+}
+
+/* Focused live Quiz — installed Android only. Web uses its open-paper layout.
    Route geometry stays here; palette and shared player retain their owners. */
 .quiz-page .quiz-native-only { display: none; }
 html.android-webview .quiz-page .quiz-native-only { display: block; }

@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v194-native-quiz";
+const CACHE_NAME = "magicbook-pwa-v195-web-open-paper";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -57,7 +57,7 @@ const STATIC_ASSETS = [
   "/src/learning-insights.css?v=9-card-spacing&ui=10",
   "/src/learning-insights.js?v=9-session-storage-recovery&ui=9-intact-figures",
   "/homebg.css?v=3",
-  "/mystyle.css?v=55-native-quiz",
+  "/mystyle.css?v=56-web-open-paper",
   "/audio-player-ui.css?v=6-admin-unified",
   "/audio-player-ui.css?v=8-native-quiz",
   "/script.js?v=74-quiz-thumb",
