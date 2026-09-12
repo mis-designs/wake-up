@@ -66,7 +66,7 @@ test("the app marker precedes styles; only the named native variants may follow 
     const studyIndex = html.indexOf("/android-study-shell.css?v=19-open-hand");
     if (page === "index.html") {
       assert.ok(studyIndex > themeIndex);
-      const modesIndex = html.indexOf("/android-mode-screens.css?v=1");
+      const modesIndex = html.indexOf("/android-mode-screens.css?v=2-thumb");
       assert.ok(modesIndex > studyIndex);
       assert.equal(modesIndex, lastStylesheetIndex + 'rel="stylesheet" href="'.length);
     } else {

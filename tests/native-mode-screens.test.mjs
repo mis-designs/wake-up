@@ -12,7 +12,7 @@ test("ordinary browser initialization performs no native DOM mutation", () => {
   const window = { document: { documentElement: { classList: { contains: () => false } } } };
   vm.runInNewContext(native, { window });
   assert.equal(window.MagicBookModeScreens, undefined);
-  assert.ok(read("index.html").indexOf('android-mode-screens.js?v=1') < read("index.html").indexOf('script.js?v=73-native-mode-pages'));
+  assert.ok(read("index.html").indexOf('android-mode-screens.js?v=2-thumb') < read("index.html").indexOf('script.js?v=74-quiz-thumb'));
 });
 
 test("native mode URLs are recognizable only when the presentation owner is active", () => {
@@ -95,7 +95,7 @@ test("native styles preserve the bounded grid, fallback, motion and ARIA contrac
   assert.match(native, /event\.persisted/);
   assert.match(native, /disabledBeforeLaunch\.clear\(\)/);
   assert.match(source, /function openRouteState[^]*?appActionGate.cancel\(\);\s*window.MagicBookModeScreens\?\.reset\(\)/);
-  for (const asset of ["android-mode-screens.css?v=1","android-mode-screens.js?v=1","icons/native-chapter-clover.svg"]) assert.ok(read("service-worker.js").includes(asset));
+  for (const asset of ["android-mode-screens.css?v=2-thumb","android-mode-screens.js?v=2-thumb","icons/native-chapter-clover.svg"]) assert.ok(read("service-worker.js").includes(asset));
   assert.doesNotMatch(native, /\b(?:fetch|alert|confirm|prompt)\s*\(|\.innerHTML\s*=|localStorage/);
 });
 

@@ -4623,7 +4623,7 @@ function decorateGuestQuizUI() {
     pill.classList.toggle("guest-qms-locked", !free);
   });
   document.getElementById("qmsCardMulti")?.classList.add("guest-qms-locked-card");
-  const mixButton = document.querySelector("#qmsCardMix .qms-start");
+  const mixButton = document.getElementById("qmsMixStartBtn");
   if (mixButton) {
     const remaining = Math.max(0, 2 - getTrialMixAttempts());
     mixButton.querySelector(".qms-start-label")?.replaceChildren(document.createTextNode(remaining ? `Inizia · ${remaining} gratis` : "Sblocca Mix Quiz"));

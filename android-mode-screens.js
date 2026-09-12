@@ -26,6 +26,7 @@
       config.tabs[i].setAttribute("aria-selected", String(selected));
       config.tabs[i].tabIndex = selected ? 0 : -1;
       doc.getElementById(id).hidden = !selected;
+      if (config.startButtons) config.startButtons[i].hidden = !selected;
     });
     config.element.querySelector(".qms-body").scrollTop = 0;
     if (focus) config.tabs[index].focus({ preventScroll: true });
@@ -69,7 +70,22 @@
       tabs.append(button);
       return button;
     });
-    element.querySelector(".qms-header").after(tabs);
+    if (kind === "quiz") {
+      // Move the original action nodes, never clone their handlers or selection state.
+      const footer = doc.createElement("div");
+      footer.className = "native-mode-footer";
+      footer.append(tabs);
+      config.startButtons = config.cards.map(([id]) => {
+        const start = doc.getElementById(id).querySelector(".qms-start");
+        start.type = "button";
+        start.setAttribute("aria-describedby", `native-copy-${id}`);
+        footer.append(start);
+        return start;
+      });
+      element.querySelector(".qms-sheet").append(footer);
+    } else {
+      element.querySelector(".qms-header").after(tabs);
+    }
     selectTab(kind, 0);
   }
 
@@ -84,11 +100,69 @@
     ["examCard30", "Allenati con 30 domande in 20 minuti."],
     ["examCardPdf", "Consulta il materiale Exam nel lettore."]
   ]) doc.getElementById(id).querySelector(".qms-card-sub").textContent = subtitle;
+
+  // Long-form counterpart to the chapter button language rail. Overlapping grid
+  // cells reserve the larger translation's natural height, including text zoom.
+  for (const [id, italian, bangla] of [
+    ["qmsCardMix", ["Mix quiz", "Da tutto il catalogo di 786 quiz."], ["মিক্স কুইজ", "৭৮৬টি প্রশ্নের পুরো সংগ্রহ থেকে।"]],
+    ["qmsCardCap", ["Quiz per capitolo", "Domande da un capitolo specifico."], ["অধ্যায়ভিত্তিক কুইজ", "একটি নির্দিষ্ট অধ্যায় থেকে প্রশ্ন।"]],
+    ["qmsCardMulti", ["Multi quiz", "Domande da almeno 2 capitoli insieme."], ["একাধিক অধ্যায়ের কুইজ", "অন্তত ২টি অধ্যায় থেকে একসঙ্গে প্রশ্ন।"]]
+  ]) {
+    const info = doc.querySelector(`#${id} .qms-card-info`);
+    const copy = doc.createElement("div");
+    copy.id = `native-copy-${id}`;
+    copy.className = "native-mode-copy";
+    const accessible = doc.createElement("div");
+    accessible.className = "native-mode-copy-accessible native-sr-only";
+    const viewport = doc.createElement("div");
+    viewport.className = "native-mode-copy-window";
+    viewport.setAttribute("aria-hidden", "true");
+    for (const [language, [title, detail]] of [["it", italian], ["bn", bangla]]) {
+      const row = doc.createElement("div");
+      row.lang = language;
+      const heading = doc.createElement("div");
+      heading.className = "qms-card-title";
+      heading.textContent = title;
+      const description = doc.createElement("p");
+      description.className = "native-mode-description";
+      description.textContent = detail;
+      row.append(heading, description);
+      accessible.append(row.cloneNode(true));
+      viewport.append(row);
+    }
+    // Permission copy remains a separate, non-animated note owned by syncSelection.
+    const permission = info.querySelector(".qms-card-sub");
+    permission.classList.add("native-mode-permission");
+    permission.hidden = true;
+    copy.append(accessible, viewport);
+    info.replaceChildren(copy, permission);
+  }
   for (const [id, number, label] of [["qmsCardMix", "30", "domande casuali"], ["examCard80", "80", "domande · 50 minuti"], ["examCard30", "30", "domande · 20 minuti"]]) {
     const metric = doc.createElement("div");
     metric.className = "native-mode-metric";
     const value = doc.createElement("strong"); value.textContent = number;
     const caption = doc.createElement("span"); caption.textContent = label;
+    if (id === "qmsCardMix") {
+      value.textContent = "";
+      const readable = doc.createElement("span");
+      readable.className = "native-sr-only";
+      readable.textContent = number;
+      value.append(readable);
+      const digits = doc.createElement("span");
+      digits.className = "native-mode-digits";
+      digits.setAttribute("aria-hidden", "true");
+      for (const digit of number) {
+        const item = doc.createElement("span");
+        item.textContent = digit;
+        digits.append(item);
+      }
+      value.append(digits);
+      caption.textContent = "domande · ";
+      const bn = doc.createElement("span");
+      bn.lang = "bn";
+      bn.textContent = "প্রশ্ন";
+      caption.append(bn);
+    }
     metric.append(value, caption);
     doc.getElementById(id).querySelector(".qms-card-header").after(metric);
   }
@@ -100,7 +174,10 @@
   doc.getElementById("qmsMultiHint").setAttribute("role", "status");
 
   function syncSelection() {
-    if (doc.body.classList.contains("guest-trial-mode")) {
+    const guest = doc.body.classList.contains("guest-trial-mode");
+    doc.querySelectorAll(".native-mode-permission").forEach(note => { note.hidden = !guest; });
+    if (guest) {
+      doc.querySelector("#qmsCardMix .qms-card-sub").textContent = "La prova include fino a 2 Mix Quiz gratuiti.";
       doc.querySelector("#qmsCardCap .qms-card-sub").textContent = "Capitoli 01 e 03 inclusi nella prova. Gli altri richiedono l’accesso.";
       doc.querySelector("#qmsCardMulti .qms-card-sub").textContent = "Il quiz con più capitoli richiede l’accesso completo.";
     }

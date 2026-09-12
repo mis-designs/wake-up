@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v190-open-hand";
+const CACHE_NAME = "magicbook-pwa-v191-quiz-thumb";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -26,8 +26,8 @@ const STATIC_ASSETS = [
   "/assets/fonts/magicbook-latin-fonts.css?v=1",
   "/android-study-shell.css?v=19-open-hand",
   "/android-study-shell.js?v=13-shared-login",
-  "/android-mode-screens.css?v=1",
-  "/android-mode-screens.js?v=1",
+  "/android-mode-screens.css?v=2-thumb",
+  "/android-mode-screens.js?v=2-thumb",
   "/icons/native-chapter-clover.svg",
   "/android-rotary-model.mjs?v=8-bangla-greetings",
   "/assets/native-chapter-covers.json",
@@ -60,7 +60,7 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=54-phone-help",
   "/audio-player-ui.css?v=6-admin-unified",
   "/audio-player-ui.css?v=7-compact-quiz",
-  "/script.js?v=73-native-mode-pages",
+  "/script.js?v=74-quiz-thumb",
   "/study-quiz.html",
   "/study-quiz.css?v=26-numberless-figures",
   "/study-quiz.js?v=26-intact-figures",
