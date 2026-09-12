@@ -53,6 +53,6 @@ test("quiz and study renderers use the shared Italian case owner", () => {
 
   assert.ok(quizPage.indexOf("italian-display.js?v=1") < quizPage.indexOf("quiz.js?v=85-audio-speed"));
   assert.ok(studyPage.indexOf("italian-display.js?v=1") < studyPage.indexOf("study-quiz.js?v=27-audio-speed"));
-  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v196-dictionary-tts"/u);
+  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v197-dictionary-sequence"/u);
   assert.match(worker, /\/italian-display\.js\?v=1/u);
 });

@@ -15,7 +15,7 @@ import { getExplanationFiguresFromObjectKeys } from "./quiz-explanation-availabi
 import { detectQuizAudioMimeType, normalizeQuizAudioMimeType } from "./audio-mime.mjs";
 import { fetchUpstream, publicApiError, withOperationalTimeout } from "./upstream-fetch.mjs";
 import { normalizeStudyChapter, selectStudyChapterRows } from "./study-quiz.mjs";
-import { resolveDictionaryAudio } from "./dictionary-audio.mjs";
+import { resolveDictionaryAudio, dictionarySpeechChunks } from "./dictionary-audio.mjs";
 import { quizAudioCatalog, quizAudioLegacyRegistry } from "./quiz-audio-catalog.mjs";
 import { matchesQuizAudioIdentityTicket } from "./quiz-audio-ticket.mjs";
 import {
@@ -809,6 +809,7 @@ function getRequestData(req) {
     text: body.text || query.text,
     entryId: body.entryId || query.entryId,
     language: body.language || query.language,
+    part: body.part || query.part || "label",
     question: body.question || query.question,
     questionId: body.questionId ?? query.questionId,
     figure: Object.prototype.hasOwnProperty.call(body, "figure") ? body.figure : query.figure,
@@ -949,6 +950,7 @@ export default async function handler(req, res) {
       text,
       entryId,
       language,
+      part,
       question,
       questionId,
       figure,
@@ -984,18 +986,23 @@ export default async function handler(req, res) {
       res.setHeader("Cache-Control", "no-store");
       const access = await ensureAccess({ phone, deviceId, accessToken });
       if (!access.ok) return res.status(access.statusCode || 401).json({ error: access.error || "unauthorized" });
-      const canonicalText = await resolveDictionaryAudio({ entryId, language, text });
+      const canonicalText = await resolveDictionaryAudio({ entryId, language, text, part });
       if (!canonicalText) return res.status(400).json({ error: "dictionary_content_invalid" });
-      const data = await forwardGetAction({
-        action: language === "bn" ? "getTTS" : "getItalianAudio",
-        text: canonicalText
-      });
-      if (typeof data?.audio !== "string" || !data.audio || data.audio.length > 4 * 1024 * 1024) {
-        return res.status(503).json({ error: "dictionary_audio_unavailable" });
+      const clips = [];
+      for (const chunk of dictionarySpeechChunks(canonicalText, language)) {
+        const data = await forwardGetAction({
+          action: language === "bn" ? "getTTS" : "getItalianAudio",
+          text: chunk
+        });
+        if (typeof data?.audio !== "string" || !data.audio || data.audio.length > 4 * 1024 * 1024) {
+          return res.status(503).json({ error: "dictionary_audio_unavailable" });
+        }
+        clips.push({ audio: data.audio,
+          mimeType: detectQuizAudioMimeType(Buffer.from(data.audio.replace(/^data:[^,]+,/u, ""), "base64"), "audio/mpeg") });
       }
       return res.status(200).json({
-        audio: data.audio,
-        mimeType: detectQuizAudioMimeType(Buffer.from(data.audio.replace(/^data:[^,]+,/u, ""), "base64"), "audio/mpeg"),
+        ...clips[0],
+        clips,
         language,
         ...(access.accessToken ? { accessToken: access.accessToken, accessTokenExpiresAt: access.accessTokenExpiresAt } : {})
       });

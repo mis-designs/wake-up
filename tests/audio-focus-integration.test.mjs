@@ -14,9 +14,9 @@ const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "u
 
 test("Quiz and Studia load the shared audio coordinator before their playback owners", () => {
   const focusAsset = "audio-focus.js?v=1-resumable-tts";
-  assert.ok(quizPage.indexOf(focusAsset) < quizPage.indexOf("magic-dictionary.js?v=1.3.0-dictionary-tts"));
+  assert.ok(quizPage.indexOf(focusAsset) < quizPage.indexOf("magic-dictionary.js?v=1.4.0-dictionary-sequence"));
   assert.ok(quizPage.indexOf(focusAsset) < quizPage.indexOf("quiz.js?v=85-audio-speed"));
-  assert.ok(studyPage.indexOf(focusAsset) < studyPage.indexOf("magic-dictionary.js?v=1.3.0-dictionary-tts"));
+  assert.ok(studyPage.indexOf(focusAsset) < studyPage.indexOf("magic-dictionary.js?v=1.4.0-dictionary-sequence"));
   assert.ok(studyPage.indexOf(focusAsset) < studyPage.indexOf("study-quiz.js?v=27-audio-speed"));
   assert.match(worker, /\/audio-focus\.js\?v=1-resumable-tts/u);
 });

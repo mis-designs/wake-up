@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v196-dictionary-tts";
+const CACHE_NAME = "magicbook-pwa-v197-dictionary-sequence";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -45,10 +45,11 @@ const STATIC_ASSETS = [
   "/icons/do_quiz.svg",
   "/icons/dictionary.svg",
   "/icons/human_talking.png",
+  "/icons/more.gif",
   "/icons/exam.svg",
   "/icons/Statistics.png",
   "/icons/errors.png",
-  "/magic-dictionary.css?v=1.3.0-dictionary-tts",
+  "/magic-dictionary.css?v=1.4.0-dictionary-sequence",
   "/screen-protection.css?v=1.1.0",
   "/offline-notice.css?v=1.0.0",
   "/offline-notice.js?v=1.0.0",
@@ -73,7 +74,7 @@ const STATIC_ASSETS = [
   "/patenteContextResolverV3.js?v=4.0.0-glossary-display",
   "/quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity",
   "/quiz-help-preview.js?v=1-personal-bangla-preview",
-  "/magic-dictionary.js?v=1.3.0-dictionary-tts",
+  "/magic-dictionary.js?v=1.4.0-dictionary-sequence",
   "/screen-protection.js?v=1.2.0",
   "/icons/no-internet.gif",
   "/icons/explain_quiz.svg",

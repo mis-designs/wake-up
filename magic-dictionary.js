@@ -7,7 +7,8 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function createMagicDictionary(root) {
   "use strict";
 
-  const VERSION = "1.3.0";
+  const VERSION = "1.4.0";
+  const DICTIONARY_LANGUAGE_PAUSE_MS = 550;
   const MANIFEST_URL = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const FALLBACK_URL = "/data/patente/quiz-help-runtime-v2.json";
   const STORAGE_PREFIX = "magicbook.wordLearning.v1";
@@ -363,6 +364,8 @@
       simpleBn: String(source.simple_bn || source.tts_bn || entry.simple_bn || entry.tts_bn || source.bn || entry.bn || "").trim(),
       type: entry.type === "technical_phrase" ? "phrase" : "word",
       sourceId: String(source.id || entry.id),
+      descriptionId: String((source.simple_bn || source.tts_bn) ? source.id || entry.id
+        : (entry.simple_bn || entry.tts_bn) ? entry.id : source.id || entry.id),
       useCount: Number(useCount || 0)
     };
   }
@@ -437,6 +440,7 @@
         simpleBn: String(value?.[3] || value?.[5] || value?.[1] || "").trim(),
         type: String(value?.[0] || "").trim().includes(" ") ? "phrase" : "word",
         sourceId: id,
+        descriptionId: id,
         useCount: 0
       }))
       .filter(word => word.it.length > 1 && BENGALI_PATTERN.test(word.bn) && !FUNCTION_WORDS.has(normalizeItalian(word.it)))
@@ -612,7 +616,12 @@
           <p id="magicDictionaryStatus" class="magic-dictionary-status" role="status">Caricamento del dizionario…</p>
         </section>
         <div id="magicDictionaryList" class="magic-dictionary-list"></div>
-        <button id="magicDictionaryMore" class="magic-dictionary-more hidden" type="button">Mostra altre parole</button>
+        <button id="magicDictionaryMore" class="magic-dictionary-more hidden" type="button" aria-controls="magicDictionaryList">
+          <span class="magic-dictionary-more-media" aria-hidden="true">
+            <img src="/icons/more.gif" width="36" height="36" alt="" loading="lazy" draggable="false">
+            <span class="magic-dictionary-more-still"><i></i><i></i><i></i></span>
+          </span><span>Mostra altre parole</span>
+        </button>
         <section class="magic-dictionary-settings">
           <div><strong>Ripasso ogni 12 ore</strong><p id="magicDictionaryGateStatus">Attivo</p></div>
           <button id="magicDictionaryEnableGate" class="hidden" type="button">Riattiva</button>
@@ -971,16 +980,26 @@
     });
   }
 
-  function audioButton(word, language) {
-    const name = language === "bn" ? "Bangla" : "italiano";
+  function audioButton(word) {
     return `<button class="magic-dictionary-audio" type="button" lang="it"
-      data-dictionary-audio="${language}" data-entry-id="${escapeHtml(word.id)}"
-      aria-label="Ascolta in ${name}: ${escapeHtml(language === "bn" ? word.bn : word.it)}" aria-pressed="false"
-      title="Ascolta in ${name}">
+      data-dictionary-audio="sequence" data-entry-id="${escapeHtml(word.id)}"
+      aria-label="Ascolta ${escapeHtml(word.it)} in italiano, poi Bangla e descrizione" aria-pressed="false"
+      title="Ascolta italiano, Bangla e descrizione">
       <img class="magic-dictionary-audio-icon" src="/icons/human_talking.png" width="28" height="28" alt="" draggable="false">
-      <span class="magic-dictionary-audio-fallback" aria-hidden="true">${language.toUpperCase()}</span>
+      <span class="magic-dictionary-audio-fallback" aria-hidden="true">IT/BN</span>
       <span class="magic-loading-indicator magic-loading-indicator--inline magic-dictionary-audio-loading" aria-hidden="true"><img class="magic-loading-indicator__image" src="/icons/loading.gif" alt=""></span>
     </button>`;
+  }
+
+  function dictionarySpeechParts(word) {
+    const parts = [
+      { entryId: word.id, language: "it", part: "label", text: word.it },
+      { entryId: word.sourceId, language: "bn", part: "label", text: word.bn }
+    ];
+    if (normalizeBangla(word.simpleBn) && normalizeBangla(word.simpleBn) !== normalizeBangla(word.bn)) {
+      parts.push({ entryId: word.descriptionId || word.sourceId, language: "bn", part: "description", text: word.simpleBn });
+    }
+    return parts;
   }
 
   function dictionaryAudioIdentity() {
@@ -1033,14 +1052,14 @@
   async function playDictionaryAudio(button) {
     if (dictionaryPlayback?.button === button) { stopDictionaryAudio(); return; }
     const word = findWord(button.dataset.entryId);
-    const language = button.dataset.dictionaryAudio;
-    if (!word || !["it", "bn"].includes(language)) return;
+    if (!word) return;
     stopItalianSpeech();
     // beginTransient supersedes the previous word without losing a suspended explanation.
     if (!root.MagicAudioFocus) stopDictionaryAudio();
     const identity = dictionaryAudioIdentity();
-    const text = language === "bn" ? word.bn : word.it;
-    const key = JSON.stringify([identity.phone, identity.deviceId, language, text]);
+    const text = word.it;
+    const parts = dictionarySpeechParts(word);
+    const key = JSON.stringify([identity.phone, identity.deviceId, parts]);
     const playback = { button, label: button.getAttribute("aria-label"), controller: new root.AbortController(), audio: null, timer: 0, token: null };
     root.cancelPendingQuizExplanationAudio?.({ preserveStartedPlayback: Boolean(root.MagicAudioFocus) });
     root.cancelPendingStudyExplanationAudio?.();
@@ -1061,53 +1080,86 @@
     playback.timer = root.setTimeout(() => finishDictionaryAudio(playback, "Audio non disponibile. Tocca l’icona per riprovare."), 30_000);
     try {
       if (!identity.phone || !identity.deviceId) throw new Error("dictionary_session");
-      let data = dictionaryAudioCache.get(key);
-      if (!data) {
+      // Prepare the complete short reading before playback: the language pause
+      // is deliberate, not a wait for a network response between languages.
+      const groups = await Promise.all(parts.map(async part => {
+        const cacheKey = JSON.stringify([identity.phone, identity.deviceId, part]);
+        const cached = dictionaryAudioCache.get(cacheKey);
+        if (cached) return { ...part, clips: cached, cacheKey };
         const response = await root.fetch("/api/quiz", {
           method: "POST", cache: "no-store", signal: playback.controller.signal,
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${identity.accessToken}` },
-          body: JSON.stringify({ action: "getDictionaryAudio", phone: identity.phone, deviceId: identity.deviceId,
-            entryId: language === "bn" ? word.sourceId : word.id, language, text })
+          body: JSON.stringify({ action: "getDictionaryAudio", phone: identity.phone, deviceId: identity.deviceId, ...part })
         });
-        if (!current()) { discardStale(); return; }
+        if (!current()) throw new Error("dictionary_stale");
         if (response.status === 401 || response.status === 403) throw new Error("dictionary_session");
         if (!response.ok) throw new Error("dictionary_audio");
-        data = await response.json();
-        if (!current()) { discardStale(); return; }
-        if (data.language !== language || typeof data.audio !== "string" || !data.audio || data.audio.length > 4 * 1024 * 1024) throw new Error("dictionary_audio");
+        const data = await response.json();
+        if (!current()) throw new Error("dictionary_stale");
+        const clips = data.clips || [{ audio: data.audio, mimeType: data.mimeType }];
+        if (data.language !== part.language || !Array.isArray(clips) || !clips.length || clips.length > 4
+          || clips.some(clip => typeof clip.audio !== "string" || !clip.audio || clip.audio.length > 4 * 1024 * 1024)) throw new Error("dictionary_audio");
         if (data.accessToken) {
           writeLocal("accessToken", data.accessToken);
           writeLocal("accessTokenExpiresAt", data.accessTokenExpiresAt);
         }
         // Small, session-only cache: repeat taps do not generate new speech requests.
         if (dictionaryAudioCache.size >= 12) dictionaryAudioCache.delete(dictionaryAudioCache.keys().next().value);
-        dictionaryAudioCache.set(key, { audio: data.audio, mimeType: data.mimeType, language });
-      }
+        dictionaryAudioCache.set(cacheKey, clips);
+        return { ...part, clips, cacheKey };
+      }));
+      if (!current()) { discardStale(); return; }
+      const queue = groups.flatMap(group => group.clips.map(clip => ({ ...clip, language: group.language, part: group.part, cacheKey: group.cacheKey })));
       const audio = new root.Audio();
       playback.audio = audio;
-      const encoded = data.audio.replace(/^data:audio\/[a-z0-9.+-]+;base64,/iu, "").replace(/\s/gu, "");
-      if (!/^[a-z0-9+/]+=*$/iu.test(encoded)) throw new Error("dictionary_audio");
-      const mime = /^audio\/(mpeg|wav|ogg|mp4|webm)$/u.test(data.mimeType) ? data.mimeType : "audio/mpeg";
-      const bytes = Uint8Array.from(root.atob(encoded), character => character.charCodeAt(0));
-      playback.url = root.URL.createObjectURL(new root.Blob([bytes], { type: mime }));
-      audio.src = playback.url;
-      audio.onended = () => finishDictionaryAudio(playback);
-      audio.onerror = () => {
-        dictionaryAudioCache.delete(key);
-        finishDictionaryAudio(playback, "Audio non disponibile. Tocca l’icona per riprovare.");
+      let index = 0;
+      const playNext = async () => {
+        if (!current()) { discardStale(); return; }
+        const data = queue[index];
+        try {
+          root.clearTimeout(playback.timer);
+          if (playback.url) root.URL.revokeObjectURL(playback.url);
+          const encoded = data.audio.replace(/^data:audio\/[a-z0-9.+-]+;base64,/iu, "").replace(/\s/gu, "");
+          if (!/^[a-z0-9+/]+=*$/iu.test(encoded)) throw new Error("dictionary_audio");
+          const mime = /^audio\/(mpeg|wav|ogg|mp4|webm)$/u.test(data.mimeType) ? data.mimeType : "audio/mpeg";
+          const bytes = Uint8Array.from(root.atob(encoded), character => character.charCodeAt(0));
+          playback.url = root.URL.createObjectURL(new root.Blob([bytes], { type: mime }));
+          audio.src = playback.url;
+          audio.onended = () => {
+            if (!current()) { discardStale(); return; }
+            root.clearTimeout(playback.timer);
+            const previous = queue[index++];
+            if (index >= queue.length) { finishDictionaryAudio(playback); return; }
+            const pause = previous.language !== queue[index].language ? DICTIONARY_LANGUAGE_PAUSE_MS
+              : previous.part !== queue[index].part ? 280 : 100;
+            playback.timer = root.setTimeout(() => { void playNext(); }, pause);
+          };
+          audio.onerror = () => {
+            dictionaryAudioCache.delete(data.cacheKey);
+            finishDictionaryAudio(playback, "Audio non disponibile. Tocca l’icona per riprovare.");
+          };
+          playback.timer = root.setTimeout(() => finishDictionaryAudio(playback, "Audio non disponibile. Tocca l’icona per riprovare."), 20_000);
+          await audio.play();
+          if (!current()) { discardStale(); return; }
+          root.clearTimeout(playback.timer);
+          playback.timer = root.setTimeout(() => finishDictionaryAudio(playback), 60_000);
+          button.classList.remove("is-loading");
+          button.classList.add("is-playing");
+          button.removeAttribute("aria-busy");
+          button.setAttribute("aria-pressed", "true");
+          button.setAttribute("aria-label", `Interrompi la lettura: ${text}`);
+        } catch (error) {
+          if (dictionaryPlayback !== playback) return;
+          if (error?.name !== "NotAllowedError") dictionaryAudioCache.delete(data.cacheKey);
+          finishDictionaryAudio(playback, error?.name === "NotAllowedError"
+            ? "Audio pronto: tocca di nuovo l’icona per ascoltare."
+            : "Audio non disponibile. Tocca l’icona per riprovare.");
+        }
       };
-      await audio.play();
-      if (!current()) { discardStale(); return; }
-      root.clearTimeout(playback.timer);
-      playback.timer = root.setTimeout(() => finishDictionaryAudio(playback), 60_000);
-      button.classList.remove("is-loading");
-      button.classList.add("is-playing");
-      button.removeAttribute("aria-busy");
-      button.setAttribute("aria-pressed", "true");
-      button.setAttribute("aria-label", `Interrompi la lettura: ${text}`);
+      await playNext();
     } catch (error) {
       if (dictionaryPlayback !== playback) return;
-      if (error?.name !== "NotAllowedError") dictionaryAudioCache.delete(key);
+      if (!current()) { discardStale(); return; }
       finishDictionaryAudio(playback, error?.name === "NotAllowedError"
         ? "Audio pronto: tocca di nuovo l’icona per ascoltare."
         : error?.message === "dictionary_session" ? "Accedi di nuovo per ascoltare."
@@ -1135,8 +1187,8 @@
     } else {
       list.innerHTML = visible.map(word => `
         <article class="magic-dictionary-word is-${word.type}">
-          <div class="magic-dictionary-term magic-dictionary-language-row"><div><small>${word.type === "phrase" ? "LOCUZIONE" : "PAROLA"}</small><h3>${escapeHtml(word.it)}</h3></div>${audioButton(word, "it")}</div>
-          <div class="magic-dictionary-language-row" lang="bn"><div><strong>${escapeHtml(word.bn)}</strong><p>${escapeHtml(word.simpleBn)}</p></div>${audioButton(word, "bn")}</div>
+          <div class="magic-dictionary-term"><div><small>${word.type === "phrase" ? "LOCUZIONE" : "PAROLA"}</small><h3>${escapeHtml(word.it)}</h3></div></div>
+          <div class="magic-dictionary-language-row" lang="bn"><div><strong>${escapeHtml(word.bn)}</strong><p>${escapeHtml(word.simpleBn)}</p></div>${audioButton(word)}</div>
           <p class="magic-dictionary-audio-message" role="status" lang="it" hidden></p>
         </article>`).join("");
       list.querySelectorAll(".magic-dictionary-audio-icon").forEach(img => {
@@ -1211,7 +1263,30 @@
     }
   }
 
+  function bindMoreIcon() {
+    const more = root.document.getElementById("magicDictionaryMore");
+    if (!more) return;
+    let timer = 0;
+    const stop = () => { root.clearTimeout(timer); timer = 0; more.classList.remove("is-animating"); };
+    const start = () => {
+      stop();
+      if (root.document.hidden || root.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) return;
+      more.classList.add("is-animating");
+      // Keep the GIF playful on arrival, then settle so it never distracts from study.
+      timer = root.setTimeout(stop, 4500);
+    };
+    more.querySelector("img")?.addEventListener("error", () => { more.classList.add("is-icon-missing"); stop(); }, { once: true });
+    more.addEventListener("pointerenter", start);
+    more.addEventListener("focus", start);
+    more.addEventListener("click", stop);
+    root.document.addEventListener("visibilitychange", () => { if (root.document.hidden) stop(); });
+    if (root.IntersectionObserver) {
+      new root.IntersectionObserver(entries => { if (entries[0]?.isIntersecting) start(); else stop(); }, { threshold: .5 }).observe(more);
+    } else start();
+  }
+
   function bindEvents() {
+    bindMoreIcon();
     root.document.getElementById("magicDictionaryList")?.addEventListener("click", event => {
       const button = event.target.closest("[data-dictionary-audio]");
       if (button) void playDictionaryAudio(button);
@@ -1260,8 +1335,15 @@
       renderDictionary();
     });
     root.document.getElementById("magicDictionaryMore")?.addEventListener("click", () => {
+      const previousCount = root.document.querySelectorAll("#magicDictionaryList article").length;
       dictionaryVisibleCount += PAGE_SIZE;
       renderDictionary();
+      const firstNew = root.document.querySelectorAll("#magicDictionaryList article")[previousCount];
+      if (firstNew) {
+        firstNew.tabIndex = -1;
+        firstNew.focus({ preventScroll: true });
+        firstNew.scrollIntoView({ block: "nearest" });
+      }
     });
     root.document.getElementById("magicDictionaryEnableGate")?.addEventListener("click", enableGate);
 
@@ -1318,6 +1400,7 @@
       playDictionaryAudio,
       stopDictionaryAudio,
       audioButton,
+      dictionarySpeechParts,
       selectFreshWords,
       seededRandom,
       shuffled

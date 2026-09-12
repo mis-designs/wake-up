@@ -13,15 +13,33 @@ function normalize(value) {
   return String(value || "").normalize("NFKC").trim().replace(/[।.]+$/u, "").trim();
 }
 
-export function dictionaryAudioText({ entryId, language, text }, runtime = null) {
-  if (!["it", "bn"].includes(language) || !/^[a-zA-Z0-9_-]{1,128}$/u.test(String(entryId || ""))) return "";
+export function dictionaryAudioText({ entryId, language, text, part = "label" }, runtime = null) {
+  if (!["it", "bn"].includes(language) || !["label", "description"].includes(part)
+    || (part === "description" && language !== "bn") || !/^[a-zA-Z0-9_-]{1,128}$/u.test(String(entryId || ""))) return "";
   const entry = runtime?.entries?.[entryId];
   const local = fallback.words?.[entryId];
   const candidates = language === "bn"
-    ? [entry?.bn, local?.[1]]
+    ? part === "description"
+      ? [entry?.simple_bn || entry?.tts_bn || entry?.bn, local?.[3] || local?.[5] || local?.[1]]
+      : [entry?.bn, local?.[1]]
     : [entry?.canonical_italian || entry?.forms?.[0] || entry?.lemma, local?.[0]];
   return candidates.map(normalize).find(value => value && value.length <= 500
     && (language !== "bn" || BENGALI.test(value)) && value === normalize(text)) || "";
+}
+
+// The existing Bengali provider accepts short text. Split descriptions only at
+// word boundaries; every chunk comes from the already-verified catalog text.
+export function dictionarySpeechChunks(text, language) {
+  if (language !== "bn") return [text];
+  const chunks = [];
+  let current = "";
+  for (const word of text.split(/\s+/u)) {
+    if (word.length > 180) throw new Error("dictionary_word_too_long");
+    if (current && `${current} ${word}`.length > 180) { chunks.push(current); current = ""; }
+    current = current ? `${current} ${word}` : word;
+  }
+  if (current) chunks.push(current);
+  return chunks;
 }
 
 async function loadRuntime() {
@@ -56,6 +74,8 @@ async function loadRuntime() {
 export async function resolveDictionaryAudio(request) {
   // Only catalog text is speakable. The caller cannot select a provider, URL,
   // arbitrary text, or another language. Local entries work during catalog outages.
-  if (!["it", "bn"].includes(request.language) || !/^[a-zA-Z0-9_-]{1,128}$/u.test(String(request.entryId || ""))) return "";
+  if (!["it", "bn"].includes(request.language) || !["label", "description"].includes(request.part || "label")
+    || (request.part === "description" && request.language !== "bn")
+    || !/^[a-zA-Z0-9_-]{1,128}$/u.test(String(request.entryId || ""))) return "";
   return dictionaryAudioText(request) || dictionaryAudioText(request, await loadRuntime());
 }
