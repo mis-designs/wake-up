@@ -662,7 +662,7 @@ body.magic-word-gate-open {
   overflow-wrap: anywhere;
 }
 
-.magic-dictionary-word [lang="bn"] {
+.magic-dictionary-word > [lang="bn"] {
   padding-left: 17px;
   border-left: 1px solid #e2e8f0;
 }
@@ -1353,7 +1353,7 @@ body.magic-word-gate-open {
   font-size: 17px;
 }
 
-.magic-dictionary-word [lang="bn"] {
+.magic-dictionary-word > [lang="bn"] {
   align-self: center;
   border-left-color: #e8e5ef;
 }
@@ -1426,4 +1426,78 @@ body.magic-word-gate-open {
   .magic-dictionary-back,
   .magic-dictionary-practice,
   .magic-dictionary-word { transition: none; }
+}
+
+/* Shared dictionary pronunciation: the same two language controls on web/app. */
+#magicDictionaryScreen .magic-dictionary-language-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.magic-dictionary-language-row > div { min-width: 0; }
+.magic-dictionary-audio {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--dictionary-violet-dark);
+  background: transparent;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease;
+  box-shadow: none;
+}
+.magic-dictionary-audio:hover,
+.magic-dictionary-audio.is-playing {
+  background: color-mix(in srgb, var(--dictionary-violet) 9%, var(--dictionary-surface));
+  border-color: var(--dictionary-border);
+  box-shadow: none;
+}
+.magic-dictionary-audio:active { background: color-mix(in srgb, var(--dictionary-violet) 15%, var(--dictionary-surface)); box-shadow: none; }
+.magic-dictionary-audio:focus-visible {
+  outline: 3px solid var(--dictionary-violet);
+  outline-offset: 2px;
+}
+.magic-dictionary-audio img { width: 28px; height: 28px; object-fit: contain; }
+.magic-dictionary-audio-fallback { display: none; font: 700 12px/1 Inter, sans-serif; }
+.magic-dictionary-audio.is-icon-missing .magic-dictionary-audio-icon { visibility: hidden; }
+.magic-dictionary-audio.is-icon-missing .magic-dictionary-audio-fallback { display: block; position: absolute; }
+.magic-dictionary-audio .magic-dictionary-audio-loading { display: none; position: absolute; inset: 8px; padding: 0; }
+.magic-dictionary-audio.is-loading .magic-dictionary-audio-icon,
+.magic-dictionary-audio.is-loading .magic-dictionary-audio-fallback { visibility: hidden; }
+.magic-dictionary-audio.is-loading .magic-dictionary-audio-loading { display: grid; place-items: center; }
+.magic-dictionary-audio.is-playing::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  width: 12px;
+  height: 2px;
+  background: currentColor;
+}
+.magic-dictionary-audio-message {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--dictionary-violet-dark);
+  font: 500 13px/1.5 Inter, sans-serif;
+}
+.magic-dictionary-audio-message[hidden] { display: none; }
+@media (min-width: 761px) and (max-width: 1100px) {
+  .magic-dictionary-word { grid-template-columns: minmax(0, 1fr); }
+  .magic-dictionary-word > [lang="bn"] {
+    padding: 14px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--dictionary-border);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .magic-dictionary-audio { transition: none; }
+}
+@media (forced-colors: active) {
+  .magic-dictionary-audio { border-color: ButtonText; }
+  .magic-dictionary-audio.is-playing { outline: 2px solid Highlight; }
 }

@@ -15,6 +15,7 @@ import { getExplanationFiguresFromObjectKeys } from "./quiz-explanation-availabi
 import { detectQuizAudioMimeType, normalizeQuizAudioMimeType } from "./audio-mime.mjs";
 import { fetchUpstream, publicApiError, withOperationalTimeout } from "./upstream-fetch.mjs";
 import { normalizeStudyChapter, selectStudyChapterRows } from "./study-quiz.mjs";
+import { resolveDictionaryAudio } from "./dictionary-audio.mjs";
 import { quizAudioCatalog, quizAudioLegacyRegistry } from "./quiz-audio-catalog.mjs";
 import { matchesQuizAudioIdentityTicket } from "./quiz-audio-ticket.mjs";
 import {
@@ -806,6 +807,8 @@ function getRequestData(req) {
     chapters: body.chapters || query.chapters,
     mode: body.mode || query.mode,
     text: body.text || query.text,
+    entryId: body.entryId || query.entryId,
+    language: body.language || query.language,
     question: body.question || query.question,
     questionId: body.questionId ?? query.questionId,
     figure: Object.prototype.hasOwnProperty.call(body, "figure") ? body.figure : query.figure,
@@ -944,6 +947,8 @@ export default async function handler(req, res) {
       chapters,
       mode,
       text,
+      entryId,
+      language,
       question,
       questionId,
       figure,
@@ -973,6 +978,27 @@ export default async function handler(req, res) {
       audioIdentityToken
     })) {
       return res.status(400).json({ error: "invalid_request" });
+    }
+
+    if (req.method === "POST" && action === "getDictionaryAudio") {
+      res.setHeader("Cache-Control", "no-store");
+      const access = await ensureAccess({ phone, deviceId, accessToken });
+      if (!access.ok) return res.status(access.statusCode || 401).json({ error: access.error || "unauthorized" });
+      const canonicalText = await resolveDictionaryAudio({ entryId, language, text });
+      if (!canonicalText) return res.status(400).json({ error: "dictionary_content_invalid" });
+      const data = await forwardGetAction({
+        action: language === "bn" ? "getTTS" : "getItalianAudio",
+        text: canonicalText
+      });
+      if (typeof data?.audio !== "string" || !data.audio || data.audio.length > 4 * 1024 * 1024) {
+        return res.status(503).json({ error: "dictionary_audio_unavailable" });
+      }
+      return res.status(200).json({
+        audio: data.audio,
+        mimeType: detectQuizAudioMimeType(Buffer.from(data.audio.replace(/^data:[^,]+,/u, ""), "base64"), "audio/mpeg"),
+        language,
+        ...(access.accessToken ? { accessToken: access.accessToken, accessTokenExpiresAt: access.accessTokenExpiresAt } : {})
+      });
     }
 
     if (req.method === "POST" && action === "refreshQuizSession") {

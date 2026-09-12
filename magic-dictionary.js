@@ -7,7 +7,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function createMagicDictionary(root) {
   "use strict";
 
-  const VERSION = "1.2.6";
+  const VERSION = "1.3.0";
   const MANIFEST_URL = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const FALLBACK_URL = "/data/patente/quiz-help-runtime-v2.json";
   const STORAGE_PREFIX = "magicbook.wordLearning.v1";
@@ -46,6 +46,8 @@
   let italianSpeechRequestId = 0;
   let italianSpeechTimer = 0;
   let italianSpeechFocusToken = null;
+  let dictionaryPlayback = null;
+  const dictionaryAudioCache = new Map();
   const memoryStorage = new Map();
 
   function italianSpeechVoice(synthesis) {
@@ -92,6 +94,7 @@
   }
 
   function speakItalian(value, options = {}) {
+    stopDictionaryAudio();
     const text = String(value || "").trim();
     const synthesis = root.speechSynthesis;
     const Utterance = root.SpeechSynthesisUtterance;
@@ -968,7 +971,152 @@
     });
   }
 
+  function audioButton(word, language) {
+    const name = language === "bn" ? "Bangla" : "italiano";
+    return `<button class="magic-dictionary-audio" type="button" lang="it"
+      data-dictionary-audio="${language}" data-entry-id="${escapeHtml(word.id)}"
+      aria-label="Ascolta in ${name}: ${escapeHtml(language === "bn" ? word.bn : word.it)}" aria-pressed="false"
+      title="Ascolta in ${name}">
+      <img class="magic-dictionary-audio-icon" src="/icons/human_talking.png" width="28" height="28" alt="" draggable="false">
+      <span class="magic-dictionary-audio-fallback" aria-hidden="true">${language.toUpperCase()}</span>
+      <span class="magic-loading-indicator magic-loading-indicator--inline magic-dictionary-audio-loading" aria-hidden="true"><img class="magic-loading-indicator__image" src="/icons/loading.gif" alt=""></span>
+    </button>`;
+  }
+
+  function dictionaryAudioIdentity() {
+    const session = storedSession();
+    return {
+      phone: currentPhone(),
+      deviceId: String(session.deviceId || readLocal("deviceId") || ""),
+      accessToken: String(readLocal("accessToken") || session.accessToken || "")
+    };
+  }
+
+  function resetDictionaryPlayback(playback) {
+    if (!playback || playback.disposed) return;
+    playback.disposed = true;
+    if (dictionaryPlayback === playback) dictionaryPlayback = null;
+    playback.controller.abort();
+    root.clearTimeout(playback.timer);
+    if (playback.audio) {
+      playback.audio.onended = playback.audio.onerror = null;
+      playback.audio.pause();
+      playback.audio.removeAttribute("src");
+      playback.audio.load();
+    }
+    if (playback.url) { root.URL.revokeObjectURL(playback.url); playback.url = null; }
+    playback.button.classList.remove("is-loading", "is-playing");
+    playback.button.removeAttribute("aria-busy");
+    playback.button.setAttribute("aria-pressed", "false");
+    playback.button.setAttribute("aria-label", playback.label);
+  }
+
+  function stopDictionaryAudio() {
+    const playback = dictionaryPlayback;
+    if (!playback) return;
+    if (playback.token && root.MagicAudioFocus?.isCurrent(playback.token)) {
+      void root.MagicAudioFocus.cancelTransient(playback.token, { resume: false, reason: "dictionary-stop" });
+    } else resetDictionaryPlayback(playback);
+  }
+
+  function finishDictionaryAudio(playback, message = "") {
+    if (dictionaryPlayback !== playback) return;
+    resetDictionaryPlayback(playback);
+    if (playback.token) void root.MagicAudioFocus?.completeTransient(playback.token, { resume: true });
+    const status = playback.button.closest("article")?.querySelector(".magic-dictionary-audio-message");
+    if (status) {
+      status.textContent = message;
+      status.hidden = !message;
+    }
+  }
+
+  async function playDictionaryAudio(button) {
+    if (dictionaryPlayback?.button === button) { stopDictionaryAudio(); return; }
+    const word = findWord(button.dataset.entryId);
+    const language = button.dataset.dictionaryAudio;
+    if (!word || !["it", "bn"].includes(language)) return;
+    stopItalianSpeech();
+    // beginTransient supersedes the previous word without losing a suspended explanation.
+    if (!root.MagicAudioFocus) stopDictionaryAudio();
+    const identity = dictionaryAudioIdentity();
+    const text = language === "bn" ? word.bn : word.it;
+    const key = JSON.stringify([identity.phone, identity.deviceId, language, text]);
+    const playback = { button, label: button.getAttribute("aria-label"), controller: new root.AbortController(), audio: null, timer: 0, token: null };
+    root.cancelPendingQuizExplanationAudio?.({ preserveStartedPlayback: Boolean(root.MagicAudioFocus) });
+    root.cancelPendingStudyExplanationAudio?.();
+    playback.token = root.MagicAudioFocus?.beginTransient({ key: `dictionary:${key}`, stop: () => resetDictionaryPlayback(playback) });
+    dictionaryPlayback = playback;
+    const message = button.closest("article")?.querySelector(".magic-dictionary-audio-message");
+    if (message) { message.hidden = true; message.textContent = ""; }
+    button.classList.add("is-loading");
+    button.setAttribute("aria-busy", "true");
+    button.setAttribute("aria-label", `Caricamento audio. Tocca per annullare: ${text}`);
+    const current = () => dictionaryPlayback === playback
+      && dictionaryAudioIdentity().phone === identity.phone
+      && dictionaryAudioIdentity().deviceId === identity.deviceId;
+    const discardStale = () => {
+      if (dictionaryPlayback === playback) stopDictionaryAudio();
+      else resetDictionaryPlayback(playback);
+    };
+    playback.timer = root.setTimeout(() => finishDictionaryAudio(playback, "Audio non disponibile. Tocca l’icona per riprovare."), 30_000);
+    try {
+      if (!identity.phone || !identity.deviceId) throw new Error("dictionary_session");
+      let data = dictionaryAudioCache.get(key);
+      if (!data) {
+        const response = await root.fetch("/api/quiz", {
+          method: "POST", cache: "no-store", signal: playback.controller.signal,
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${identity.accessToken}` },
+          body: JSON.stringify({ action: "getDictionaryAudio", phone: identity.phone, deviceId: identity.deviceId,
+            entryId: language === "bn" ? word.sourceId : word.id, language, text })
+        });
+        if (!current()) { discardStale(); return; }
+        if (response.status === 401 || response.status === 403) throw new Error("dictionary_session");
+        if (!response.ok) throw new Error("dictionary_audio");
+        data = await response.json();
+        if (!current()) { discardStale(); return; }
+        if (data.language !== language || typeof data.audio !== "string" || !data.audio || data.audio.length > 4 * 1024 * 1024) throw new Error("dictionary_audio");
+        if (data.accessToken) {
+          writeLocal("accessToken", data.accessToken);
+          writeLocal("accessTokenExpiresAt", data.accessTokenExpiresAt);
+        }
+        // Small, session-only cache: repeat taps do not generate new speech requests.
+        if (dictionaryAudioCache.size >= 12) dictionaryAudioCache.delete(dictionaryAudioCache.keys().next().value);
+        dictionaryAudioCache.set(key, { audio: data.audio, mimeType: data.mimeType, language });
+      }
+      const audio = new root.Audio();
+      playback.audio = audio;
+      const encoded = data.audio.replace(/^data:audio\/[a-z0-9.+-]+;base64,/iu, "").replace(/\s/gu, "");
+      if (!/^[a-z0-9+/]+=*$/iu.test(encoded)) throw new Error("dictionary_audio");
+      const mime = /^audio\/(mpeg|wav|ogg|mp4|webm)$/u.test(data.mimeType) ? data.mimeType : "audio/mpeg";
+      const bytes = Uint8Array.from(root.atob(encoded), character => character.charCodeAt(0));
+      playback.url = root.URL.createObjectURL(new root.Blob([bytes], { type: mime }));
+      audio.src = playback.url;
+      audio.onended = () => finishDictionaryAudio(playback);
+      audio.onerror = () => {
+        dictionaryAudioCache.delete(key);
+        finishDictionaryAudio(playback, "Audio non disponibile. Tocca l’icona per riprovare.");
+      };
+      await audio.play();
+      if (!current()) { discardStale(); return; }
+      root.clearTimeout(playback.timer);
+      playback.timer = root.setTimeout(() => finishDictionaryAudio(playback), 60_000);
+      button.classList.remove("is-loading");
+      button.classList.add("is-playing");
+      button.removeAttribute("aria-busy");
+      button.setAttribute("aria-pressed", "true");
+      button.setAttribute("aria-label", `Interrompi la lettura: ${text}`);
+    } catch (error) {
+      if (dictionaryPlayback !== playback) return;
+      if (error?.name !== "NotAllowedError") dictionaryAudioCache.delete(key);
+      finishDictionaryAudio(playback, error?.name === "NotAllowedError"
+        ? "Audio pronto: tocca di nuovo l’icona per ascoltare."
+        : error?.message === "dictionary_session" ? "Accedi di nuovo per ascoltare."
+          : "Audio non disponibile. Controlla la connessione e tocca l’icona per riprovare.");
+    }
+  }
+
   function renderDictionary() {
+    stopDictionaryAudio();
     const list = root.document?.getElementById("magicDictionaryList");
     const status = root.document?.getElementById("magicDictionaryStatus");
     const more = root.document?.getElementById("magicDictionaryMore");
@@ -987,9 +1135,13 @@
     } else {
       list.innerHTML = visible.map(word => `
         <article class="magic-dictionary-word is-${word.type}">
-          <div class="magic-dictionary-term"><div><small>${word.type === "phrase" ? "LOCUZIONE" : "PAROLA"}</small><h3>${escapeHtml(word.it)}</h3></div></div>
-          <div lang="bn"><strong>${escapeHtml(word.bn)}</strong><p>${escapeHtml(word.simpleBn)}</p></div>
+          <div class="magic-dictionary-term magic-dictionary-language-row"><div><small>${word.type === "phrase" ? "LOCUZIONE" : "PAROLA"}</small><h3>${escapeHtml(word.it)}</h3></div>${audioButton(word, "it")}</div>
+          <div class="magic-dictionary-language-row" lang="bn"><div><strong>${escapeHtml(word.bn)}</strong><p>${escapeHtml(word.simpleBn)}</p></div>${audioButton(word, "bn")}</div>
+          <p class="magic-dictionary-audio-message" role="status" lang="it" hidden></p>
         </article>`).join("");
+      list.querySelectorAll(".magic-dictionary-audio-icon").forEach(img => {
+        img.addEventListener("error", () => img.parentElement.classList.add("is-icon-missing"), { once: true });
+      });
     }
     more.classList.toggle("hidden", visible.length >= filtered.length);
     updateGateSetting();
@@ -1007,6 +1159,7 @@
   }
 
   async function showDictionary(options = {}) {
+    stopDictionaryAudio();
     ensureElements();
     dictionaryReturnScreen = ["home", "statistics", "errors"].includes(options.returnScreen)
       ? options.returnScreen
@@ -1039,6 +1192,7 @@
   }
 
   function hideDictionary() {
+    stopDictionaryAudio();
     root.document?.getElementById("magicDictionaryScreen")?.classList.add("hidden");
   }
 
@@ -1058,6 +1212,30 @@
   }
 
   function bindEvents() {
+    root.document.getElementById("magicDictionaryList")?.addEventListener("click", event => {
+      const button = event.target.closest("[data-dictionary-audio]");
+      if (button) void playDictionaryAudio(button);
+    });
+    root.document.addEventListener("visibilitychange", () => {
+      if (root.document.hidden) stopDictionaryAudio();
+    });
+    root.addEventListener?.("pagehide", stopDictionaryAudio);
+    root.addEventListener?.("popstate", stopDictionaryAudio);
+    root.addEventListener?.("offline", stopDictionaryAudio);
+    // The main router hides existing screens directly; observe that canonical
+    // visibility rather than adding a second navigation handler.
+    const dictionaryScreen = root.document.getElementById("magicDictionaryScreen");
+    if (dictionaryScreen && root.MutationObserver) {
+      new root.MutationObserver(() => {
+        if (dictionaryScreen.hidden || dictionaryScreen.classList.contains("hidden")) stopDictionaryAudio();
+      }).observe(dictionaryScreen, { attributes: true, attributeFilter: ["class", "hidden"] });
+    }
+    root.addEventListener?.("storage", event => {
+      if ([null, "phone", "deviceId", "user_session", "session", "loggedIn"].includes(event.key)) {
+        stopDictionaryAudio();
+        dictionaryAudioCache.clear();
+      }
+    });
     root.document.getElementById("magicDictionaryBack")?.addEventListener("click", () => {
       hideDictionary();
       if (dictionaryReturnScreen === "home" && typeof root.showHome === "function") root.showHome();
@@ -1137,6 +1315,9 @@
       normalizeItalian,
       speakItalian,
       stopItalianSpeech,
+      playDictionaryAudio,
+      stopDictionaryAudio,
+      audioButton,
       selectFreshWords,
       seededRandom,
       shuffled

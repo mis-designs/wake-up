@@ -15,6 +15,6 @@ test("selected answer labels use dark text on the bright accent background", () 
 
 test("the answer contrast fix ships with a fresh stylesheet cache key", () => {
   assert.match(page, /mystyle\.css\?v=56-web-open-paper/u);
-  assert.match(worker, /magicbook-pwa-v195-web-open-paper/u);
+  assert.match(worker, /magicbook-pwa-v196-dictionary-tts/u);
   assert.match(worker, /mystyle\.css\?v=56-web-open-paper/u);
 });
