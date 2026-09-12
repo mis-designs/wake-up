@@ -35,6 +35,7 @@ function renderer() {
     currentQuestion: () => question,
     getQuestionHelp: row => new Promise((resolve, reject) => pending.set(row.id, { resolve, reject })),
     usableBanglaTranslation: value => value || "",
+    setHelpFullscreen() {}, hasBlockingQuizLayer: () => false,
     stopWordAudio() {}, renderContext() {}, renderWords() {}, console: { warn() {} }
   });
   const start = source.indexOf("  async function render()");

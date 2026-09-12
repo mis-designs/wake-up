@@ -26,10 +26,10 @@
     <style>@import url('https://banglawebfonts.pages.dev/css/un-bangla.css');</style>
     <link href="https://banglawebfonts.pages.dev/css/tiro-bangla.css" rel="stylesheet">
     <link rel="stylesheet" href="loading-ui.css?v=1-shared-gif-loader">
-  <link rel="stylesheet" href="mystyle.css?v=53-compact-quiz">
+  <link rel="stylesheet" href="mystyle.css?v=54-phone-help">
     <link rel="stylesheet" href="audio-player-ui.css?v=7-compact-quiz">
     <link rel="stylesheet" href="/magic-styles.css?v=3-liquid-glass">
-    <link rel="stylesheet" href="quiz-help.css?v=20260910-compact-help">
+    <link rel="stylesheet" href="quiz-help.css?v=20260910-phone-help">
     <link rel="stylesheet" href="magic-dictionary.css?v=1.2.5-settings-layout">
     <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
     <link rel="stylesheet" href="/offline-notice.css?v=1.0.0">
@@ -72,11 +72,15 @@
                 <span id="quiz-help-trigger-description" class="sr-only">Apri la traduzione Bangla e le parole chiave.</span>
                 <section id="quiz-help-workspace" class="quiz-help-workspace magic-glass-panel hidden" aria-hidden="true" aria-labelledby="quiz-help-title">
                     <div class="quiz-help-heading">
-                        <h2 id="quiz-help-title" class="sr-only">Traduzione e parole chiave</h2>
+                        <h2 id="quiz-help-title" class="sr-only">Traduzione</h2>
                         <span class="quiz-help-kicker" lang="bn">বাংলা</span>
                         <button class="quiz-help-close magic-glass-chip" type="button" data-help-close aria-label="Chiudi traduzione">
                             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
                         </button>
+                    </div>
+                    <div class="quiz-help-content">
+                    <div id="quiz-help-source" class="quiz-help-source" hidden>
+                        <p id="quiz-help-question" class="notranslate" translate="no" lang="it"></p>
                     </div>
                     <p id="quiz-help-translation-text" class="quiz-help-translation-text notranslate" translate="no" lang="bn"></p>
                     <p id="quiz-help-translation-status" class="quiz-help-status" role="status"></p>
@@ -87,6 +91,7 @@
                         <div><strong id="quiz-help-chapter-it"></strong><span id="quiz-help-chapter-bn" lang="bn"></span></div>
                         <div><strong id="quiz-help-topic-it"></strong><span id="quiz-help-topic-bn" lang="bn"></span></div>
                     </details>
+                    </div>
                 </section>
                 <section id="quiz-audio-recorder" class="quiz-audio-recorder hidden" aria-label="Registratore spiegazione audio">
                     <div class="quiz-audio-recorder-head">
@@ -286,8 +291,8 @@
     <script src="screen-protection.js?v=1.2.0"></script>
     <script src="learning-sync.js?v=2"></script>
     <script src="italian-display.js?v=1"></script>
-    <script src="quiz.js?v=83-focused-quiz"></script>
-    <script src="quiz-help.js?v=20260910-explicit-help"></script>
+    <script src="quiz.js?v=84-phone-help"></script>
+    <script src="quiz-help.js?v=20260910-phone-help"></script>
 </body>
 
 </html>

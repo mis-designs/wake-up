@@ -2238,6 +2238,7 @@ function loadQuizImage(q) {
 }
 
 function showLoading(message = "Caricamento...") {
+  window.dispatchEvent(new Event("magicbook:quiz-help-close"));
   loadingText.innerText = message;
   loadingOverlay.classList.remove("hidden");
   loadingOverlay.setAttribute("aria-hidden", "false");
@@ -2382,11 +2383,12 @@ const MODAL_FOCUSABLE_SELECTOR = [
   "input:not([disabled])",
   "select:not([disabled])",
   "textarea:not([disabled])",
+  "summary",
   '[tabindex]:not([tabindex="-1"])'
 ].join(",");
 
-function getModalFocusableElements() {
-  return Array.from(modalCard.querySelectorAll(MODAL_FOCUSABLE_SELECTOR))
+function getModalFocusableElements(root = modalCard) {
+  return Array.from(root.querySelectorAll(MODAL_FOCUSABLE_SELECTOR))
     .filter(element => !element.closest(".hidden") && element.getClientRects().length > 0);
 }
 
@@ -2407,21 +2409,26 @@ function handleModalKeyboard(event) {
     return;
   }
   if (event.key !== "Tab") return;
+  trapQuizDialogFocus(event, modalCard);
+}
 
-  const focusable = getModalFocusableElements();
+// The shared dialog keyboard owner also serves the phone translation reader.
+function trapQuizDialogFocus(event, root) {
+  if (event.key !== "Tab") return;
+  const focusable = getModalFocusableElements(root);
   if (!focusable.length) {
     event.preventDefault();
-    focusModalDialog();
+    root.focus({ preventScroll: true });
     return;
   }
 
   const first = focusable[0];
   const last = focusable.at(-1);
   const active = document.activeElement;
-  if (event.shiftKey && (active === modalCard || active === first || !modalCard.contains(active))) {
+  if (event.shiftKey && (active === root || active === first || !root.contains(active))) {
     event.preventDefault();
     last.focus();
-  } else if (!event.shiftKey && (active === last || !modalCard.contains(active))) {
+  } else if (!event.shiftKey && (active === last || !root.contains(active))) {
     event.preventDefault();
     first.focus();
   }
@@ -2543,6 +2550,7 @@ function openModal({
   result = null,
   timeExpired = false
 }) {
+  window.dispatchEvent(new Event("magicbook:quiz-help-close"));
   if (modal.classList.contains("hidden")) {
     modalFocusOrigin = document.activeElement instanceof HTMLElement
       ? document.activeElement
@@ -3373,6 +3381,7 @@ function installNativeQuizBack() {
   document.documentElement.classList.add("native-quiz-back-ready");
   window.addEventListener("popstate", () => {
     guard();
+    if (document.body.classList.contains("magic-offline-active")) return;
     if (document.body.classList.contains("loading-open")) return;
     if (!modal.classList.contains("hidden")) {
       if (modalCancel.style.display !== "none") closeModal(false);

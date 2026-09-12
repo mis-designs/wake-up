@@ -63,7 +63,7 @@ test("the app marker precedes styles; only the named native variants may follow 
 
     assert.ok(markerIndex >= 0, `${page} must load the WebView marker`);
     assert.ok(markerIndex < firstStylesheetIndex, `${page} must mark the app before CSS`);
-    const studyIndex = html.indexOf("/android-study-shell.css?v=18-shared-login");
+    const studyIndex = html.indexOf("/android-study-shell.css?v=19-open-hand");
     if (page === "index.html") {
       assert.ok(studyIndex > themeIndex);
       const modesIndex = html.indexOf("/android-mode-screens.css?v=1");

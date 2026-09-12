@@ -1,4 +1,5 @@
 /* Home + chapter rotary workspace: the installed app only, never the website. */
+/* Exception: native-book-tap is also reused by the named browser OPEN cue. */
 /* Shared Norwester font-face is loaded by login-experience.css on index.html. */
 @font-face {
   font-family: "El Messiri";
@@ -398,11 +399,11 @@ html.android-webview[data-app-transition] :is(.native-home, .native-chapters, .n
 @keyframes native-liquid-wave { from { transform: translate(-7%, 0) rotate(-5deg); } to { transform: translate(9%, 5%) rotate(5deg); } }
 @keyframes native-greeting-rise { 0%, 27% { transform: translateY(0); } 31%, 63% { transform: translateY(-44px); } 67%, 100% { transform: translateY(-88px); } }
 @keyframes native-book-tap {
-  0%, 12%, 56%, 100% { opacity: 0; transform: translateY(22px) scale(1); filter: brightness(0); }
-  20% { opacity: .8; transform: translateY(4px) scale(1); filter: brightness(0); }
-  32% { opacity: .9; transform: translateY(-48px) scale(1); filter: brightness(0) invert(1); }
-  39% { opacity: .9; transform: translateY(-48px) scale(.86); filter: brightness(0) invert(1); }
-  50% { opacity: 0; transform: translateY(-48px) scale(.92); filter: brightness(0) invert(1); }
+  0%, 12%, 56%, 100% { opacity: 0; transform: translateY(var(--tap-cue-rest-y, 22px)) scale(1); filter: brightness(0); }
+  20% { opacity: .8; transform: translateY(var(--tap-cue-approach-y, 4px)) scale(1); filter: brightness(0); }
+  32% { opacity: .9; transform: translateY(var(--tap-cue-contact-y, -48px)) scale(1); filter: brightness(0) invert(1); }
+  39% { opacity: .9; transform: translateY(var(--tap-cue-contact-y, -48px)) scale(.86); filter: brightness(0) invert(1); }
+  50% { opacity: 0; transform: translateY(var(--tap-cue-contact-y, -48px)) scale(.92); filter: brightness(0) invert(1); }
 }
 @keyframes native-rotate-up { 0%, 8% { opacity: 0; transform: rotate(24deg); } 20% { opacity: .55; } 48%, 100% { opacity: 0; transform: rotate(40deg); } }
 @keyframes native-rotate-down { 0%, 8% { opacity: 0; transform: rotate(-24deg); } 20% { opacity: .55; } 48%, 100% { opacity: 0; transform: rotate(-40deg); } }

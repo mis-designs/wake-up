@@ -66,7 +66,7 @@ test("shared login assets are versioned without exposing Android Home to browser
 });
 
 test("login uses locally compiled, scoped daisyUI components", () => {
-  assert.ok(page.indexOf("assets/daisyui.css?v=2-learning-shell") < page.indexOf("style.css?v=72-solid-profile-controls"));
+  assert.ok(page.indexOf("assets/daisyui.css?v=2-learning-shell") < page.indexOf("style.css?v=73-open-hand"));
   assert.match(page, /id="login" data-theme="magicbook"/);
   assert.match(page, /class="login-pass d-card"/);
   assert.match(page, /class="login-form d-fieldset"/);

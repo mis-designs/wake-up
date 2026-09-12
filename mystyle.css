@@ -2,6 +2,8 @@
 
 :root {
   --quiz-viewport-height: 100vh;
+  --quiz-layer-help: 900;
+  --quiz-layer-dialog: 1000;
   --color-primary: #3a4efb;
   --color-secondary: #33a4fa;
   --color-accent: #e3ff3b;
@@ -770,7 +772,7 @@ body:not(.quiz-focus) .selected {
   align-items: center;
   justify-content: center;
   padding: 20px;
-  z-index: 1000;
+  z-index: var(--quiz-layer-dialog);
   backdrop-filter: blur(8px);
 }
 

@@ -47,6 +47,23 @@
   const topicBn = document.getElementById("quiz-help-topic-bn");
   const wordsList = document.getElementById("quiz-help-words");
   const wordDetail = document.getElementById("quiz-help-word-detail");
+  const helpSource = document.getElementById("quiz-help-source");
+  const helpQuestion = document.getElementById("quiz-help-question");
+  const helpContent = workspace?.querySelector(".quiz-help-content");
+  const quizSurface = document.querySelector(".quiz-container");
+  const questionScroller = document.querySelector(".quiz-question-content");
+  const figureWrap = document.getElementById("figure-wrap");
+  // One presentation decision for browser phones and the installed WebView,
+  // including a phone turned sideways. Tablets retain the inline disclosure.
+  const phoneHelpQuery = window.matchMedia("(max-width: 600px), (max-width: 950px) and (max-height: 500px) and (pointer: coarse)");
+  const workspaceHome = document.createComment("quiz-help-inline-home");
+  const figureHome = document.createComment("quiz-help-figure-home");
+  workspace?.before(workspaceHome);
+  figureWrap?.before(figureHome);
+  let fullscreenHelp = false;
+  let quizWasInert = false;
+  let questionScrollBeforeHelp = 0;
+  let restoreInertAfterOffline = false;
   let libraryPromise = null;
   let quizIdIndex = null;
   let requestId = 0;
@@ -450,6 +467,68 @@
     });
   }
 
+  function hasBlockingQuizLayer() {
+    return ["modal-open", "loading-open", "magic-offline-active"]
+      .some(name => document.body.classList.contains(name));
+  }
+
+  function setHelpFullscreen(enabled) {
+    if (enabled === fullscreenHelp) return;
+    fullscreenHelp = enabled;
+    if (enabled) {
+      questionScrollBeforeHelp = questionScroller.scrollTop;
+      quizWasInert = quizSurface.hasAttribute("inert");
+      helpQuestion.textContent = currentQuestion()?.question || questionText.textContent;
+      helpSource.hidden = false;
+      if (getFigureKey(currentQuestion()) && figureWrap) {
+        // Move the existing protected figure, never refetch or clone a stale URL.
+        helpSource.appendChild(figureWrap);
+        helpSource.classList.add("has-figure");
+      }
+      document.body.appendChild(workspace);
+      workspace.classList.add("is-fullscreen");
+      workspace.setAttribute("role", "dialog");
+      workspace.setAttribute("aria-modal", "true");
+      workspace.setAttribute("tabindex", "-1");
+      document.body.classList.add("quiz-help-fullscreen-open");
+      quizSurface.setAttribute("inert", "");
+      helpContent.setAttribute("tabindex", "0");
+      helpContent.setAttribute("role", "region");
+      helpContent.setAttribute("aria-label", "Domanda e traduzione");
+      helpContent.scrollTop = 0;
+      workspace.focus({ preventScroll: true });
+      return;
+    }
+    if (figureWrap?.parentNode === helpSource) figureHome.after(figureWrap);
+    workspaceHome.after(workspace);
+    helpSource.hidden = true;
+    helpSource.classList.remove("has-figure");
+    helpQuestion.textContent = "";
+    workspace.classList.remove("is-fullscreen");
+    workspace.removeAttribute("role");
+    workspace.removeAttribute("aria-modal");
+    workspace.removeAttribute("tabindex");
+    helpContent.removeAttribute("tabindex");
+    helpContent.removeAttribute("role");
+    helpContent.removeAttribute("aria-label");
+    document.body.classList.remove("quiz-help-fullscreen-open");
+    if (!quizWasInert) {
+      if (document.body.classList.contains("magic-offline-active")) restoreInertAfterOffline = true;
+      else if (!hasBlockingQuizLayer()) quizSurface.removeAttribute("inert");
+    }
+    questionScroller.scrollTop = questionScrollBeforeHelp;
+  }
+
+  function syncHelpPresentation() {
+    if (workspace.classList.contains("hidden") || hasBlockingQuizLayer()) return;
+    const hadFocus = workspace.contains(document.activeElement);
+    setHelpFullscreen(phoneHelpQuery.matches);
+    if (!fullscreenHelp && hadFocus) {
+      workspace.querySelector("[data-help-close]").focus({ preventScroll: true });
+      workspace.scrollIntoView({ block: "nearest", behavior: "instant" });
+    }
+  }
+
   async function render() {
     const question = currentQuestion();
     if (!question?.question) return;
@@ -490,8 +569,10 @@
   }
 
   function open() {
+    if (hasBlockingQuizLayer()) return;
     workspace.classList.remove("hidden");
     workspace.setAttribute("aria-hidden", "false");
+    setHelpFullscreen(phoneHelpQuery.matches);
     questionText?.setAttribute("aria-expanded", "true");
     render();
   }
@@ -503,8 +584,9 @@
     workspace.setAttribute("aria-hidden", "true");
     workspace.setAttribute("aria-busy", "false");
     questionText?.setAttribute("aria-expanded", "false");
+    setHelpFullscreen(false);
     stopWordAudio();
-    if (restoreFocus) questionText?.focus({ preventScroll: true });
+    if (restoreFocus && !hasBlockingQuizLayer()) questionText?.focus({ preventScroll: true });
   }
 
   questionText?.addEventListener("click", () => {
@@ -517,11 +599,27 @@
   window.addEventListener("magicbook:quiz-question-change", close);
   window.addEventListener("magicbook:quiz-help-close", close);
   workspace?.addEventListener("keydown", event => {
-    if (event.key !== "Escape") return;
+    if (hasBlockingQuizLayer()) return;
+    if (event.key !== "Escape") {
+      if (fullscreenHelp) trapQuizDialogFocus(event, workspace);
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
     close();
   });
+  phoneHelpQuery.addEventListener("change", syncHelpPresentation);
+  window.addEventListener("pagehide", close);
+  window.addEventListener("online", () => {
+    if (restoreInertAfterOffline && !fullscreenHelp && !hasBlockingQuizLayer()) {
+      quizSurface.removeAttribute("inert");
+    }
+    restoreInertAfterOffline = false;
+    syncHelpPresentation();
+  });
+  new MutationObserver(() => {
+    if (fullscreenHelp && (document.body.classList.contains("modal-open") || document.body.classList.contains("loading-open"))) close();
+  }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
   new MutationObserver(() => {
     if (!workspace.classList.contains("hidden")) close();
   }).observe(questionText, { childList: true, characterData: true, subtree: true });

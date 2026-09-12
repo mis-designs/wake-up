@@ -4622,6 +4622,35 @@ body.guest-trial-mode #chapters::before{content:"MODALITÀ OSPITE · CAPITOLI 1 
     transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* OPEN reuses the Android hand timeline; only travel and cadence differ. */
+#home .home-start-tap-cue {
+    --tap-cue-rest-y: 14px;
+    --tap-cue-approach-y: 4px;
+    --tap-cue-contact-y: -18px;
+    position: absolute;
+    right: 3px;
+    bottom: -28px;
+    width: 34px;
+    height: 34px;
+    background: url("icons/clich_here.svg") center / contain no-repeat;
+    pointer-events: none;
+    user-select: none;
+    opacity: 0;
+    filter: brightness(0);
+    animation: native-book-tap 2.8s ease-in-out infinite;
+}
+
+#home .home-start-btn:is(:hover, :focus-visible, :active, :disabled, [aria-disabled="true"], [aria-busy="true"]) .home-start-tap-cue,
+html[data-app-transition] #home .home-start-tap-cue,
+html[data-native-motion-paused] #home .home-start-tap-cue {
+    animation: none;
+    opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce), (forced-colors: active) {
+    #home .home-start-tap-cue { display: none; animation: none; }
+}
+
 #home .home-start-btn:hover,
 #home .home-start-btn:focus-visible {
     transform: translateY(-2px) scale(1.02);
