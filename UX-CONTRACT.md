@@ -43,6 +43,10 @@
 
 ## Feature ownership
 
+- Login activation notice (web + Android): `script.js` `login()` / `mountAppPopup()`, `index.html` `loginPendingTemplate` and `login-experience.css`, based on the existing `/api/auth` error contract. Only an explicit main-login `not_found` opens it. Italian and Bangla stay visible together; conditional payment wording never claims payment was verified. `expired` retains renewal; successful login, device restrictions, Admin, promo and technical failures keep existing owners. One submit at a time, no added polling/retries. X, acknowledgement and backdrop/Escape return to Continue without clearing the phone. Navigation/pagehide dismiss; offline dismisses before the global connection alert takes ownership. Focus/inert/scroll/cleanup reuse the WhatsApp modal's shared behavior.
+
+- Shared dictionary chrome: both platforms omit the header brand eyebrow and per-entry type labels, while preserving the section heading and functional category filters. The single right-hand audio target has no background/frame in ordinary pointer states; keyboard focus and a non-color-only playback marker remain. Verify the same transparent treatment at rest, hover, press, loading and playback without changing44px target geometry or audio behavior.
+
 | Concern | Owner | Contract |
 | --- | --- | --- |
 | Native study navigation | Existing route actions through `android-study-shell.js` | Book to chapters; Vai and the currently presented image card open the selected book through the same exclusive gate. Hidden, stale, loading or failed artwork cannot launch. Four requested study controls and statistics/errors reuse canonical routes. Profile/Admin elements are moved with listeners and access checks intact. Admin stays unavailable to non-admins. |

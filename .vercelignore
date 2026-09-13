@@ -4,6 +4,8 @@
 .claude/
 .vscode/
 .idea/
+.codex-remote-attachments/
+.attachments/
 docs/
 tests/
 scripts/
@@ -12,6 +14,14 @@ database/
 google-apps-script/
 node_modules/
 .npm-cache*/
+.cache/
+
+# Repository documentation/configuration is not a public web asset.
+AGENTS.md
+CLAUDE.md
+DESIGN.md
+UX-CONTRACT.md
+/premium-ui.json
 
 # Local configuration and credentials
 .env
@@ -30,6 +40,19 @@ credentials*.json
 service-account*.json
 .npmrc
 .netrc
+.ssh/
+.aws/
+.azure/
+.config/gcloud/
+.clasp.json
+.clasprc*.json
+application_default_credentials.json
+service_account*.json
+*.p8
+id_rsa*
+id_ed25519*
+id_dsa*
+id_ecdsa*
 
 # Google Apps Script sources are deployed separately.
 *_gas.js
@@ -44,3 +67,31 @@ premium-audit.json
 *.tmp
 *.bak
 *.orig
+*.swp
+*.swo
+*~
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Private local material must not be deployed, even from the CLI.
+/attachments/
+/outputs/
+/artifacts/
+/exports/
+/logs/
+/backup/
+/backups/
+/magicph-backup/
+/tmp/
+/temp/
+/Invoice-*.pdf
+/*log-export*.csv
+*.har
+*.cpuprofile
+*.heapsnapshot
+*.sqlite
+*.sqlite3
+*.db
+*.db-*

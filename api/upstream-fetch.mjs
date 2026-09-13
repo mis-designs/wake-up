@@ -17,6 +17,16 @@ function upstreamError(service, reason, details = {}) {
 }
 
 export async function fetchUpstream(url, options = {}, config = {}) {
+  return fetchUpstreamResponse(url, options, config, false);
+}
+
+// For small JSON APIs, keep the SAME deadline through body consumption. A
+// response can deliver headers successfully and then stall reading its body.
+export async function fetchUpstreamJson(url, options = {}, config = {}) {
+  return fetchUpstreamResponse(url, options, config, true);
+}
+
+async function fetchUpstreamResponse(url, options, config, readJson) {
   const service = String(config.service || "upstream");
   const timeoutMs = Math.max(1, Number(config.timeoutMs) || DEFAULT_TIMEOUT_MS);
   const controller = new AbortController();
@@ -26,6 +36,12 @@ export async function fetchUpstream(url, options = {}, config = {}) {
     const response = await fetch(url, { ...options, signal: controller.signal });
     if (response.status >= 500) {
       throw upstreamError(service, "unavailable", { upstreamStatus: response.status });
+    }
+    // Error responses need only their status/Retry-After, not an unbounded body.
+    if (readJson) {
+      const data = response.ok ? await response.json() : null;
+      if (!response.ok) await response.body?.cancel();
+      return { response, data };
     }
     return response;
   } catch (error) {

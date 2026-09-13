@@ -4,12 +4,14 @@ import {
   gradeLocalQuiz,
   normalizeLocalAnswer
 } from "./local-quiz-bank.mjs";
-import { fetchUpstream } from "./upstream-fetch.mjs";
+import { fetchUpstreamJson } from "./upstream-fetch.mjs";
 
 export const LEARNING_SYNC_SERVER_CONFIG = Object.freeze({
   maxBatchSize: 25,
   maxRequestBytes: 128 * 1024,
-  upstreamTimeoutMs: 12_000
+  // GAS executions observed at 13-23 s must finish before the client retries.
+  // Keep this below this route's maxDuration and the client's 40 s deadline.
+  upstreamTimeoutMs: 30_000
 });
 
 const QUIZ_IDS = new Set(LOCAL_QUIZ_ROWS.map(row => String(row.id ?? "").trim()));
@@ -298,7 +300,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const upstream = await fetchUpstream(learningDatabaseUrl, {
+    const { response: upstream, data: upstreamData } = await fetchUpstreamJson(learningDatabaseUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -321,7 +323,6 @@ export default async function handler(req, res) {
       return res.status(503).json({ error: "learning_database_unavailable" });
     }
 
-    const upstreamData = await upstream.json().catch(() => null);
     if (!upstreamData || upstreamData.success !== true) {
       res.setHeader("Retry-After", String(Math.max(1, Number(upstreamData?.retryAfterSeconds) || 5)));
       return res.status(503).json({ error: "learning_database_unavailable" });

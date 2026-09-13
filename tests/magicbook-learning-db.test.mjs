@@ -18,6 +18,7 @@ class FakeRange {
   }
 
   getValues() {
+    this.sheet.valueReads.push({ row: this.row, rows: this.rowCount, columns: this.columnCount });
     const values = [];
     for (let rowOffset = 0; rowOffset < this.rowCount; rowOffset += 1) {
       const row = [];
@@ -30,6 +31,7 @@ class FakeRange {
   }
 
   getValue() {
+    this.sheet.singleValueReads += 1;
     return this.sheet.readCell(this.row, this.column);
   }
 
@@ -71,6 +73,8 @@ class FakeTextFinder {
     this.range = range;
     this.value = String(value);
     this.entireCell = false;
+    this.caseSensitive = false;
+    this.regularExpression = false;
   }
 
   matchEntireCell(value) {
@@ -78,24 +82,39 @@ class FakeTextFinder {
     return this;
   }
 
-  findNext() {
+  matchCase(value) { this.caseSensitive = value; return this; }
+  useRegularExpression(value) { this.regularExpression = value; return this; }
+
+  findAll() {
+    this.range.sheet.searchCalls += 1;
+    const found = [];
+    const expression = this.regularExpression
+      ? new RegExp(this.entireCell ? `^(?:${this.value})$` : this.value, this.caseSensitive ? "" : "i")
+      : null;
     for (let rowOffset = 0; rowOffset < this.range.rowCount; rowOffset += 1) {
       for (let columnOffset = 0; columnOffset < this.range.columnCount; columnOffset += 1) {
         const cell = String(this.range.sheet.readCell(
           this.range.row + rowOffset,
           this.range.column + columnOffset
         ));
-        const matches = this.entireCell ? cell === this.value : cell.includes(this.value);
+        const text = this.caseSensitive ? cell : cell.toLowerCase();
+        const target = this.caseSensitive ? this.value : this.value.toLowerCase();
+        const matches = expression ? expression.test(cell)
+          : this.entireCell ? text === target : text.includes(target);
         if (matches) {
-          return new FakeRange(
+          found.push(new FakeRange(
             this.range.sheet,
             this.range.row + rowOffset,
             this.range.column + columnOffset
-          );
+          ));
         }
       }
     }
-    return null;
+    return found;
+  }
+
+  findNext() {
+    return this.findAll()[0] || null;
   }
 }
 
@@ -106,6 +125,11 @@ class FakeSheet {
     this.maxRows = 1000;
     this.frozenRows = 0;
     this.setValuesCalls = 0;
+    this.valueReads = [];
+    this.singleValueReads = 0;
+    this.searchCalls = 0;
+    this.lastColumnCalls = 0;
+    this.lastRowCalls = 0;
   }
 
   getName() { return this.name; }
@@ -126,6 +150,7 @@ class FakeSheet {
   }
 
   getLastRow() {
+    this.lastRowCalls += 1;
     let lastRow = 0;
     this.cells.forEach((row, index) => {
       if (row.some(value => value !== "" && value !== null && value !== undefined)) {
@@ -136,6 +161,7 @@ class FakeSheet {
   }
 
   getLastColumn() {
+    this.lastColumnCalls += 1;
     let lastColumn = 0;
     this.cells.forEach(row => {
       row.forEach((value, index) => {
@@ -178,14 +204,19 @@ function createRuntime() {
   ]);
   const spreadsheets = new Map();
   const logEntries = [];
-  const lockStats = { attempts: 0, releases: 0, available: true };
-  const spreadsheetStats = { activeCalls: 0, createCalls: 0, openByIdCalls: 0 };
+  const lockStats = { attempts: 0, releases: 0, available: true, held: false, timeouts: [] };
+  const spreadsheetStats = { activeCalls: 0, createCalls: 0, openByIdCalls: 0, flushCalls: 0, failFlush: false };
   const activeSpreadsheet = new FakeSpreadsheet("bound-spreadsheet", "Magic Book");
   spreadsheets.set(activeSpreadsheet.getId(), activeSpreadsheet);
   let activeSpreadsheetAvailable = true;
   let uuidSequence = 0;
 
   const SpreadsheetApp = {
+    flush() {
+      assert.equal(lockStats.held, true, "pending writes must be committed while the lock is held");
+      spreadsheetStats.flushCalls += 1;
+      if (spreadsheetStats.failFlush) throw new Error("flush_failed");
+    },
     getActiveSpreadsheet() {
       spreadsheetStats.activeCalls += 1;
       return activeSpreadsheetAvailable ? activeSpreadsheet : null;
@@ -206,14 +237,17 @@ function createRuntime() {
     getScriptLock() {
       let acquired = false;
       return {
-        tryLock() {
+        tryLock(timeout) {
           lockStats.attempts += 1;
-          acquired = lockStats.available;
+          lockStats.timeouts.push(timeout);
+          acquired = lockStats.available && !lockStats.held;
+          if (acquired) lockStats.held = true;
           return acquired;
         },
         releaseLock() {
           assert.equal(acquired, true, "a lock must be acquired before release");
           lockStats.releases += 1;
+          lockStats.held = false;
           acquired = false;
         }
       };
@@ -638,4 +672,205 @@ test("learning insights returns only the requested user's recent answer events",
   assert.equal(result.events.length, 2);
   assert.ok(result.events.every(event => event.user_id === "3331112222"));
   assert.deepEqual(Array.from(result.events, event => event.quiz_id), ["cap1_q1", "cap1_q3"]);
+});
+
+function syncAnswer(eventId) {
+  return {
+    event_id: eventId,
+    event_type: "answer_event",
+    user_id: "3331112222",
+    payload: { quiz_id: "cap1_q1", result: "CORRECT" }
+  };
+}
+
+test("a batch searches durable IDs without downloading history and reads dimensions once", () => {
+  const runtime = createRuntime();
+  const sheet = runtime.activeSpreadsheet.getSheetByName("ANSWER_EVENTS");
+  // Include an old ID well outside any hypothetical recent-ID cache window.
+  for (let i = 0; i < 10000; i++) {
+    sheet.writeCell(i + 2, 1, `ans_${String(i).padStart(20, "0")}`);
+  }
+  const events = Array.from({ length: 25 }, (_, i) => syncAnswer(`ans_${String(10000 + i).padStart(20, "0")}`));
+  events[0] = syncAnswer("ans_00000000000000000000");
+  sheet.valueReads = [];
+  sheet.lastColumnCalls = 0;
+  sheet.lastRowCalls = 0;
+  const result = runtime.context.syncLearningEventsBatch_(events);
+
+  assert.equal(result.success, true);
+  assert.equal(result.accepted.length, 24);
+  assert.deepEqual(Array.from(result.duplicates), [events[0].event_id]);
+  assert.equal(sheet.searchCalls, 1);
+  assert.equal(sheet.singleValueReads, 0);
+  assert.deepEqual(sheet.valueReads, [
+    { row: 1, rows: 1, columns: 14 }, { row: 2, rows: 1, columns: 1 }
+  ]);
+  assert.equal(sheet.lastColumnCalls, 1);
+  assert.equal(sheet.lastRowCalls, 1);
+  assert.equal(runtime.spreadsheetStats.flushCalls, 1);
+  assert.equal(runtime.lockStats.releases, 1);
+});
+
+test("ID search retains exact case, whole-cell identity and legacy whitespace trimming", () => {
+  const runtime = createRuntime();
+  const sheet = runtime.activeSpreadsheet.getSheetByName("ANSWER_EVENTS");
+  const mixed = "ans_AAAAAAAAAAAAAAAA";
+  const spaced = "ans_bbbbbbbbbbbbbbbb";
+  const partial = "ans_cccccccccccccccc";
+  sheet.writeCell(2, 1, mixed.toLowerCase());
+  sheet.writeCell(3, 1, `  ${spaced}\n`);
+  sheet.writeCell(4, 1, `${partial}_extra`);
+  const result = runtime.context.syncLearningEventsBatch_([mixed, spaced, partial].map(syncAnswer));
+  assert.deepEqual(Array.from(result.accepted), [mixed, partial]);
+  assert.deepEqual(Array.from(result.duplicates), [spaced]);
+});
+
+test("a fresh runtime deduplicates a repeated batch against stored rows, not a cache", () => {
+  const first = createRuntime();
+  const event = syncAnswer("ans_1111111111111111");
+  const result = first.context.syncLearningEventsBatch_([event, event]);
+  assert.deepEqual(Array.from(result.accepted), [event.event_id]);
+  assert.equal(result.duplicates.length, 0);
+  const second = createRuntime();
+  const sheet = second.activeSpreadsheet.getSheetByName("ANSWER_EVENTS");
+  sheet.cells = structuredClone(first.activeSpreadsheet.getSheetByName("ANSWER_EVENTS").cells);
+  const retry = second.context.syncLearningEventsBatch_([event]);
+  assert.equal(retry.accepted.length, 0);
+  assert.deepEqual(Array.from(retry.duplicates), [event.event_id]);
+  assert.equal(sheet.getLastRow(), 2);
+  assert.equal(second.spreadsheetStats.flushCalls, 0);
+});
+
+test("busy sync backs off quickly without opening or writing the database", () => {
+  const runtime = createRuntime();
+  runtime.lockStats.available = false;
+  const result = runtime.context.syncLearningEventsBatch_([syncAnswer("ans_1111111111111111")]);
+  assert.equal(result.success, false);
+  assert.equal(result.error, "busy");
+  assert.equal(result.retryAfterSeconds, 15);
+  assert.deepEqual(runtime.lockStats.timeouts, [1000]);
+  assert.equal(runtime.spreadsheetStats.openByIdCalls, 0);
+  assert.equal(runtime.lockStats.releases, 0);
+});
+
+test("invalid-only sync batches require neither a lock nor a database call", () => {
+  const runtime = createRuntime();
+  const result = runtime.context.syncLearningEventsBatch_([{ event_id: "invalid" }]);
+  assert.equal(result.success, true);
+  assert.equal(result.rejected.length, 1);
+  assert.equal(runtime.lockStats.attempts, 0);
+  assert.equal(runtime.spreadsheetStats.openByIdCalls, 0);
+});
+
+test("mixed-sheet sync retries preserve a completed first write after the second sheet fails", () => {
+  const runtime = createRuntime();
+  const activitySheet = runtime.activeSpreadsheet.getSheetByName("STUDY_ACTIVITY_EVENTS");
+  const activityHeader = activitySheet.readCell(1, 1);
+  activitySheet.writeCell(1, 1, "missing_event_id");
+  const answer = syncAnswer("ans_1111111111111111");
+  const activity = {
+    event_id: "act_2222222222222222", event_type: "study_activity_event", user_id: "3331112222",
+    payload: { activity_type: "review", entity_type: "word", entity_id: "precedenza" }
+  };
+  assert.throws(() => runtime.context.syncLearningEventsBatch_([answer, activity]), /Missing required column/);
+  assert.equal(runtime.spreadsheetStats.flushCalls, 1);
+  assert.equal(runtime.lockStats.releases, 1);
+  activitySheet.writeCell(1, 1, activityHeader);
+  const result = runtime.context.syncLearningEventsBatch_([answer, activity]);
+  assert.deepEqual(Array.from(result.accepted), [activity.event_id]);
+  assert.deepEqual(Array.from(result.duplicates), [answer.event_id]);
+  assert.equal(runtime.activeSpreadsheet.getSheetByName("ANSWER_EVENTS").getLastRow(), 2);
+});
+
+test("a flush failure still releases the script lock and a retry does not duplicate stored IDs", () => {
+  const runtime = createRuntime();
+  const event = syncAnswer("ans_1111111111111111");
+  runtime.spreadsheetStats.failFlush = true;
+  assert.throws(() => runtime.context.syncLearningEventsBatch_([event]), /flush_failed/);
+  assert.equal(runtime.lockStats.held, false);
+  assert.equal(runtime.lockStats.releases, 1);
+  runtime.spreadsheetStats.failFlush = false;
+  const retry = runtime.context.syncLearningEventsBatch_([event]);
+  assert.deepEqual(Array.from(retry.duplicates), [event.event_id]);
+});
+
+test("batch schema mapping preserves reordered headers and additional columns", () => {
+  const runtime = createRuntime();
+  const sheet = runtime.activeSpreadsheet.getSheetByName("ANSWER_EVENTS");
+  sheet.cells[0].reverse();
+  sheet.cells[0].push("custom_column");
+  const event = syncAnswer("ans_1111111111111111");
+  runtime.context.syncLearningEventsBatch_([event]);
+  assert.equal(sheet.readCell(2, columnIndex(sheet, "event_id")), event.event_id);
+  assert.equal(sheet.readCell(2, columnIndex(sheet, "quiz_id")), "cap1_q1");
+  assert.equal(sheet.readCell(2, columnIndex(sheet, "custom_column")), "");
+  const retry = runtime.context.syncLearningEventsBatch_([event]);
+  assert.deepEqual(Array.from(retry.duplicates), [event.event_id]);
+});
+
+test("an uncertain setValues failure is flushed before release and can be retried safely", () => {
+  const runtime = createRuntime();
+  const sheet = runtime.activeSpreadsheet.getSheetByName("ANSWER_EVENTS");
+  const originalGetRange = sheet.getRange;
+  sheet.getRange = function (...args) {
+    const range = originalGetRange.apply(this, args);
+    if (args[0] >= 2) {
+      const originalWrite = range.setValues;
+      range.setValues = function (values) {
+        originalWrite.call(this, values);
+        throw new Error("write_response_lost");
+      };
+    }
+    return range;
+  };
+  const event = syncAnswer("ans_1111111111111111");
+  assert.throws(() => runtime.context.syncLearningEventsBatch_([event]), /write_response_lost/);
+  assert.equal(runtime.spreadsheetStats.flushCalls, 1);
+  assert.equal(runtime.lockStats.held, false);
+  sheet.getRange = originalGetRange;
+  const retry = runtime.context.syncLearningEventsBatch_([event]);
+  assert.deepEqual(Array.from(retry.duplicates), [event.event_id]);
+  assert.equal(sheet.getLastRow(), 2);
+});
+
+test("a competing sync cannot append the same ID while the first batch holds the lock", () => {
+  const runtime = createRuntime();
+  const sheet = runtime.activeSpreadsheet.getSheetByName("ANSWER_EVENTS");
+  const originalGetRange = sheet.getRange;
+  const event = syncAnswer("ans_1111111111111111");
+  let competingResult;
+  sheet.getRange = function (...args) {
+    const range = originalGetRange.apply(this, args);
+    if (args[0] >= 2) {
+      const originalWrite = range.setValues;
+      range.setValues = function (values) {
+        competingResult = runtime.context.syncLearningEventsBatch_([event]);
+        return originalWrite.call(this, values);
+      };
+    }
+    return range;
+  };
+  const first = runtime.context.syncLearningEventsBatch_([event]);
+  assert.equal(competingResult.error, "busy");
+  assert.deepEqual(Array.from(first.accepted), [event.event_id]);
+  const retry = runtime.context.syncLearningEventsBatch_([event]);
+  assert.deepEqual(Array.from(retry.duplicates), [event.event_id]);
+  assert.equal(sheet.getLastRow(), 2);
+});
+
+test("a full retried batch reads its adjacent matches together without rewriting rows", () => {
+  const runtime = createRuntime();
+  const sheet = runtime.activeSpreadsheet.getSheetByName("ANSWER_EVENTS");
+  const events = Array.from({ length: 25 }, (_, i) => syncAnswer(`ans_${String(i).padStart(20, "0")}`));
+  runtime.context.syncLearningEventsBatch_(events);
+  sheet.valueReads = [];
+  sheet.setValuesCalls = 0;
+  const retry = runtime.context.syncLearningEventsBatch_(events);
+  assert.equal(retry.accepted.length, 0);
+  assert.equal(retry.duplicates.length, 25);
+  assert.deepEqual(sheet.valueReads, [
+    { row: 1, rows: 1, columns: 14 }, { row: 2, rows: 25, columns: 1 }
+  ]);
+  assert.equal(sheet.singleValueReads, 0);
+  assert.equal(sheet.setValuesCalls, 0);
 });

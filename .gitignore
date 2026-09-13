@@ -4,6 +4,8 @@
 .codex/
 .vscode/
 .idea/
+.codex-remote-attachments/
+.attachments/
 
 # Local secrets and environment configuration
 .env
@@ -27,6 +29,17 @@ credentials*.json
 service-account*.json
 .npmrc
 .netrc
+.ssh/
+.aws/
+.azure/
+.config/gcloud/
+.clasp.json
+.clasprc*.json
+application_default_credentials.json
+service_account*.json
+*.p8
+id_dsa*
+id_ecdsa*
 
 # Dependencies, build output and tooling caches
 node_modules/
@@ -38,10 +51,39 @@ dist/
 *.tmp
 *.bak
 *.orig
+.cache/
+*.tsbuildinfo
+*.swp
+*.swo
+*~
+
+# Local attachments, private exports and generated audit/recovery data.
+# Runtime assets, lib/, tests/ and source-controlled documentation stay in Git.
+/attachments/
+/outputs/
+/artifacts/
+/exports/
+/logs/
+/backup/
+/backups/
+/magicph-backup/
+/tmp/
+/temp/
+/premium-audit.json
+/Invoice-*.pdf
+/*log-export*.csv
+*.har
+*.cpuprofile
+*.heapsnapshot
+*.sqlite
+*.sqlite3
+*.db
+*.db-*
 
 # Operating system files
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Google Apps Script sources are deployed outside this Vercel project
 *_gas.js

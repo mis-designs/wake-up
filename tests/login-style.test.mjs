@@ -56,7 +56,7 @@ test("original signature remains small and readable without a black container", 
 test("shared login assets are versioned without exposing Android Home to browsers", () => {
   const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
   const native = readFileSync(new URL("../android-study-shell.js", import.meta.url), "utf8");
-  for (const asset of ["login-experience.css?v=3-shared-font", "login-experience.js?v=2-unibody"]) {
+  for (const asset of ["login-experience.css?v=4-pending-access", "login-experience.js?v=2-unibody"]) {
     assert.ok(page.includes(asset)); assert.ok(worker.includes(asset));
   }
   for (const asset of ["login-signs.mjs?v=1", "/icons/mdesignstextlogo.png", "/assets/fonts/norwester/norwester.woff"]) assert.ok(worker.includes(asset));

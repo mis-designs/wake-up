@@ -67,6 +67,8 @@
     createNotice();
     if (!notice || !notice.hidden) return;
 
+    // Transient dialogs must release isolation before this blocking layer owns it.
+    windowObject.dispatchEvent(new windowObject.Event("magicbook:before-offline-notice"));
     previousFocus = documentObject.activeElement;
     notice.hidden = false;
     notice.setAttribute("aria-hidden", "false");

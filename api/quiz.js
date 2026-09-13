@@ -1,4 +1,6 @@
 import crypto from "crypto";
+import { audioLookupKeys, selectAudioRow } from "../lib/quiz-audio-lookup.mjs";
+import { createWorkCache } from "../lib/bounded-work-cache.mjs";
 import { createRequire } from "module";
 import {
   DeleteObjectCommand,
@@ -88,6 +90,9 @@ const EXAM_QUIZ_MODES = {
 };
 
 let quizAudioDatabase = null;
+// Identical simultaneous TTS requests share only the in-flight result. No
+// settled audio or account data is retained; each caller still passes its access checks.
+const quizMediaRequests = createWorkCache({ ttlMs: 0, maxPending: 64 });
 let quizAudioStorage = null;
 let explanationStorage = null;
 const quizAudioObjectAvailabilityCache = new Map();
@@ -302,21 +307,18 @@ async function getQuizAudioRow(quizKey) {
   return rows[0] || null;
 }
 
+async function getQuizAudioRows(keys) {
+  const sql = getQuizAudioDatabase();
+  return sql`
+    SELECT quiz_key, audio_key, audio_mime_type, audio_duration_ms
+    FROM quiz_audio_explanations
+    WHERE quiz_key = ANY(${keys}::text[])
+  `;
+}
+
 async function findQuizAudioRow(identity) {
-  const current = await getQuizAudioRow(identity.quizKey);
-  if (current) return { row: current, matchedQuizKey: identity.quizKey, legacy: false, requiresReview: false };
-  for (const key of identity.previousQuizKeys || []) {
-    const previous = await getQuizAudioRow(key);
-    if (previous) return { row: previous, matchedQuizKey: key, legacy: false, requiresReview: false };
-  }
-  if (identity.legacySafe === false) return { row: null, matchedQuizKey: "", legacy: false, requiresReview: false };
-  const legacy = await getQuizAudioRow(identity.legacyQuizKey);
-  if (!legacy) return { row: null, matchedQuizKey: "", legacy: false, requiresReview: false };
-  const requiresReview = isLegacyQuizAudioAmbiguous(identity.legacyQuizKey);
-  if (requiresReview) {
-    return { row: null, matchedQuizKey: identity.legacyQuizKey, legacy: true, requiresReview: true };
-  }
-  return { row: legacy, matchedQuizKey: identity.legacyQuizKey, legacy: true, requiresReview };
+  const rows = await getQuizAudioRows(audioLookupKeys(identity));
+  return selectAudioRow(identity, rows, isLegacyQuizAudioAmbiguous);
 }
 
 async function getCanonicalQuizAudioCandidates(questionId, question, figure) {
@@ -854,8 +856,13 @@ async function forwardGetAction({ action, chapters, text, mode, limit, count, qu
   if (questionCount !== undefined && questionCount !== null) params.set("questionCount", String(questionCount));
 
   const url = `${QUIZ_GAS_URL}?${params.toString()}`;
-  const response = await fetchUpstream(url, {}, { service: "quiz_service" });
-  return readJsonResponse(response);
+  const load = async () => {
+    const response = await fetchUpstream(url, {}, { service: "quiz_service" });
+    return withOperationalTimeout(readJsonResponse(response), { service: "quiz_media_body", timeoutMs: 12_000 });
+  };
+  return ["getItalianAudio", "getBengaliAudio", "getTTS"].includes(action)
+    ? quizMediaRequests.run(JSON.stringify([action, text, chapters, mode, limit, count, questionCount]), load)
+    : load();
 }
 
 function getExamModeConfig(mode) {
@@ -961,7 +968,6 @@ export default async function handler(req, res) {
       audioMimeType,
       answers
     } = getRequestData(req);
-    console.log("[api/quiz] action", action);
 
     if (!action) {
       return res.status(400).json({ error: "missing_action" });
@@ -1495,7 +1501,6 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST" && action === "checkQuiz") {
-      console.log("[api/quiz] checkQuiz answers", Array.isArray(answers) ? answers.length : "invalid");
 
       const quizSession = verifySignedToken(quizSessionToken, { phone, deviceId, purpose: "quiz" });
       if (!quizSession.ok) {

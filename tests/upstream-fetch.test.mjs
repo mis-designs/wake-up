@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fetchUpstream, publicApiError, withOperationalTimeout } from "../api/upstream-fetch.mjs";
+import { fetchUpstream, fetchUpstreamJson, publicApiError, withOperationalTimeout } from "../api/upstream-fetch.mjs";
 
 test("public API errors do not expose upstream service names or internal details", () => {
   const internal = new Error("private_database_timeout");
@@ -50,4 +50,61 @@ test("withOperationalTimeout prevents a stalled database operation from blocking
       && error.message === "audio_status_timeout"
       && error.details.timeoutMs === 5
   );
+});
+
+test("fetchUpstreamJson keeps the deadline active while the response body is stalled", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  let signal;
+  t.mock.method(globalThis, "fetch", async (_url, options) => {
+    signal = options.signal;
+    return {
+      status: 200, ok: true,
+      json: () => new Promise((_resolve, reject) => {
+        signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+      })
+    };
+  });
+  const request = fetchUpstreamJson("https://example.test", {}, { service: "learning_database", timeoutMs: 30000 });
+  const failure = assert.rejects(request, error => error.message === "learning_database_timeout");
+  await new Promise(setImmediate);
+  t.mock.timers.tick(30001);
+  await failure;
+  assert.equal(signal.aborted, true);
+});
+
+test("fetchUpstreamJson returns parsed JSON and clears its timer on success", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  let signal;
+  t.mock.method(globalThis, "fetch", async (_url, options) => {
+    signal = options.signal;
+    return new Response(JSON.stringify({ success: true }));
+  });
+  const { response, data } = await fetchUpstreamJson("https://example.test", {}, { timeoutMs: 30000 });
+  assert.equal(response.status, 200);
+  assert.deepEqual(data, { success: true });
+  t.mock.timers.tick(40000);
+  assert.equal(signal.aborted, false);
+});
+
+test("fetchUpstreamJson preserves 429 headers without waiting for a JSON error body", async t => {
+  t.mock.method(globalThis, "fetch", async () => ({
+    status: 429, ok: false, headers: new Headers({ "Retry-After": "15" }),
+    json() { throw new Error("error bodies must not be parsed"); }
+  }));
+  const { response, data } = await fetchUpstreamJson("https://example.test");
+  assert.equal(response.headers.get("Retry-After"), "15");
+  assert.equal(data, null);
+});
+
+test("invalid upstream JSON fails safely and cleans up the deadline", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  let signal;
+  t.mock.method(globalThis, "fetch", async (_url, options) => {
+    signal = options.signal;
+    return new Response("not JSON");
+  });
+  await assert.rejects(fetchUpstreamJson("https://example.test", {}, { service: "learning_database" }),
+    error => error.message === "learning_database_unavailable");
+  t.mock.timers.tick(40000);
+  assert.equal(signal.aborted, false);
 });

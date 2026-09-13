@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
 import { audioContentSignature, createAudioCatalog, quizAudioCatalog, quizAudioLegacyRegistry } from "../api/quiz-audio-catalog.mjs";
 import identityTools from "../quiz-audio-identity.cjs";
+import { audioLookupKeys, selectAudioRow } from "../lib/quiz-audio-lookup.mjs";
 
 const base = { id: "chapter", chapter: 1, question: "Il segnale indica una curva.", figure: "fig37", correct: 1 };
 const exam = { ...base, id: "exam", chapter: 0 };
@@ -36,7 +37,8 @@ test("obsolete chapter figures stop blocking legacy playback; real All Books col
   const find = source.slice(source.indexOf("async function findQuizAudioRow("), source.indexOf("async function getCanonicalQuizAudioCandidates("));
   const ambiguous = source.slice(source.indexOf("function isLegacyQuizAudioAmbiguous("), source.indexOf("async function requireQuizAudioAccess("));
   const stored = new Map([[identity.legacyQuizKey, { audio_key: "original-recording.webm" }]]);
-  const context = vm.createContext({ quizAudioLegacyRegistry, getQuizAudioRow: async key => stored.get(key) || null });
+  const context = vm.createContext({ quizAudioLegacyRegistry, audioLookupKeys, selectAudioRow,
+    getQuizAudioRows: async keys => keys.flatMap(key => stored.has(key) ? [{ ...stored.get(key), quiz_key: key }] : []) });
   vm.runInContext(ambiguous + find, context);
   assert.equal((await context.findQuizAudioRow(identity)).row.audio_key, "original-recording.webm");
   const conflict = quizAudioCatalog.identityFor(quizAudioCatalog.rows.find(row => row.id === "cap1_q12"));
@@ -106,7 +108,8 @@ test("ordinary playback never bypasses ambiguous legacy protection or searches a
   const catalog = createAudioCatalog([base, { ...exam, figure: "fig38" }]);
   const context = vm.createContext({
     quizAudioCatalog: catalog,
-    getQuizAudioRow: async key => { calls.push(key); return key.startsWith("q_") ? { quiz_key: key } : null; },
+    audioLookupKeys, selectAudioRow,
+    getQuizAudioRows: async keys => { calls.push(...keys); return keys.filter(key => key.startsWith("q_")).map(key => ({ quiz_key: key })); },
     isLegacyQuizAudioAmbiguous: () => true
   });
   vm.runInContext(find + resolve, context);

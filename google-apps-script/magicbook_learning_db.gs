@@ -10,6 +10,10 @@ var LEARNING_DB_SCHEMA_VERSION_ = 1;
 var LEARNING_DB_API_VERSION_ = 2;
 var LEARNING_DB_ID_PROPERTY_ = 'MAGICBOOK_LEARNING_DB_ID';
 var LEARNING_DB_WRITE_LOCK_TIMEOUT_MS_ = 5000;
+// Background sync should back off in the client instead of holding a Vercel
+// invocation open for five seconds whenever another writer owns the lock.
+var LEARNING_DB_SYNC_LOCK_TIMEOUT_MS_ = 1000;
+var LEARNING_DB_SYNC_RETRY_AFTER_SECONDS_ = 15;
 var LEARNING_DB_MAX_BATCH_SIZE_ = 25;
 var LEARNING_DB_MAX_INSIGHT_EVENTS_ = 10000;
 var LEARNING_DB_READ_CHUNK_SIZE_ = 1000;
@@ -717,20 +721,28 @@ function syncLearningEventsBatch_(events) {
     }
   });
 
-  var lock = LockService.getScriptLock();
-  if (!lock.tryLock(LEARNING_DB_WRITE_LOCK_TIMEOUT_MS_)) {
-    return { success: false, error: 'busy', retryAfterSeconds: 5 };
-  }
-
   var accepted = [];
   var duplicates = [];
+  var sheetNames = Object.keys(groups);
+  if (!sheetNames.length) {
+    return { success: true, accepted: accepted, duplicates: duplicates, rejected: rejected };
+  }
+
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(LEARNING_DB_SYNC_LOCK_TIMEOUT_MS_)) {
+    return { success: false, error: 'busy', retryAfterSeconds: LEARNING_DB_SYNC_RETRY_AFTER_SECONDS_ };
+  }
+
+  var wroteRows = false;
   try {
     var spreadsheet = getLearningDatabase_();
-    Object.keys(groups).forEach(function (sheetName) {
+    sheetNames.forEach(function (sheetName) {
       var sheet = learningRequireSheet_(spreadsheet, sheetName);
-      var columns = learningGetHeaderMap_(sheet);
+      var lastColumn = sheet.getLastColumn();
+      var columns = learningGetHeaderMap_(sheet, lastColumn);
       var eventIdColumn = learningRequireColumn_(columns, 'event_id', sheetName);
-      var knownIds = learningReadExistingIds_(sheet, eventIdColumn);
+      var lastRow = sheet.getLastRow();
+      var knownIds = learningFindExistingBatchIds_(sheet, eventIdColumn, groups[sheetName], lastRow);
       var rowsToWrite = [];
       var idsToWrite = [];
 
@@ -742,16 +754,19 @@ function syncLearningEventsBatch_(events) {
           return;
         }
         knownIds[item.eventId] = true;
-        rowsToWrite.push(learningMapSchemaRow_(sheet, sheetName, item.row, columns));
+        rowsToWrite.push(learningMapSchemaRow_(sheet, sheetName, item.row, columns, lastColumn));
         idsToWrite.push(item.eventId);
       });
 
       if (rowsToWrite.length) {
+        // Even if setValues throws after an uncertain write, flush before
+        // releasing the lock; the retry will re-check the durable event IDs.
+        wroteRows = true;
         sheet.getRange(
-          Math.max(2, sheet.getLastRow() + 1),
+          Math.max(2, lastRow + 1),
           1,
           rowsToWrite.length,
-          sheet.getLastColumn()
+          lastColumn
         ).setValues(rowsToWrite);
         accepted = accepted.concat(idsToWrite);
       }
@@ -763,7 +778,13 @@ function syncLearningEventsBatch_(events) {
 
     return { success: true, accepted: accepted, duplicates: duplicates, rejected: rejected };
   } finally {
-    lock.releaseLock();
+    // Commit pending Sheet writes before another execution checks the same IDs.
+    // Also flush a successfully written first sheet if the second sheet fails.
+    try {
+      if (wroteRows) SpreadsheetApp.flush();
+    } finally {
+      lock.releaseLock();
+    }
   }
 }
 
@@ -792,13 +813,13 @@ function learningAppendRow_(sheetName, rowValues) {
   }
 }
 
-function learningMapSchemaRow_(sheet, sheetName, rowValues, columns) {
+function learningMapSchemaRow_(sheet, sheetName, rowValues, columns, lastColumn) {
   var expectedColumns = LEARNING_DB_SCHEMA[sheetName];
   if (!expectedColumns || rowValues.length !== expectedColumns.length) {
     throw new Error('Invalid row shape for ' + sheetName + '.');
   }
 
-  var outputRow = new Array(sheet.getLastColumn());
+  var outputRow = new Array(lastColumn === undefined ? sheet.getLastColumn() : lastColumn);
   var index;
   for (index = 0; index < outputRow.length; index += 1) outputRow[index] = '';
   expectedColumns.forEach(function (columnName, valueIndex) {
@@ -808,14 +829,39 @@ function learningMapSchemaRow_(sheet, sheetName, rowValues, columns) {
   return outputRow;
 }
 
-function learningReadExistingIds_(sheet, eventIdColumn) {
+function learningFindExistingBatchIds_(sheet, eventIdColumn, items, lastRow) {
   var knownIds = {};
-  var lastRow = sheet.getLastRow();
-  if (lastRow < 2) return knownIds;
-  sheet.getRange(2, eventIdColumn, lastRow - 1, 1).getValues().forEach(function (values) {
-    var eventId = String(values[0] || '').trim();
-    if (eventId) knownIds[eventId] = true;
-  });
+  if (lastRow < 2 || !items.length) return knownIds;
+  var requestedIds = {};
+  items.forEach(function (item) { requestedIds[item.eventId] = true; });
+  // IDs have already passed the strict ans_/act_ [a-z0-9_-] validation above,
+  // so none contain regex metacharacters. Search the durable sheet, not an
+  // expiring cache: old retries remain idempotent after restarts/evictions.
+  // Only matching cells are returned, never the full historical ID column.
+  var pattern = '^\\s*(' + Object.keys(requestedIds).join('|') + ')\\s*$';
+  var matches = sheet.getRange(2, eventIdColumn, lastRow - 1, 1)
+    .createTextFinder(pattern)
+    .useRegularExpression(true)
+    .matchCase(true)
+    .matchEntireCell(true)
+    .findAll();
+  var matchedRows = matches.map(function (cell) { return cell.getRow(); })
+    .sort(function (left, right) { return left - right; });
+  // A retried batch is normally stored in adjacent rows. Read those matches
+  // together instead of making up to 25 separate getValue service calls.
+  var startIndex = 0;
+  while (startIndex < matchedRows.length) {
+    var endIndex = startIndex;
+    while (endIndex + 1 < matchedRows.length && matchedRows[endIndex + 1] === matchedRows[endIndex] + 1) {
+      endIndex += 1;
+    }
+    sheet.getRange(matchedRows[startIndex], eventIdColumn, endIndex - startIndex + 1, 1)
+      .getValues().forEach(function (values) {
+        var eventId = String(values[0] || '').trim();
+        if (requestedIds[eventId]) knownIds[eventId] = true;
+      });
+    startIndex = endIndex + 1;
+  }
   return knownIds;
 }
 
@@ -890,8 +936,8 @@ function learningJsonOutput_(data) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function learningGetHeaderMap_(sheet) {
-  var lastColumn = sheet.getLastColumn();
+function learningGetHeaderMap_(sheet, lastColumn) {
+  if (lastColumn === undefined) lastColumn = sheet.getLastColumn();
   var headers = lastColumn > 0
     ? sheet.getRange(1, 1, 1, lastColumn).getValues()[0]
     : [];

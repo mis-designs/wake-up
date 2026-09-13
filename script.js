@@ -1002,6 +1002,7 @@ async function login(options = {}) {
   const err = document.getElementById(fromPromoCard ? "promoLandingError" : "err");
   const loginButton = document.querySelector(fromPromoCard ? ".promo-access-submit" : "#login .login-submit");
   const loginButtonLabel = loginButton?.querySelector("span") || loginButton;
+  if (loginButton?.getAttribute("aria-busy") === "true") return;
 
   const phone = normalizePhone(phoneInput?.value);
   const promoCode = fromPromoCard ? String(promoCodeInput?.value || "").trim() : "";
@@ -1023,7 +1024,6 @@ async function login(options = {}) {
     return;
   }
 
-  const deviceId = await getRobustDeviceId();
   const originalText = loginButton?.dataset.defaultText || loginButtonLabel?.textContent || "Continua";
 
   if (loginButton) {
@@ -1042,6 +1042,7 @@ async function login(options = {}) {
   }
 
   try {
+    const deviceId = await getRobustDeviceId();
     const authPayload = {
       action: "login",
       phone,
@@ -1100,6 +1101,14 @@ async function login(options = {}) {
           if (landingCode) landingCode.value = promoCode;
           updatePromoLandingButtonState();
           showPromoAccessNextStep(loginError);
+        }
+        return;
+      }
+      if (!fromPromoCard && loginError === "not_found") {
+        // Presentation only: not_found does not prove that a payment was made.
+        // A late reply must not open a notice after leaving/editing the form.
+        if (currentScreen === "login" && normalizePhone(phoneInput?.value) === phone) {
+          showLoginPendingPopup(loginButton);
         }
         return;
       }
@@ -3113,13 +3122,94 @@ function openWhatsAppGroupLink() {
   openExternalUrl(normalLink);
 }
 
+// Shared authored-modal behavior. The login variant inherits #login's palette;
+// the WhatsApp invitation keeps its established body-level surface and actions.
+function mountAppPopup(overlay, { focusable, returnFocus, bodyClass, onDismiss }) {
+  const backgroundState = [];
+  let closed = false;
+  function isolate(parent) {
+    Array.from(parent.children).forEach(element => {
+      if (!(element instanceof HTMLElement) || element === overlay) return;
+      if (element.contains(overlay)) { isolate(element); return; }
+      backgroundState.push({ element, inert: element.inert });
+      element.inert = true;
+    });
+  }
+  function onClick(event) {
+    if (event.target === overlay) onDismiss();
+  }
+  function onKeyDown(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      onDismiss();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault(); last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault(); first.focus();
+    }
+  }
+  overlay.addEventListener("click", onClick);
+  overlay.addEventListener("keydown", onKeyDown);
+  isolate(document.body);
+  document.body.classList.add(bodyClass);
+  const frame = window.requestAnimationFrame(() => {
+    if (!closed) focusable[0]?.focus({ preventScroll: true });
+  });
+  return ({ restoreFocus = true } = {}) => {
+    if (closed) return;
+    closed = true;
+    window.cancelAnimationFrame(frame);
+    overlay.removeEventListener("click", onClick);
+    overlay.removeEventListener("keydown", onKeyDown);
+    backgroundState.forEach(({ element, inert }) => {
+      if (element.isConnected) element.inert = inert;
+    });
+    document.body.classList.remove(bodyClass);
+    overlay.remove();
+    if (restoreFocus && returnFocus instanceof HTMLElement && returnFocus.isConnected) {
+      returnFocus.focus({ preventScroll: true });
+    }
+  };
+}
+
+let dismissLoginPendingPopup = null;
+function showLoginPendingPopup(returnFocus) {
+  dismissLoginPendingPopup?.({ restoreFocus: false });
+  const screen = document.getElementById("login");
+  const template = document.getElementById("loginPendingTemplate");
+  if (!template || screen?.classList.contains("hidden") || navigator.onLine === false) return;
+  const overlay = template.content.firstElementChild.cloneNode(true);
+  screen.appendChild(overlay);
+  const focusable = Array.from(overlay.querySelectorAll("button"));
+  const close = options => {
+    if (dismissLoginPendingPopup !== close) return;
+    dismissLoginPendingPopup = null;
+    window.removeEventListener("pagehide", onLeave);
+    window.removeEventListener("magicbook:before-offline-notice", onLeave);
+    unmount(options);
+  };
+  const onLeave = () => close({ restoreFocus: false });
+  const unmount = mountAppPopup(overlay, {
+    focusable, returnFocus, bodyClass: "login-pending-popup-open", onDismiss: close
+  });
+  dismissLoginPendingPopup = close;
+  focusable.forEach(button => button.addEventListener("click", () => close()));
+  window.addEventListener("pagehide", onLeave);
+  // The offline owner sends this before it records background inert states.
+  window.addEventListener("magicbook:before-offline-notice", onLeave);
+}
+
 function showWhatsAppGroupPopup() {
   if (!isWhatsAppGroupPopupAllowed()) return;
 
   let lang = "bn";
   let isClosed = false;
   const previouslyFocused = document.activeElement;
-  const backgroundState = [];
 
   const overlay = document.createElement("div");
   overlay.id = "whatsappGroupPopupOverlay";
@@ -3223,23 +3313,12 @@ function showWhatsAppGroupPopup() {
     itBtn.setAttribute("aria-pressed", lang === "it" ? "true" : "false");
   }
 
-  function restoreBackground() {
-    backgroundState.forEach(({ element, inert }) => {
-      if (element.isConnected) element.inert = inert;
-    });
-    document.body.classList.remove("whatsapp-group-popup-open");
-  }
-
   function closePopup({ joined = false } = {}) {
     if (isClosed) return;
     isClosed = true;
     if (joined) Storage.set(WHATSAPP_GROUP_CLICKED_KEY, "true");
     else Storage.set(WHATSAPP_GROUP_DISMISSED_AT_KEY, String(Date.now()));
-    restoreBackground();
-    overlay.remove();
-    if (previouslyFocused instanceof HTMLElement && previouslyFocused.isConnected) {
-      previouslyFocused.focus({ preventScroll: true });
-    }
+    unmount();
   }
 
   bnBtn.addEventListener("click", () => {
@@ -3260,30 +3339,6 @@ function showWhatsAppGroupPopup() {
   secondary.addEventListener("click", () => closePopup());
   closeBtn.addEventListener("click", () => closePopup());
 
-  overlay.addEventListener("click", event => {
-    if (event.target === overlay) closePopup();
-  });
-
-  overlay.addEventListener("keydown", event => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      closePopup();
-      return;
-    }
-    if (event.key !== "Tab") return;
-
-    const focusable = [closeBtn, bnBtn, itBtn, primary, secondary];
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  });
-
   langToggle.appendChild(bnBtn);
   langToggle.appendChild(itBtn);
   topbar.appendChild(closeBtn);
@@ -3302,13 +3357,10 @@ function showWhatsAppGroupPopup() {
 
   renderLanguage();
   document.body.appendChild(overlay);
-  Array.from(document.body.children).forEach(element => {
-    if (!(element instanceof HTMLElement) || element === overlay) return;
-    backgroundState.push({ element, inert: element.inert });
-    element.inert = true;
+  const unmount = mountAppPopup(overlay, {
+    focusable: [closeBtn, bnBtn, itBtn, primary, secondary],
+    returnFocus: previouslyFocused, bodyClass: "whatsapp-group-popup-open", onDismiss: closePopup
   });
-  document.body.classList.add("whatsapp-group-popup-open");
-  window.requestAnimationFrame(() => closeBtn.focus({ preventScroll: true }));
 }
 
 /***********************
@@ -3323,6 +3375,7 @@ function showWhatsAppGroupPopup() {
  * UI NAVIGATION
  ***********************/
 function hideAll() {
+  dismissLoginPendingPopup?.({ restoreFocus: false });
   window.MagicBookModeScreens?.reset();
   window.MagicBookAndroidStudy?.hide();
   cleanupMagicBookViewer();

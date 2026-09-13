@@ -1,6 +1,9 @@
 (function initializeMagicBookLearningSync(root) {
   "use strict";
 
+  // Re-including the script must not start another scheduler/listener set.
+  if (root.MagicBookLearningSync) return;
+
   const LEARNING_SYNC_CONFIG = Object.freeze({
     databaseName: "MagicBookLearningLocal",
     databaseVersion: 2,
@@ -11,7 +14,8 @@
     flushIntervalMs: 15_000,
     flushJitterMs: 2_500,
     maxConcurrentSyncs: 1,
-    requestTimeoutMs: 12_000,
+    // Allow the proxy's 30 s upstream budget plus transport/response overhead.
+    requestTimeoutMs: 40_000,
     maxRetryDelayMs: 15 * 60_000,
     maxRetryAfterMs: 24 * 60 * 60_000,
     syncedRetentionMs: 24 * 60 * 60_000,
@@ -356,9 +360,9 @@
       const timestamp = this.now();
       return this.updateByEventIds(eventIds, record => {
         const retryCount = Number(record.retry_count || 0) + 1;
-        const delay = retryAfterMs > 0
-          ? Math.min(retryAfterMs, LEARNING_SYNC_CONFIG.maxRetryAfterMs)
-          : calculateBackoffMs(retryCount, random);
+        // Retry-After is a minimum, not a reason to reset exponential backoff.
+        const delay = Math.min(LEARNING_SYNC_CONFIG.maxRetryAfterMs,
+          Math.max(retryAfterMs, calculateBackoffMs(retryCount, random)));
         return {
           ...record,
           status: "retry",
@@ -467,8 +471,13 @@
         }
       });
       this.initialized = false;
+      this.disposed = false;
+      this.paused = false;
       this.isSyncing = false;
       this.timer = 0;
+      this.idleTimer = 0;
+      this.drainTimer = 0;
+      this.requestController = null;
       this.consecutiveFailures = 0;
       this.circuitOpenUntil = 0;
       this.boundOnline = () => {
@@ -476,21 +485,29 @@
         void this.flush({ reason: "online" });
       };
       this.boundVisible = () => {
-        if (root.document?.visibilityState === "visible") void this.flush({ reason: "visible" });
+        if (root.document?.visibilityState === "hidden") {
+          this.pause();
+          void this.flush({ reason: "hidden", keepalive: true });
+        } else this.resume("visible");
       };
-      this.boundPageShow = () => { void this.flush({ reason: "pageshow" }); };
-      this.boundPageHide = () => { void this.flush({ reason: "pagehide", keepalive: true }); };
+      this.boundPageShow = () => { this.resume("pageshow"); };
+      this.boundPageHide = () => {
+        this.pause();
+        void this.flush({ reason: "pagehide", keepalive: true });
+      };
     }
 
     async init() {
-      if (this.initialized) return this;
+      if (this.initialized || this.disposed) return this;
       this.initialized = true;
       try { await this.outbox.getAll(); } catch {}
       await this.outbox.cleanup();
+      if (this.disposed) return this;
       root.addEventListener?.("online", this.boundOnline);
       root.addEventListener?.("pageshow", this.boundPageShow);
       root.addEventListener?.("pagehide", this.boundPageHide);
       root.document?.addEventListener?.("visibilitychange", this.boundVisible);
+      this.paused = this.paused || root.document?.visibilityState === "hidden";
       this.scheduleNextFlush();
       this.requestIdleFlush();
       void this.flush({ reason: "startup" });
@@ -499,20 +516,52 @@
 
     scheduleNextFlush() {
       if (this.timer) root.clearTimeout(this.timer);
+      this.timer = 0;
+      if (this.disposed || this.paused) return;
       const jitter = Math.round((this.random() * 2 - 1) * LEARNING_SYNC_CONFIG.flushJitterMs);
       const delay = Math.max(1_000, LEARNING_SYNC_CONFIG.flushIntervalMs + jitter);
       this.timer = root.setTimeout(async () => {
-        await this.flush({ reason: "timer" });
-        this.scheduleNextFlush();
+        this.timer = 0;
+        try { await this.flush({ reason: "timer" }); }
+        finally { this.scheduleNextFlush(); }
       }, delay);
     }
 
     requestIdleFlush() {
-      if (typeof root.requestIdleCallback === "function") {
-        root.requestIdleCallback(() => { void this.flush({ reason: "idle" }); }, { timeout: 5_000 });
-      } else {
-        root.setTimeout(() => { void this.flush({ reason: "idle-fallback" }); }, 3_000);
+      if (this.idleTimer || this.disposed || this.paused) return;
+      // An idle callback can fire immediately after EACH answer. Keep one
+      // bounded batching window; pagehide, full batches and explicit flushes
+      // still send immediately. Events are persisted before scheduling.
+      this.idleTimer = root.setTimeout(() => {
+        this.idleTimer = 0;
+        void this.flush({ reason: "idle-batch" });
+      }, LEARNING_SYNC_CONFIG.flushIntervalMs);
+    }
+
+    pause() {
+      this.paused = true;
+      for (const key of ["timer", "idleTimer", "drainTimer"]) {
+        if (this[key]) root.clearTimeout(this[key]);
+        this[key] = 0;
       }
+    }
+
+    resume(reason) {
+      if (this.disposed || root.document?.visibilityState === "hidden") return;
+      this.paused = false;
+      this.scheduleNextFlush();
+      void this.flush({ reason });
+    }
+
+    dispose() {
+      if (this.disposed) return;
+      this.disposed = true;
+      this.pause();
+      this.requestController?.abort();
+      root.removeEventListener?.("online", this.boundOnline);
+      root.removeEventListener?.("pageshow", this.boundPageShow);
+      root.removeEventListener?.("pagehide", this.boundPageHide);
+      root.document?.removeEventListener?.("visibilitychange", this.boundVisible);
     }
 
     async enqueue(eventType, payload, { eventId, userId } = {}) {
@@ -555,7 +604,10 @@
 
     async flush(options = {}) {
       await this.init();
+      if (this.disposed || (this.paused && !options.keepalive)) return false;
       if (this.isSyncing) return false;
+      if (this.idleTimer) root.clearTimeout(this.idleTimer);
+      this.idleTimer = 0;
       if (root.navigator && root.navigator.onLine === false) {
         debugLog("offline");
         return false;
@@ -566,7 +618,7 @@
       }
 
       const run = async () => {
-        if (this.isSyncing) return false;
+        if (this.isSyncing || this.disposed || (this.paused && !options.keepalive)) return false;
         this.isSyncing = true;
         try {
           return await this.flushOneBatch(options);
@@ -591,9 +643,14 @@
       const userId = normalizedUserId(auth.userId);
       const batch = await this.outbox.claimDue(LEARNING_SYNC_CONFIG.maxBatchSize, userId);
       if (!batch.length) return false;
+      if (this.disposed) {
+        await this.outbox.markRetry(batch.map(record => record.event_id), { error: "sync_disposed" });
+        return false;
+      }
       debugLog("batch started", { count: batch.length, reason });
 
       const controller = new AbortController();
+      this.requestController = controller;
       const timeout = root.setTimeout(() => controller.abort(), LEARNING_SYNC_CONFIG.requestTimeoutMs);
       let response;
       let data = null;
@@ -624,6 +681,7 @@
         return false;
       } finally {
         root.clearTimeout(timeout);
+        if (this.requestController === controller) this.requestController = null;
       }
 
       if (!response.ok) {
@@ -667,8 +725,12 @@
       });
       await this.outbox.cleanup();
 
-      if (await this.outbox.countDue(userId)) {
-        root.setTimeout(() => { void this.flush({ reason: "queue-drain" }); }, 0);
+      if (!this.disposed && !this.paused && await this.outbox.countDue(userId)) {
+        if (this.drainTimer) root.clearTimeout(this.drainTimer);
+        this.drainTimer = root.setTimeout(() => {
+          this.drainTimer = 0;
+          void this.flush({ reason: "queue-drain" });
+        }, 0);
       }
       return true;
     }
@@ -709,6 +771,7 @@
   const publicApi = {
     config: LEARNING_SYNC_CONFIG,
     init: () => manager.init(),
+    dispose: () => manager.dispose(),
     enqueueAnswer: (payload, options) => manager.enqueueAnswer(payload, options),
     enqueueStudyActivity: (payload, options) => manager.enqueueStudyActivity(payload, options),
     flush: options => manager.flush(options),

@@ -101,13 +101,13 @@ gtag('config', 'G-C5JPY9HFHD', {
 <link rel="stylesheet" href="loading-ui.css?v=1-shared-gif-loader">
 <link rel="stylesheet" href="style.css?v=73-open-hand">
 <link rel="stylesheet" href="homebg.css?v=3">
-<link rel="stylesheet" href="magic-dictionary.css?v=1.4.0-dictionary-sequence">
+<link rel="stylesheet" href="magic-dictionary.css?v=1.4.1-dictionary-cleanup">
 <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
 <link rel="stylesheet" href="/offline-notice.css?v=1.0.0">
-<script src="/offline-notice.js?v=1.0.0" defer></script>
+<script src="/offline-notice.js?v=1.1.0" defer></script>
 <link rel="stylesheet" href="src/learning-insights.css?v=9-card-spacing&ui=10">
 <link rel="stylesheet" href="mobile-experience.css?v=4-admin-scroll">
-<link rel="stylesheet" href="/login-experience.css?v=3-shared-font">
+<link rel="stylesheet" href="/login-experience.css?v=4-pending-access">
 <link rel="stylesheet" href="/android-app-theme.css?v=10-shared-login">
 <link rel="stylesheet" href="/android-study-shell.css?v=19-open-hand">
 <link rel="stylesheet" href="/android-mode-screens.css?v=2-thumb">
@@ -609,6 +609,24 @@ gtag('config', 'G-C5JPY9HFHD', {
 </main>
 
 <!-- LOGIN -->
+<template id="loginPendingTemplate">
+  <div class="login-pending-overlay" role="dialog" aria-modal="true" aria-labelledby="loginPendingTitle" aria-describedby="loginPendingItalian loginPendingBangla" data-nosnippet>
+    <section class="login-pending-card" lang="it">
+      <header class="login-pending-header">
+        <h2 id="loginPendingTitle">Accesso non ancora attivo</h2>
+        <button type="button" class="wgp-close login-pending-close" aria-label="Chiudi / বন্ধ করুন"></button>
+      </header>
+      <div class="login-pending-copy">
+        <p id="loginPendingItalian">Se hai già effettuato il pagamento, l’autorizzazione del tuo accesso potrebbe essere ancora in elaborazione. Riprova tra qualche istante.</p>
+        <div class="login-pending-bangla" lang="bn">
+          <h3>অ্যাক্সেস এখনও চালু হয়নি</h3>
+          <p id="loginPendingBangla">আপনি যদি ইতিমধ্যে পেমেন্ট করে থাকেন, আপনার অ্যাক্সেসের অনুমোদন প্রক্রিয়া এখনও চলতে পারে। একটু পর আবার চেষ্টা করুন।</p>
+        </div>
+      </div>
+      <button type="button" class="login-pending-dismiss"><span>Ho capito</span><span lang="bn">বুঝেছি</span></button>
+    </section>
+  </div>
+</template>
 <div class="card hidden" id="login" data-theme="magicbook">
   <main class="login-pass d-card" aria-labelledby="loginTitle">
     <h1 id="loginTitle">Accedi a Magic Book</h1>
@@ -1281,12 +1299,12 @@ gtag('config', 'G-C5JPY9HFHD', {
 </div>
 
 <script src="patenteGlossaryResolver.js?v=1.0.0"></script>
-<script src="magic-dictionary.js?v=1.4.0-dictionary-sequence"></script>
+<script src="magic-dictionary.js?v=1.4.1-dictionary-cleanup"></script>
 <script src="screen-protection.js?v=1.2.0"></script>
-<script src="learning-sync.js?v=2"></script>
+<script src="learning-sync.js?v=4-sync-deadlines"></script>
 <script src="src/learning-insights.js?v=9-session-storage-recovery&ui=9-intact-figures"></script>
 <script src="android-mode-screens.js?v=2-thumb"></script>
-<script src="script.js?v=74-quiz-thumb"></script>
+<script src="script.js?v=75-pending-access"></script>
 <script type="module" src="login-experience.js?v=2-unibody"></script>
 <script type="module" src="android-study-shell.js?v=13-shared-login"></script>
 </body>

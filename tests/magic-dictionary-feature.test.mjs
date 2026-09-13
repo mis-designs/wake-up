@@ -154,13 +154,13 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(index, /premium-new-badge home-dictionary-new-badge/u);
   assert.doesNotMatch(index, /home-dictionary-mark/u);
   assert.match(index, /openDictionaryFromMenu\(\)/u);
-  assert.match(index, /magic-dictionary\.js\?v=1\.4\.0-dictionary-sequence/u);
-  assert.match(quiz, /magic-dictionary\.js\?v=1\.4\.0-dictionary-sequence/u);
-  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.4\.0-dictionary-sequence/u);
+  assert.match(index, /magic-dictionary\.js\?v=1\.4\.1-dictionary-cleanup/u);
+  assert.match(quiz, /magic-dictionary\.js\?v=1\.4\.1-dictionary-cleanup/u);
+  assert.match(studyQuiz, /magic-dictionary\.js\?v=1\.4\.1-dictionary-cleanup/u);
   for (const html of [index, quiz, studyQuiz]) {
     assert.match(html, /https:\/\/banglawebfonts\.pages\.dev\/css\/tiro-bangla\.css/u);
     assert.match(html, /https:\/\/banglawebfonts\.pages\.dev\/fonts\/tiro-bangla\/tiro-bangla-regular\.woff2/u);
-    assert.match(html, /magic-dictionary\.css\?v=1\.4\.0-dictionary-sequence/u);
+    assert.match(html, /magic-dictionary\.css\?v=1\.4\.1-dictionary-cleanup/u);
   }
   assert.match(dictionaryCss, /--magic-dictionary-bangla-font:\s*"Tiro Bangla"/u);
   assert.match(dictionaryCss, /#magicDictionaryScreen \[lang="bn"\][\s\S]*font-family:\s*var\(--magic-dictionary-bangla-font\);[\s\S]*font-weight:\s*400;/u);
@@ -170,9 +170,9 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(dictionaryCss, /\.magic-dictionary-settings button\s*\{[\s\S]*width:\s*auto;[\s\S]*justify-self:\s*end;[\s\S]*white-space:\s*nowrap;/u);
   assert.match(script, /state\.screen === "dictionary"/u);
   assert.match(script, /MagicDictionaryFeature\?\.onAuthenticated/u);
-  assert.match(worker, /magicbook-pwa-v197-dictionary-sequence/u);
-  assert.match(worker, /magic-dictionary\.js\?v=1\.4\.0-dictionary-sequence/u);
-  assert.match(worker, /magic-dictionary\.css\?v=1\.4\.0-dictionary-sequence/u);
+  assert.match(worker, /magicbook-pwa-v201-login-pending-access/u);
+  assert.match(worker, /magic-dictionary\.js\?v=1\.4\.1-dictionary-cleanup/u);
+  assert.match(worker, /magic-dictionary\.css\?v=1\.4\.1-dictionary-cleanup/u);
   assert.ok(vercel.rewrites.some(route => route.source === "/dizionario" && route.destination === "/"));
   assert.match(redirects, /^\/dizionario \/index\.html 200$/mu);
   assert.match(source, /magic-word-unlock/u);
@@ -194,6 +194,21 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(source, /dictionary\.lang = "it"/u);
   assert.match(source, /dictionary\.setAttribute\("translate", "no"\)/u);
   assert.match(source, /Sì, disattiva/u);
+});
+
+test("dictionary reading chrome omits redundant labels without changing filters or audio targets", () => {
+  const css = fs.readFileSync(path.join(root, "magic-dictionary.css"), "utf8");
+  assert.match(source, /class="magic-dictionary-header-title"><h1 id="magicDictionaryTitle">Dizionario<\/h1>/u);
+  const render = source.slice(source.indexOf("function renderDictionary()"), source.indexOf("function updateGateSetting()"));
+  assert.doesNotMatch(render, /<small>|LOCUZIONE|PAROLA/u);
+  assert.match(render, /is-\$\{word.type\}/u);
+  assert.match(render, /audioButton\(word\)/u);
+  assert.match(source, /data-filter="word"/u);
+  assert.match(source, /data-filter="phrase"/u);
+  assert.match(css, /\.magic-dictionary-audio\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;/u);
+  assert.match(css, /\.magic-dictionary-audio:hover,\s*\.magic-dictionary-audio:active,\s*\.magic-dictionary-audio\.is-playing\s*\{\s*background:\s*transparent;\s*border-color:\s*transparent;\s*box-shadow:\s*none;/u);
+  assert.match(css, /\.magic-dictionary-audio:focus-visible\s*\{\s*outline:\s*3px solid/u);
+  assert.match(css, /\.magic-dictionary-audio\.is-playing::after\s*\{/u);
 });
 
 test("the word exercise remains Italian regardless of the browser language", () => {

@@ -7,7 +7,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function createMagicDictionary(root) {
   "use strict";
 
-  const VERSION = "1.4.0";
+  const VERSION = "1.4.1";
   const DICTIONARY_LANGUAGE_PAUSE_MS = 550;
   const MANIFEST_URL = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const FALLBACK_URL = "/data/patente/quiz-help-runtime-v2.json";
@@ -563,7 +563,7 @@
         <button id="magicDictionaryBack" class="magic-dictionary-back" type="button" aria-label="Indietro">
           <img src="icons/go-back.png" alt="">
         </button>
-        <div class="magic-dictionary-header-title"><small>MAGIC BOOK</small><h1 id="magicDictionaryTitle">Dizionario</h1></div>
+        <div class="magic-dictionary-header-title"><h1 id="magicDictionaryTitle">Dizionario</h1></div>
         <div class="magic-dictionary-language-badge" aria-label="Italiano e Bangla">
           <span>IT</span><i aria-hidden="true"></i><span lang="bn">বাংলা</span>
         </div>
@@ -1187,7 +1187,7 @@
     } else {
       list.innerHTML = visible.map(word => `
         <article class="magic-dictionary-word is-${word.type}">
-          <div class="magic-dictionary-term"><div><small>${word.type === "phrase" ? "LOCUZIONE" : "PAROLA"}</small><h3>${escapeHtml(word.it)}</h3></div></div>
+          <div class="magic-dictionary-term"><div><h3>${escapeHtml(word.it)}</h3></div></div>
           <div class="magic-dictionary-language-row" lang="bn"><div><strong>${escapeHtml(word.bn)}</strong><p>${escapeHtml(word.simpleBn)}</p></div>${audioButton(word)}</div>
           <p class="magic-dictionary-audio-message" role="status" lang="it" hidden></p>
         </article>`).join("");

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
+import { LEARNING_SYNC_SERVER_CONFIG } from "../api/learning-sync.mjs";
 
 const source = readFileSync(new URL("../learning-sync.js", import.meta.url), "utf8");
 const quizSource = readFileSync(new URL("../quiz.js", import.meta.url), "utf8");
@@ -18,7 +19,8 @@ function loadLearningSyncRuntime() {
   const document = {
     readyState: "loading",
     visibilityState: "visible",
-    addEventListener(name, callback) { listeners.set(`document:${name}`, callback); }
+    addEventListener(name, callback) { listeners.set(`document:${name}`, callback); },
+    removeEventListener(name, callback) { if (listeners.get(`document:${name}`) === callback) listeners.delete(`document:${name}`); }
   };
   const window = {
     crypto: {
@@ -39,8 +41,9 @@ function loadLearningSyncRuntime() {
       scheduled.push({ callback, delay });
       return scheduled.length;
     },
-    clearTimeout() {},
+    clearTimeout(id) { if (scheduled[id - 1]) scheduled[id - 1].cancelled = true; },
     addEventListener(name, callback) { listeners.set(`window:${name}`, callback); },
+    removeEventListener(name, callback) { if (listeners.get(`window:${name}`) === callback) listeners.delete(`window:${name}`); },
     dispatchEvent() {},
     fetch: null
   };
@@ -153,9 +156,9 @@ test("quiz answers enter the outbox without awaiting sync and every app surface 
   assert.match(quizSource, /void window\.MagicBookLearningSync\.enqueueAnswer\(/u);
   assert.doesNotMatch(quizSource, /await window\.MagicBookLearningSync\.enqueueAnswer\(/u);
   [quizPage, homePage, studyPage].forEach(page => {
-    assert.match(page, /learning-sync\.js\?v=2/u);
+    assert.match(page, /learning-sync\.js\?v=4-sync-deadlines/u);
   });
-  assert.match(serviceWorker, /learning-sync\.js\?v=2/u);
+  assert.match(serviceWorker, /learning-sync\.js\?v=4-sync-deadlines/u);
 });
 
 test("the shared IndexedDB layer keeps learning-insight caches separated by user", async () => {
@@ -359,4 +362,114 @@ test("backoff includes jitter and Retry-After supports HTTP dates", () => {
   assert.equal(calculateBackoffMs(1, () => 1), 6_000);
   const now = Date.parse("2026-08-21T10:00:00.000Z");
   assert.equal(parseRetryAfterMs("Fri, 21 Aug 2026 10:00:45 GMT", now), 45_000);
+});
+
+test("enqueue coalesces rapid answers into one delayed flush, not one idle request per answer", async () => {
+  let requests = 0;
+  const h = createHarness({ fetchImpl: async (_url, options) => {
+    requests++;
+    return response(200, { accepted: JSON.parse(options.body).events.map(e => e.event_id) });
+  } });
+  for (let i = 0; i < 10; i++) await h.manager.enqueueAnswer({ quiz_id: String(i) });
+  assert.equal(requests, 0);
+  const work = h.scheduled.filter(t => !t.cancelled);
+  assert.equal(work.length, 1);
+  assert.equal(work[0].delay, 15_000);
+  work[0].callback();
+  for (let i = 0; i < 4; i++) await new Promise(setImmediate);
+  assert.equal(requests, 1);
+  assert.ok((await h.outbox.getAll()).every(e => e.status === "synced"));
+});
+
+test("a small Retry-After never resets progressive backoff", async () => {
+  const h = createHarness({ fetchImpl: async () => response(503, {}, { "Retry-After": "5" }) });
+  await seed(h.outbox, 1, h.now());
+  for (const expected of [5_000, 15_000, 30_000]) {
+    await h.manager.flush();
+    const record = (await h.outbox.getAll())[0];
+    assert.equal(record.next_retry_at - h.now(), expected);
+    h.setNow(record.next_retry_at);
+  }
+});
+
+test("empty and paused background schedulers generate no HTTP requests", async () => {
+  let requests = 0;
+  const h = createHarness({ fetchImpl: async () => { requests++; return response(200, {}); } });
+  for (let i = 0; i < 10; i++) await h.manager.flush();
+  assert.equal(requests, 0);
+  await seed(h.outbox, 1, h.now());
+  h.manager.pause();
+  await h.manager.flush();
+  assert.equal(requests, 0);
+  assert.equal((await h.outbox.getAll())[0].status, "pending");
+});
+
+test("pagehide keeps an immediate final batch and pageshow restores the scheduler", async () => {
+  let keepalive;
+  const h = createHarness({ fetchImpl: async (_url, options) => {
+    keepalive = options.keepalive;
+    return response(200, { accepted: JSON.parse(options.body).events.map(e => e.event_id) });
+  } });
+  await seed(h.outbox, 1, h.now());
+  h.manager.boundPageHide();
+  for (let i = 0; i < 4; i++) await new Promise(setImmediate);
+  assert.equal(keepalive, true);
+  assert.equal(h.manager.paused, true);
+  assert.equal(h.manager.timer, 0);
+  h.manager.boundPageShow();
+  assert.equal(h.manager.paused, false);
+  assert.ok(h.manager.timer);
+});
+
+test("dispose removes listeners and timers, including after an in-flight timer finishes", async () => {
+  const h = createHarness();
+  h.manager.initialized = false;
+  await h.manager.init();
+  await new Promise(setImmediate);
+  const callback = h.scheduled.find(t => !t.cancelled && t.delay >= 12_500).callback;
+  h.manager.requestIdleFlush();
+  h.manager.dispose();
+  assert.equal(h.listeners.has("window:online"), false);
+  assert.equal(h.listeners.has("window:pageshow"), false);
+  assert.equal(h.listeners.has("window:pagehide"), false);
+  assert.equal(h.listeners.has("document:visibilitychange"), false);
+  await callback();
+  assert.equal(h.manager.timer, 0);
+  assert.equal(h.manager.idleTimer, 0);
+  assert.equal(await h.manager.flush(), false);
+});
+
+test("loading the script twice preserves its singleton manager", () => {
+  const h = loadLearningSyncRuntime();
+  vm.runInNewContext(source, { window: h.window });
+  assert.equal(h.window.MagicBookLearningSync, h.api);
+});
+
+test("sync timeout budgets are ordered upstream, Vercel, client, stale outbox claim", () => {
+  const { api } = loadLearningSyncRuntime();
+  const deployment = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8"));
+  const runtimeMs = deployment.functions["api/learning-sync.mjs"].maxDuration * 1000;
+  assert.equal(LEARNING_SYNC_SERVER_CONFIG.upstreamTimeoutMs, 30000);
+  assert.ok(LEARNING_SYNC_SERVER_CONFIG.upstreamTimeoutMs < runtimeMs);
+  assert.ok(runtimeMs < api.config.requestTimeoutMs);
+  assert.ok(api.config.requestTimeoutMs < api.config.sendingStaleMs);
+});
+
+test("a slow successful sync remains single-flight and clears the client timeout", async () => {
+  let finish;
+  let requests = 0;
+  const h = createHarness({ fetchImpl: () => { requests++; return new Promise(resolve => { finish = resolve; }); } });
+  const records = await seed(h.outbox, 1, h.now());
+  const pending = h.manager.flush();
+  await new Promise(setImmediate);
+  const deadline = h.scheduled.find(timer => timer.delay === 40000 && !timer.cancelled);
+  assert.ok(deadline);
+  h.setNow(h.now() + 23000);
+  assert.equal(await h.manager.flush(), false);
+  assert.equal(requests, 1);
+  finish(response(200, { accepted: [records[0].event_id], duplicates: [], rejected: [] }));
+  await pending;
+  assert.equal((await h.outbox.getAll())[0].status, "synced");
+  assert.equal(deadline.cancelled, true);
+  assert.equal(h.manager.requestController, null);
 });

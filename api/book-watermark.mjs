@@ -1,4 +1,9 @@
 import sharp from "sharp";
+import { createHash } from "node:crypto";
+import { createWorkCache } from "../lib/bounded-work-cache.mjs";
+
+const watermarkedPages = createWorkCache({ maxEntries: 32, maxBytes: 16 * 1024 * 1024,
+  ttlMs: 5 * 60_000, maxPending: 16, sizeOf: value => value.byteLength });
 
 export const BOOK_WATERMARK_TEXT = "TMM Bangla Patente";
 const MAX_INPUT_PIXELS = 50_000_000;
@@ -25,6 +30,13 @@ async function getWatermarkTile(width, height) {
 }
 
 export async function watermarkMagicBookPage(input) {
+  // Fresh source bytes are still read by the protected route. Content hashing
+  // invalidates the result immediately when a page changes; JPEG settings stay identical.
+  const key = createHash("sha256").update(input).digest("hex");
+  return watermarkedPages.run(key, () => renderWatermarkedPage(input));
+}
+
+async function renderWatermarkedPage(input) {
   const image = sharp(input, {
     failOn: "error",
     limitInputPixels: MAX_INPUT_PIXELS

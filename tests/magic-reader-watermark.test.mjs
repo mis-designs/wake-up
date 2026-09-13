@@ -44,13 +44,23 @@ test("book watermarking accepts PNG bytes stored under JPG page keys", async () 
   assert.equal(metadata.height, 480);
 });
 
+test("identical book bytes reuse watermarked output; updated pages and failures never reuse it", async () => {
+  const input = await sharp({ create: { width: 240, height: 360, channels: 3, background: "#dedede" } }).jpeg().toBuffer();
+  const [a, b] = await Promise.all([watermarkMagicBookPage(input), watermarkMagicBookPage(Buffer.from(input))]);
+  assert.equal(a, b);
+  const changed = await sharp({ create: { width: 240, height: 360, channels: 3, background: "#ffffff" } }).jpeg().toBuffer();
+  assert.notDeepEqual(await watermarkMagicBookPage(changed), a);
+  await assert.rejects(watermarkMagicBookPage(Buffer.from("invalid-image")));
+  await assert.rejects(watermarkMagicBookPage(Buffer.from("invalid-image")));
+});
+
 test("the watermark exists only inside book images and not as a page overlay", () => {
   assert.doesNotMatch(script, /drawMagicBookPageWatermark|getMagicBookPageWatermarkText/u);
   assert.doesNotMatch(readFileSync(new URL("../screen-protection.js", import.meta.url), "utf8"), /watermark|TMM MAGICBOOK/u);
 });
 
 test("the PWA requests the private-book reader build", () => {
-  assert.match(index, /script\.js\?v=74-quiz-thumb/u);
-  assert.match(worker, /magicbook-pwa-v197-dictionary-sequence/u);
-  assert.match(worker, /script\.js\?v=74-quiz-thumb/u);
+  assert.match(index, /script\.js\?v=75-pending-access/u);
+  assert.match(worker, /magicbook-pwa-v201-login-pending-access/u);
+  assert.match(worker, /script\.js\?v=75-pending-access/u);
 });

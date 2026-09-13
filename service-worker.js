@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v197-dictionary-sequence";
+const CACHE_NAME = "magicbook-pwa-v201-login-pending-access";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -15,7 +15,7 @@ const STATIC_ASSETS = [
   "/loading-ui.css?v=1-shared-gif-loader",
   "/style.css?v=73-open-hand",
   "/mobile-experience.css?v=4-admin-scroll",
-  "/login-experience.css?v=3-shared-font",
+  "/login-experience.css?v=4-pending-access",
   "/login-experience.js?v=2-unibody",
   "/login-signs.mjs?v=1",
   "/greeting-view.mjs?v=1-shared-login",
@@ -49,11 +49,11 @@ const STATIC_ASSETS = [
   "/icons/exam.svg",
   "/icons/Statistics.png",
   "/icons/errors.png",
-  "/magic-dictionary.css?v=1.4.0-dictionary-sequence",
+  "/magic-dictionary.css?v=1.4.1-dictionary-cleanup",
   "/screen-protection.css?v=1.1.0",
   "/offline-notice.css?v=1.0.0",
-  "/offline-notice.js?v=1.0.0",
-  "/learning-sync.js?v=2",
+  "/offline-notice.js?v=1.1.0",
+  "/learning-sync.js?v=4-sync-deadlines",
   "/italian-display.js?v=1",
   "/audio-focus.js?v=1-resumable-tts",
   "/src/learning-insights.css?v=9-card-spacing&ui=10",
@@ -62,7 +62,7 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=56-web-open-paper",
   "/audio-player-ui.css?v=6-admin-unified",
   "/audio-player-ui.css?v=8-native-quiz",
-  "/script.js?v=74-quiz-thumb",
+  "/script.js?v=75-pending-access",
   "/study-quiz.html",
   "/study-quiz.css?v=26-numberless-figures",
   "/study-quiz.js?v=27-audio-speed",
@@ -74,7 +74,7 @@ const STATIC_ASSETS = [
   "/patenteContextResolverV3.js?v=4.0.0-glossary-display",
   "/quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity",
   "/quiz-help-preview.js?v=1-personal-bangla-preview",
-  "/magic-dictionary.js?v=1.4.0-dictionary-sequence",
+  "/magic-dictionary.js?v=1.4.1-dictionary-cleanup",
   "/screen-protection.js?v=1.2.0",
   "/icons/no-internet.gif",
   "/icons/explain_quiz.svg",
@@ -97,13 +97,37 @@ const STATIC_ASSETS = [
   "/assets/fonts/ekushey-lal-sabuj/ekushey-lal-sabuj-regular.woff2?v=1"
 ];
 
+// Only explicitly versioned, bundled public files are immutable for a release.
+// HTML, APIs, manifests, mutable images and explicit reload/no-store requests
+// keep their existing network-first behavior.
+const VERSIONED_STATIC_ASSETS = new Set(STATIC_ASSETS.filter(asset => {
+  const url = new URL(asset, self.location.origin);
+  return url.searchParams.has("v") && /\.(?:js|mjs|css|woff2?|ttf|png|jpe?g|svg|webp|gif)$/i.test(url.pathname);
+}));
+function reusableStaticResponse(response) {
+  return response?.ok && !/\b(?:private|no-store)\b/i.test(response.headers.get("Cache-Control") || "");
+}
+
+async function installStaticAssets() {
+  const cache = await caches.open(CACHE_NAME);
+  const previous = (await caches.keys()).filter(key => key.startsWith("magicbook-pwa-") && key !== CACHE_NAME);
+  await Promise.allSettled(STATIC_ASSETS.map(async asset => {
+    if (VERSIONED_STATIC_ASSETS.has(asset)) {
+      for (const key of previous) {
+        const saved = await (await caches.open(key)).match(asset);
+        if (reusableStaticResponse(saved)) {
+          await cache.put(asset, saved);
+          return;
+        }
+      }
+    }
+    await cache.add(asset);
+  }));
+}
+
 self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => Promise.allSettled(
-        STATIC_ASSETS.map(asset => cache.add(asset))
-      ))
-      .catch(() => {})
+    installStaticAssets().catch(() => {})
   );
   self.skipWaiting();
 });
@@ -112,7 +136,7 @@ self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys => Promise.all(
       keys
-        .filter(key => key !== CACHE_NAME)
+        .filter(key => key.startsWith("magicbook-pwa-") && key !== CACHE_NAME)
         .map(key => caches.delete(key))
     ))
   );
@@ -124,6 +148,27 @@ self.addEventListener("fetch", event => {
   const url = new URL(request.url);
 
   if (request.method !== "GET" || url.pathname.startsWith("/api/")) return;
+
+  if (url.origin === self.location.origin && request.mode !== "navigate"
+    && !["reload", "no-store", "no-cache"].includes(request.cache)
+    && !request.headers.has("Authorization")
+    && VERSIONED_STATIC_ASSETS.has(url.pathname + url.search)) {
+    event.respondWith((async () => {
+      let cache;
+      let saved;
+      try {
+        cache = await caches.open(CACHE_NAME);
+        saved = await cache.match(request);
+      } catch (_) { /* Private mode/quota errors must not prevent an online load. */ }
+      if (reusableStaticResponse(saved)) return saved;
+      const response = await fetch(request);
+      if (cache && reusableStaticResponse(response)) {
+        event.waitUntil(cache.put(request, response.clone()).catch(() => {}));
+      }
+      return response;
+    })());
+    return;
+  }
 
   if (request.mode === "navigate" && (url.pathname === "/index.html" || url.pathname === "/quiz.html")) {
     event.respondWith(Response.redirect("/", 302));

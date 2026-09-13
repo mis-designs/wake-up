@@ -30,7 +30,13 @@ $excludedDirectories = @(
   (Join-Path $projectRoot "dist"),
   (Join-Path $projectRoot ".claude"),
   (Join-Path $projectRoot ".agents"),
-  (Join-Path $projectRoot ".codex")
+  (Join-Path $projectRoot ".codex"),
+  (Join-Path $projectRoot ".codex-remote-attachments"),
+  (Join-Path $projectRoot ".attachments"),
+  (Join-Path $projectRoot ".ssh"),
+  (Join-Path $projectRoot ".aws"),
+  (Join-Path $projectRoot ".azure"),
+  (Join-Path $projectRoot ".config/gcloud")
 )
 
 $excludedFiles = @(
@@ -44,6 +50,15 @@ $excludedFiles = @(
   "*.pfx",
   "*.jks",
   "*.keystore",
+  "*.p8",
+  "id_rsa*",
+  "id_ed25519*",
+  "id_dsa*",
+  "id_ecdsa*",
+  ".clasp.json",
+  ".clasprc*.json",
+  "application_default_credentials.json",
+  "service_account*.json",
   "credentials*.json",
   "service-account*.json",
   ".npmrc",

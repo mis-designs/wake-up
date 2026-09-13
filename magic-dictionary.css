@@ -458,14 +458,6 @@ body.magic-word-gate-open {
   backdrop-filter: blur(10px);
 }
 
-.magic-dictionary-header small {
-  display: block;
-  margin-bottom: 3px;
-  color: #64748b;
-  font: 800 9px/1 Inter, sans-serif;
-  letter-spacing: 0.14em;
-}
-
 .magic-dictionary-header h1 {
   margin: 0;
   color: var(--magic-ink);
@@ -647,14 +639,6 @@ body.magic-word-gate-open {
   box-sizing: border-box;
 }
 
-.magic-dictionary-word small {
-  display: block;
-  margin-bottom: 8px;
-  color: #64748b;
-  font: 800 8px/1 Inter, sans-serif;
-  letter-spacing: 0.12em;
-}
-
 .magic-dictionary-word h3 {
   margin: 0;
   color: var(--magic-ink);
@@ -812,7 +796,6 @@ body.magic-word-gate-open {
   .magic-word-gate-content h2 { font-size: 29px; }
 
   .magic-dictionary-header { grid-template-columns: 40px minmax(0, 1fr); }
-  .magic-dictionary-header > div small { display: none; }
   .magic-dictionary-header h1 { font-size: 16px; }
   .magic-dictionary-practice { grid-column: 1 / -1; width: 100%; }
   .magic-dictionary-hero { grid-template-columns: 1fr; gap: 17px; }
@@ -1339,15 +1322,6 @@ body.magic-word-gate-open {
   min-width: 0;
 }
 
-.magic-dictionary-word small {
-  margin-bottom: 6px;
-  color: #7258d8;
-}
-
-.magic-dictionary-word.is-phrase small {
-  color: #bd6b18;
-}
-
 .magic-dictionary-word h3 {
   color: #171b2f;
   font-size: 17px;
@@ -1454,7 +1428,6 @@ html[data-native-motion-paused] #magicDictionaryMore.is-animating:not(.is-icon-m
     padding-left: 12px;
   }
   .magic-dictionary-header h1 { font-size: 18px; }
-  .magic-dictionary-header > div small { display: block; }
   .magic-dictionary-language-badge { padding: 7px 9px; }
   .magic-dictionary-main { width: min(100% - 22px, 680px); padding-top: 12px; }
   .magic-dictionary-overview,
@@ -1514,21 +1487,25 @@ html[data-native-motion-paused] #magicDictionaryMore.is-animating:not(.is-icon-m
   color: var(--dictionary-violet-dark);
   background: transparent;
   cursor: pointer;
-  transition: background 160ms ease, border-color 160ms ease;
   box-shadow: none;
 }
 .magic-dictionary-audio:hover,
+.magic-dictionary-audio:active,
 .magic-dictionary-audio.is-playing {
-  background: color-mix(in srgb, var(--dictionary-violet) 9%, var(--dictionary-surface));
-  border-color: var(--dictionary-border);
+  background: transparent;
+  border-color: transparent;
   box-shadow: none;
+  /* Keep the hit area stationary; only the icon gives pointer feedback. */
+  transform: none;
 }
-.magic-dictionary-audio:active { background: color-mix(in srgb, var(--dictionary-violet) 15%, var(--dictionary-surface)); box-shadow: none; }
 .magic-dictionary-audio:focus-visible {
   outline: 3px solid var(--dictionary-violet);
   outline-offset: 2px;
 }
 .magic-dictionary-audio img { width: 28px; height: 28px; object-fit: contain; }
+.magic-dictionary-audio-icon { transition: opacity 160ms ease; }
+.magic-dictionary-audio:hover .magic-dictionary-audio-icon { opacity: 0.7; }
+.magic-dictionary-audio:active .magic-dictionary-audio-icon { opacity: 0.5; }
 .magic-dictionary-audio-fallback { display: none; font: 700 12px/1 Inter, sans-serif; }
 .magic-dictionary-audio.is-icon-missing .magic-dictionary-audio-icon { visibility: hidden; }
 .magic-dictionary-audio.is-icon-missing .magic-dictionary-audio-fallback { display: block; position: absolute; }
@@ -1560,9 +1537,12 @@ html[data-native-motion-paused] #magicDictionaryMore.is-animating:not(.is-icon-m
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .magic-dictionary-audio { transition: none; }
+  .magic-dictionary-audio-icon { transition: none; }
 }
 @media (forced-colors: active) {
-  .magic-dictionary-audio { border-color: ButtonText; }
+  .magic-dictionary-audio,
+  .magic-dictionary-audio:hover,
+  .magic-dictionary-audio:active,
+  .magic-dictionary-audio.is-playing { border-color: ButtonText; }
   .magic-dictionary-audio.is-playing { outline: 2px solid Highlight; }
 }

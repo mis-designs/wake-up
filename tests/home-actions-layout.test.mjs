@@ -35,6 +35,6 @@ test("the dictionary entry keeps its badge and bilingual copy separated", () => 
 
 test("the desktop home layout ships in a fresh PWA build", () => {
   assert.match(page, /style\.css\?v=73-open-hand/u);
-  assert.match(worker, /magicbook-pwa-v197-dictionary-sequence/u);
+  assert.match(worker, /magicbook-pwa-v201-login-pending-access/u);
   assert.match(worker, /style\.css\?v=73-open-hand/u);
 });

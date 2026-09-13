@@ -226,3 +226,26 @@ test("an incomplete Apps Script result is retried instead of losing an uncertain
   assert.equal(res.headers["retry-after"], "5");
   assert.equal(res.body.error, "incomplete_learning_database_response");
 });
+
+test("Apps Script lock contention preserves its 15-second client backoff", async () => {
+  globalThis.fetch = async () => new Response(JSON.stringify({ success: false, error: "busy", retryAfterSeconds: 15 }));
+  const res = await invoke({ events: [answerEvent(1)] });
+  assert.equal(res.statusCode, 503);
+  assert.equal(res.headers["retry-after"], "15");
+});
+
+test("a 23-second Google response succeeds without the former 12-second timeout", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const event = answerEvent(1);
+  globalThis.fetch = (_url, options) => new Promise((resolve, reject) => {
+    options.signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+    setTimeout(() => resolve(new Response(JSON.stringify({
+      success: true, accepted: [event.event_id], duplicates: [], rejected: []
+    }))), 23000);
+  });
+  const pending = invoke({ events: [event] });
+  t.mock.timers.tick(23000);
+  const res = await pending;
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body.accepted, [event.event_id]);
+});
