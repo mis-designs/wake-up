@@ -31,6 +31,6 @@ test('web question numbers reserve space for a bounded shadow and focus ring',()
   assert.match(variant,/--quiz-web-dot-shadow: 0 2px 5px color-mix\(in srgb, var\(--color-dark\) 18%, transparent\)/);
   assert.match(variant,/\.progress-dot--current \{\s*transform: none;\s*box-shadow: var\(--quiz-web-dot-shadow\)/);
   assert.match(variant,/\.progress-dot:focus-visible \{[^}]*outline: 2px solid var\(--color-primary\);[^}]*outline-offset: 3px;/s);
-  assert.match(read('quiz.html'),/mystyle\.css\?v=56-web-open-paper/);
-  assert.match(read('service-worker.js'),/magicbook-pwa-v201-login-pending-access/);
+  assert.match(read('quiz.html'),/mystyle\.css\?v=57-whole-words/);
+  assert.match(read('service-worker.js'),/magicbook-pwa-v202-quiz-whole-words/);
 });

@@ -132,6 +132,8 @@ Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what 
 
 ## Accessibility and validation
 
+- Quiz question copy wraps only between complete words, without automatic/soft hyphenation or forced mid-word breaks. `mystyle.css` owns live Quiz/Exam and result review, `quiz-help.css` the source question in the translation reader, and `study-quiz.css` Studia quiz. Apply identically to web and installed Android, including Safari's prefixed hyphenation property; keep original text, fonts, reader sizes, controls and platform layouts unchanged.
+
 - Route entry focuses `#learningInsightsHeading`; background refresh does not steal focus. Re-rendered tabs, chapter cells, disclosure controls, and close actions restore focus.
 - Tabs implement Left/Right/Home/End. Selected and expanded controls expose matching ARIA state/control relationships.
 - Status is expressed with text and color. Interactive targets are at least 40–44px, focus is visible, and reduced-motion/forced-colors modes are supported.

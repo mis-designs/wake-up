@@ -92,9 +92,9 @@ test("study explanation players reuse the supplied artwork with stable responsiv
   assert.match(styles, /\.study-explanation-artwork\s*\{[^}]*width:\s*50px[^}]*height:\s*50px[^}]*animation-play-state:\s*paused/u);
   assert.match(styles, /@media \(max-width: 430px\)[\s\S]*?\.study-explanation-artwork\s*\{[^}]*flex-basis:\s*44px[^}]*width:\s*44px[^}]*height:\s*44px/u);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.study-explanation-artwork\s*\{\s*animation:\s*none/u);
-  assert.match(page, /study-quiz\.css\?v=26-numberless-figures/u);
+  assert.match(page, /study-quiz\.css\?v=27-whole-words/u);
   assert.match(page, /study-quiz\.js\?v=27-audio-speed/u);
-  assert.match(worker, /magicbook-pwa-v201-login-pending-access/u);
+  assert.match(worker, /magicbook-pwa-v202-quiz-whole-words/u);
   assert.match(worker, /\/icons\/explain_quiz\.svg/u);
 });
 

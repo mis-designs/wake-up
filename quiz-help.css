@@ -191,9 +191,10 @@ body.quiz-help-fullscreen-open { overflow: hidden; }
   margin: 0;
   font: 400 1rem/1.5 Arial, sans-serif;
   color: var(--app-palette-text);
+  -webkit-hyphens: none;
   hyphens: none;
   word-break: normal;
-  overflow-wrap: break-word;
+  overflow-wrap: normal;
 }
 .quiz-help-workspace.is-fullscreen .figure-wrap {
   width: 100%;

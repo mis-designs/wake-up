@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v201-login-pending-access";
+const CACHE_NAME = "magicbook-pwa-v202-quiz-whole-words";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -59,16 +59,16 @@ const STATIC_ASSETS = [
   "/src/learning-insights.css?v=9-card-spacing&ui=10",
   "/src/learning-insights.js?v=9-session-storage-recovery&ui=9-intact-figures",
   "/homebg.css?v=3",
-  "/mystyle.css?v=56-web-open-paper",
+  "/mystyle.css?v=57-whole-words",
   "/audio-player-ui.css?v=6-admin-unified",
   "/audio-player-ui.css?v=8-native-quiz",
   "/script.js?v=75-pending-access",
   "/study-quiz.html",
-  "/study-quiz.css?v=26-numberless-figures",
+  "/study-quiz.css?v=27-whole-words",
   "/study-quiz.js?v=27-audio-speed",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=85-audio-speed",
-  "/quiz-help.css?v=20260912-thumb-close",
+  "/quiz-help.css?v=20260914-whole-words",
   "/quiz-help.js?v=20260910-phone-help",
   "/patenteGlossaryResolver.js?v=1.0.0",
   "/patenteContextResolverV3.js?v=4.0.0-glossary-display",

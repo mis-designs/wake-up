@@ -71,8 +71,9 @@ test("question copy reflows and the explanation action keeps an accessible targe
   const explanation = cssBlock(quizStyles, ".quiz-question-actions .explanation-btn");
 
   assert.match(question, /min-width:\s*0;/u);
-  assert.match(question, /overflow-wrap:\s*break-word;/u);
-  assert.match(question, /hyphens:\s*auto;/u);
+  const reading = cssBlock(quizStyles, ".modal-review-question");
+  assert.match(reading, /overflow-wrap:\s*normal;/u);
+  assert.match(reading, /hyphens:\s*none;/u);
   assert.match(explanation, /min-height:\s*44px;/u);
   assert.match(explanation, /height:\s*44px;/u);
   assert.match(quizStyles, /\.explanation-btn:focus-visible\s*\{[^}]*outline:\s*3px solid #263bd4;/su);

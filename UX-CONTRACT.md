@@ -133,6 +133,8 @@
 
 ## Responsive behavior
 
+- Italian quiz questions remain whole-word at line breaks: no automatic or soft-hyphen splitting and no forced letter wrapping. The same rule covers live Quiz/Exam, correction, the translation reader's source question and Studia quiz on both platforms. Source text and reading controls remain unchanged; verify the owner's “liquido / raffreddamento / motore” example on narrow screens and larger reader presets.
+
 - Browser Home OPEN reuses the supplied Android hand and shared CSS tap timeline, with a2.8s browser cadence. The absolute decorative cue cannot intercept pointer/keyboard input, resize the action or change `showChapters()` routing. It hides during interaction, unavailable/launch states, reduced motion and forced colors; leaving Home removes it with the existing route. Native Home keeps its original5s gesture.
 - Installed rotary Home has no tap hint or visible pause button. Its locally persisted animation control is in the existing Profile panel, only while this app-only shell is active. Reduced-motion remains static.
 - Installed Home greetings use a fixed44px rail: `আসসালামু আলাইকুম` in Hadi Rounded with lang=bn, local-time greeting and Ciao in Norwester. Shared web/Android login now uses the distinct owner-approved unibody sign composition: no greeting rail or large brand heading. The phone label and login heading remain accessible, with authentication unchanged. The hand repeats every5s, black below the book and white over it. Bent arrows fade along mirrored arcs every3.8s; they hide during rotation and return after4.5s idle. These supplied SVGs are decorative, non-interactive and motion-safe. A stationary tap on a numbered arc remains the pointer alternative to dragging; cancellation never launches.

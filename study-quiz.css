@@ -98,7 +98,7 @@ body.study-trial-mode .study-header{border-bottom-color:rgba(217,155,22,.35);box
 .study-answer.is-false { background: #ffeaeb; color: #b42c3b; }
 .study-figure-frame { position: relative; width: min(300px, 100%); margin: 0 auto 18px; overflow: hidden; border-radius: 16px; background: #fff; }
 .study-figure { display: block; width: 100%; max-height: 240px; object-fit: contain; background: #fff; }
-.study-question-text { margin: 0; color: #101b30; font-size: clamp(1rem, 2.2vw, 1.18rem); font-weight: 750; line-height: 1.58; }
+.study-question-text { margin: 0; color: #101b30; font-size: clamp(1rem, 2.2vw, 1.18rem); font-weight: 750; line-height: 1.58; -webkit-hyphens: none; hyphens: none; word-break: normal; overflow-wrap: normal; }
 .study-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
 .study-action { display: inline-flex; min-height: 42px; align-items: center; gap: 8px; border: 1px solid #dce3ed; border-radius: 999px; padding: 8px 13px; background: #fff; color: #2b3a54; font-size: .75rem; font-weight: 850; cursor: pointer; box-shadow: 0 3px 10px rgba(29, 43, 72, .035); transition: transform .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease; }
 .study-action:hover:not(:disabled), .study-action:focus-visible { border-color: #8bce84; outline: none; background: #f0faed; transform: translateY(-1px); }

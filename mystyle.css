@@ -511,6 +511,15 @@ body.loading-open {
   100% { background-position: -100% 0; }
 }
 
+/* Keep Italian question words intact in live Quiz/Exam and result review. */
+#question,
+.modal-review-question {
+  -webkit-hyphens: none;
+  hyphens: none;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
 #question {
   width: 100%;
   min-width: 0;
@@ -524,8 +533,6 @@ body.loading-open {
   line-height: 1.48;
   color: var(--color-text);
   text-align: left;
-  overflow-wrap: break-word;
-  hyphens: auto;
   cursor: pointer;
 }
 
@@ -2575,7 +2582,6 @@ html.android-webview .quiz-page.quiz-focus .question-area {
 html.android-webview .quiz-page.quiz-focus #question {
   flex: 1 0 auto; display: grid; align-content: start;
   padding-block: 8px; color: var(--app-palette-text);
-  hyphens: none; word-break: normal; overflow-wrap: break-word;
 }
 html.android-webview .quiz-page.quiz-focus #question[aria-expanded="true"] { flex-grow: 0; }
 html.android-webview .quiz-page.quiz-focus .quiz-question-content {
