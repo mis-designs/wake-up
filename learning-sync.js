@@ -9,6 +9,8 @@
     databaseVersion: 2,
     outboxStoreName: "learning_outbox",
     insightsStoreName: "learning_insights_cache",
+    insightsBackupPrefix: "magicbook.learning.insights.v1.",
+    maxInsightsBackupBytes: 512_000,
     endpoint: "/api/learning-sync",
     maxBatchSize: 25,
     flushIntervalMs: 15_000,
@@ -124,9 +126,16 @@
             database.createObjectStore(LEARNING_SYNC_CONFIG.insightsStoreName, { keyPath: "user_id" });
           }
         };
-        request.onsuccess = () => resolve(request.result);
+        let blocked = false;
+        request.onsuccess = () => {
+          const database = request.result;
+          if (blocked) { database.close(); return; }
+          // Let a new app/web version upgrade without an old tab holding the DB.
+          database.onversionchange = () => { database.close(); this.databasePromise = null; };
+          resolve(database);
+        };
         request.onerror = () => reject(request.error || new Error("indexeddb_open_failed"));
-        request.onblocked = () => reject(new Error("indexeddb_upgrade_blocked"));
+        request.onblocked = () => { blocked = true; reject(new Error("indexeddb_upgrade_blocked")); };
       }).catch(error => {
         this.databasePromise = null;
         this.activateMemoryFallback(error);
@@ -194,10 +203,38 @@
       }
     }
 
+    readInsightsBackup(key) {
+      try {
+        const raw = root.localStorage?.getItem(`${LEARNING_SYNC_CONFIG.insightsBackupPrefix}${key}`);
+        if (!raw || raw.length * 2 > LEARNING_SYNC_CONFIG.maxInsightsBackupBytes) return null;
+        const record = JSON.parse(raw);
+        return record?.user_id === key && record.model && Number.isFinite(record.cached_at)
+          ? { ...record, storage: "localStorage" } : null;
+      } catch { return null; }
+    }
+
+    writeInsightsBackup(key, record) {
+      try {
+        const raw = JSON.stringify(record);
+        if (!root.localStorage || raw.length * 2 > LEARNING_SYNC_CONFIG.maxInsightsBackupBytes) return false;
+        root.localStorage.setItem(`${LEARNING_SYNC_CONFIG.insightsBackupPrefix}${key}`, raw);
+        return true;
+      } catch { return false; }
+    }
+
+    insightsFallback(key) {
+      const records = [this.memoryInsights.get(key), this.readInsightsBackup(key)].filter(Boolean);
+      return records.sort((a, b) => b.cached_at - a.cached_at)[0] || null;
+    }
+
     async getInsightsCache(userId) {
       const key = normalizedUserId(userId);
       if (!key) return null;
-      if (this.useMemoryFallback) return this.memoryInsights.get(key) || null;
+      if (this.useMemoryFallback) return this.insightsFallback(key);
+      // The same small user-scoped snapshot stays readable even while IndexedDB
+      // is blocked. Never copy access tokens, auth state or the answer outbox.
+      const fallback = this.insightsFallback(key);
+      if (fallback) return fallback;
       try {
         const database = await this.open();
         const transaction = database.transaction(LEARNING_SYNC_CONFIG.insightsStoreName, "readonly");
@@ -205,10 +242,14 @@
           transaction.objectStore(LEARNING_SYNC_CONFIG.insightsStoreName).get(key)
         );
         await transactionDone(transaction);
-        return value || null;
+        if (value) {
+          this.memoryInsights.set(key, { ...value, storage: "indexedDB" });
+          this.writeInsightsBackup(key, value);
+        }
+        return value ? { ...value, storage: "indexedDB" } : null;
       } catch (error) {
         this.activateMemoryFallback(error);
-        return this.memoryInsights.get(key) || null;
+        return this.insightsFallback(key);
       }
     }
 
@@ -216,20 +257,21 @@
       const key = normalizedUserId(userId);
       if (!key || !model || typeof model !== "object") return false;
       const record = { user_id: key, cached_at: this.now(), model };
+      const backedUp = this.writeInsightsBackup(key, record);
+      this.memoryInsights.set(key, { ...record, storage: backedUp ? "localStorage" : "memory" });
       if (this.useMemoryFallback) {
-        this.memoryInsights.set(key, record);
-        return true;
+        return backedUp;
       }
       try {
         const database = await this.open();
         const transaction = database.transaction(LEARNING_SYNC_CONFIG.insightsStoreName, "readwrite");
         transaction.objectStore(LEARNING_SYNC_CONFIG.insightsStoreName).put(record);
         await transactionDone(transaction);
+        this.memoryInsights.set(key, { ...record, storage: "indexedDB" });
         return true;
       } catch (error) {
         this.activateMemoryFallback(error);
-        this.memoryInsights.set(key, record);
-        return true;
+        return backedUp;
       }
     }
 

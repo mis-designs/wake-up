@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v202-quiz-whole-words";
+const CACHE_NAME = "magicbook-pwa-v203-liquid-learning";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -24,8 +24,9 @@ const STATIC_ASSETS = [
   "/android-app-theme.css?v=10-shared-login",
   "/android-app-theme.css?v=11-shared-quiz",
   "/assets/fonts/magicbook-latin-fonts.css?v=1",
-  "/android-study-shell.css?v=19-open-hand",
-  "/android-study-shell.js?v=13-shared-login",
+  "/android-study-shell.css?v=20-liquid",
+  "/android-study-shell.js?v=14-liquid",
+  "/native-liquid-progress.mjs?v=1",
   "/android-mode-screens.css?v=2-thumb",
   "/android-mode-screens.js?v=2-thumb",
   "/icons/native-chapter-clover.svg",
@@ -53,11 +54,11 @@ const STATIC_ASSETS = [
   "/screen-protection.css?v=1.1.0",
   "/offline-notice.css?v=1.0.0",
   "/offline-notice.js?v=1.1.0",
-  "/learning-sync.js?v=4-sync-deadlines",
+  "/learning-sync.js?v=5-insights-backup",
   "/italian-display.js?v=1",
   "/audio-focus.js?v=1-resumable-tts",
   "/src/learning-insights.css?v=9-card-spacing&ui=10",
-  "/src/learning-insights.js?v=9-session-storage-recovery&ui=9-intact-figures",
+  "/src/learning-insights.js?v=10-local-backup&ui=9-intact-figures",
   "/homebg.css?v=3",
   "/mystyle.css?v=57-whole-words",
   "/audio-player-ui.css?v=6-admin-unified",

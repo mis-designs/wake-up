@@ -13,8 +13,10 @@ function harness({ offline = false, cache = null, response } = {}) {
     MagicBookLearningSync: { getInsightsCache: async () => cache, getLocalEvents: async () => [], setInsightsCache: async (...args) => writes.push(args) },
     fetch: async (...args) => { calls.push(args); return response ? response(...args) : { ok: true, status: 200, json: async () => model }; }
   };
-  vm.runInNewContext(source, { window: root, DOMException, AbortController });
-  return { root, storage, writes, calls, read: root.MagicBookLearningInsights.readProgress };
+  const clock = { now: Date.now() };
+  class TestDate extends Date { static now() { return clock.now; } }
+  vm.runInNewContext(source, { window: root, DOMException, AbortController, Date: TestDate });
+  return { root, storage, writes, calls, clock, read: root.MagicBookLearningInsights.readProgress };
 }
 
 test("dock progress shares authenticated POST and user-scoped cache", async () => {
@@ -127,4 +129,37 @@ test("leaving during a stalled renewal cancels the learning read", async () => {
   h.root.ensureAccessToken = () => { queueMicrotask(() => controller.abort()); return new Promise(() => {}); };
   await assert.rejects(h.read({ signal: controller.signal }), { name: 'AbortError' });
   assert.equal(h.calls.length, 1); assert.equal(h.writes.length, 0);
+});
+
+test("recent dock/screen navigation reuses the validated response without refreshing its storage timestamp", async () => {
+  const h = harness();
+  await h.read(); await h.read(); await h.read();
+  assert.equal(h.calls.length, 1);
+  assert.equal(h.writes.length, 1);
+});
+
+test("new answers or identity invalidate recent progress", async () => {
+  const h = harness();
+  await h.read();
+  h.root.MagicBookLearningSync.getLocalEvents = async () => [{ user_id: '3310000000', event_id: 'new-answer', event_type: 'answer_event', status: 'pending', payload: {} }];
+  await h.read();
+  assert.equal(h.calls.length, 2);
+  h.storage.set('accessToken', 'new-token');
+  await h.read();
+  assert.equal(h.calls.length, 3);
+});
+
+test("403 also rejects a saved private progress snapshot", async () => {
+  const h = harness({ cache: { model }, response: async () => ({ ok: false, status: 403, json: async () => ({ error: 'forbidden' }) }) });
+  await assert.rejects(h.read(), /progress_auth_required/);
+  assert.equal(h.writes.length, 0);
+});
+
+test("recent data expires after one minute, including a backwards device-clock change", async () => {
+  const h = harness();
+  await h.read();
+  h.clock.now += 60_000;
+  await h.read(); assert.equal(h.calls.length, 2);
+  h.clock.now -= 120_000;
+  await h.read(); assert.equal(h.calls.length, 3);
 });

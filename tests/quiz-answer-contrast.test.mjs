@@ -15,6 +15,6 @@ test("selected answer labels use dark text on the bright accent background", () 
 
 test("the answer contrast fix ships with a fresh stylesheet cache key", () => {
   assert.match(page, /mystyle\.css\?v=57-whole-words/u);
-  assert.match(worker, /magicbook-pwa-v202-quiz-whole-words/u);
+  assert.match(worker, /magicbook-pwa-v203-liquid-learning/u);
   assert.match(worker, /mystyle\.css\?v=57-whole-words/u);
 });

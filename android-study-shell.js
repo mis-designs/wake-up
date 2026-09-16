@@ -1,5 +1,6 @@
 import { ChapterDial, clampChapter, chapterAtAngle, dialLabelPosition, homeGreetings, progressValue } from "./android-rotary-model.mjs?v=8-bangla-greetings";
 import { renderGreeting } from "./greeting-view.mjs?v=1-shared-login";
+import { createLiquidProgress } from "./native-liquid-progress.mjs?v=1";
 
 // Runtime gate is the native shell marker, not screen size or standalone/PWA mode.
 const doc = document;
@@ -65,7 +66,14 @@ function initialize() {
   let cueTimer = 0;
   let titleAnimation = null;
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+  const forcedColors = matchMedia("(forced-colors: active)");
   const motionAllowed = () => !reducedMotion.matches && !html.hasAttribute("data-native-motion-paused");
+  const liquid = createLiquidProgress(progress);
+  const syncLiquid = () => liquid.setActive(Boolean(screen && !doc.hidden && !dock.inert && !forcedColors.matches), motionAllowed());
+  reducedMotion.addEventListener("change", syncLiquid);
+  forcedColors.addEventListener("change", syncLiquid);
+  const liquidMotionObserver = new MutationObserver(syncLiquid);
+  liquidMotionObserver.observe(html, { attributes: true, attributeFilter: ["data-native-motion-paused"] });
   const lastFeedback = { selection: -1000, boundary: -1000 };
   let suppressActionsUntil = 0;
   let covers = {};
@@ -410,25 +418,29 @@ function initialize() {
     const value = progressValue(result?.model);
     if (value === null) return false;
     const rounded = Math.round(value);
+    const sourceLabel = result.cached ? (result.storage === "memory" ? ", ultimi dati della sessione" : ", copia salvata") : "";
     progress.setAttribute("aria-valuenow", String(rounded));
-    progress.setAttribute("aria-valuetext", `${rounded}% dei quiz affrontati${result.cached ? ", copia salvata" : ""}`);
+    progress.setAttribute("aria-valuetext", `${rounded}% dei quiz affrontati${sourceLabel}`);
     dock.style.setProperty("--native-progress", `${value}%`);
+    liquid.setValue(value);
     progressLabel.textContent = `Quiz · ${rounded}%${result.cached ? " *" : ""}`;
-    progressButton.setAttribute("aria-label", `${rounded}% dei quiz affrontati${result.cached ? ", copia salvata" : ""}. Apri Statistiche`);
-    progressStatus.textContent = `${rounded}% dei quiz affrontati.${result.cached ? " Dati salvati: aggiornamento in attesa." : ""}`;
+    progressButton.setAttribute("aria-label", `${rounded}% dei quiz affrontati${sourceLabel}. Apri Statistiche`);
+    progressStatus.textContent = `${rounded}% dei quiz affrontati.${result.cached ? (result.storage === "memory" ? " Ultimi dati disponibili in questa sessione." : " Dati salvati: aggiornamento in attesa.") : ""}`;
     return true;
   }
 
   async function refreshProgress() {
     controller?.abort();
     const version = ++requestVersion;
-    controller = new AbortController();
-    const signal = controller.signal;
-    const timeout = setTimeout(() => { if (!signal.aborted) controller?.abort(); }, 14000);
+    const requestController = new AbortController();
+    controller = requestController;
+    const signal = requestController.signal;
+    const timeout = setTimeout(() => requestController.abort(), 14000);
     let cached = false;
     progress.removeAttribute("aria-valuenow");
     progress.removeAttribute("aria-valuetext");
     dock.style.setProperty("--native-progress", "0%");
+    liquid.setValue(null);
     progressLabel.textContent = "Studio · …";
     progressButton.setAttribute("aria-label", "Avanzamento in caricamento. Apri Statistiche");
     try {
@@ -443,6 +455,7 @@ function initialize() {
         progress.removeAttribute("aria-valuenow");
         progress.removeAttribute("aria-valuetext");
         dock.style.setProperty("--native-progress", "0%");
+        liquid.setValue(null);
         progressLabel.textContent = "Studio · —";
         progressButton.setAttribute("aria-label", "Dati studio non disponibili. Apri Statistiche per riprovare");
         progressStatus.textContent = "Avanzamento non disponibile. Apri Statistiche per riprovare.";
@@ -467,6 +480,7 @@ function initialize() {
     }
     app.prepareUtilities();
     dock.hidden = false;
+    syncLiquid();
     syncDockSpace();
     if (screen === "home") showGreeting();
     if (screen === "chapters") delete chapters.dataset.rotaryUsed;
@@ -490,10 +504,12 @@ function initialize() {
     requestVersion++;
     delete html.dataset.nativeStudyScreen;
     dock.hidden = true;
+    syncLiquid();
     utilityAnchors.forEach((anchor, button) => anchor.after(button));
   }
   doc.addEventListener("visibilitychange", () => {
     html.toggleAttribute("data-native-background", doc.hidden);
+    syncLiquid();
     if (doc.hidden) {
       clearActionPress();
       finishGesture(model.gesture?.pointerId);
@@ -508,6 +524,7 @@ function initialize() {
     const modal = doc.body.classList.contains("qms-open") || doc.body.classList.contains("magic-word-gate-open");
     if (modal) { finishGesture(); clearActionPress(); }
     [home, chapters, dock].forEach(element => { element.inert = modal; });
+    syncLiquid();
   };
   new MutationObserver(syncModalIsolation).observe(doc.body, { attributes: true, attributeFilter: ["class"] });
   syncModalIsolation();
@@ -519,7 +536,17 @@ function initialize() {
       doc.getElementById("profileBtn")?.focus({ preventScroll: true });
     }
   });
-  window.addEventListener("pagehide", hide);
+  window.addEventListener("pagehide", event => {
+    hide();
+    // BFCache keeps the mounted owner for pageshow; a final unload releases GPU
+    // resources and the renderer's window/preference listeners explicitly.
+    if (!event.persisted) {
+      liquid.destroy();
+      liquidMotionObserver.disconnect();
+      reducedMotion.removeEventListener("change", syncLiquid);
+      forcedColors.removeEventListener("change", syncLiquid);
+    }
+  });
   window.addEventListener("pageshow", event => {
     if (event.persisted && ["home", "chapters"].includes(app.screen())) show(app.screen());
   });

@@ -70,6 +70,62 @@ function loadLearningSyncRuntime() {
   return { window, scheduled, listeners, api: window.MagicBookLearningSync };
 }
 
+test("insights backup survives a new outbox when IndexedDB is unavailable", async () => {
+  const { api } = loadLearningSyncRuntime();
+  const first = new api.__testing.LearningOutbox({ indexedDb: null });
+  assert.equal(await first.setInsightsCache('3310000000', { success: true, marker: 42 }), true);
+  const reopened = new api.__testing.LearningOutbox({ indexedDb: null });
+  const cache = await reopened.getInsightsCache('3310000000');
+  assert.equal(cache.model.marker, 42);
+  assert.equal(cache.storage, 'localStorage');
+  assert.equal(await reopened.getInsightsCache('3320000000'), null);
+});
+
+test("saved snapshot does not wait for a blocked IndexedDB open", async () => {
+  const { api } = loadLearningSyncRuntime();
+  const first = new api.__testing.LearningOutbox({ indexedDb: null });
+  await first.setInsightsCache('3310000000', { success: true, marker: 42 });
+  const reopened = new api.__testing.LearningOutbox({ indexedDb: { open() { assert.fail('snapshot should be immediately readable'); } } });
+  assert.equal((await reopened.getInsightsCache('3310000000')).model.marker, 42);
+});
+
+test("blocked/quota-limited storage remains explicitly temporary, without deleting answers", async () => {
+  const { api, window } = loadLearningSyncRuntime();
+  window.localStorage.setItem = () => { throw new Error('QuotaExceededError'); };
+  const outbox = new api.__testing.LearningOutbox({ indexedDb: null });
+  assert.equal(await outbox.setInsightsCache('3310000000', { success: true }), false);
+  assert.equal((await outbox.getInsightsCache('3310000000')).storage, 'memory');
+  assert.equal(await new api.__testing.LearningOutbox({ indexedDb: null }).getInsightsCache('3310000000'), null);
+});
+
+test("oversized snapshots and corrupt backup cannot break loading", async () => {
+  const { api, window } = loadLearningSyncRuntime();
+  const outbox = new api.__testing.LearningOutbox({ indexedDb: null });
+  assert.equal(await outbox.setInsightsCache('3310000000', { text: 'a'.repeat(512_000) }), false);
+  window.localStorage.setItem(`${api.config.insightsBackupPrefix}3320000000`, '{broken');
+  assert.equal(await outbox.getInsightsCache('3320000000'), null);
+});
+
+test("an old IndexedDB connection closes on version changes", async () => {
+  const { api } = loadLearningSyncRuntime();
+  let request, closed = 0;
+  const database = { close() { closed++; } };
+  const outbox = new api.__testing.LearningOutbox({ indexedDb: { open() { request = { result: database }; return request; } } });
+  const opening = outbox.open(); request.onsuccess();
+  await opening;
+  database.onversionchange();
+  assert.equal(closed, 1); assert.equal(outbox.databasePromise, null);
+});
+
+test("a late success after a blocked upgrade does not leave a leaked connection", async () => {
+  const { api } = loadLearningSyncRuntime();
+  let request, closed = 0;
+  const outbox = new api.__testing.LearningOutbox({ indexedDb: { open() { request = { result: { close() { closed++; } } }; return request; } } });
+  const opening = outbox.open(); request.onblocked();
+  await assert.rejects(opening, /indexeddb_upgrade_blocked/);
+  request.onsuccess(); assert.equal(closed, 1);
+});
+
 function response(status, body, headers = {}) {
   const normalizedHeaders = new Map(
     Object.entries(headers).map(([key, value]) => [key.toLowerCase(), String(value)])
@@ -156,9 +212,9 @@ test("quiz answers enter the outbox without awaiting sync and every app surface 
   assert.match(quizSource, /void window\.MagicBookLearningSync\.enqueueAnswer\(/u);
   assert.doesNotMatch(quizSource, /await window\.MagicBookLearningSync\.enqueueAnswer\(/u);
   [quizPage, homePage, studyPage].forEach(page => {
-    assert.match(page, /learning-sync\.js\?v=4-sync-deadlines/u);
+    assert.match(page, /learning-sync\.js\?v=5-insights-backup/u);
   });
-  assert.match(serviceWorker, /learning-sync\.js\?v=4-sync-deadlines/u);
+  assert.match(serviceWorker, /learning-sync\.js\?v=5-insights-backup/u);
 });
 
 test("the shared IndexedDB layer keeps learning-insight caches separated by user", async () => {

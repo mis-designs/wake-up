@@ -5,6 +5,7 @@
     endpoint: "/api/learning-insights",
     timeoutMs: 14_000,
     localStorageTimeoutMs: 1_500,
+    recentReadMs: 60_000,
     pageSize: 8,
     maxLocalEvents: 250,
     validLenses: ["figure", "quiz", "parole", "argomenti", "capitoli"]
@@ -22,6 +23,8 @@
     selectedChapter: 0,
     visibleCount: CONFIG.pageSize,
     userId: "",
+    deviceId: "",
+    cacheStorage: "",
     requestId: 0,
     controller: null,
     focusHeading: false
@@ -218,7 +221,7 @@
     if (!state.model) return "";
     const pending = Number(state.model.summary?.pendingLocalEvents || 0);
     const lines = [];
-    if (state.isCached) lines.push(`<strong>Dati salvati sul dispositivo.</strong> Aggiornati ${escapeHtml(formatDate(state.cachedAt || state.model.generatedAt))}.`);
+    if (state.isCached) lines.push(`<strong>${state.cacheStorage === "memory" ? "Ultimi dati disponibili in questa sessione." : "Dati salvati sul dispositivo."}</strong> Aggiornati ${escapeHtml(formatDate(state.cachedAt || state.model.generatedAt))}.`);
     if (pending) {
       lines.push(state.model.summary?.pendingLocalIncluded
         ? `${pending} ${plural(pending, "risposta recente è", "risposte recenti sono")} già inclus${pending === 1 ? "a" : "e"} e sar${pending === 1 ? "à" : "anno"} salvat${pending === 1 ? "a" : "e"} appena possibile.`
@@ -644,6 +647,7 @@
   }
 
   let authRenewal = null;
+  let recentRead = null;
   function renewLearningAccess(auth) {
     const key = `${auth.userId}:${auth.deviceId}`;
     if (authRenewal?.key === key) return authRenewal.promise;
@@ -656,8 +660,14 @@
   }
 
   // Shared authenticated read: the dock and the full statistics screen use one model.
-  async function requestInsights(auth, localEvents, signal, canRenew = true) {
+  async function requestInsights(auth, localEvents, signal, canRenew = true, force = false) {
     assertCurrent(auth, signal);
+    const key = JSON.stringify([auth.userId, auth.deviceId, auth.accessToken, localEvents]);
+    const age = recentRead ? Date.now() - recentRead.at : -1;
+    if (!force && recentRead?.key === key && age >= 0 && age < CONFIG.recentReadMs) {
+      return { response: { ok: true, status: 200 }, data: recentRead.data, auth, reused: true, receivedAt: recentRead.at };
+    }
+    recentRead = null;
     const response = await root.fetch(CONFIG.endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${auth.accessToken}` },
@@ -670,9 +680,10 @@
       const latest = readAuth();
       const renewed = latest.accessToken !== auth.accessToken || await abortable(renewLearningAccess(auth), signal);
       assertCurrent(auth, signal);
-      if (renewed) return requestInsights(readAuth(), localEvents, signal, false);
+      if (renewed) return requestInsights(readAuth(), localEvents, signal, false, force);
     }
-    return { response, data, auth };
+    if (response.ok && isModel(data)) recentRead = { key, at: Date.now(), data };
+    return { response, data, auth, receivedAt: Date.now() };
   }
 
   async function readProgress({ signal, onCached } = {}) {
@@ -681,7 +692,7 @@
     const current = () => !signal?.aborted && sameAccount(auth) && readAuth()?.accessToken === auth.accessToken;
     const cache = await readCache(auth.userId);
     if (!current()) throw new DOMException("Cancelled", "AbortError");
-    const cached = isModel(cache?.model) ? { model: cache.model, cached: true } : null;
+    const cached = isModel(cache?.model) ? { model: cache.model, cached: true, storage: cache.storage } : null;
     if (cached) onCached?.(cached);
     if (root.navigator?.onLine === false) {
       if (cached) return cached;
@@ -693,9 +704,9 @@
     const { response, data } = result;
     auth = result.auth;
     if (!current()) throw new DOMException("Cancelled", "AbortError");
-    if (response.status === 401) throw new Error("progress_auth_required");
+    if (response.status === 401 || response.status === 403) throw new Error("progress_auth_required");
     if (!response.ok || !isModel(data)) throw new Error("progress_unavailable");
-    await localOperation(() => root.MagicBookLearningSync?.setInsightsCache?.(auth.userId, data), false);
+    if (!result.reused) await localOperation(() => root.MagicBookLearningSync?.setInsightsCache?.(auth.userId, data), false);
     if (!current()) throw new DOMException("Cancelled", "AbortError");
     return { model: data, cached: false };
   }
@@ -706,12 +717,13 @@
       showFailure("auth", "Sessione richiesta.");
       return;
     }
-    if (state.userId && state.userId !== auth.userId) {
+    if (state.userId && (state.userId !== auth.userId || state.deviceId !== auth.deviceId)) {
       state.model = null;
       state.cachedAt = 0;
       state.isCached = false;
     }
     state.userId = auth.userId;
+    state.deviceId = auth.deviceId;
     const requestId = ++state.requestId;
     state.controller?.abort();
     const controller = new AbortController();
@@ -719,17 +731,18 @@
 
     if (!force && !state.model) {
       const cache = await readCache(auth.userId);
-      if (requestId !== state.requestId) return;
+      if (requestId !== state.requestId || !sameAccount(auth)) return;
       if (isModel(cache?.model)) {
         state.model = cache.model;
         state.cachedAt = Number(cache.cached_at || 0);
+        state.cacheStorage = cache.storage || "indexedDB";
         state.isCached = true;
         render();
       }
     }
 
     const localEvents = await localPendingEvents(auth.userId);
-    if (requestId !== state.requestId) return;
+    if (requestId !== state.requestId || !sameAccount(auth)) return;
     if (root.navigator?.onLine === false) {
       state.isRefreshing = false;
       if (state.model) {
@@ -747,9 +760,9 @@
     let timedOut = false;
     const timeout = root.setTimeout(() => { timedOut = true; controller.abort(); }, CONFIG.timeoutMs);
     try {
-      const { response, data } = await requestInsights(auth, localEvents, controller.signal);
+      const { response, data, reused, receivedAt } = await requestInsights(auth, localEvents, controller.signal, true, force);
       if (requestId !== state.requestId) return;
-      if (response.status === 401) {
+      if (response.status === 401 || response.status === 403) {
         state.model = null;
         state.isRefreshing = false;
         showFailure("auth", "Sessione scaduta.");
@@ -757,9 +770,12 @@
       }
       if (!response.ok || !isModel(data)) throw new Error("learning_insights_unavailable");
       state.model = data;
-      state.cachedAt = Date.now();
+      state.cachedAt = receivedAt;
       state.isCached = false;
-      await localOperation(() => root.MagicBookLearningSync?.setInsightsCache?.(auth.userId, data), false);
+      if (!reused) {
+        const saved = await localOperation(() => root.MagicBookLearningSync?.setInsightsCache?.(auth.userId, data), false);
+        state.cacheStorage = saved ? "device" : "memory";
+      }
       if (requestId !== state.requestId || !sameAccount(auth)) return;
       announce("Statistiche aggiornate.");
     } catch (error) {
@@ -914,12 +930,13 @@
 
   function show(mode, options = {}) {
     const auth = readAuth();
-    if (!auth || (state.userId && state.userId !== auth.userId)) {
+    if (!auth || (state.userId && (state.userId !== auth.userId || state.deviceId !== auth.deviceId))) {
       state.model = null;
       state.cachedAt = 0;
       state.isCached = false;
     }
     state.userId = auth?.userId || "";
+    state.deviceId = auth?.deviceId || "";
     state.mode = mode === "errors" ? "errors" : "statistics";
     state.focusHeading = options.focus !== false;
     state.selectedChapter = 0;

@@ -55,7 +55,7 @@ function harness({ cacheBroken = false } = {}) {
 
 test("warm versioned files avoid network calls without changing bytes", async () => {
   const h = harness();
-  const asset = "/learning-sync.js?v=4-sync-deadlines";
+  const asset = "/learning-sync.js?v=5-insights-backup";
   const first = await (await h.dispatch(asset)).text();
   for (let i = 0; i < 10; i++) assert.equal(await (await h.dispatch(asset)).text(), first);
   assert.equal(h.requests.length, 1);
@@ -63,10 +63,10 @@ test("warm versioned files avoid network calls without changing bytes", async ()
 
 test("new versions, explicit reloads and unversioned assets still use the network", async () => {
   const h = harness();
-  await h.dispatch("/learning-sync.js?v=4-sync-deadlines");
+  await h.dispatch("/learning-sync.js?v=5-insights-backup");
   await h.dispatch("/learning-sync.js?v=4-new-release");
-  await h.dispatch("/learning-sync.js?v=4-sync-deadlines", { cache: "reload" });
-  await h.dispatch("/learning-sync.js?v=4-sync-deadlines", { cache: "no-store" });
+  await h.dispatch("/learning-sync.js?v=5-insights-backup", { cache: "reload" });
+  await h.dispatch("/learning-sync.js?v=5-insights-backup", { cache: "no-store" });
   await h.dispatch("/icons/mg_logo.png");
   await h.dispatch("/icons/mg_logo.png");
   assert.equal(h.requests.length, 6);
@@ -85,7 +85,7 @@ test("API traffic bypasses the worker and HTML remains network-first", async () 
 
 test("Cache Storage failures never break an online versioned resource", async () => {
   const h = harness({ cacheBroken: true });
-  const response = await h.dispatch("/learning-sync.js?v=4-sync-deadlines");
+  const response = await h.dispatch("/learning-sync.js?v=5-insights-backup");
   assert.equal(response.status, 200);
   assert.equal(h.requests.length, 1);
 });
