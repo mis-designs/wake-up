@@ -36,7 +36,7 @@ test("the supplied 640px GIF is the canonical shared loading asset", () => {
 
 test("every asynchronous application entry loads the shared indicator stylesheet", () => {
   for (const html of [page, quizPage, studyPage, audioAdminPage]) {
-    assert.match(html, /loading-ui\.css\?v=1-shared-gif-loader/u);
+    assert.match(html, /loading-ui\.css\?v=2-compact/u);
   }
   assert.match(page, /login-submit-spinner[\s\S]*?icons\/loading\.gif/u);
   assert.match(page, /promo-access-submit[\s\S]*?icons\/loading\.gif/u);
@@ -78,13 +78,13 @@ test("quiz, study and explanation operations reuse the same busy-control contrac
 });
 
 test("the shared loader and all changed consumers ship in one fresh PWA cache", () => {
-  assert.match(worker, /magicbook-pwa-v203-liquid-learning/u);
-  assert.match(worker, /loading-ui\.css\?v=1-shared-gif-loader/u);
+  assert.match(worker, /magicbook-pwa-v204-figure-details/u);
+  assert.match(worker, /loading-ui\.css\?v=2-compact/u);
   assert.match(worker, /icons\/loading\.gif/u);
-  assert.match(worker, /style\.css\?v=73-open-hand/u);
-  assert.match(worker, /script\.js\?v=75-pending-access/u);
-  assert.match(worker, /mystyle\.css\?v=57-whole-words/u);
-  assert.match(worker, /audio-player-ui\.css\?v=6-admin-unified/u);
+  assert.match(worker, /style\.css\?v=74-compact-loading/u);
+  assert.match(worker, /script\.js\?v=76-shared-popup/u);
+  assert.match(worker, /mystyle\.css\?v=58-compact-loading/u);
+  assert.match(worker, /audio-player-ui\.css\?v=9-slim-study/u);
   assert.match(worker, /quiz\.js\?v=85-audio-speed/u);
   assert.match(worker, /quiz-help\.js\?v=20260910-phone-help/u);
   assert.match(worker, /study-quiz\.js\?v=27-audio-speed/u);

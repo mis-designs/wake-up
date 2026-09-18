@@ -32,9 +32,9 @@ test("translation reader and study questions preserve the same whole-word rule",
 
 test("changed question styles are versioned and included in the new worker cache", () => {
   const worker = read("service-worker.js");
-  for (const [page, asset] of [["quiz.html", "mystyle.css?v=57-whole-words"], ["quiz.html", "quiz-help.css?v=20260914-whole-words"], ["study-quiz.html", "study-quiz.css?v=27-whole-words"]]) {
+  for (const [page, asset] of [["quiz.html", "mystyle.css?v=58-compact-loading"], ["quiz.html", "quiz-help.css?v=20260914-whole-words"], ["study-quiz.html", "study-quiz.css?v=28-compact"]]) {
     assert.ok(read(page).includes(asset));
     assert.ok(worker.includes(asset));
   }
-  assert.match(worker, /magicbook-pwa-v203-liquid-learning/);
+  assert.match(worker, /magicbook-pwa-v204-figure-details/);
 });

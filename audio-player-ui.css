@@ -362,6 +362,33 @@
   }
 }
 
+/* Compact Study variant on web and Android. Keep 44px touch targets while
+   removing the padded outer pill and its glow; other players are unchanged. */
+.study-page .study-explanation-media { grid-template-columns: 36px minmax(0, 1fr); gap: 8px; }
+.study-page .study-explanation-artwork { width: 36px; height: 36px; }
+.study-page .study-explanation-player {
+  grid-template-columns: 44px minmax(0, 1fr) 52px;
+  min-height: 44px; height: 44px; padding: 0; gap: 6px;
+  border: 0; border-radius: 0; background: transparent; box-shadow: none;
+}
+.study-page .study-explanation-play {
+  width: 44px; height: 44px; flex-basis: 44px; border: 4px solid transparent;
+  background-clip: padding-box; box-shadow: none; animation: none; transform: none;
+}
+.study-page .study-explanation-play:hover:not(:disabled) { filter: brightness(.94); }
+.study-page .study-explanation-play:active:not(:disabled) { filter: brightness(.85); }
+.study-page .study-explanation-progress { min-width: 0; height: 44px; }
+.study-page .study-explanation-speed {
+  width: 52px; max-width: 52px; height: 44px; border: 0;
+  border-radius: 10px; background: transparent; box-shadow: none; transform: none;
+  font-size: .78rem;
+}
+html.android-webview .study-page .study-explanation-speed { background: transparent; }
+.study-page .study-explanation-speed:hover { background: var(--audio-player-line); }
+.study-page .study-explanation-player.is-interrupted .study-explanation-play {
+  outline: 1px dashed var(--audio-player-mid); outline-offset: -2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
 .audio-admin-player,
 .audio-admin-player-play,

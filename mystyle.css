@@ -1479,7 +1479,7 @@ body:not(.quiz-focus) .selected {
 }
 
 .quiz-loading-figure {
-  --magic-loading-size: min(190px, 58vw);
+  --magic-loading-size: var(--magic-loading-page-size);
   width: var(--magic-loading-size);
   height: var(--magic-loading-size);
   aspect-ratio: 1;

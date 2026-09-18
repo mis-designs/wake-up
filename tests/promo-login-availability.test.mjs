@@ -21,7 +21,7 @@ test("disabled promo access does not initialize or request campaign status", () 
 });
 
 test("the disabled promo release uses matching cache-busted assets", () => {
-  assert.match(page, /script\.js\?v=75-pending-access/u);
-  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v203-liquid-learning"/u);
-  assert.match(worker, /script\.js\?v=75-pending-access/u);
+  assert.match(page, /script\.js\?v=76-shared-popup/u);
+  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v204-figure-details"/u);
+  assert.match(worker, /script\.js\?v=76-shared-popup/u);
 });

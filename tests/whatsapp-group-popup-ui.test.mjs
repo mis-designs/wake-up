@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const read = relativePath => readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
 const page = read("index.html");
 const script = read("script.js");
+const popupOwner = read("app-popup.js");
 const style = read("style.css");
 const worker = read("service-worker.js");
 
@@ -34,11 +35,12 @@ test("the WhatsApp invitation behaves as a bounded accessible modal", () => {
   assert.match(script, /overlay\.setAttribute\("aria-modal", "true"\)/u);
   assert.match(script, /overlay\.setAttribute\("aria-labelledby", "whatsappGroupPopupTitle"\)/u);
   assert.match(script, /overlay\.setAttribute\("aria-describedby", "whatsappGroupPopupMessage"\)/u);
-  assert.match(script, /if \(event\.key === "Escape"\)[\s\S]*?onDismiss\(\)/u);
+  assert.match(popupOwner, /if \(event\.key === 'Escape'\)[\s\S]*?onDismiss\(\)/u);
   assert.match(script, /mountAppPopup\(overlay, \{\s*focusable: \[closeBtn, bnBtn, itBtn, primary, secondary\]/u);
-  assert.match(script, /backgroundState\.push\(\{ element, inert: element\.inert \}\);\s*element\.inert = true;/u);
+  assert.match(script, /window\.MagicBookPopup\.mount/);
+  assert.match(popupOwner, /backgroundState\.push\(\{ element, inert: element\.inert \}\);\s*element\.inert = true;/u);
   assert.match(script, /returnFocus: previouslyFocused/u);
-  assert.match(script, /returnFocus instanceof HTMLElement[\s\S]*?returnFocus\.focus/u);
+  assert.match(popupOwner, /returnFocus instanceof HTMLElement[\s\S]*?returnFocus\.focus/u);
   assert.match(style, /max-height:\s*calc\(100dvh - 32px\)/u);
   assert.match(style, /@media \(max-height: 620px\)/u);
   assert.match(style, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?#whatsappGroupPopupOverlay/u);
@@ -48,9 +50,9 @@ test("the WhatsApp invitation behaves as a bounded accessible modal", () => {
 test("popup presentation belongs to shared CSS and ships in the current cache", () => {
   assert.doesNotMatch(script, /injectWhatsAppGroupPopupStyles|whatsappGroupPopupStyles/u);
   assert.doesNotMatch(script, /icon\.textContent\s*=/u);
-  assert.match(page, /style\.css\?v=73-open-hand/u);
-  assert.match(page, /script\.js\?v=75-pending-access/u);
-  assert.match(worker, /magicbook-pwa-v203-liquid-learning/u);
-  assert.match(worker, /style\.css\?v=73-open-hand/u);
-  assert.match(worker, /script\.js\?v=75-pending-access/u);
+  assert.match(page, /style\.css\?v=74-compact-loading/u);
+  assert.match(page, /script\.js\?v=76-shared-popup/u);
+  assert.match(worker, /magicbook-pwa-v204-figure-details/u);
+  assert.match(worker, /style\.css\?v=74-compact-loading/u);
+  assert.match(worker, /script\.js\?v=76-shared-popup/u);
 });

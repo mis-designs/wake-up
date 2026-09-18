@@ -7,6 +7,16 @@ const bindings = new WeakMap();
 const lifetime = new AbortController();
 let active = null;
 let consumingBack = false;
+let pendingScrollRestore = null;
+
+function restoreScroll(snapshot) {
+  if (!snapshot) return;
+  window.scrollTo({ left: snapshot.x, top: snapshot.y, behavior: 'instant' });
+  snapshot.parents.forEach(({ node, top, left }) => {
+    if (node.isConnected) node.scrollTo({ top, left, behavior: 'instant' });
+  });
+  history.scrollRestoration = snapshot.mode;
+}
 
 function identity(image) {
   try {
@@ -26,8 +36,11 @@ function close({ fromHistory = false, restoreFocus = true } = {}) {
   state.spacer.replaceWith(state.image);
   state.trigger.setAttribute('aria-expanded', 'false');
   state.unmount({ restoreFocus });
+  restoreScroll(state.scroll);
   if (!fromHistory && state.ownsHistory && history.state?.magicFigureDetail === state.historyKey) {
     consumingBack = true;
+    pendingScrollRestore = state.scroll;
+    history.scrollRestoration = 'manual';
     history.back();
   }
   return true;
@@ -38,17 +51,20 @@ function open(image, trigger) {
   const id = identity(image);
   if (!id || !image.complete || !image.naturalWidth || trigger.closest('[inert]')) return;
   const detail = getFigureDetail(id);
-  const number = id.slice(3);
+  const scroll = { x: scrollX, y: scrollY, mode: history.scrollRestoration, parents: [] };
+  for (let node = trigger.parentElement; node; node = node.parentElement) {
+    if (node.scrollHeight > node.clientHeight || node.scrollWidth > node.clientWidth) {
+      scroll.parents.push({ node, top: node.scrollTop, left: node.scrollLeft });
+    }
+  }
   const overlay = document.createElement('div');
   overlay.className = 'figure-detail-overlay';
   overlay.innerHTML = `<section class="figure-detail-card" role="dialog" aria-modal="true" aria-labelledby="figureDetailTitle" aria-describedby="figureDetailBangla" tabindex="-1">
-    <p class="figure-detail-reference"></p>
     <div class="figure-detail-media"></div>
     <div class="figure-detail-copy"><h2 id="figureDetailTitle" lang="it"></h2><p id="figureDetailBangla" lang="bn"></p></div>
     <footer><button type="button" class="figure-detail-close" aria-label="Chiudi figura"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></footer>
   </section>`;
   const card = overlay.firstElementChild;
-  overlay.querySelector('.figure-detail-reference').textContent = `Figura ${number}`;
   overlay.querySelector('#figureDetailTitle').textContent = detail?.italian || 'Nome della figura non ancora disponibile';
   overlay.querySelector('#figureDetailBangla').textContent = detail?.bangla || 'এই ছবির নাম এখনো যোগ করা হয়নি';
   const spacer = document.createElement('span');
@@ -69,13 +85,17 @@ function open(image, trigger) {
   });
   const historyKey = `${Date.now()}-${id}`;
   let ownsHistory = false;
-  try { history.pushState({ ...history.state, magicFigureDetail: historyKey }, '', location.href); ownsHistory = true; } catch { /* X/Escape still work. */ }
+  try {
+    history.pushState({ ...history.state, magicFigureDetail: historyKey }, '', location.href);
+    history.scrollRestoration = 'manual';
+    ownsHistory = true;
+  } catch { /* X/Escape still work. */ }
   const source = image.getAttribute('src');
   const observer = new MutationObserver(() => {
     if (!trigger.isConnected || trigger.closest('.hidden, [hidden]') || image.getAttribute('src') !== source) close({ restoreFocus: false });
   });
   observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['src', 'hidden', 'class'] });
-  active = { image, trigger, spacer, unmount, observer, ownsHistory, historyKey };
+  active = { image, trigger, spacer, unmount, observer, ownsHistory, historyKey, scroll };
 }
 
 function enhance(image) {
@@ -121,17 +141,23 @@ const observer = new MutationObserver(records => {
 scan(document.body);
 observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
 
-// A same-document entry lets Android's existing WebView Back close this layer
-// first. Capture prevents the underlying Quiz/Study/router from also leaving.
-window.addEventListener('popstate', event => {
-  if (consumingBack) { consumingBack = false; event.stopImmediatePropagation(); return; }
-  if (active) { event.stopImmediatePropagation(); close({ fromHistory: true }); return; }
+// The early shared history owner consumes only this viewer's entries before
+// Quiz/Study/Home handlers. Do not reload data, render the route or reset audio.
+const unregisterHistory = window.MagicBookPopup.registerHistoryLayer(() => {
+  if (consumingBack) {
+    consumingBack = false;
+    restoreScroll(pendingScrollRestore);
+    pendingScrollRestore = null;
+    return true;
+  }
+  if (active) { close({ fromHistory: true }); return true; }
   if (history.state?.magicFigureDetail) {
     const { magicFigureDetail, ...previous } = history.state;
     history.replaceState(previous, '', location.href);
-    event.stopImmediatePropagation();
+    return true;
   }
-}, { capture: true, signal: lifetime.signal });
+  return false;
+});
 
 for (const event of ['magicbook:before-offline-notice', 'magicbook:quiz-question-change', 'magicbook:quiz-help-close']) {
   window.addEventListener(event, () => close({ restoreFocus: false }), { capture: true, signal: lifetime.signal });
@@ -139,6 +165,9 @@ for (const event of ['magicbook:before-offline-notice', 'magicbook:quiz-question
 window.addEventListener('pagehide', event => {
   // Never schedule history navigation from a document that is unloading.
   close({ fromHistory: true, restoreFocus: false });
-  if (!event.persisted) { observer.disconnect(); lifetime.abort(); }
+  restoreScroll(pendingScrollRestore);
+  consumingBack = false;
+  pendingScrollRestore = null;
+  if (!event.persisted) { observer.disconnect(); unregisterHistory(); lifetime.abort(); }
 }, { signal: lifetime.signal });
 window.MagicBookFigureDetail = Object.freeze({ close, open, enhance });

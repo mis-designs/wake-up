@@ -1,8 +1,8 @@
 :root {
   --magic-loading-button-size: 22px;
   --magic-loading-inline-size: 36px;
-  --magic-loading-panel-size: clamp(76px, 16vw, 112px);
-  --magic-loading-page-size: clamp(128px, 34vw, 190px);
+  --magic-loading-panel-size: clamp(64px, 14vw, 88px);
+  --magic-loading-page-size: clamp(88px, 20vw, 112px);
 }
 
 .magic-loading-image,

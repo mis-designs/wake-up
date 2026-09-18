@@ -1,5 +1,20 @@
 (function exposeAppPopup(root) {
   'use strict';
+  const historyLayers = [];
+  // This classic script runs BEFORE the route scripts. At the window target,
+  // capture:true alone does not precede already-registered popstate handlers.
+  root.addEventListener('popstate', event => {
+    for (const handler of [...historyLayers].reverse()) {
+      if (handler(event)) { event.stopImmediatePropagation(); break; }
+    }
+  });
+  function registerHistoryLayer(handler) {
+    historyLayers.push(handler);
+    return () => {
+      const index = historyLayers.indexOf(handler);
+      if (index >= 0) historyLayers.splice(index, 1);
+    };
+  }
   // Shared authored-modal owner, extracted from the existing Home/login popup.
   // It preserves prior inert state so a detail can sit above another dialog.
   function mount(overlay, { focusable, returnFocus, bodyClass, onDismiss, initialFocus } = {}) {
@@ -55,5 +70,5 @@
       }
     };
   }
-  root.MagicBookPopup = Object.freeze({ mount });
+  root.MagicBookPopup = Object.freeze({ mount, registerHistoryLayer });
 })(window);

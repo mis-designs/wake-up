@@ -14,7 +14,7 @@ const adminStyles = readFileSync(new URL("../aggiungi-spiegazioni.css", import.m
 
 test("Admin explanations and legacy review load the shared player instead of the old black skin", () => {
   const local = adminPage.indexOf("aggiungi-spiegazioni.css?v=12-shared-player");
-  const shared = adminPage.indexOf("audio-player-ui.css?v=6-admin-unified");
+  const shared = adminPage.indexOf("audio-player-ui.css?v=9-slim-study");
   assert.ok(local >= 0 && shared > local);
   assert.match(styles, /\.audio-admin-player,\s*\.quiz-audio-explanation,\s*\.study-explanation-player\s*\{[\s\S]*?--audio-player-start:\s*#34d399;[\s\S]*?background:\s*transparent;/u);
   assert.match(styles, /\.audio-admin-player-play\.is-playing \.audio-player-icon--pause,[\s\S]*?opacity:\s*1;/u);
@@ -24,8 +24,8 @@ test("Admin explanations and legacy review load the shared player instead of the
 });
 
 test("Quiz and Studia quiz load one shared Admin-derived player skin", () => {
-  assert.ok(quizPage.indexOf("mystyle.css?v=57-whole-words") < quizPage.indexOf("audio-player-ui.css?v=8-native-quiz"));
-  assert.ok(studyPage.indexOf("study-quiz.css?v=27-whole-words") < studyPage.indexOf("audio-player-ui.css?v=6-admin-unified"));
+  assert.ok(quizPage.indexOf("mystyle.css?v=58-compact-loading") < quizPage.indexOf("audio-player-ui.css?v=9-slim-study"));
+  assert.ok(studyPage.indexOf("study-quiz.css?v=28-compact") < studyPage.indexOf("audio-player-ui.css?v=9-slim-study"));
   assert.match(styles, /\.quiz-audio-explanation,\s*\.study-explanation-player\s*\{[\s\S]*?min-height:\s*56px;[\s\S]*?border:\s*1px solid var\(--audio-player-line\);[\s\S]*?border-radius:\s*999px;[\s\S]*?background:\s*transparent;/u);
   assert.match(styles, /box-shadow:[^;]*0 10px 28px rgba\(5, 150, 105, \.14\);[\s\S]*?backdrop-filter:\s*none;/u);
   assert.match(styles, /--audio-player-start:\s*#34d399;[\s\S]*?--audio-player-mid:\s*#10b981;[\s\S]*?--audio-player-end:\s*#059669;/u);
@@ -131,8 +131,8 @@ test("the shared player ships through the current PWA cache", () => {
   assert.match(studyPage, /audio-focus\.js\?v=1-resumable-tts[\s\S]*?study-quiz\.js\?v=27-audio-speed/u);
   assert.match(quizPage, /quiz\.js\?v=85-audio-speed/u);
   assert.match(studyPage, /study-quiz\.js\?v=27-audio-speed/u);
-  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v203-liquid-learning"/u);
-  assert.match(worker, /audio-player-ui\.css\?v=6-admin-unified/u);
+  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v204-figure-details"/u);
+  assert.match(worker, /audio-player-ui\.css\?v=9-slim-study/u);
   assert.match(worker, /audio-focus\.js\?v=1-resumable-tts/u);
   assert.match(worker, /quiz\.js\?v=85-audio-speed/u);
   assert.match(worker, /study-quiz\.js\?v=27-audio-speed/u);

@@ -33,8 +33,9 @@ body.figure-detail-open { overflow: hidden; }
   animation: figure-detail-enter 220ms cubic-bezier(.2,.7,.2,1) both;
 }
 .figure-detail-card:focus { outline: none; }
-.figure-detail-reference { margin: 0 0 12px; font-size: 12px; line-height: 1.4; font-weight: 600; }
 .figure-detail-media { display: grid; place-items: center; min-height: 0; flex: 1 0 auto; }
+/* The same image node keeps its route-owned id/classes. Override only while
+   inside this viewer, including inline positioning and animation from Quiz. */
 .figure-detail-overlay .figure-detail-media > img {
   position: static !important; display: block !important; inset: auto !important;
   width: 100% !important; height: clamp(130px, 29vh, 280px) !important; max-height: none !important;
@@ -49,13 +50,20 @@ body.figure-detail-open { overflow: hidden; }
 .figure-detail-copy :is(h2, p) { -webkit-hyphens: none; hyphens: none; word-break: normal; overflow-wrap: normal; }
 .figure-detail-card footer { display: flex; justify-content: flex-end; position: sticky; bottom: -10px; padding-top: 6px; background: var(--figure-paper); }
 .figure-detail-close {
+  position: relative; isolation: isolate;
   display: grid; place-items: center; width: 48px; height: 48px; flex: 0 0 48px;
-  padding: 0; border: 1px solid var(--figure-line); border-radius: 14px;
-  color: var(--figure-ink); background: var(--figure-paper); cursor: pointer; touch-action: manipulation;
+  padding: 0; border: 0; border-radius: 0;
+  color: var(--figure-ink); background: transparent; cursor: pointer; touch-action: manipulation;
+}
+.figure-detail-close::before {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  background: color-mix(in srgb, var(--figure-ink) 8%, var(--figure-paper));
+  -webkit-mask: url('/icons/native-action-scallop.svg') center / contain no-repeat;
+  mask: url('/icons/native-action-scallop.svg') center / contain no-repeat;
 }
 .figure-detail-close svg { width: 24px; height: 24px; }
-.figure-detail-close:hover { background: color-mix(in srgb, var(--figure-ink) 6%, var(--figure-paper)); }
-.figure-detail-close:active { background: color-mix(in srgb, var(--figure-ink) 12%, var(--figure-paper)); }
+.figure-detail-close:hover::before { background: color-mix(in srgb, var(--figure-ink) 13%, var(--figure-paper)); }
+.figure-detail-close:active::before { background: color-mix(in srgb, var(--figure-ink) 19%, var(--figure-paper)); }
 .figure-detail-close:focus-visible { outline: 3px solid var(--figure-focus); outline-offset: 3px; }
 @keyframes figure-detail-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes figure-detail-enter { from { transform: translateY(10px) scale(.985); } to { transform: none; } }
@@ -64,7 +72,8 @@ body.figure-detail-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .figure-detail-overlay, .figure-detail-card { animation: none; } }
 html[data-native-motion-paused] :is(.figure-detail-overlay, .figure-detail-card) { animation: none; }
 @media (forced-colors: active) {
-  .figure-detail-card, .figure-detail-close { border-color: CanvasText; background: Canvas; color: CanvasText; box-shadow: none; }
+  .figure-detail-card, .figure-detail-close { border: 1px solid CanvasText; background: Canvas; color: CanvasText; box-shadow: none; }
+  .figure-detail-close::before { background: ButtonFace; }
   .figure-detail-close:focus-visible, .figure-detail-trigger:focus-visible { outline-color: Highlight; }
   .figure-detail-card { scrollbar-color: auto; }
 }

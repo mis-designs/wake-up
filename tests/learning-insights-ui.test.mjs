@@ -154,12 +154,12 @@ test("responsive, reduced-motion and global scrollbar rules are present", () => 
   assert.match(css, /prefers-reduced-motion: reduce/u);
   assert.match(css, /forced-colors: active/u);
   assert.match(css, /#learningInsightsScreen::-webkit-scrollbar/u);
-  assert.match(index, /style\.css\?v=73-open-hand/u);
+  assert.match(index, /style\.css\?v=74-compact-loading/u);
   assert.match(index, /assets\/daisyui\.css\?v=2-learning-shell/u);
   assert.match(index, /src\/learning-insights\.css\?v=9-card-spacing/u);
   assert.match(index, /src\/learning-insights\.js\?v=10-local-backup/u);
-  assert.match(worker, /magicbook-pwa-v203-liquid-learning/u);
-  assert.match(worker, /style\.css\?v=73-open-hand/u);
+  assert.match(worker, /magicbook-pwa-v204-figure-details/u);
+  assert.match(worker, /style\.css\?v=74-compact-loading/u);
   assert.match(worker, /assets\/daisyui\.css\?v=2-learning-shell/u);
   assert.match(worker, /src\/learning-insights\.css\?v=9-card-spacing/u);
   assert.match(worker, /src\/learning-insights\.js\?v=10-local-backup/u);

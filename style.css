@@ -5757,15 +5757,15 @@ html[data-native-motion-paused] #home .home-start-tap-cue {
 }
 
 .viewer-loading-figure {
-    --magic-loading-size: min(168px, 52vw);
+    --magic-loading-size: var(--magic-loading-panel-size);
     width: var(--magic-loading-size);
     height: var(--magic-loading-size);
     aspect-ratio: 1;
-    border: 1px solid rgba(3, 27, 70, 0.14);
-    border-radius: 17px;
+    border: 0;
+    border-radius: 12px;
     overflow: hidden;
     background: #ffffff;
-    box-shadow: 0 18px 46px rgba(3, 27, 70, 0.12);
+    box-shadow: none;
     opacity: 0;
     transform: translateY(8px);
     transition: opacity 0.18s ease, transform 0.18s ease;
@@ -5776,7 +5776,7 @@ html[data-native-motion-paused] #home .home-start-tap-cue {
     height: 100%;
     display: block;
     object-fit: contain;
-    padding: 12px;
+    padding: 0;
     background: #fff;
     border-radius: inherit;
 }

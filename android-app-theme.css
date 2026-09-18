@@ -519,6 +519,19 @@ html.android-webview .study-help {
   background: var(--app-palette-surface-soft);
 }
 
+/* A help action is a labelled primary button, not a generic white study pill. */
+html.android-webview .study-action.study-action-help {
+  background: var(--app-palette-primary);
+  color: var(--app-palette-on-primary);
+  border-color: var(--app-palette-primary);
+}
+html.android-webview .study-action.study-action-help:hover:not(:disabled),
+html.android-webview .study-action.study-action-help:focus-visible,
+html.android-webview .study-action.study-action-help[aria-expanded="true"] {
+  background: var(--app-palette-primary-strong);
+  color: var(--app-palette-on-primary);
+}
+
 /* Dictionary dashboard. */
 html.android-webview .magic-dictionary-screen {
   --dictionary-violet: var(--app-palette-primary);

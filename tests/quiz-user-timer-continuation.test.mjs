@@ -69,9 +69,9 @@ test("timeout dialog uses the shared emerald pill language and fresh cached asse
   assert.match(styles, /linear-gradient\(135deg, #0b9f6e 0%, #67d833 100%\)/u);
   assert.match(styles, /@media \(max-width: 380px\)/u);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/u);
-  assert.match(page, /mystyle\.css\?v=57-whole-words/u);
+  assert.match(page, /mystyle\.css\?v=58-compact-loading/u);
   assert.match(page, /quiz\.js\?v=85-audio-speed/u);
-  assert.match(worker, /magicbook-pwa-v203-liquid-learning/u);
-  assert.match(worker, /mystyle\.css\?v=57-whole-words/u);
+  assert.match(worker, /magicbook-pwa-v204-figure-details/u);
+  assert.match(worker, /mystyle\.css\?v=58-compact-loading/u);
   assert.match(worker, /quiz\.js\?v=85-audio-speed/u);
 });
