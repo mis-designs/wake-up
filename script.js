@@ -3125,56 +3125,7 @@ function openWhatsAppGroupLink() {
 // Shared authored-modal behavior. The login variant inherits #login's palette;
 // the WhatsApp invitation keeps its established body-level surface and actions.
 function mountAppPopup(overlay, { focusable, returnFocus, bodyClass, onDismiss }) {
-  const backgroundState = [];
-  let closed = false;
-  function isolate(parent) {
-    Array.from(parent.children).forEach(element => {
-      if (!(element instanceof HTMLElement) || element === overlay) return;
-      if (element.contains(overlay)) { isolate(element); return; }
-      backgroundState.push({ element, inert: element.inert });
-      element.inert = true;
-    });
-  }
-  function onClick(event) {
-    if (event.target === overlay) onDismiss();
-  }
-  function onKeyDown(event) {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      onDismiss();
-      return;
-    }
-    if (event.key !== "Tab") return;
-    const first = focusable[0], last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault(); last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault(); first.focus();
-    }
-  }
-  overlay.addEventListener("click", onClick);
-  overlay.addEventListener("keydown", onKeyDown);
-  isolate(document.body);
-  document.body.classList.add(bodyClass);
-  const frame = window.requestAnimationFrame(() => {
-    if (!closed) focusable[0]?.focus({ preventScroll: true });
-  });
-  return ({ restoreFocus = true } = {}) => {
-    if (closed) return;
-    closed = true;
-    window.cancelAnimationFrame(frame);
-    overlay.removeEventListener("click", onClick);
-    overlay.removeEventListener("keydown", onKeyDown);
-    backgroundState.forEach(({ element, inert }) => {
-      if (element.isConnected) element.inert = inert;
-    });
-    document.body.classList.remove(bodyClass);
-    overlay.remove();
-    if (restoreFocus && returnFocus instanceof HTMLElement && returnFocus.isConnected) {
-      returnFocus.focus({ preventScroll: true });
-    }
-  };
+  return window.MagicBookPopup.mount(overlay, { focusable, returnFocus, bodyClass, onDismiss });
 }
 
 let dismissLoginPendingPopup = null;
