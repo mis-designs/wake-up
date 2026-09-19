@@ -81,10 +81,13 @@
   const QUIZ_SESSION_REFRESH_SKEW_MS = 90 * 1000;
   const STUDY_AUDIO_STATUS_DELAY_MS = 400;
   const STUDY_AUDIO_REQUEST_TIMEOUT_MS = 12000;
+  const STUDY_AUDIO_STATUS_TTL_MS = 5 * 60 * 1000;
+  const STUDY_AUDIO_STATUS_MAX_ENTRIES = 128;
   const EXPLANATION_AUDIO_SPEED_STEPS = [1, 0.8, 1, 1.25, 1.5, 2];
   const ttsCache = createBoundedCache(48);
   const helpCache = new Map();
   const audioStatusCache = new Map();
+  const audioStatusRequests = new Map();
   const pendingAudioStatusChecks = new Map();
   const audioFocus = window.MagicAudioFocus;
 
@@ -1469,7 +1472,7 @@
     const abortFromParent = () => controller.abort();
     if (parentSignal?.aborted) abortFromParent();
     else parentSignal?.addEventListener("abort", abortFromParent, { once: true });
-    const timeoutId = window.setTimeout(() => controller.abort(), STUDY_AUDIO_REQUEST_TIMEOUT_MS);
+    const timeoutId = window.setTimeout(() => controller.abort(new DOMException("Audio request timed out", "TimeoutError")), STUDY_AUDIO_REQUEST_TIMEOUT_MS);
     return {
       signal: controller.signal,
       cleanup() {
@@ -1519,9 +1522,32 @@
     return String(question?.id || fingerprint(question));
   }
 
+  function cacheAudioAvailability(question, available) {
+    const key = audioStatusKey(question);
+    audioStatusCache.delete(key);
+    audioStatusCache.set(key, { available, expiresAt: Date.now() + STUDY_AUDIO_STATUS_TTL_MS });
+    while (audioStatusCache.size > STUDY_AUDIO_STATUS_MAX_ENTRIES) {
+      audioStatusCache.delete(audioStatusCache.keys().next().value);
+    }
+  }
+
+  function cachedAudioAvailability(question) {
+    const key = audioStatusKey(question);
+    const cached = audioStatusCache.get(key);
+    if (!cached) return undefined;
+    if (cached.expiresAt <= Date.now()) {
+      audioStatusCache.delete(key);
+      return undefined;
+    }
+    return cached.available;
+  }
+
   function paintAudioAvailability(button, available) {
-    button.classList.toggle("hidden", available !== true);
-    button.dataset.audioState = available === true ? "ready" : "unavailable";
+    // Unknown availability is recoverable through the existing play action.
+    // Only a confirmed absence/review requirement should hide the recording.
+    button.classList.toggle("hidden", available === false);
+    button.dataset.audioState = available === true ? "ready" : available === false ? "unavailable" : "retry";
+    button.title = available == null ? "Prova a caricare la spiegazione audio" : "";
     if (available === true) button.classList.remove("is-error");
   }
 
@@ -1536,6 +1562,27 @@
     audioObserver?.disconnect();
     pendingAudioStatusChecks.forEach(timer => window.clearTimeout(timer));
     pendingAudioStatusChecks.clear();
+    audioStatusRequests.forEach(request => request.controller.abort());
+    audioStatusRequests.clear();
+  }
+
+  function requestAudioAvailability(question) {
+    const key = audioStatusKey(question);
+    if (audioStatusRequests.has(key)) return audioStatusRequests.get(key).promise;
+    const controller = new AbortController();
+    const promise = audioApi("getQuizAudioStatus", question, { signal: controller.signal })
+      .then(data => {
+        // Do not update/cache an old chapter after cancellation, even if a response won the race.
+        if (controller.signal.aborted) throw new DOMException("Cancelled", "AbortError");
+        return data;
+      }).catch(error => {
+        if (controller.signal.aborted) throw new DOMException("Cancelled", "AbortError");
+        throw error;
+      }).finally(() => {
+        if (audioStatusRequests.get(key)?.controller === controller) audioStatusRequests.delete(key);
+      });
+    audioStatusRequests.set(key, { controller, promise });
+    return promise;
   }
 
   const audioObserver = "IntersectionObserver" in window
@@ -1558,22 +1605,27 @@
 
   function observeAudioAvailability(card, question, button) {
     const check = async () => {
-      const key = audioStatusKey(question);
-      if (audioStatusCache.has(key)) {
-        paintAudioAvailability(button, audioStatusCache.get(key));
+      const cached = cachedAudioAvailability(question);
+      if (cached !== undefined) {
+        paintAudioAvailability(button, cached);
         return;
       }
       try {
-        const data = await audioApi("getQuizAudioStatus", question);
+        const data = await requestAudioAvailability(question);
+        if (data.temporaryUnavailable === true || typeof data.available !== "boolean") {
+          paintAudioAvailability(button, null);
+          return;
+        }
         const available = data.available === true;
-        if (data.temporaryUnavailable !== true) audioStatusCache.set(key, available);
+        cacheAudioAvailability(question, available);
         paintAudioAvailability(button, available);
-      } catch (_) {
-        button.classList.add("hidden");
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+        paintAudioAvailability(button, null);
       }
     };
+    card._checkStudyAudio = check;
     if (audioObserver) {
-      card._checkStudyAudio = check;
       audioObserver.observe(card);
     } else {
       const timer = window.setTimeout(() => {
@@ -1614,6 +1666,8 @@
       const source = await fetchExplanationBlob(question, { signal: request.controller.signal });
       if (pendingExplanation !== request || request.id !== explanationRequestId) return;
       if (!source.blob.size) throw new Error("empty_audio_blob");
+      cacheAudioAvailability(question, true);
+      paintAudioAvailability(controls.surface, true);
       await startExplanationAudio(URL.createObjectURL(source.blob), button, key, controls, source.durationMs / 1000);
     } catch (error) {
       if (pendingExplanation !== request || request.id !== explanationRequestId) return;
@@ -1621,7 +1675,7 @@
       const code = String(error?.message || "");
       const definitelyMissing = code === "quiz_audio_not_found" || code === "audio_blob_404";
       if (definitelyMissing) {
-        audioStatusCache.set(audioStatusKey(question), false);
+        cacheAudioAvailability(question, false);
         paintAudioAvailability(controls.surface, false);
         showToast("Questa spiegazione audio non è disponibile.");
       } else {
@@ -1697,8 +1751,15 @@
     if (chapter) openChapter(chapter, { updateHistory: false });
     else showPicker();
   });
-  window.addEventListener("pageshow", () => {
+  window.addEventListener("pageshow", event => {
     if (!currentChapter) renderStudyIntro();
+    if (event.persisted && currentChapter) {
+      elements.list.querySelectorAll(".study-question-card").forEach(card => {
+        if (!card._checkStudyAudio) return;
+        if (audioObserver) audioObserver.observe(card);
+        else void card._checkStudyAudio();
+      });
+    }
   });
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && !currentChapter) renderStudyIntro();

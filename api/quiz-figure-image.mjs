@@ -1,7 +1,15 @@
 import sharp from "sharp";
+import { createHash } from "node:crypto";
+import { createWorkCache } from "../lib/bounded-work-cache.mjs";
 
 const MAX_INPUT_PIXELS = 50_000_000;
 export const QUIZ_FIGURE_PRESENTATION_VERSION = "numberless-v2";
+// Cache only the identical public image transform, never book pages or access data.
+// Byte-based keys also invalidate immediately when an uploaded source changes.
+const figureRenderCache = createWorkCache({
+  maxEntries: 16, maxBytes: 8 * 1024 * 1024, ttlMs: 5 * 60_000,
+  maxPending: 16, sizeOf: value => value.byteLength
+});
 
 // This is a search window, never a painted rectangle. Only isolated, neutral
 // digit-sized components on the top label line can be removed. A component
@@ -93,6 +101,12 @@ function numberRegions(data, width, height, expectedDigits) {
 }
 
 export async function renderNumberlessQuizFigure(input, { figure = "" } = {}) {
+  const digest = createHash("sha256").update(input).digest("hex");
+  const key = JSON.stringify([QUIZ_FIGURE_PRESENTATION_VERSION, String(figure), digest]);
+  return figureRenderCache.run(key, () => transformNumberlessQuizFigure(input, figure));
+}
+
+async function transformNumberlessQuizFigure(input, figure) {
   const image = sharp(input, { failOn: "error", limitInputPixels: MAX_INPUT_PIXELS }).autoOrient();
   const metadata = await image.metadata();
   if (!metadata.width || !metadata.height || !["jpeg", "png"].includes(metadata.format)) {

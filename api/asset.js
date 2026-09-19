@@ -140,7 +140,11 @@ export default async function handler(req, res) {
       }
     }
 
-    if (!selectedObject || !selectedAsset) return res.status(404).json({ error: "not_found" });
+    if (!selectedObject || !selectedAsset) {
+      // Public, validated asset names only. Never cache storage/configuration failures.
+      res.setHeader("Cache-Control", "public, max-age=60, s-maxage=60");
+      return res.status(404).json({ error: "not_found" });
+    }
 
     if (req.method === "HEAD") {
       res.setHeader("Cache-Control", "public, max-age=300, s-maxage=3600");

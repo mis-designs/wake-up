@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v204-figure-details";
+const CACHE_NAME = "magicbook-pwa-v206-audio-recovery";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -65,12 +65,12 @@ const STATIC_ASSETS = [
   "/homebg.css?v=3",
   "/mystyle.css?v=58-compact-loading",
   "/audio-player-ui.css?v=9-slim-study",
-  "/script.js?v=76-shared-popup",
+  "/script.js?v=77-request-budget",
   "/study-quiz.html",
   "/study-quiz.css?v=28-compact",
-  "/study-quiz.js?v=27-audio-speed",
+  "/study-quiz.js?v=28-request-budget",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=85-audio-speed",
+  "/quiz.js?v=86-request-budget",
   "/quiz-help.css?v=20260914-whole-words",
   "/quiz-help.js?v=20260910-phone-help",
   "/patenteGlossaryResolver.js?v=1.0.0",

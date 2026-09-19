@@ -13,7 +13,7 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { neon } from "@neondatabase/serverless";
 import { applyQuizFigureCorrections } from "./quiz-figure-corrections.mjs";
-import { getExplanationFiguresFromObjectKeys } from "./quiz-explanation-availability.mjs";
+import { getExplanationFiguresFromObjectKeys, explanationListingMatchesAssets } from "./quiz-explanation-availability.mjs";
 import { detectQuizAudioMimeType, normalizeQuizAudioMimeType } from "./audio-mime.mjs";
 import { fetchUpstream, publicApiError, withOperationalTimeout } from "./upstream-fetch.mjs";
 import { normalizeStudyChapter, selectStudyChapterRows } from "./study-quiz.mjs";
@@ -195,6 +195,7 @@ async function listExplanationFigures() {
 
   explanationFiguresLoading = (async () => {
     const keys = [];
+    const visitedTokens = new Set();
     let continuationToken;
     do {
       const page = await getExplanationStorage().send(new ListObjectsV2Command({
@@ -206,6 +207,10 @@ async function listExplanationFigures() {
         if (object?.Key) keys.push(object.Key);
       }
       continuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
+      if (page.IsTruncated && (!continuationToken || visitedTokens.has(continuationToken))) {
+        throw new Error("incomplete_explanation_listing");
+      }
+      if (continuationToken) visitedTokens.add(continuationToken);
     } while (continuationToken);
 
     const figures = getExplanationFiguresFromObjectKeys(keys);
@@ -1052,6 +1057,7 @@ export default async function handler(req, res) {
         ok: true,
         count: figures.length,
         figures,
+        complete: explanationListingMatchesAssets(),
         ...(access.accessToken ? {
           accessToken: access.accessToken,
           accessTokenExpiresAt: access.accessTokenExpiresAt

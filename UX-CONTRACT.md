@@ -10,6 +10,12 @@
 - Optional `MagicBookLearningSync` cache/outbox reads and cache writes have a 1.5-second UI wait budget. A stalled database does not prevent online statistics/errors from loading. No stored answers are deleted, no storage owner is replaced, and the existing user-scoped IndexedDB/synchronization remains unchanged. If local reads time out, online data may not yet include unsynchronized answers.
 - Verify actual native chapter/dock taps, expired-token recovery, revoked/invalid access, stalled storage, offline cache, failure/retry and account/device cancellation. These are reproduced failure paths, not confirmation of the cause on an unconnected physical phone.
 
+## Study explanation availability
+
+- `study-quiz.js` owns lazy availability checks and the existing explanation player. Only a confirmed missing recording or required legacy review hides the player. Temporary status failures, network failures and request deadlines keep the play action available for an explicit retry; they never become a cached absence. Playback authorization and legacy collision checks remain owned by `api/quiz.js`.
+- One concurrent status request per question; successful positive/negative results stay in document memory for five minutes with at most128 entries. Returning to a chapter reuses fresh results and rechecks expired ones only when the card becomes visible. Leaving cancels observers, timers and requests; late results cannot update cards. No polling or automatic retry loop. Manual playback retains the existing bounded blob/signed-URL fallback.
+- Regression evidence: `tests/study-audio-request-lifecycle.test.mjs` covers transient errors, timeout/cancellation, cache expiry, deduplication and navigation. `tests/quiz-request-efficiency.test.mjs` verifies chapter17 questions20/21 status and playback for users/admins with mocked storage and exact request counts.
+
 ## Canonical UI map
 
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |

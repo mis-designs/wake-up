@@ -110,7 +110,9 @@ const QUIZ_API = "/api/quiz";
 const ASSET_API = "/api/asset";
 const QUIZ_FIGURE_PRESENTATION = "numberless-v2";
 const EXPLANATION_EXTENSIONS = ["png", "webp", "jpg", "jpeg"];
-const EXPLANATION_FIGURES_CACHE_KEY = "magicbook_explanation_figures_v1";
+// v1 mixed complete listings with individually discovered figures: it cannot prove absence.
+const EXPLANATION_FIGURES_CACHE_KEY = "magicbook_explanation_figures_v2";
+const EXPLANATION_AVAILABILITY_TTL_MS = 60_000;
 const QUIZ_MODE_CONFIG = {
   exam80: { title: "Exam", timerMinutes: 50 },
   exam30: { title: "Exam", timerMinutes: 20 },
@@ -2044,84 +2046,144 @@ function getNormalizedFigureKey(question) {
   return match ? `fig${Number(match[1])}` : basename.replace(/\.[a-z0-9]+$/i, "");
 }
 
+let explanationFiguresExpiresAt = 0;
+let explanationFiguresComplete = false;
 let explanationFigures = readCachedExplanationFigures();
+let explanationFiguresRequest = null;
+let explanationFiguresController = null;
+let explanationFiguresRetryAt = 0;
+let explanationChecksSuspended = false;
 const explanationFigureChecks = new Map();
+const explanationProbeCache = new Map();
+
+function cancelExplanationProbes() {
+  for (const check of explanationFigureChecks.values()) check.controller.abort();
+  explanationFigureChecks.clear();
+}
+
+// Installed once per document, not per question or popup.
+window.addEventListener("magicbook:quiz-question-change", cancelExplanationProbes);
+window.addEventListener("pagehide", () => {
+  explanationChecksSuspended = true;
+  explanationFiguresController?.abort();
+  cancelExplanationProbes();
+});
+window.addEventListener("pageshow", event => {
+  explanationChecksSuspended = false;
+  if (event.persisted && quiz[current]) updateExplanationButton(quiz[current]);
+});
 
 function readCachedExplanationFigures() {
   try {
     const cached = JSON.parse(localStorage.getItem(EXPLANATION_FIGURES_CACHE_KEY) || "null");
-    return new Set(Array.isArray(cached?.figures) ? cached.figures : []);
-  } catch (_) {
-    return new Set();
-  }
+    const age = Date.now() - Number(cached?.savedAt);
+    if (typeof cached?.complete === "boolean" && age >= 0 && age < EXPLANATION_AVAILABILITY_TTL_MS
+      && Array.isArray(cached.figures) && cached.figures.every(value => /^fig\d+$/.test(value))) {
+      explanationFiguresExpiresAt = Number(cached.savedAt) + EXPLANATION_AVAILABILITY_TTL_MS;
+      explanationFiguresComplete = cached.complete;
+      return new Set(cached.figures);
+    }
+  } catch (_) {}
+  return new Set();
 }
 
 async function refreshExplanationFigures() {
-  if (TRIAL_MODE) return explanationFigures;
-  const data = await fetchQuizJson(buildQuizApiUrl("getExplanationFigures"), { cache: "no-store" });
-  const figures = Array.isArray(data.figures) ? data.figures.filter(value => /^fig\d+$/.test(value)) : [];
-  explanationFigures = new Set(figures);
-  try {
-    localStorage.setItem(EXPLANATION_FIGURES_CACHE_KEY, JSON.stringify({ figures, savedAt: Date.now() }));
-  } catch (_) {}
-  if (quiz[current]) updateExplanationButton(quiz[current]);
-  return explanationFigures;
-}
-
-function saveExplanationFigures() {
-  const figures = [...explanationFigures];
-  try {
-    localStorage.setItem(EXPLANATION_FIGURES_CACHE_KEY, JSON.stringify({ figures, savedAt: Date.now() }));
-  } catch (_) {}
+  if (TRIAL_MODE || explanationChecksSuspended || explanationFiguresExpiresAt > Date.now()) return explanationFigures;
+  if (explanationFiguresRequest) return explanationFiguresRequest;
+  if (explanationFiguresRetryAt > Date.now()) return explanationFigures;
+  const controller = new AbortController();
+  explanationFiguresController = controller;
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+  const request = (async () => {
+    try {
+      const data = await fetchQuizJson(buildQuizApiUrl("getExplanationFigures"), { signal: controller.signal });
+      if (!Array.isArray(data?.figures) || !data.figures.every(value => /^fig\d+$/.test(value))) {
+        throw new Error("invalid_explanation_listing");
+      }
+      if (controller.signal.aborted) return explanationFigures;
+      explanationFigures = new Set(data.figures);
+      explanationFiguresComplete = data.complete === true;
+      const savedAt = Date.now();
+      explanationFiguresExpiresAt = savedAt + EXPLANATION_AVAILABILITY_TTL_MS;
+      explanationFiguresRetryAt = 0;
+      explanationProbeCache.clear();
+      try {
+        localStorage.setItem(EXPLANATION_FIGURES_CACHE_KEY, JSON.stringify({
+          figures: [...explanationFigures], savedAt, complete: explanationFiguresComplete
+        }));
+      } catch (_) {}
+    } catch (_) {
+      // Optional help availability must not retry on every render/navigation.
+      // fetchQuizJson still handles authentication failures centrally.
+      if (!explanationChecksSuspended) explanationFiguresRetryAt = Date.now() + 30_000;
+    } finally {
+      clearTimeout(timeout);
+      if (explanationFiguresController === controller) explanationFiguresController = null;
+    }
+    return explanationFigures;
+  })().finally(() => {
+    if (explanationFiguresRequest === request) explanationFiguresRequest = null;
+  });
+  explanationFiguresRequest = request;
+  return request;
 }
 
 async function checkExplanationFigure(figureKey) {
-  if (!figureKey) return false;
+  if (!/^fig\d+$/.test(figureKey) || explanationChecksSuspended) return false;
   if (explanationFigures.has(figureKey)) return true;
-  if (explanationFigureChecks.has(figureKey)) return explanationFigureChecks.get(figureKey);
-
+  if (explanationFiguresComplete && explanationFiguresExpiresAt > Date.now()) return false;
+  for (const [key, entry] of explanationProbeCache) {
+    if (entry.expiresAt <= Date.now()) explanationProbeCache.delete(key);
+  }
+  if (explanationProbeCache.has(figureKey)) return explanationProbeCache.get(figureKey).available;
+  if (explanationFigureChecks.has(figureKey)) return explanationFigureChecks.get(figureKey).promise;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
   const check = (async () => {
-    for (const extension of EXPLANATION_EXTENSIONS) {
-      const response = await fetch(buildExplanationImageUrl(figureKey, 0, extension), {
-        method: "HEAD",
-        cache: "no-store"
-      }).catch(() => null);
-      if (response?.ok) {
-        explanationFigures.add(figureKey);
-        saveExplanationFigures();
-        return true;
+    let available = false;
+    let ttl = EXPLANATION_AVAILABILITY_TTL_MS;
+    try {
+      for (const extension of EXPLANATION_EXTENSIONS) {
+        const response = await fetch(buildExplanationImageUrl(figureKey, 0, extension), {
+          method: "HEAD", signal: controller.signal
+        });
+        if (controller.signal.aborted) return false;
+        if (response.ok) {
+          available = true;
+          explanationFigures.add(figureKey);
+          break;
+        }
+        if (response.status !== 404) {
+          ttl = 10_000;
+          break; // A service failure is not evidence that the next format is missing.
+        }
       }
+    } catch (_) {
+      ttl = 10_000;
     }
-    return false;
-  })().finally(() => explanationFigureChecks.delete(figureKey));
-
-  explanationFigureChecks.set(figureKey, check);
+    if (!controller.signal.aborted) {
+      if (explanationProbeCache.size >= 64) explanationProbeCache.delete(explanationProbeCache.keys().next().value);
+      explanationProbeCache.set(figureKey, { available, expiresAt: Date.now() + ttl });
+    }
+    return available;
+  })().finally(() => {
+    clearTimeout(timeout);
+    if (explanationFigureChecks.get(figureKey)?.controller === controller) explanationFigureChecks.delete(figureKey);
+  });
+  explanationFigureChecks.set(figureKey, { promise: check, controller });
   return check;
 }
 
 function checkCurrentExplanationFigure(question) {
   const figureKey = getNormalizedFigureKey(question);
   if (!figureKey || explanationFigures.has(figureKey)) return;
-  void checkExplanationFigure(figureKey).then(available => {
-    if (available && getNormalizedFigureKey(quiz[current]) === figureKey) {
+  void refreshExplanationFigures().then(async () => {
+    if (explanationChecksSuspended || quizAccessErrorHandled || getNormalizedFigureKey(quiz[current]) !== figureKey) return;
+    const available = await checkExplanationFigure(figureKey);
+    if (!explanationChecksSuspended && available && getNormalizedFigureKey(quiz[current]) === figureKey) {
       updateExplanationButton(quiz[current]);
     }
   });
-}
-
-async function checkQuizExplanationFigures(questions) {
-  const figures = [...new Set((Array.isArray(questions) ? questions : [])
-    .map(getNormalizedFigureKey)
-    .filter(Boolean))];
-  const concurrency = 6;
-  let cursor = 0;
-  const worker = async () => {
-    while (cursor < figures.length) {
-      const figureKey = figures[cursor++];
-      await checkExplanationFigure(figureKey);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(concurrency, figures.length) }, worker));
 }
 
 function getFigureKey(question) {
@@ -2291,10 +2353,6 @@ async function loadQuiz() {
   let recoveryAction = null;
 
   try {
-    const explanationFiguresRequest = refreshExplanationFigures().catch(error => {
-      console.warn("[quiz] explanation figures unavailable", error?.message || error);
-      return explanationFigures;
-    });
     const routeInfo = getQuizRouteInfo();
     const chapters = routeInfo.chapters || "";
     if (TRIAL_MODE && !TRIAL_ALLOWED_CHAPTERS.has(chapters)) throw new Error("trial_chapter_forbidden");
@@ -2320,7 +2378,6 @@ async function loadQuiz() {
       throw new Error("invalid_quiz_response");
     }
     quiz = data.quiz;
-    void explanationFiguresRequest.finally(() => checkQuizExplanationFigures(quiz));
 
     const modeConfig = getQuizModeConfig(quizMode);
     const titleEl = document.querySelector(".top-bar h2");

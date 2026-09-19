@@ -21,3 +21,12 @@ export function getExplanationFiguresFromObjectKeys(keys) {
       .filter(Boolean)
   )].sort((left, right) => Number(left.slice(3)) - Number(right.slice(3)));
 }
+
+// A listing may prove absence only in the same account/bucket that serves images.
+export function explanationListingMatchesAssets(env = process.env) {
+  const listingBucket = env.EXPLANATION_R2_BUCKET || env.R2_BUCKET_NAME || env.R2_BUCKET || env.QUIZ_AUDIO_R2_BUCKET;
+  const listingAccount = env.EXPLANATION_R2_ACCOUNT_ID || env.R2_ACCOUNT_ID || env.QUIZ_AUDIO_R2_ACCOUNT_ID;
+  const bucket = String(env.BOOK_R2_BUCKET || "").trim();
+  const account = String(env.BOOK_R2_ACCOUNT_ID || "").trim();
+  return Boolean(bucket && account && listingBucket === bucket && listingAccount === account);
+}

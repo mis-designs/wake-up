@@ -13,6 +13,21 @@ const fixtures = [
   { id: 704, label: [50, 60, 395, 225] }
 ];
 
+test("identical concurrent and repeated figure transforms reuse bytes; source or figure changes do not", async () => {
+  const original = readFileSync(new URL("fixtures/quiz-figures/fig40.jpg", import.meta.url));
+  const [first, concurrent] = await Promise.all([
+    renderNumberlessQuizFigure(original, { figure: "fig40" }),
+    renderNumberlessQuizFigure(Buffer.from(original), { figure: "fig40" })
+  ]);
+  assert.equal(first, concurrent, "single-flight shares the actual rendered buffer");
+  assert.equal(await renderNumberlessQuizFigure(original, { figure: "fig40" }), first);
+  const changedSource = await sharp(original).resize({ width: 321 }).png().toBuffer();
+  const changed = await renderNumberlessQuizFigure(changedSource, { figure: "fig40" });
+  assert.notEqual(changed, first);
+  assert.equal((await sharp(changed).metadata()).width, 321);
+  assert.notEqual(await renderNumberlessQuizFigure(original, { figure: "fig698" }), first);
+});
+
 for (const { id, label } of fixtures) {
   test(`real figure ${id}: remove the number and preserve every pixel of the drawing`, async () => {
     const original = readFileSync(new URL(`fixtures/quiz-figures/fig${id}.jpg`, import.meta.url));

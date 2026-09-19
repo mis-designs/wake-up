@@ -11,7 +11,6 @@ const PROMO_STATUS_API = "/api/promo-status";
 // Temporary public switch: set this single value to true to restore Promo Code access.
 const PROMO_LOGIN_ENABLED = false;
 const APP_TITLE = "MagicBook";
-const EXPLANATION_FIGURES_CACHE_KEY = "magicbook_explanation_figures_v1";
 const PROMO_CAMPAIGN_DURATION_MS = 3 * 24 * 60 * 60 * 1000;
 const FREE_TRIAL_CHAPTERS = Object.freeze([1, 3]);
 const FREE_TRIAL_CHAPTER_SET = new Set(FREE_TRIAL_CHAPTERS);
@@ -815,7 +814,6 @@ async function validateRestoredSession(phone, deviceId) {
         });
         updateAdminEntryVisibility();
         checkRenewReminder();
-        void warmExplanationFiguresCache();
         return true;
       }
 
@@ -949,7 +947,6 @@ function completeLogin(phone, deviceId, data) {
   maybeShowWhatsNewPopup();
   void window.MagicDictionaryFeature?.onAuthenticated();
   startAccessValidationTimer();
-  void warmExplanationFiguresCache();
   checkRenewReminder(true);
   maybeShowWhatsAppGroupPopup();
 
@@ -2326,29 +2323,6 @@ function syncAppUtilityLayout() {
   root.dataset.appAdminVisible = String(adminVisible);
   root.dataset.appProfileVisible = String(profileVisible);
   root.dataset.appMenuVisible = String(menuVisible);
-}
-
-async function warmExplanationFiguresCache() {
-  const phone = getCurrentSessionPhone();
-  const deviceId = getCurrentSessionDeviceId();
-  if (!phone || !deviceId) return;
-
-  const query = new URLSearchParams({ action: "getExplanationFigures", phone, deviceId });
-  try {
-    const token = getCurrentAccessToken();
-    const response = await fetch(`/api/quiz?${query.toString()}`, {
-      cache: "no-store",
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
-    });
-    if (!response.ok) return;
-    const data = await response.json();
-    const figures = Array.isArray(data?.figures)
-      ? data.figures.filter(value => /^fig\d+$/.test(value))
-      : [];
-    Storage.set(EXPLANATION_FIGURES_CACHE_KEY, JSON.stringify({ figures, savedAt: Date.now() }));
-  } catch (error) {
-    console.warn("Explanation figures preload unavailable", error);
-  }
 }
 
 function updateProfileUI(isLoggedIn = true) {

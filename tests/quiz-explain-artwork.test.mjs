@@ -13,7 +13,7 @@ test("web Quiz keeps its artwork and only installed Android hides it", () => {
   assert.match(html, /id="quiz-audio-artwork" class="quiz-audio-artwork quiz-web-only"/u);
   assert.match(styles, /html\.android-webview \.quiz-page \.quiz-web-only \{ display: none; \}/u);
   assert.match(html, /mystyle\.css\?v=58-compact-loading/u);
-  assert.match(html, /quiz\.js\?v=85-audio-speed/u);
+  assert.match(html, /quiz\.js\?v=86-request-budget/u);
   assert.match(worker, /\/icons\/explain_quiz\.svg/u);
 });
 
