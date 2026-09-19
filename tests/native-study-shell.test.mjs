@@ -92,7 +92,7 @@ test("Vai shares the scalloped shape without clipping its label, focus or touch 
 
 test("six bilingual action rails preserve labels, font roles and fixed target geometry", () => {
   const html = read("index.html");
-  for (const label of ["কুইজ পড়ুন", "কুইজ করুন", "শব্দার্থ", "কঠিন প্রশ্নগুলো", "আমার অগ্রগতি", "ভুলগুলো"]) {
+  for (const label of ["পড়াশোনা করুন", "কুইজ করুন", "শব্দার্থ", "কঠিন প্রশ্নগুলো", "আমার অগ্রগতি", "ভুলগুলো"]) {
     assert.ok(html.includes(`data-native-bn="${label}"`));
   }
   const js = read("android-study-shell.js");

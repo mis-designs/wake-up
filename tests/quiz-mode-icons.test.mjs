@@ -18,8 +18,10 @@ test("quiz mode cards use the supplied image assets instead of emoji", () => {
   assert.doesNotMatch(index, /qms-badge-study">🎧|qms-badge-mix">🎲|qms-badge-cap">📖|qms-badge-multi">🗂️/u);
 });
 
-test("the study card uses the Magic Quizzes title", () => {
+test("the browser study card keeps its chapter offer without advertising the Android preview", () => {
   assert.match(index, /<div class="qms-card-title">Studia 786 Magic Quizzes :\)<\/div>/u);
+  assert.match(index, /Tutte le domande, audio, traduzioni e parole chiave/);
+  assert.doesNotMatch(index, /Quiz per capitolo, segnali e figure|Scegli cosa studiare/);
   assert.doesNotMatch(index, /<div class="qms-card-title">STUDIA QUIZ<\/div>/u);
 });
 

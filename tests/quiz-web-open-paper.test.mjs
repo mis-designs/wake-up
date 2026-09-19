@@ -32,5 +32,5 @@ test('web question numbers reserve space for a bounded shadow and focus ring',()
   assert.match(variant,/\.progress-dot--current \{\s*transform: none;\s*box-shadow: var\(--quiz-web-dot-shadow\)/);
   assert.match(variant,/\.progress-dot:focus-visible \{[^}]*outline: 2px solid var\(--color-primary\);[^}]*outline-offset: 3px;/s);
   assert.match(read('quiz.html'),/mystyle\.css\?v=58-compact-loading/);
-  assert.match(read('service-worker.js'),/magicbook-pwa-v206-audio-recovery/);
+  assert.match(read('service-worker.js'),/magicbook-pwa-v208-android-figure-preview/);
 });

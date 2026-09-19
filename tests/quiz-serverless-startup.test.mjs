@@ -12,7 +12,7 @@ const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 test("the traced Quiz function includes its catalogs and starts outside the source checkout", async t => {
   const { fileList } = await nodeFileTrace(["api/quiz.js"], { base: projectRoot, processCwd: projectRoot });
   const files = new Set([...fileList].map(file => file.replaceAll("\\", "/")));
-  for (const file of ["api/_quiz-bank.json", "data/quiz-audio-legacy-collisions-v1.json", "quiz-audio-identity.cjs"]) {
+  for (const file of ["api/_quiz-bank.json", "data/quiz-audio-legacy-collisions-v1.json", "quiz-audio-identity.cjs", "api/figure-study.mjs", "figure-catalog.mjs"]) {
     assert.ok(files.has(file), `Vercel would omit ${file}`);
   }
 

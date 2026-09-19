@@ -100,6 +100,13 @@ function getDynamicAsset(query = {}) {
     if (!figure || !IMAGE_CONTENT_TYPES[ext]) return null;
     if (!isSafeFilePart(value)) return null;
 
+    if (query.file) {
+      const file = String(query.file);
+      const canonical = normalizeExplanationFigure(figure);
+      if (!canonical || value !== "0" || !new RegExp(`^${canonical}(?:_[01])?\\.(webp|png|jpg|jpeg)$`).test(file)) return null;
+      return { path: `explanations/${file}`, contentType: IMAGE_CONTENT_TYPES[file.split('.').pop()] };
+    }
+
     const candidates = getExplanationAssetCandidates(figure, value, ext);
     return candidates.length ? candidates : null;
   }

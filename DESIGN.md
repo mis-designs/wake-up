@@ -25,13 +25,14 @@ canonical_ui:
     - src/learning-insights.css
     - assets/fonts/magicbook-bangla-fonts.css
     - study-quiz.css
+    - figure-study.css
     - libreria-font.css
     - magic-styles.css
   notes: Existing application tokens remain canonical. Locally compiled, d-prefixed daisyUI controls provide interaction primitives; the scoped learning stylesheet owns layout and visual hierarchy.
 design_context:
   owner: Magic Book
-  last_updated: 2026-09-12
-  revision_notes: "Owner-approved unibody login replaces the glass pass, brand heading and greeting rail on web and Android. Intact floating book, verified public traffic signs with dictionary Bangla, direct phone form, small signature and keyboard-aware document scrolling. Authentication and other routes unchanged."
+  last_updated: 2026-09-19
+  revision_notes: "Segnali e figure is an installed-Android-only development preview. Browser entry/deep links keep the existing chapter study; content and future web presentation remain reusable. Login, authorization and scoring are unchanged."
 ---
 
 # Magic Book design context
@@ -39,6 +40,16 @@ design_context:
 ## Product intent
 
 Magic Book helps adult, primarily Bangla-speaking learners in Italy decide what to study next for the driving-licence exam. Navigation and actions use short A2/B1 Italian. Bangla is supporting content where the catalog already supplies it. The interface reports observed quiz results only; it never predicts exam readiness or invents causes.
+
+### Studia: segnali e figure (2026-09-19)
+
+Owner-approved extension: the existing Study entry is labelled `Studia` (`পড়াশোনা করুন` in the native bilingual rail). It contains the unchanged chapter reader and a new `Segnali e figure` path. No new authentication flow or trial entitlement. Both platforms share 186 existing figure identities, 12 explicit teaching categories, local bilingual search, Allbooks illustrations and protected examples. Browser Study retains its green tokens and open white reading canvas; only `html.android-webview` consumes the blue/graphite palette and a single white lesson surface. No mobile-UA heuristics.
+
+Current rollout overrides availability, not content: the owner's follow-up restricts this development preview to the installed Android marker. `FIGURE_STUDY_ROLLOUT = "android-preview"` in `study-quiz.js` owns entry and route eligibility. Ordinary browsers/PWAs, including mobile Chrome and embedded social browsers, show the previous chapter-only study offer; figure deep links normalize in place without importing the feature or fetching examples. Trial remains chapter-only on both platforms. This is not a personal/admin entitlement or a security boundary: every eligible installed-app user can see it. A later explicit owner approval may change the rollout to `all`.
+
+`figure-study.css` consumes `study-quiz.css`'s existing ink/muted/line/surface/font tokens; native aliases stay owned by `android-app-theme.css`. Category navigation uses quiet ruled rows with real counts; no decorative sign icons or animation. Search precedes categories, figure galleries show at most18 items per batch, and one document scroller owns the page. The detail uses the original numberless figure and IT/BN names; large Bangla names retain Hadi Rounded. The existing shared figure popup owns enlargement and close/back behavior. Figures are teaching assets, never AI-redrawn decorations.
+
+Illustrations come from the existing Allbooks → Magic Book upload archive, not copied draft files. No inferred lesson text or manufactured true/false partner; missing illustrations/examples have explicit states. Names retain catalog provenance; the category introduction follows the classification in [ACI, article39](https://aci.gov.it/codice-della-strada/art-39/). Detailed position/distance rules require separately reviewed editorial content, not a universal assumed distance. See `docs/figure-study.md` for scope, request budget and publication checks.
 
 ## Visual direction
 

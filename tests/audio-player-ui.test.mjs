@@ -128,12 +128,12 @@ test("playback state updates the visible control and its accessible action", () 
 
 test("the shared player ships through the current PWA cache", () => {
   assert.match(quizPage, /audio-focus\.js\?v=1-resumable-tts[\s\S]*?quiz\.js\?v=86-request-budget/u);
-  assert.match(studyPage, /audio-focus\.js\?v=1-resumable-tts[\s\S]*?study-quiz\.js\?v=28-request-budget/u);
+  assert.match(studyPage, /audio-focus\.js\?v=1-resumable-tts[\s\S]*?study-quiz\.js\?v=30-android-figure-preview/u);
   assert.match(quizPage, /quiz\.js\?v=86-request-budget/u);
-  assert.match(studyPage, /study-quiz\.js\?v=28-request-budget/u);
-  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v206-audio-recovery"/u);
+  assert.match(studyPage, /study-quiz\.js\?v=30-android-figure-preview/u);
+  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v208-android-figure-preview"/u);
   assert.match(worker, /audio-player-ui\.css\?v=9-slim-study/u);
   assert.match(worker, /audio-focus\.js\?v=1-resumable-tts/u);
   assert.match(worker, /quiz\.js\?v=86-request-budget/u);
-  assert.match(worker, /study-quiz\.js\?v=28-request-budget/u);
+  assert.match(worker, /study-quiz\.js\?v=30-android-figure-preview/u);
 });

@@ -44,3 +44,28 @@ test("only confirmed missing public assets get a short negative cache; errors st
   assert.equal(success.statusCode, 204);
   assert.equal(success.headers["Cache-Control"], "public, max-age=300, s-maxage=3600");
 });
+
+test("an indexed explanation reads exactly one public object; invalid filenames never reach storage", async t => {
+  for (const key of ["BOOK_R2_BUCKET", "BOOK_R2_ACCOUNT_ID", "BOOK_R2_ACCESS_KEY_ID", "BOOK_R2_SECRET_ACCESS_KEY"]) {
+    const previous = process.env[key];
+    process.env[key] = "local-test-only";
+    t.after(() => { if (previous === undefined) delete process.env[key]; else process.env[key] = previous; });
+  }
+  t.mock.method(globalThis, "fetch", () => assert.fail("unexpected external request"));
+  const keys = [];
+  t.mock.method(S3Client.prototype, "send", async command => { keys.push(command.input.Key); return {}; });
+  async function request(file) {
+    const res = { headers: {}, statusCode: 200,
+      setHeader(key, value) { this.headers[key] = value; },
+      status(code) { this.statusCode = code; return this; },
+      json(body) { this.body = body; return this; }, end() { return this; } };
+    await handler({ method: "HEAD", query: { kind: "explanation", figure: "fig40", value: "0", ext: "webp", file } }, res);
+    return res;
+  }
+  assert.equal((await request("fig40.webp")).statusCode, 204);
+  assert.deepEqual(keys, ["explanations/fig40.webp"]);
+  for (const file of ["../private.webp", "fig41.webp", "fig40.svg", "fig40_2.webp", "explanations/fig40.webp"]) {
+    assert.equal((await request(file)).statusCode, 404);
+  }
+  assert.equal(keys.length, 1);
+});

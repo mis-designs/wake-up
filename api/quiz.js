@@ -13,7 +13,8 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { neon } from "@neondatabase/serverless";
 import { applyQuizFigureCorrections } from "./quiz-figure-corrections.mjs";
-import { getExplanationFiguresFromObjectKeys, explanationListingMatchesAssets } from "./quiz-explanation-availability.mjs";
+import { getExplanationFiguresFromObjectKeys, explanationListingMatchesAssets, explanationFilesFromObjects } from "./quiz-explanation-availability.mjs";
+import { selectFigureStudyExamples } from "./figure-study.mjs";
 import { detectQuizAudioMimeType, normalizeQuizAudioMimeType } from "./audio-mime.mjs";
 import { fetchUpstream, publicApiError, withOperationalTimeout } from "./upstream-fetch.mjs";
 import { normalizeStudyChapter, selectStudyChapterRows } from "./study-quiz.mjs";
@@ -195,6 +196,7 @@ async function listExplanationFigures() {
 
   explanationFiguresLoading = (async () => {
     const keys = [];
+    const objects = [];
     const visitedTokens = new Set();
     let continuationToken;
     do {
@@ -204,7 +206,7 @@ async function listExplanationFigures() {
         ContinuationToken: continuationToken
       }));
       for (const object of page.Contents || []) {
-        if (object?.Key) keys.push(object.Key);
+        if (object?.Key) { keys.push(object.Key); objects.push(object); }
       }
       continuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
       if (page.IsTruncated && (!continuationToken || visitedTokens.has(continuationToken))) {
@@ -216,6 +218,7 @@ async function listExplanationFigures() {
     const figures = getExplanationFiguresFromObjectKeys(keys);
     explanationFiguresCache = {
       figures,
+      files: explanationFilesFromObjects(objects),
       expiresAt: Date.now() + EXPLANATION_FIGURES_CACHE_TTL_MS
     };
     return figures;
@@ -1058,6 +1061,7 @@ export default async function handler(req, res) {
         count: figures.length,
         figures,
         complete: explanationListingMatchesAssets(),
+        files: explanationListingMatchesAssets() ? explanationFiguresCache.files : {},
         ...(access.accessToken ? {
           accessToken: access.accessToken,
           accessTokenExpiresAt: access.accessTokenExpiresAt
@@ -1114,6 +1118,18 @@ export default async function handler(req, res) {
           accessTokenExpiresAt: access.accessTokenExpiresAt
         } : {})
       });
+    }
+
+    if (req.method === "GET" && action === "getFigureStudy") {
+      res.setHeader("Cache-Control", "no-store");
+      res.setHeader("CDN-Cache-Control", "no-store");
+      res.setHeader("Vercel-CDN-Cache-Control", "no-store");
+      const access = await ensureAccess({ phone, deviceId, accessToken });
+      if (!access.ok) return res.status(access.statusCode || 401).json({ error: access.error || "unauthorized" });
+      const examples = selectFigureStudyExamples(LOCAL_MAGIC_BOOK_ROWS.map(normalizeQuestionRow), figure);
+      if (!examples) return res.status(400).json({ error: "invalid_study_figure" });
+      return res.status(200).json({ ok: true, examples,
+        ...(access.accessToken ? { accessToken: access.accessToken, accessTokenExpiresAt: access.accessTokenExpiresAt } : {}) });
     }
 
     if (req.method === "GET" && action === "getStudyQuiz") {

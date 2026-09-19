@@ -6,6 +6,7 @@ import {
   getExplanationFigureFromObjectKey,
   getExplanationFiguresFromObjectKeys,
   explanationListingMatchesAssets,
+  explanationFilesFromObjects,
   normalizeExplanationFigureKey
 } from "../api/quiz-explanation-availability.mjs";
 
@@ -47,7 +48,7 @@ function listingFixture(page) {
   const context = vm.createContext({
     EXPLANATION_R2_BUCKET: "fixture", EXPLANATION_FIGURES_CACHE_TTL_MS: 300_000,
     explanationFiguresCache: { expiresAt: 0, figures: [] }, explanationFiguresLoading: null,
-    getExplanationFiguresFromObjectKeys,
+    getExplanationFiguresFromObjectKeys, explanationFilesFromObjects,
     ListObjectsV2Command: class { constructor(input) { this.input = input; } },
     getExplanationStorage: () => ({ send: async command => { calls++; return respond(command.input); } })
   });

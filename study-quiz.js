@@ -2,6 +2,13 @@
   "use strict";
 
   const TRIAL_MODE = window.location.pathname.replace(/\/+$/, "") === "/studia-quiz/prova-gratis";
+  // Presentation rollout only, not an access/role check. Web release requires
+  // an explicit change to "all"; no query string or persisted opt-in enables it.
+  const FIGURE_STUDY_ROLLOUT = "android-preview";
+  const FIGURE_STUDY_ENABLED = !TRIAL_MODE && (
+    FIGURE_STUDY_ROLLOUT === "all"
+    || (FIGURE_STUDY_ROLLOUT === "android-preview" && document.documentElement.classList.contains("android-webview"))
+  );
   const API = TRIAL_MODE ? "/api/trial" : "/api/quiz";
   const HOME = TRIAL_MODE ? "/prova-gratis" : "/magic-book";
   const TRIAL_ALLOWED_CHAPTERS = new Set([1, 3]);
@@ -76,6 +83,9 @@
   let explanationRequestId = 0;
   let toastTimer = 0;
   let loadRequestId = 0;
+  let figureStudy = null;
+  let figureStudyModule = null;
+  let figureView = false;
   let wordTtsRequestId = 0;
   let ttsRequest = null;
   const QUIZ_SESSION_REFRESH_SKEW_MS = 90 * 1000;
@@ -447,8 +457,15 @@
     elements.chapterGrid.replaceChildren(fragment);
   }
 
-  function showPicker({ updateHistory = false } = {}) {
+  function showPicker({ updateHistory = false, scroll = true } = {}) {
     loadRequestId += 1;
+    figureStudy?.suspend();
+    figureView = false;
+    document.body.classList.remove('study-figures-active');
+    document.getElementById('study-figures').classList.add('hidden');
+    document.getElementById('study-paths').classList.toggle('hidden', !FIGURE_STUDY_ENABLED);
+    document.getElementById('study-path-quiz').setAttribute('aria-current', 'page');
+    document.getElementById('study-path-figures').removeAttribute('aria-current');
     resetAudioObservation();
     if (currentChapter) markStudyChapterExit(currentChapter);
     currentChapter = null;
@@ -458,14 +475,14 @@
     elements.error.classList.add("hidden");
     elements.reader.classList.add("hidden");
     elements.chapters.classList.remove("hidden");
-    elements.title.textContent = "Studia quiz";
+    elements.title.textContent = FIGURE_STUDY_ENABLED ? "Studia" : "Studia quiz";
     elements.subtitle.textContent = TRIAL_MODE
       ? "Capitoli 1 e 3 gratuiti per sette giorni, con una selezione di audio."
       : "Scegli un capitolo e studia tutte le domande.";
     renderStudyIntro();
-    document.title = "MagicBook | Studia quiz";
+    document.title = FIGURE_STUDY_ENABLED ? "MagicBook | Studia" : "MagicBook | Studia quiz";
     if (updateHistory) history.pushState({ screen: "study" }, "", TRIAL_MODE ? "/studia-quiz/prova-gratis" : "/studia-quiz");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (scroll) window.scrollTo({ top: 0, behavior: "auto" });
   }
 
   async function openChapter(chapter, { updateHistory = true } = {}) {
@@ -475,6 +492,11 @@
       return;
     }
     const ownRequest = ++loadRequestId;
+    figureStudy?.suspend();
+    figureView = false;
+    document.body.classList.remove('study-figures-active');
+    document.getElementById('study-figures').classList.add('hidden');
+    document.getElementById('study-paths').classList.add('hidden');
     currentChapter = chapter;
     stopPlayback();
     elements.chapters.classList.add("hidden");
@@ -1740,18 +1762,88 @@
     elements.emptySearch.classList.toggle("hidden", visible !== 0);
   }
 
+  function isFigureStudyLocation() {
+    return FIGURE_STUDY_ENABLED && !chapterFromLocation() && new URLSearchParams(location.search).get('view') === 'figures';
+  }
+
+  function normalizeFigureStudyLocation() {
+    if (FIGURE_STUDY_ENABLED) return;
+    const url = new URL(location.href);
+    if (url.searchParams.get('view') !== 'figures') return;
+    for (const key of ['view', 'category', 'figure', 'q']) url.searchParams.delete(key);
+    history.replaceState({ ...history.state, screen: 'study' }, '', url.pathname + url.search + url.hash);
+  }
+
+  async function showFigureStudy() {
+    if (!FIGURE_STUDY_ENABLED) { normalizeFigureStudyLocation(); showPicker(); return; }
+    showPicker({ scroll: false });
+    const ownRequest = loadRequestId;
+    figureView = true;
+    elements.chapters.classList.add('hidden');
+    document.body.classList.add('study-figures-active');
+    const root = document.getElementById('study-figures');
+    root.classList.remove('hidden');
+    document.getElementById('study-path-quiz').removeAttribute('aria-current');
+    document.getElementById('study-path-figures').setAttribute('aria-current', 'page');
+    elements.title.textContent = 'Segnali e figure';
+    elements.subtitle.textContent = 'Scegli una categoria e impara a riconoscerle.';
+    try {
+      if (!figureStudy) {
+        root.textContent = 'Apro le figure…';
+        figureStudyModule ||= import('./figure-study.js?v=1').catch(error => { figureStudyModule = null; throw error; });
+        const module = await figureStudyModule;
+        if (ownRequest !== loadRequestId || !figureView) return;
+        figureStudy ||= module.createFigureStudy({ root,
+          identity: () => { const current = getSession(); return `${current?.phone || ''}:${current?.deviceId || ''}`; },
+          request: async (action, params, options) => {
+            const current = getSession();
+            if (current?.phone !== session.phone || current?.deviceId !== session.deviceId) throw new Error('unauthorized');
+            const query = new URLSearchParams({ action, phone: session.phone, deviceId: session.deviceId, ...params });
+            const data = await fetchStudyJson(`${API}?${query}`, { ...options, headers: authHeaders(), cache: 'no-store' });
+            saveAccessToken(data.accessToken, data.accessTokenExpiresAt);
+            return data;
+          },
+          navigate: path => { history.pushState({ screen: 'studyFigures' }, '', path); void showFigureStudy(); },
+          header: (title, subtitle) => { elements.title.textContent = title; elements.subtitle.textContent = subtitle; }
+        });
+      }
+      figureStudy.render(new URL(location.href));
+    } catch (_) {
+      if (ownRequest !== loadRequestId) return;
+      root.textContent = 'Non è stato possibile aprire le figure. Controlla la connessione.';
+      const retry = document.createElement('button'); retry.type = 'button'; retry.className = 'fs-button'; retry.textContent = 'Riprova';
+      retry.addEventListener('click', () => void showFigureStudy(), { once: true }); root.append(retry);
+    }
+  }
+  document.getElementById('study-paths').addEventListener('click', event => {
+    const link = event.target.closest('a');
+    if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) return;
+    event.preventDefault();
+    if (link.id === 'study-path-figures') {
+      if (!FIGURE_STUDY_ENABLED) return;
+      history.pushState({ screen: 'studyFigures' }, '', link.getAttribute('href')); void showFigureStudy();
+    } else showPicker({ updateHistory: true });
+  });
+
   elements.back.addEventListener("click", () => {
-    if (currentChapter) showPicker({ updateHistory: true });
+    if (figureView) {
+      if (!figureStudy || figureStudy.isRoot()) showPicker({ updateHistory: true });
+      else figureStudy.back();
+    } else if (currentChapter) showPicker({ updateHistory: true });
     else window.location.href = HOME;
   });
   elements.retry.addEventListener("click", () => currentChapter && openChapter(currentChapter, { updateHistory: false }));
   elements.search.addEventListener("input", filterQuestions);
   window.addEventListener("popstate", () => {
+    normalizeFigureStudyLocation();
+    if (isFigureStudyLocation()) { void showFigureStudy(); return; }
     const chapter = chapterFromLocation();
     if (chapter) openChapter(chapter, { updateHistory: false });
     else showPicker();
   });
   window.addEventListener("pageshow", event => {
+    normalizeFigureStudyLocation();
+    if (event.persisted && isFigureStudyLocation()) void showFigureStudy();
     if (!currentChapter) renderStudyIntro();
     if (event.persisted && currentChapter) {
       elements.list.querySelectorAll(".study-question-card").forEach(card => {
@@ -1764,14 +1856,18 @@
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && !currentChapter) renderStudyIntro();
   });
-  window.addEventListener("pagehide", () => {
+  window.addEventListener("pagehide", event => {
+    if (event.persisted) figureStudy?.suspend();
+    else figureStudy?.destroy();
     if (currentChapter) markStudyChapterExit(currentChapter);
     stopPlayback();
     resetAudioObservation();
   });
 
   buildChapterPicker();
+  normalizeFigureStudyLocation();
   const initialChapter = chapterFromLocation();
-  if (initialChapter) void openChapter(initialChapter, { updateHistory: false });
+  if (isFigureStudyLocation()) void showFigureStudy();
+  else if (initialChapter) void openChapter(initialChapter, { updateHistory: false });
   else showPicker();
 })();
