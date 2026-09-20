@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v210-web-quiz-inline";
+const CACHE_NAME = "magicbook-pwa-v211-web-quiz-layout";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -63,7 +63,7 @@ const STATIC_ASSETS = [
   "/src/learning-insights.css?v=9-card-spacing&ui=10",
   "/src/learning-insights.js?v=10-local-backup&ui=9-intact-figures",
   "/homebg.css?v=3",
-  "/mystyle.css?v=59-web-quiz-inline",
+  "/mystyle.css?v=60-web-quiz-layout",
   "/audio-player-ui.css?v=10-web-quiz-slim",
   "/script.js?v=77-request-budget",
   "/study-quiz.html",
@@ -76,7 +76,7 @@ const STATIC_ASSETS = [
   "/figure-study-notes.mjs?v=1",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=86-request-budget",
-  "/quiz-help.css?v=20260920-web-inline",
+  "/quiz-help.css?v=20260920-web-layout-2",
   "/quiz-help.js?v=20260920-web-inline",
   "/patenteGlossaryResolver.js?v=1.0.0",
   "/patenteContextResolverV3.js?v=4.0.0-glossary-display",

@@ -16,7 +16,7 @@ test("Android WebView is detected before the responsive stylesheet paints", () =
 
   assert.match(marker, /classList\.add\("android-webview"\)/u);
   assert.ok(index.indexOf("android-webview-mode.js") < index.indexOf("style.css?v=74-compact-loading"));
-  assert.ok(quiz.indexOf("android-webview-mode.js") < quiz.indexOf("mystyle.css?v=59-web-quiz-inline"));
+  assert.ok(quiz.indexOf("android-webview-mode.js") < quiz.indexOf("mystyle.css?v=60-web-quiz-layout"));
 });
 
 test("native density removes the blank promo and keeps compact, scroll-safe controls", () => {

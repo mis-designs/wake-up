@@ -48,3 +48,23 @@ test('web help uses the emerald owner and only roomy viewports split into column
   assert.match(css, /quizClickHintTap 1s ease-in-out 2/);
   assert.match(css, /prefers-reduced-motion: reduce/);
 });
+
+test('web figure keeps its full-width row while question and translation share the next row', () => {
+  const css = read('quiz-help.css');
+  assert.match(css, /html:not\(\.android-webview\) \.quiz-page \.has-web-help #figure-wrap \{ grid-column: 1 \/ -1; grid-row: 1;/);
+  assert.match(css, /\.has-web-help #question \{ grid-column: 1; grid-row: 2;/);
+  assert.match(css, /\.has-web-help \.quiz-help-workspace \{ grid-column: 2; grid-row: 2 \/ 4;/);
+});
+
+test('web navigation is wider without reducing the language targets or adding disclosure handlers', () => {
+  const styles = read('mystyle.css');
+  assert.match(styles, /--quiz-web-nav-width: clamp\(64px, 18vw, 80px\)/);
+  for (const id of ['prev', 'next']) {
+    assert.match(styles, new RegExp('html:not\\(\\.android-webview\\) \\.quiz-page #' + id + '-btn \\{[^}]*width: var\\(--quiz-web-nav-width\\)'));
+  }
+  const css = read('quiz-help.css');
+  assert.match(css, /\.quiz-help-context summary \{\s*display: flex;/);
+  assert.match(css, /\.quiz-help-context summary::-webkit-details-marker \{ display: none;/);
+  assert.match(css, /\.quiz-help-context\[open\] summary::after \{ transform: rotate\(225deg\)/);
+  assert.match(read('quiz.html'), /<details id="quiz-help-context"[^>]*>\s*<summary>Capitolo e argomento<\/summary>/);
+});

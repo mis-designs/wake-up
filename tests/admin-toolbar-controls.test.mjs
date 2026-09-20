@@ -58,7 +58,7 @@ test("Admin filters support arrow, Home and End navigation without weakening sea
 test("Admin control redesign ships through fresh PWA assets", () => {
   assert.match(page, /style\.css\?v=74-compact-loading/u);
   assert.match(page, /script\.js\?v=77-request-budget/u);
-  assert.match(worker, /magicbook-pwa-v210-web-quiz-inline/u);
+  assert.match(worker, /magicbook-pwa-v211-web-quiz-layout/u);
   assert.match(worker, /style\.css\?v=74-compact-loading/u);
   assert.match(worker, /script\.js\?v=77-request-budget/u);
 });

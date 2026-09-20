@@ -132,6 +132,52 @@ html:not(.android-webview) .quiz-page .quiz-help-kicker { display: none; }
 html:not(.android-webview) .quiz-page .quiz-help-content { overflow: visible; }
 html:not(.android-webview) .quiz-page .quiz-help-word { min-height: 44px; }
 html:not(.android-webview) .quiz-page .quiz-help-close:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+/* Preserve native details/summary keyboard semantics, with an authored web
+   disclosure that belongs to the same quiet emerald reading surface. */
+html:not(.android-webview) .quiz-page .quiz-help-context {
+  margin-top: 12px;
+  border: 1px solid color-mix(in srgb, var(--audio-player-emerald) 24%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-white) 65%, transparent);
+}
+html:not(.android-webview) .quiz-page .quiz-help-context summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-bottom: 1px solid transparent;
+  border-radius: 11px;
+  color: var(--magic-glass-ink);
+  font-size: .82rem;
+  font-weight: 600;
+  line-height: 1.4;
+  list-style: none;
+  text-decoration: none;
+}
+html:not(.android-webview) .quiz-page .quiz-help-context summary::-webkit-details-marker { display: none; }
+html:not(.android-webview) .quiz-page .quiz-help-context summary::marker { content: ""; }
+html:not(.android-webview) .quiz-page .quiz-help-context summary::after {
+  content: "";
+  flex: 0 0 8px;
+  width: 8px; height: 8px;
+  margin: -4px 3px 0;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 160ms ease;
+}
+html:not(.android-webview) .quiz-page .quiz-help-context[open] summary {
+  border-bottom-color: color-mix(in srgb, var(--audio-player-emerald) 20%, transparent);
+  border-radius: 11px 11px 0 0;
+}
+html:not(.android-webview) .quiz-page .quiz-help-context[open] summary::after { transform: rotate(225deg); margin-top: 4px; }
+html:not(.android-webview) .quiz-page .quiz-help-context summary:hover { background: color-mix(in srgb, var(--audio-player-emerald) 7%, transparent); }
+html:not(.android-webview) .quiz-page .quiz-help-context summary:active { background: color-mix(in srgb, var(--audio-player-emerald) 12%, transparent); }
+html:not(.android-webview) .quiz-page .quiz-help-context > div { margin: 0; padding: 10px 12px; }
+html:not(.android-webview) .quiz-page .quiz-help-context > div + div { padding-top: 0; }
 html:not(.android-webview) .quiz-page .quiz-click-hint {
   /* Reserve a small stable footer, including after dismissal. No floating pill. */
   display: flex; min-height: 32px; padding: 0; gap: 7px;
@@ -168,17 +214,20 @@ html:not(.android-webview) .quiz-page .quiz-click-hint-copy small { color: #4168
     column-gap: clamp(16px, 3vw, 40px);
     align-items: start;
   }
-  html:not(.android-webview) .quiz-page .has-web-help #figure-wrap { grid-column: 1; grid-row: 1; }
+  html:not(.android-webview) .quiz-page .has-web-help #figure-wrap { grid-column: 1 / -1; grid-row: 1; }
   html:not(.android-webview) .quiz-page .has-web-help #question { grid-column: 1; grid-row: 2; }
   html:not(.android-webview) .quiz-page .has-web-help #quiz-audio-recorder { grid-column: 1; grid-row: 3; }
-  html:not(.android-webview) .quiz-page .has-web-help .quiz-help-workspace { grid-column: 2; grid-row: 1 / 4; }
+  html:not(.android-webview) .quiz-page .has-web-help .quiz-help-workspace { grid-column: 2; grid-row: 2 / 4; }
 }
 @media (prefers-reduced-motion: reduce) {
+  html:not(.android-webview) .quiz-page .quiz-help-context summary::after { transition: none; }
   html:not(.android-webview) .quiz-page .quiz-help-discoverable .quiz-click-hint:not(.is-dismissed),
   html:not(.android-webview) .quiz-page .quiz-help-discoverable .quiz-click-hint-mark,
   html:not(.android-webview) .quiz-page .quiz-help-workspace { animation: none; }
 }
 @media (forced-colors: active) {
+  html:not(.android-webview) .quiz-page .quiz-help-context { border-color: CanvasText; background: Canvas; }
+  html:not(.android-webview) .quiz-page .quiz-help-context[open] summary { border-bottom-color: CanvasText; }
   html:not(.android-webview) .quiz-page .quiz-help-workspace { background: Canvas; border-color: CanvasText; }
   html:not(.android-webview) .quiz-page .quiz-click-hint { color: CanvasText; }
   html:not(.android-webview) .quiz-page .quiz-click-hint-mark { forced-color-adjust: none; background: CanvasText; }
