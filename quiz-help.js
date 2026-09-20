@@ -53,8 +53,9 @@
   const quizSurface = document.querySelector(".quiz-container");
   const questionScroller = document.querySelector(".quiz-question-content");
   const figureWrap = document.getElementById("figure-wrap");
-  // One presentation decision for browser phones and the installed WebView,
-  // including a phone turned sideways. Tablets retain the inline disclosure.
+  // Only the installed shell takes over the phone screen. Browser help stays
+  // in its original reading flow, including on small/landscape phones.
+  const isNativeQuiz = document.documentElement.classList.contains("android-webview");
   const phoneHelpQuery = window.matchMedia("(max-width: 600px), (max-width: 950px) and (max-height: 500px) and (pointer: coarse)");
   const workspaceHome = document.createComment("quiz-help-inline-home");
   const figureHome = document.createComment("quiz-help-figure-home");
@@ -75,6 +76,20 @@
   // Make the existing click-to-open help discoverable on the first question,
   // including the free-trial route, without covering or replacing the question.
   questionArea?.classList.toggle("quiz-help-discoverable", Number(current) === 0);
+
+  // At most three short CSS reminders per quiz; no polling or timer. Once help
+  // has been used, the existing dismissed state suppresses every reminder.
+  const hintedQuestions = new Set();
+  function updateWebHint() {
+    if (isNativeQuiz) return;
+    const index = Number(current);
+    const show = !!currentQuestion() && [0, 5, 10].includes(index)
+      && !hintedQuestions.has(index) && !clickHint?.classList.contains("is-dismissed")
+      && !document.hidden;
+    questionArea?.classList.toggle("quiz-help-discoverable", show);
+    if (show) hintedQuestions.add(index);
+  }
+  updateWebHint();
 
   function currentQuestion() {
     return Array.isArray(quiz) ? quiz[current] : null;
@@ -522,7 +537,7 @@
   function syncHelpPresentation() {
     if (workspace.classList.contains("hidden") || hasBlockingQuizLayer()) return;
     const hadFocus = workspace.contains(document.activeElement);
-    setHelpFullscreen(phoneHelpQuery.matches);
+    setHelpFullscreen(isNativeQuiz && phoneHelpQuery.matches);
     if (!fullscreenHelp && hadFocus) {
       workspace.querySelector("[data-help-close]").focus({ preventScroll: true });
       workspace.scrollIntoView({ block: "nearest", behavior: "instant" });
@@ -572,9 +587,34 @@
     if (hasBlockingQuizLayer()) return;
     workspace.classList.remove("hidden");
     workspace.setAttribute("aria-hidden", "false");
-    setHelpFullscreen(phoneHelpQuery.matches);
+    setHelpFullscreen(isNativeQuiz && phoneHelpQuery.matches);
+    if (!isNativeQuiz) {
+      questionArea.classList.add("has-web-help");
+      workspace.querySelector("[data-help-close]")?.focus({ preventScroll: true });
+      revealWebHelp();
+    }
     questionText?.setAttribute("aria-expanded", "true");
-    render();
+    const loading = render();
+    const openedRequest = requestId;
+    const openedScroll = questionScroller.scrollTop;
+    // The loading placeholder may initially fit without scrolling. Reveal the
+    // completed panel only if this request is still current and the reader has
+    // not moved in the meantime; late results never pull them away.
+    void loading.then(() => {
+      if (!isNativeQuiz && requestId === openedRequest
+        && !workspace.classList.contains("hidden")
+        && Math.abs(questionScroller.scrollTop - openedScroll) < 2) revealWebHelp();
+    });
+  }
+
+  function revealWebHelp() {
+    // One existing scroller, not a second page or nested mobile scroll area.
+    if (window.matchMedia("(min-width: 768px) and (min-height: 501px), (min-width: 951px)").matches) questionScroller.scrollTop = 0;
+    else {
+      const contextSpace = Math.min(64, Math.max(0, questionScroller.clientHeight - 180));
+      questionScroller.scrollTop += workspace.getBoundingClientRect().top
+        - questionScroller.getBoundingClientRect().top - contextSpace;
+    }
   }
 
   function close() {
@@ -585,6 +625,7 @@
     workspace.setAttribute("aria-busy", "false");
     questionText?.setAttribute("aria-expanded", "false");
     setHelpFullscreen(false);
+    questionArea.classList.remove("has-web-help");
     stopWordAudio();
     if (restoreFocus && !hasBlockingQuizLayer()) questionText?.focus({ preventScroll: true });
   }
@@ -597,6 +638,19 @@
   });
   document.querySelectorAll("[data-help-close]").forEach(button => button.addEventListener("click", close));
   window.addEventListener("magicbook:quiz-question-change", close);
+  if (!isNativeQuiz) {
+    window.addEventListener("magicbook:quiz-question-change", updateWebHint);
+    // Only genuinely empty reading space activates the question. Figure,
+    // keywords, recording tools and every other control retain their owner.
+    questionArea.addEventListener("click", event => {
+      if (![questionArea, questionScroller, document.querySelector(".quiz-question-actions")].includes(event.target)) return;
+      if (window.getSelection()?.toString()) return;
+      questionText?.click();
+    });
+    const hideWebHint = () => questionArea.classList.remove("quiz-help-discoverable");
+    document.addEventListener("visibilitychange", () => { if (document.hidden) hideWebHint(); });
+    window.addEventListener("pagehide", hideWebHint);
+  }
   window.addEventListener("magicbook:quiz-help-close", close);
   workspace?.addEventListener("keydown", event => {
     if (hasBlockingQuizLayer()) return;

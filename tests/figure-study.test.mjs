@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { FIGURE_CATALOG } from '../figure-catalog.mjs';
 import { FIGURE_STUDY_CATEGORIES, FIGURE_STUDY_ITEMS, studyFigure, searchStudyFigures, figureStudyPath } from '../figure-study-catalog.mjs';
 import { selectFigureStudyExamples } from '../api/figure-study.mjs';
@@ -8,6 +9,40 @@ import { createFigureStudyData, explanationImageSource } from '../figure-study-d
 import { explanationFilesFromObjects } from '../api/quiz-explanation-availability.mjs';
 import { LOCAL_MAGIC_BOOK_ROWS } from '../api/local-quiz-bank.mjs';
 import { applyQuizFigureCorrections } from '../api/quiz-figure-corrections.mjs';
+import { FIGURE_STUDY_NOTES } from '../figure-study-notes.mjs';
+
+test('lesson mount never fetches illustrations; one delegated disclosure listener owns the read', () => {
+  const ui = readFileSync(new URL('../figure-study.js', import.meta.url), 'utf8');
+  const lesson = ui.slice(ui.indexOf('  function renderLesson'), ui.indexOf('  async function loadExplanation'));
+  assert.doesNotMatch(lesson, /loadExplanation\(|data\.read\(/);
+  assert.match(ui, /root\.addEventListener\('toggle',[\s\S]*capture: true, signal: lifetime\.signal/);
+  assert.match(ui, /header\('Segnali e figure', 'Studia'\)/);
+  assert.match(ui, /if \(manual\) data\.invalidate\('getExplanationFigures'\)/);
+});
+
+test('preview labels preserve canonical identity; parking is an indication and notes use exact IDs', () => {
+  assert.equal(studyFigure('fig86').category, 'indicazione');
+  assert.equal(studyFigure('fig126').displayTitle, 'Limitazione');
+  assert.equal(studyFigure('fig126').italian, FIGURE_CATALOG.fig126.italian);
+  assert.ok(searchStudyFigures('pannelli', 'শুধু').some(item => item.id === 'fig126'));
+  assert.match(FIGURE_STUDY_NOTES.fig15.it, /Preavvisa/);
+  assert.match(FIGURE_STUDY_NOTES.fig218.it, /punto/);
+  for (const [id, note] of Object.entries(FIGURE_STUDY_NOTES)) {
+    assert.ok(studyFigure(id)); assert.match(note.bn, /[\u0980-\u09ff]/);
+    assert.ok([83, 88, 135].includes(note.article));
+  }
+});
+
+test('manual manifest retry refreshes only that entry; repeated reads still deduplicate', async () => {
+  const calls = [];
+  const data = createFigureStudyData(async action => { calls.push(action); return {}; });
+  await data.read('getExplanationFigures'); await data.read('getFigureStudy', 'fig40');
+  data.invalidate('getExplanationFigures');
+  await Promise.all([data.read('getExplanationFigures'), data.read('getExplanationFigures')]);
+  await data.read('getFigureStudy', 'fig40');
+  assert.deepEqual(calls, ['getExplanationFigures', 'getFigureStudy', 'getExplanationFigures']);
+  data.clear();
+});
 
 test('all 186 known figures have one explicit category, unchanged bilingual identity and source', () => {
   assert.equal(FIGURE_STUDY_CATEGORIES.length, 12);

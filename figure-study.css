@@ -93,3 +93,67 @@ html.android-webview .fs-answers .fs-button { font-size: 1rem; }
 @media (forced-colors: active) {
   .study-paths a[aria-current], .fs-answers .fs-button[aria-pressed="true"] { outline: 2px solid Highlight; }
 }
+
+/* Android preview refinement: compact reading rows, one quiet page, no web restyling. */
+html.android-webview .study-figures-active .study-main { padding-top: 12px; padding-bottom: 32px; }
+html.android-webview .study-figures-active .study-paths { margin-bottom: 16px; }
+html.android-webview .study-figures-active .study-paths a { min-height: 56px; gap: 2px; padding: 8px 12px; border-radius: 12px; }
+html.android-webview .study-figures-active .study-paths strong { font-family: Inter, Arial, sans-serif; }
+html.android-webview .figure-study { --fs-divider: var(--app-palette-divider, #D8D8DC); line-height: 1.5; }
+html.android-webview .figure-study :is(h2,h3,h4,p) { hyphens: none; -webkit-hyphens: none; word-break: normal; }
+html.android-webview .figure-study h2 { font-size: 1.35rem; line-height: 1.3; margin-bottom: 6px; }
+html.android-webview .figure-study h3 { font-size: 1rem; margin-bottom: 8px; }
+html.android-webview .fs-introduction { margin: 8px 0 16px; }
+html.android-webview .fs-introduction > [lang="bn"] { font-family: var(--font-bangla); font-size: 1rem; margin-bottom: 6px; }
+html.android-webview .fs-introduction .fs-muted { font-size: .82rem; margin-bottom: 0; }
+html.android-webview .fs-search { max-width: none; margin: 0 0 10px; border-radius: 12px; }
+html.android-webview #fs-count:empty { display: none; }
+html.android-webview #fs-count { font-size: .78rem; margin: 10px 0; }
+html.android-webview .fs-categories { grid-template-columns: 1fr; gap: 0; margin: 0; padding: 0 14px; background: var(--app-palette-paper); border-radius: 14px; }
+html.android-webview .fs-category { min-height: 76px; flex-direction: row; align-items: center; gap: 12px; padding: 12px 0; border-bottom-color: var(--fs-divider); }
+html.android-webview .fs-category:last-child { border-bottom: 0; }
+html.android-webview .fs-category strong { font-size: .94rem; }
+html.android-webview .fs-category [lang="bn"] { font-size: .88rem; margin-top: 3px; }
+html.android-webview .fs-category-end { flex: none; display: flex; gap: 12px; align-items: center; }
+html.android-webview .fs-category-count { font-size: .78rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+html.android-webview .fs-chevron { width: 8px; height: 8px; border: solid var(--fs-action); border-width: 1.5px 1.5px 0 0; transform: rotate(45deg); margin-right: 3px; }
+html.android-webview .fs-grid { grid-template-columns: 1fr; gap: 10px; margin: 8px 0 16px; }
+html.android-webview .fs-figure { grid-template-columns: 88px minmax(0, 1fr); grid-template-rows: auto; align-items: center; gap: 14px; padding: 12px; border-color: var(--fs-divider); border-radius: 14px; }
+html.android-webview .fs-thumbnail img { height: 84px; width: 88px; }
+html.android-webview .fs-figure-copy strong { font-size: .93rem; line-height: 1.4; }
+html.android-webview .fs-figure-copy [lang="bn"] { font-size: .92rem; line-height: 1.5; margin-top: 5px; }
+@media (hover: none) {
+  html.android-webview :is(.fs-figure, .fs-category):hover strong { color: var(--ink); text-decoration: none; }
+}
+html.android-webview .fs-breadcrumb { gap: 0 14px; padding-bottom: 4px; font-size: .8rem; }
+html.android-webview .fs-breadcrumb a { text-decoration: none; }
+html.android-webview .fs-breadcrumb [aria-current] { display: none; }
+html.android-webview .fs-lesson { padding: 0 16px; border-radius: 16px; }
+html.android-webview .fs-lesson-overview { grid-template-columns: 1fr; gap: 12px; padding: 20px 0; text-align: left; }
+html.android-webview .fs-lesson-media { min-height: 0; }
+html.android-webview .fs-lesson-media img.study-figure { height: 148px; max-width: 250px; }
+html.android-webview .fs-lesson-names .fs-kicker { margin-bottom: 4px; font-size: .75rem; }
+html.android-webview .fs-lesson-names .fs-bangla-title { font-size: 1.35rem; line-height: 1.6; margin-bottom: 0; }
+html.android-webview :is(.fs-meaning,.fs-illustrated,.fs-practice,.fs-sources) { border-top: 1px solid var(--fs-divider); padding: 16px 0; min-height: 0; }
+html.android-webview .fs-meaning { font-size: .93rem; }
+html.android-webview .fs-meaning [lang="bn"] { color: var(--muted); margin-bottom: 0; }
+html.android-webview .fs-illustrated { padding: 0; }
+html.android-webview .fs-illustrated > summary { min-height: 48px; padding: 13px 0; color: var(--fs-action); font-size: .9rem; font-weight: 600; }
+html.android-webview .fs-explanation { border: 0; padding: 0 0 16px; min-height: 0; }
+html.android-webview .fs-explanation-image { margin-top: 0; min-height: 0; }
+html.android-webview .fs-caption { color: var(--muted); font-size: .76rem; margin: 10px 0 0; }
+html.android-webview .fs-practice > [lang="bn"] { font-size: .93rem; color: var(--muted); }
+html.android-webview .fs-practice > .fs-button { width: 100%; }
+html.android-webview .fs-example { padding: 16px 0; border-color: var(--fs-divider); }
+html.android-webview .fs-example h4 { margin-bottom: 8px; }
+html.android-webview .fs-question { font-size: 1rem; }
+html.android-webview .fs-answers .fs-button { flex: 1; }
+html.android-webview .fs-feedback:empty { display: none; }
+html.android-webview .fs-sources { padding: 0; font-size: .76rem; }
+html.android-webview .fs-sources > summary { font-size: .78rem; color: var(--muted); }
+html.android-webview .fs-sources > a { display: block; padding: 8px 0; }
+@media (min-width: 640px) {
+  html.android-webview .fs-categories { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; }
+  html.android-webview .fs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html.android-webview .fs-lesson-overview { grid-template-columns: minmax(160px, .7fr) minmax(0, 1fr); gap: 24px; }
+}

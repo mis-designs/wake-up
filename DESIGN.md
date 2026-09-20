@@ -31,8 +31,8 @@ canonical_ui:
   notes: Existing application tokens remain canonical. Locally compiled, d-prefixed daisyUI controls provide interaction primitives; the scoped learning stylesheet owns layout and visual hierarchy.
 design_context:
   owner: Magic Book
-  last_updated: 2026-09-19
-  revision_notes: "Segnali e figure is an installed-Android-only development preview. Browser entry/deep links keep the existing chapter study; content and future web presentation remain reusable. Login, authorization and scoring are unchanged."
+  last_updated: 2026-09-20
+  revision_notes: "Web live Quiz uses a compact emerald player, stacked navigation and inline responsive translation. Installed Android presentation and Android-only Segnali e figure preview remain unchanged."
 ---
 
 # Magic Book design context
@@ -50,6 +50,8 @@ Current rollout overrides availability, not content: the owner's follow-up restr
 `figure-study.css` consumes `study-quiz.css`'s existing ink/muted/line/surface/font tokens; native aliases stay owned by `android-app-theme.css`. Category navigation uses quiet ruled rows with real counts; no decorative sign icons or animation. Search precedes categories, figure galleries show at most18 items per batch, and one document scroller owns the page. The detail uses the original numberless figure and IT/BN names; large Bangla names retain Hadi Rounded. The existing shared figure popup owns enlargement and close/back behavior. Figures are teaching assets, never AI-redrawn decorations.
 
 Illustrations come from the existing Allbooks → Magic Book upload archive, not copied draft files. No inferred lesson text or manufactured true/false partner; missing illustrations/examples have explicit states. Names retain catalog provenance; the category introduction follows the classification in [ACI, article39](https://aci.gov.it/codice-della-strada/art-39/). Detailed position/distance rules require separately reviewed editorial content, not a universal assumed distance. See `docs/figure-study.md` for scope, request budget and publication checks.
+
+September 20 Android preview refinement supersedes the earlier density: the visible section header is always “Segnali e figure”; category and figure names belong in the content. Phone galleries use compact image/text rows, widening to two columns at640px. Categories use compact ruled rows with real counts; no additional image reads or decorative sign assets. Native paper/divider/ink/blue roles remain canonical. Long titles wrap whole words, Bangla display names use Hadi Rounded, and support copy uses Adorsho Lipi. Optional illustrations are collapsed and fetched only on opening; no empty/error slab on lesson entry. Practice and source details stay secondary. Short preview-specific labels do not change shared web identities. Six explicit sourced teaching notes live in `figure-study-notes.mjs`; no category-wide invented meanings. See `docs/figure-study-refinement.md` for provenance and checks.
 
 ## Visual direction
 
@@ -203,6 +205,14 @@ Illustrations come from the existing Allbooks → Magic Book upload archive, not
 - Owner-approved browser variant (2026-09-12): `html:not(.android-webview) .quiz-page` in `mystyle.css` uses one continuous white canvas, without a raised container or question card. Two uninterrupted1px section dividers use `--color-surface-strong`; no lateral border, outer radius or question shadow. Header/progress, the existing question scroller and the original web command bar retain their semantic order and actions.
 - Outer space is10px above/16px below plus safe areas, with12–32px fluid side gutters and6px row gaps; short viewports use6px top and4px gaps. Question spacing is14px above/10px below,8px on short screens. Only signed Admin markers reserve an additional22px footer clearance. Reading height uses the existing viewport owner; there is no second scroll container or hidden content.
 - Browser number styling retains its established status colors and type. The active number no longer scales into the scroller edge; its quiet shadow is `0 2px 5px` with18% of `--color-dark`. The row reserves10px vertical/8px horizontal space for the complete shadow and focus ring, with a visible thin scrollbar only when needed. The first and last questions follow the same geometry. These changes do not reach installed Android or other routes.
+
+### Web Quiz compact help (2026-09-20)
+
+- Approved browser-only variant, scoped with `html:not(.android-webview) .quiz-page`. Preserve the open white canvas, fonts, semantic answer colors/icons and original artwork. `mystyle.css` owns a centered640px maximum command area:92px language column, two flexible answer columns and44px navigation column;44px audio row,52px answer row,6px gaps. Previous is above Next. The player ends at the right edge of Falso. Both language buttons remain44px targets on one row.
+- `audio-player-ui.css` keeps sole ownership of playback states and emerald color. The new `--audio-player-emerald` alias preserves #10b981; the browser Quiz player is44px high with30px artwork and44px play/speed/seek targets. This named density variant does not reach Study/Admin or installed Android.
+- `quiz-help.js` keeps one disclosure/data/cache owner. Web phones show the same translation below the question; at768px width/501px height, or widths951px and above, it occupies the right half only while explicitly open. Short landscape phones remain stacked. One existing question scroller contains question, translation, expanded word detail and keywords. No modal, navigation, copied figure, background inertness or second mobile scrollbar. X/Escape restore question focus; question changes close help. After async resolution, reveal the panel only if the same request is current and the reader has not scrolled.
+- `quiz-help.css` gives this panel a16px radius,8% emerald transparent fill and26% emerald border; no blur/shadow. The existing Bangla font/reader scale and44px keyword/close targets remain. The small original hand is45% opaque beside readable dark-green copy. It makes two1s taps inside an8s reminder on first visits to questions1,6,11; after help is used it never returns during that quiz. CSS-only finite motion, no interval, polling or new API request; hiding/navigation removes the cue, reduced motion uses static feedback, forced colors preserves boundaries.
+- Verification: local mocked browser matrix320–1920px, portrait/short landscape, tablet two-column, enlarged text, late data/close, keywords, keyboard, audio states and request-count assertions. Native geometry and fullscreen behavior compared against the existing baseline. Real Safari/device testing remains a release smoke check.
 
 ### Focused live Quiz (installed Android only)
 

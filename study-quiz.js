@@ -1790,7 +1790,7 @@
     try {
       if (!figureStudy) {
         root.textContent = 'Apro le figure…';
-        figureStudyModule ||= import('./figure-study.js?v=1').catch(error => { figureStudyModule = null; throw error; });
+        figureStudyModule ||= import('./figure-study.js?v=2').catch(error => { figureStudyModule = null; throw error; });
         const module = await figureStudyModule;
         if (ownRequest !== loadRequestId || !figureView) return;
         figureStudy ||= module.createFigureStudy({ root,

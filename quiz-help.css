@@ -111,7 +111,80 @@
 html[data-reader-size="large"] .quiz-help-translation-text { font-size: 1.32rem; }
 html[data-reader-size="xlarge"] .quiz-help-translation-text { font-size: 1.46rem; }
 
-/* Phone reading takeover. The same panel returns to its inline home on tablet.
+/* Browser disclosure: one reading flow on phones, two columns when spacious.
+   The panel inherits the existing emerald player token, not the app palette. */
+html:not(.android-webview) .quiz-page .quiz-help-workspace {
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--audio-player-emerald) 26%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--audio-player-emerald) 8%, transparent);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: quizWebHelpEnter 160ms ease-out;
+}
+html:not(.android-webview) .quiz-page #quiz-help-title {
+  position: static; width: auto; height: auto; margin: 0;
+  clip: auto; clip-path: none; overflow: visible; white-space: normal;
+  font-family: inherit; font-size: .9rem; line-height: 1.4; font-weight: 700;
+}
+html:not(.android-webview) .quiz-page .quiz-help-kicker { display: none; }
+html:not(.android-webview) .quiz-page .quiz-help-content { overflow: visible; }
+html:not(.android-webview) .quiz-page .quiz-help-word { min-height: 44px; }
+html:not(.android-webview) .quiz-page .quiz-help-close:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+html:not(.android-webview) .quiz-page .quiz-click-hint {
+  /* Reserve a small stable footer, including after dismissal. No floating pill. */
+  display: flex; min-height: 32px; padding: 0; gap: 7px;
+  border: 0; border-radius: 0; background: transparent; box-shadow: none;
+  color: #23624f; visibility: hidden; animation: none;
+}
+html:not(.android-webview) .quiz-page .quiz-help-discoverable .quiz-click-hint:not(.is-dismissed) {
+  visibility: visible;
+  animation: quizWebHintReminder 8s ease-out both;
+}
+html:not(.android-webview) .quiz-page .quiz-click-hint-mark {
+  flex-basis: 22px; width: 22px; height: 22px;
+  background: currentColor; border-radius: 0; box-shadow: none; opacity: .45;
+  -webkit-mask: url("icons/clich_here.svg") center / contain no-repeat;
+  mask: url("icons/clich_here.svg") center / contain no-repeat;
+  animation: none;
+}
+html:not(.android-webview) .quiz-page .quiz-help-discoverable .quiz-click-hint-mark {
+  animation: quizClickHintTap 1s ease-in-out 2;
+}
+html:not(.android-webview) .quiz-page .quiz-click-hint-copy strong { font-size: .7rem; letter-spacing: 0; text-transform: none; }
+html:not(.android-webview) .quiz-page .quiz-click-hint-copy small { color: #41685b; font-size: .65rem; }
+@keyframes quizWebHintReminder {
+  0% { opacity: 0; }
+  12%, 85% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+@keyframes quizWebHelpEnter { from { opacity: .5; } to { opacity: 1; } }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 951px) {
+  html:not(.android-webview) .quiz-page .has-web-help .quiz-question-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto 1fr auto;
+    column-gap: clamp(16px, 3vw, 40px);
+    align-items: start;
+  }
+  html:not(.android-webview) .quiz-page .has-web-help #figure-wrap { grid-column: 1; grid-row: 1; }
+  html:not(.android-webview) .quiz-page .has-web-help #question { grid-column: 1; grid-row: 2; }
+  html:not(.android-webview) .quiz-page .has-web-help #quiz-audio-recorder { grid-column: 1; grid-row: 3; }
+  html:not(.android-webview) .quiz-page .has-web-help .quiz-help-workspace { grid-column: 2; grid-row: 1 / 4; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html:not(.android-webview) .quiz-page .quiz-help-discoverable .quiz-click-hint:not(.is-dismissed),
+  html:not(.android-webview) .quiz-page .quiz-help-discoverable .quiz-click-hint-mark,
+  html:not(.android-webview) .quiz-page .quiz-help-workspace { animation: none; }
+}
+@media (forced-colors: active) {
+  html:not(.android-webview) .quiz-page .quiz-help-workspace { background: Canvas; border-color: CanvasText; }
+  html:not(.android-webview) .quiz-page .quiz-click-hint { color: CanvasText; }
+  html:not(.android-webview) .quiz-page .quiz-click-hint-mark { forced-color-adjust: none; background: CanvasText; }
+}
+
+/* Installed Android phone reading takeover. The same panel returns inline on tablet.
    Only the content scrolls; close controls stay outside that scroll owner. */
 .quiz-help-source[hidden] { display: none; }
 body.quiz-help-fullscreen-open { overflow: hidden; }

@@ -17,7 +17,7 @@ test("Quiz and Studia load the shared audio coordinator before their playback ow
   assert.ok(quizPage.indexOf(focusAsset) < quizPage.indexOf("magic-dictionary.js?v=1.4.1-dictionary-cleanup"));
   assert.ok(quizPage.indexOf(focusAsset) < quizPage.indexOf("quiz.js?v=86-request-budget"));
   assert.ok(studyPage.indexOf(focusAsset) < studyPage.indexOf("magic-dictionary.js?v=1.4.1-dictionary-cleanup"));
-  assert.ok(studyPage.indexOf(focusAsset) < studyPage.indexOf("study-quiz.js?v=30-android-figure-preview"));
+  assert.ok(studyPage.indexOf(focusAsset) < studyPage.indexOf("study-quiz.js?v=31-android-figure-refinement"));
   assert.match(worker, /\/audio-focus\.js\?v=1-resumable-tts/u);
 });
 

@@ -40,6 +40,6 @@ test("the hand yields to input, unavailable actions and motion preferences", () 
 
 test("the OPEN cue ships in a fresh PWA cache", () => {
   assert.match(index, /style\.css\?v=74-compact-loading/u);
-  assert.match(worker, /magicbook-pwa-v208-android-figure-preview/u);
+  assert.match(worker, /magicbook-pwa-v210-web-quiz-inline/u);
   assert.match(worker, /style\.css\?v=74-compact-loading/u);
 });

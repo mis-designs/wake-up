@@ -20,9 +20,9 @@
 ## Request budget and lifecycle
 
 - Category navigation/search: zero API requests. Gallery: at most18 lazy figure image elements per batch, using the existing cacheable numberless asset endpoint. No full-catalog prefetch.
-- First lesson: at most1 metadata request per60-second document cache window, then1 exact illustration GET only if indexed. Server listing retains its existing5-minute single-flight cache. Re-entering within the window reuses metadata; newly uploaded images may therefore take up to about6minutes to appear without a deploy.
+- First lesson: zero metadata calls. Since the September20 refinement, opening the illustration disclosure explicitly performs at most1 metadata request per60-second document cache window, then1 exact illustration GET only if indexed. Server listing retains its existing5-minute single-flight cache. Re-entering within the window reuses metadata; newly uploaded images may therefore take up to about6minutes to appear without a deploy.
 - Examples: one authenticated read only on explicit `Prova i quiz di esempio`. Repeat openings within60seconds reuse an in-memory result. No browser storage of example answers, no polling, no automated retry loop, no per-request logs.
-- A shared client read owner caps memory at16 entries, deduplicates overlapping work, sets a10-second deadline, aborts on leaving, rejects stale completions and invalidates data when the user/device changes. Failed requests do not become successful empty results. Illustration failures have a30-second automatic read cooldown; explicit Retry remains available.
+- A shared client read owner caps memory at16 entries, deduplicates overlapping work, sets a10-second deadline, aborts on leaving, rejects stale completions and invalidates data when the user/device changes. Failed requests do not become successful empty results. No illustration reads run automatically; explicit Retry invalidates only that metadata cache entry.
 - Pagehide cancels work; BFCache restoration restarts only the visible route. Unload destroys the feature's delegated listeners. Existing audio stops through its canonical Study owner when switching paths.
 
 ## Navigation and review

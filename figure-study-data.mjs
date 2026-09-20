@@ -32,7 +32,9 @@ export function createFigureStudyData(request, identity = () => '') {
     pending.set(key, item);
     return item.promise;
   }
-  return { read, cancel, clear };
+  // Explicit retry only; do not discard unrelated examples or in-flight deduplication.
+  function invalidate(action, figure = '') { cache.delete(`${action}:${figure}`); }
+  return { read, cancel, clear, invalidate };
 }
 
 export function explanationImageSource(manifest, figure) {

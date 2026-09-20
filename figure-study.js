@@ -1,6 +1,7 @@
 import { FIGURE_CATALOG_SOURCE } from './figure-catalog.mjs?v=1';
-import { FIGURE_STUDY_CATEGORIES, FIGURE_STUDY_ITEMS, studyCategory, studyFigure, searchStudyFigures, figureStudyPath } from './figure-study-catalog.mjs?v=1';
-import { createFigureStudyData, explanationImageSource } from './figure-study-data.mjs?v=1';
+import { FIGURE_STUDY_CATEGORIES, FIGURE_STUDY_ITEMS, studyCategory, studyFigure, searchStudyFigures, figureStudyPath } from './figure-study-catalog.mjs?v=2';
+import { createFigureStudyData, explanationImageSource } from './figure-study-data.mjs?v=2';
+import { FIGURE_STUDY_NOTES, FIGURE_STUDY_NOTES_SOURCE } from './figure-study-notes.mjs?v=1';
 
 const node = (tag, className = '', text = '') => {
   const result = document.createElement(tag);
@@ -27,7 +28,7 @@ export function createFigureStudy({ root, request, identity, navigate, header })
   const data = createFigureStudyData(request, identity);
   const positions = new Map(), limits = new Map();
   let revision = 0, active = false, currentPath = '', selectedFigure = null;
-  let currentCategory = '', query = '', restoreFrame = 0, explanationRetryAt = 0;
+  let currentCategory = '', query = '', restoreFrame = 0;
   let currentExamples = [], answers = new Map();
   const $ = id => root.querySelector(`#${id}`);
 
@@ -61,7 +62,10 @@ export function createFigureStudy({ root, request, identity, navigate, header })
     for (const category of FIGURE_STUDY_CATEGORIES) {
       const a = link('', figureStudyPath({ category: category.id }), 'fs-category');
       const copy = node('span'); copy.append(node('strong', '', category.title), bn(category.bangla));
-      a.append(copy, node('span', 'fs-category-count', `${category.figures.length} figure`)); categories.append(a);
+      const end = node('span', 'fs-category-end');
+      const arrow = node('span', 'fs-chevron'); arrow.setAttribute('aria-hidden', 'true');
+      end.append(node('span', 'fs-category-count', `${category.figures.length}`), arrow);
+      a.append(copy, end); categories.append(a);
     }
     categories.id = 'fs-categories'; root.append(categories);
   }
@@ -101,7 +105,7 @@ export function createFigureStudy({ root, request, identity, navigate, header })
     for (const item of items.slice(start, limit)) {
       const a = link('', figureStudyPath({ category: currentCategory || item.category, figure: item.id, query }), 'fs-figure');
       const media = node('span', 'fs-thumbnail'); media.append(figureImage(item, '', true));
-      const copy = node('span', 'fs-figure-copy'); copy.append(node('strong', '', item.italian), bn(item.bangla));
+      const copy = node('span', 'fs-figure-copy'); copy.append(node('strong', '', item.displayTitle), bn(item.displayBangla));
       a.append(media, copy); grid.append(a);
     }
   }
@@ -110,39 +114,51 @@ export function createFigureStudy({ root, request, identity, navigate, header })
     const overview = node('div', 'fs-lesson-overview');
     const media = node('div', 'fs-lesson-media'); media.append(figureImage(item, 'study-figure'));
     const names = node('div', 'fs-lesson-names');
-    names.append(node('p', 'fs-kicker', studyCategory(item.category).title), node('h2', '', item.italian), bn(item.bangla, 'fs-bangla-title'));
+    names.append(node('p', 'fs-kicker', studyCategory(item.category).title), node('h2', '', item.displayTitle), bn(item.displayBangla, 'fs-bangla-title'));
     overview.append(media, names); lesson.append(overview);
+    const note = FIGURE_STUDY_NOTES[item.id];
+    if (note) {
+      const meaning = node('section', 'fs-meaning');
+      meaning.append(node('h3', '', 'Da ricordare'), node('p', '', note.it), bn(note.bn));
+      lesson.append(meaning);
+    }
+    const illustrated = node('details', 'fs-illustrated');
+    illustrated.append(node('summary', '', 'Spiegazione illustrata'));
     const explanation = node('section', 'fs-explanation'); explanation.id = 'fs-explanation';
-    explanation.setAttribute('aria-label', 'Spiegazione illustrata'); lesson.append(explanation);
+    explanation.setAttribute('aria-label', 'Spiegazione illustrata'); explanation.setAttribute('aria-live', 'polite'); illustrated.append(explanation); lesson.append(illustrated);
     const practice = node('section', 'fs-practice'); practice.id = 'fs-practice';
-    practice.append(node('h3', '', 'Metti alla prova quello che hai capito'), bn('বোঝা হয়েছে কি না, যাচাই করুন।'),
-      node('p', 'fs-muted', 'Esempi dal Magic Book. Questo ripasso non modifica i risultati dei tuoi quiz.'), button('Prova i quiz di esempio', 'examples'));
+    practice.append(node('h3', '', 'Prova tu'), bn('বুঝেছেন কি না, যাচাই করুন।'),
+      button('Prova i quiz di esempio', 'examples'), node('p', 'fs-caption', 'Ripasso libero · non modifica le statistiche.'));
     lesson.append(practice);
     const sources = node('details', 'fs-sources');
     const source = node('a', '', 'Fonte dei nomi italiani · listato AB'); source.href = `${FIGURE_CATALOG_SOURCE}#page=${item.page}`;
     source.target = '_blank'; source.rel = 'noopener noreferrer';
-    sources.append(node('summary', '', 'Informazioni sui contenuti'), source,
-      node('p', '', 'Le spiegazioni illustrate provengono dall’archivio condiviso con Allbooks. Le traduzioni bangla sono materiale didattico, non una versione ufficiale del listato.'));
+    sources.append(node('summary', '', 'Fonti e traduzioni'), source,
+      node('p', '', 'Il bangla è un supporto allo studio, non una traduzione ufficiale.'));
+    if (note) {
+      const reference = node('a', '', `Nota didattica · Regolamento, art. ${note.article}`);
+      reference.href = FIGURE_STUDY_NOTES_SOURCE; reference.target = '_blank'; reference.rel = 'noopener noreferrer'; sources.append(reference);
+    }
     lesson.append(sources); root.append(lesson);
-    void loadExplanation();
   }
   async function loadExplanation(manual = false) {
     const target = $('fs-explanation'), ownRevision = revision, figure = selectedFigure;
     if (!target || !figure || target.getAttribute('aria-busy') === 'true') return;
+    const restoreFocus = manual && target.contains(document.activeElement);
     target.replaceChildren(loading('Carico la spiegazione illustrata…'));
     target.setAttribute('aria-busy', 'true');
     try {
-      if (!manual && explanationRetryAt > Date.now()) throw new Error('retry_later');
+      if (manual) data.invalidate('getExplanationFigures');
       const manifest = await data.read('getExplanationFigures');
       if (!active || revision !== ownRevision) return;
-      explanationRetryAt = 0;
       const src = explanationImageSource(manifest, figure.id);
-      target.replaceChildren(node('h3', '', 'Guarda e comprendi'));
+      target.replaceChildren();
       if (!src) {
         const confirmedAbsent = manifest.complete === true && Array.isArray(manifest.figures) && !manifest.figures.includes(figure.id);
         target.append(node('p', 'fs-muted', confirmedAbsent
-          ? 'La spiegazione illustrata per questo segnale non è ancora disponibile. Puoi già studiarne il nome e provare gli esempi.'
-          : 'La spiegazione illustrata non è disponibile al momento. Puoi continuare con gli esempi.'));
+          ? 'Illustrazione non ancora disponibile. Puoi continuare con gli esempi.'
+          : 'Non riesco a verificare l’illustrazione adesso. Puoi continuare con gli esempi.'));
+        target.append(bn(confirmedAbsent ? 'ছবিসহ ব্যাখ্যা এখনও নেই। উদাহরণ দিয়ে অনুশীলন করতে পারেন।' : 'এখন ছবিসহ ব্যাখ্যাটি যাচাই করা যাচ্ছে না। উদাহরণ দিয়ে অনুশীলন করতে পারেন।', 'fs-muted'));
         if (!confirmedAbsent) target.append(button('Riprova spiegazione', 'explanation'));
         return;
       }
@@ -155,9 +171,13 @@ export function createFigureStudy({ root, request, identity, navigate, header })
       target.append(image);
     } catch (_) {
       if (!active || revision !== ownRevision) return;
-      explanationRetryAt = Date.now() + 30000;
-      target.replaceChildren(node('p', 'fs-muted', 'Non riesco a caricare la spiegazione. Il nome della figura resta disponibile.'), button('Riprova spiegazione', 'explanation'));
-    } finally { if (revision === ownRevision) target.removeAttribute('aria-busy'); }
+      target.replaceChildren(node('p', 'fs-muted', 'La spiegazione non si è caricata. Riprova quando la connessione è disponibile.'), button('Riprova spiegazione', 'explanation'));
+    } finally {
+      if (revision === ownRevision) {
+        target.removeAttribute('aria-busy');
+        if (restoreFocus) target.parentElement.querySelector('summary')?.focus({ preventScroll: true });
+      }
+    }
   }
   async function loadExamples() {
     const target = $('fs-practice'), ownRevision = revision, figure = selectedFigure;
@@ -185,7 +205,7 @@ export function createFigureStudy({ root, request, identity, navigate, header })
         const feedback = node('p', 'fs-feedback'); feedback.id = `fs-answer-${index}`; feedback.setAttribute('role', 'status');
         article.append(controls, feedback); target.append(article);
       }
-      target.append(node('p', 'fs-muted', 'Sono mostrati solo gli esempi presenti nel catalogo: non ogni figura ha sia una frase vera sia una falsa.'));
+      if (currentExamples.length) target.append(node('p', 'fs-caption', 'Esempi dal Magic Book · ripasso senza punteggio.'));
       target.querySelector('h3').tabIndex = -1; target.querySelector('h3').focus({ preventScroll: true });
     } catch (_) {
       if (!active || revision !== ownRevision) return;
@@ -200,12 +220,13 @@ export function createFigureStudy({ root, request, identity, navigate, header })
     selectedFigure = studyFigure(url.searchParams.get('figure'));
     currentExamples = []; answers.clear(); root.replaceChildren();
     const category = studyCategory(currentCategory);
-    header(selectedFigure?.italian || category?.title || 'Segnali e figure', 'Studia · Segnali e figure');
+    root.dataset.level = selectedFigure ? 'lesson' : category ? 'category' : 'index';
+    header('Segnali e figure', 'Studia');
     document.title = `MagicBook | ${selectedFigure?.italian || category?.title || 'Segnali e figure'}`;
     const trail = node('nav', 'fs-breadcrumb'); trail.setAttribute('aria-label', 'Percorso di studio');
     trail.append(link('Tutte le categorie', figureStudyPath()));
     if (selectedFigure) trail.append(link(studyCategory(selectedFigure.category).title, figureStudyPath({ category: currentCategory || selectedFigure.category, query })));
-    if (selectedFigure || category) { const here = node('span', '', selectedFigure?.italian || category.title); here.setAttribute('aria-current', 'page'); trail.append(here); }
+    if (category && !selectedFigure) { const here = node('span', '', category.title); here.setAttribute('aria-current', 'page'); trail.append(here); }
     else trail.hidden = true;
     root.append(trail);
     if (url.searchParams.has('figure') && !selectedFigure) {
@@ -225,6 +246,10 @@ export function createFigureStudy({ root, request, identity, navigate, header })
       window.scrollTo({ top: saved?.top || 0, behavior: 'instant' });
     });
   }
+  // One delegated listener also covers future lessons without retaining removed nodes.
+  root.addEventListener('toggle', event => {
+    if (event.target.matches('.fs-illustrated') && event.target.open && !$('fs-explanation')?.hasChildNodes()) void loadExplanation();
+  }, { capture: true, signal: lifetime.signal });
   root.addEventListener('click', event => {
     const a = event.target.closest('a[data-figure-route]');
     if (a && !event.ctrlKey && !event.metaKey && !event.shiftKey && event.button === 0) { event.preventDefault(); go(a.getAttribute('href')); return; }

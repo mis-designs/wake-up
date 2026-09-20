@@ -1,4 +1,5 @@
 /* Shared explanation player — bounded, responsive emerald control. */
+:root { --audio-player-emerald: #10b981; }
 .quiz-audio-explanation-shell,
 .study-explanation-media {
   box-sizing: border-box;
@@ -30,7 +31,7 @@
 .quiz-audio-explanation,
 .study-explanation-player {
   --audio-player-start: #34d399;
-  --audio-player-mid: #10b981;
+  --audio-player-mid: var(--audio-player-emerald);
   --audio-player-end: #059669;
   --audio-player-line: rgba(5, 150, 105, .24);
   --audio-player-glow: rgba(16, 185, 129, .3);
@@ -438,6 +439,33 @@ html.android-webview .study-page .study-explanation-speed { background: transpar
   .study-explanation-player.is-interrupted {
     border-style: dashed;
   }
+}
+
+/* Compact web live-Quiz variant. Study/Admin and Android keep their owners. */
+html:not(.android-webview) .quiz-page .quiz-audio-explanation-shell {
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 6px;
+}
+html:not(.android-webview) .quiz-page .quiz-audio-artwork { width: 30px; height: 30px; }
+html:not(.android-webview) .quiz-page .quiz-audio-explanation {
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  height: 44px; min-height: 44px;
+  padding: 0; gap: 6px;
+  border: 0; border-radius: 24px;
+  box-shadow: inset 0 0 0 1px var(--audio-player-line);
+}
+html:not(.android-webview) .quiz-page .quiz-audio-play {
+  width: 44px; height: 44px; box-shadow: inset 0 0 0 4px white;
+}
+html:not(.android-webview) .quiz-page .quiz-audio-play .audio-player-icon { width: 23px; height: 23px; }
+html:not(.android-webview) .quiz-page .quiz-audio-progress { height: 44px; min-width: 0; }
+html:not(.android-webview) .quiz-page .quiz-audio-speed {
+  width: 44px; max-width: 44px; height: 44px; padding: 0 2px;
+  background: transparent; border: 0; box-shadow: none;
+}
+@media (forced-colors: active) {
+  html:not(.android-webview) .quiz-page .quiz-audio-explanation { border: 1px solid CanvasText; }
+  html:not(.android-webview) .quiz-page :is(.quiz-audio-play, .quiz-audio-speed) { border: 1px solid ButtonText; box-shadow: none; }
 }
 
 /* Installed Android live-Quiz variant. Web, Study/Admin and result rows are unchanged. */

@@ -29,9 +29,16 @@ function element() {
 function renderer() {
   let question = { id: "first", question: "Prima domanda" };
   const pending = new Map();
-  const nodes = Object.fromEntries(["workspace", "wordDetail", "wordsList", "translationText", "translationStatus", "questionText"].map(key => [key, element()]));
+  const nodes = Object.fromEntries(["workspace", "wordDetail", "wordsList", "translationText", "translationStatus", "questionText", "questionArea", "questionScroller"].map(key => [key, element()]));
+  nodes.questionScroller.scrollTop = 0;
+  nodes.questionScroller.clientHeight = 400;
+  nodes.questionScroller.getBoundingClientRect = () => ({ top: 100 });
+  nodes.workspace.getBoundingClientRect = () => ({ top: 200 });
+  nodes.workspace.querySelector = () => ({ focus() {} });
   const context = vm.createContext({
     ...nodes, context: {}, document: { activeElement: null },
+    isNativeQuiz: false, phoneHelpQuery: { matches: true },
+    window: { matchMedia: () => ({ matches: false }) },
     currentQuestion: () => question,
     getQuestionHelp: row => new Promise((resolve, reject) => pending.set(row.id, { resolve, reject })),
     usableBanglaTranslation: value => value || "",
@@ -89,6 +96,48 @@ test("failed help can be retried and does not strand the inline panel in loading
   pending.get("first").resolve({ translation: "Available translation" });
   await retry;
   assert.equal(nodes.translationText.textContent, "Available translation");
+});
+
+test("browser phones open inline, reveal resolved content and never request fullscreen", async () => {
+  const { context, nodes, pending } = renderer();
+  const fullscreen = [];
+  context.setHelpFullscreen = value => fullscreen.push(value);
+  context.open();
+  assert.deepEqual(fullscreen, [false]);
+  assert.equal(nodes.questionArea.classList.contains("has-web-help"), true);
+  assert.equal(nodes.questionText.attributes["aria-expanded"], "true");
+  const before = nodes.questionScroller.scrollTop;
+  pending.get("first").resolve({ translation: "Resolved" });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.ok(nodes.questionScroller.scrollTop > before);
+  context.close();
+  assert.equal(nodes.questionArea.classList.contains("has-web-help"), false);
+});
+
+test("late help does not scroll after closing or after a manual scroll", async () => {
+  for (const close of [true, false]) {
+    const { context, nodes, pending } = renderer();
+    context.open();
+    if (close) context.close();
+    else nodes.questionScroller.scrollTop += 50;
+    const before = nodes.questionScroller.scrollTop;
+    pending.get("first").resolve({ translation: "Resolved" });
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(nodes.questionScroller.scrollTop, before);
+  }
+});
+
+test("installed Android phone keeps its fullscreen owner and no browser layout", async () => {
+  const { context, nodes, pending } = renderer();
+  context.isNativeQuiz = true;
+  const fullscreen = [];
+  context.setHelpFullscreen = value => fullscreen.push(value);
+  context.open();
+  pending.get("first").resolve({ translation: "Resolved" });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(fullscreen, [true]);
+  assert.equal(nodes.questionArea.classList.contains("has-web-help"), false);
+  assert.equal(nodes.questionScroller.scrollTop, 0);
 });
 
 test("real keyword text opens and closes its meaning in the same panel", () => {
