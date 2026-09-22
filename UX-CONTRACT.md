@@ -111,6 +111,11 @@
 
 ## Statistiche
 
+- Owner-approved results workspace (2026-09-22) supersedes the compact fallback and matrix presentation below: shared correct-answer ring, actual correction bars for local history / cumulative-vs-recent comparison for server history, one study action, and all25 chapters as labelled percentage bars. The same page structure works on web and Android. CSS owns a fluid1720px canvas and stacks sections naturally on phones.
+- Local presentation derives chapters only from canonical `capN_qN` identities, tested against all788 catalog entries. Exam/unknown identities remain in overall totals but are explicitly excluded from chapter charts; no answer-bank fetch or new data store. Session/question keys and timestamps group corrections, limited to the last8 displayed batches. Repeat answers count as attempts; latest per question determines the review list. No mastery/status inference from short local history.
+- Period/freshness/coverage is available in one concise disclosure, not a technical banner or synchronization KPI. Percentages include numerator/denominator, chart scales and unknown states. Server and local totals are never summed; valid server recovery replaces the local presentation. Retention, account/device isolation, graded-only storage, request count and60-second failure cooldown remain unchanged.
+- Chapter actions reuse the existing quiz/book owners, preserve keyboard focus and close on the same chapter or the44px close button. Errori local review lists eight real questions at a time with explicit practice destinations; server categories and plans remain available.
+
 - The first viewport answers `Come stai andando?` with real recent/cumulative results and one immediate action.
 - The summary reports observed totals only: correct/total answers, distinct quizzes, chapters started, active review items, recent-window accuracy, and recovered count.
 - Comparison copy uses simple thresholds (`stai migliorando`, `più errori del solito`, `stabile`) and never invents an answer sequence.

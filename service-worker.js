@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v212-local-learning";
+const CACHE_NAME = "magicbook-pwa-v213-study-results";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -60,8 +60,8 @@ const STATIC_ASSETS = [
   "/figure-detail.js?v=2",
   "/figure-detail.css?v=2",
   "/figure-catalog.mjs?v=1",
-  "/src/learning-insights.css?v=10-local-recovery&ui=10",
-  "/src/learning-insights.js?v=11-local-recovery&ui=9-intact-figures",
+  "/src/learning-insights.css?v=11-study-results&ui=10",
+  "/src/learning-insights.js?v=12-study-results&ui=9-intact-figures",
   "/homebg.css?v=3",
   "/mystyle.css?v=60-web-quiz-layout",
   "/audio-player-ui.css?v=10-web-quiz-slim",

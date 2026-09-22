@@ -220,17 +220,7 @@
 
   function freshnessBanner() {
     if (!state.model) return "";
-    const pending = Number(state.model.summary?.pendingLocalEvents || 0);
-    const lines = [];
-    if (state.isCached) lines.push(`<strong>${state.cacheStorage === "memory" ? "Ultimi dati disponibili in questa sessione." : "Dati salvati sul dispositivo."}</strong> Aggiornati ${escapeHtml(formatDate(state.cachedAt || state.model.generatedAt))}.`);
-    if (pending) {
-      lines.push(state.model.summary?.pendingLocalIncluded
-        ? `${pending} ${plural(pending, "risposta recente è", "risposte recenti sono")} già inclus${pending === 1 ? "a" : "e"} e sar${pending === 1 ? "à" : "anno"} salvat${pending === 1 ? "a" : "e"} appena possibile.`
-        : `${pending} ${plural(pending, "risposta recente è", "risposte recenti sono")} in attesa: entrer${pending === 1 ? "à" : "anno"} nei dati appena torni online.`);
-    }
-    if (state.model.dataQuality?.sourceTruncated) lines.push("Sto usando le risposte più recenti disponibili.");
-    if (!lines.length) return "";
-    return `<div class="li-data-banner" role="note"><span class="li-live-dot" aria-hidden="true"></span><p>${lines.join(" ")}</p></div>`;
+    return resultScope(state.model);
   }
 
   function renderSkeleton() {
@@ -353,8 +343,8 @@
     return `
       <aside id="liChapterDetail" class="li-chapter-detail" aria-label="Dettaglio capitolo ${chapter.chapter}">
         <button class="li-chapter-detail-close" type="button" data-li-chapter="${chapter.chapter}" onclick="MagicBookLearningInsights.handleClick(event)" aria-label="Chiudi dettaglio capitolo"><span aria-hidden="true"></span></button>
-        <div class="li-chapter-detail-copy"><div class="li-detail-title"><span class="li-state ${stateClass(chapter.status)}">${simpleStatusLabel(chapter.status)}</span><small>Capitolo ${chapter.chapter}</small></div><h3 tabindex="-1">${escapeHtml(chapter.title)}</h3>${chapter.titleBn ? `<p lang="bn" class="li-bangla-title">${escapeHtml(chapter.titleBn)}</p>` : ""}</div>
-        <dl><div><dt>Tentativi</dt><dd>${Number(chapter.attempts || 0)}</dd></div><div><dt>Quiz visti</dt><dd>${formatPercent(chapter.coveragePct)}</dd></div><div><dt>Risposte corrette</dt><dd>${accuracy}</dd></div><div><dt>Ultimi quiz</dt><dd>${recent}</dd></div><div><dt>Da ripassare</dt><dd>${Number(chapter.activeErrors || 0)}</dd></div><div><dt>Recuperati</dt><dd>${Number(chapter.resolvedErrors || 0)}</dd></div></dl>
+        <div class="li-chapter-detail-copy"><div class="li-detail-title">${chapter.localOnly ? '<span class="li-state">Risultati recenti</span>' : `<span class="li-state ${stateClass(chapter.status)}">${simpleStatusLabel(chapter.status)}</span>`}<small>Capitolo ${chapter.chapter}</small></div><h3 tabindex="-1">${escapeHtml(chapter.title)}</h3>${chapter.titleBn ? `<p lang="bn" class="li-bangla-title">${escapeHtml(chapter.titleBn)}</p>` : ""}</div>
+        <dl><div><dt>Risposte valutate</dt><dd>${Number(chapter.attempts || 0)}</dd></div><div><dt>Risposte corrette</dt><dd>${accuracy}</dd></div>${chapter.localOnly ? `<div><dt>Domande da rivedere</dt><dd>${chapter.attempts ? Number(chapter.activeErrors || 0) : "—"}</dd></div>` : `<div><dt>Quiz visti</dt><dd>${formatPercent(chapter.coveragePct)}</dd></div><div><dt>Ultimi quiz</dt><dd>${recent}</dd></div><div><dt>Da ripassare</dt><dd>${Number(chapter.activeErrors || 0)}</dd></div><div><dt>Recuperati</dt><dd>${Number(chapter.resolvedErrors || 0)}</dd></div>`}</dl>
         <div class="li-detail-actions"><button class="li-primary-action d-btn d-btn-primary d-btn-sm" type="button" data-li-action="start-quiz" data-chapter="${chapter.chapter}" onclick="MagicBookLearningInsights.handleClick(event)">Fai il quiz</button><button class="li-secondary-action d-btn d-btn-ghost d-btn-sm" type="button" data-li-action="open-book" data-chapter="${chapter.chapter}" onclick="MagicBookLearningInsights.handleClick(event)">Ripassa il capitolo</button></div>
       </aside>`;
   }
@@ -376,30 +366,137 @@
   }
 
   function renderStatistics(model) {
-    return `${freshnessBanner()}<div class="li-stat-layout">${renderOverview(model)}${renderReviewNow(model)}</div>${renderProgressGroups(model)}${renderChapterMatrix(model)}`;
+    return renderStudyDashboard(model);
   }
 
   function renderLocalReport(report) {
-    const { entries, pending, attempts, storage } = report;
-    const correct = entries.filter(item => item.correct).length;
-    const wrong = entries.length - correct;
+    const model = localStudyModel(report);
+    return state.mode === "errors" ? renderLocalErrors(model) : renderStudyDashboard(model);
+  }
+
+  // Presentation only: never upload this bounded, graded snapshot as a server model.
+  // capN_qN is the canonical Magic Book ID, verified against the private catalog in tests.
+  function localChapter(quizId) {
+    const match = /^cap([1-9]|1\d|2[0-5])_q[1-9]\d*$/.exec(String(quizId));
+    return match ? Number(match[1]) : 0;
+  }
+
+  function localStudyModel(report) {
+    const entries = [...new Map((report?.entries || []).filter(item =>
+      item && typeof item.correct === "boolean" && item.quizId && Number.isFinite(item.at)
+    ).map(item => [item.key || `${item.at}:${item.quizId}`, item])).values()].sort((a, b) => a.at - b.at);
     const latest = new Map();
-    entries.forEach(item => latest.set(item.quizId, item));
+    const batches = new Map();
+    const titles = typeof CHAPTER_TITLES !== "undefined" ? CHAPTER_TITLES : [];
+    const chapters = Array.from({ length: 25 }, (_, index) => ({ chapter: index + 1,
+      title: titles[index] || `Capitolo ${index + 1}`, attempts: 0, correct: 0, wrong: 0, activeErrors: 0,
+      accuracyPct: null, status: "non_iniziato", localOnly: true }));
+    entries.forEach(item => {
+      latest.set(item.quizId, item);
+      const chapter = chapters[localChapter(item.quizId) - 1];
+      if (chapter) { chapter.attempts++; chapter[item.correct ? "correct" : "wrong"]++; }
+      const suffix = `:${item.quizId}`;
+      const batchId = item.key?.endsWith(suffix) ? item.key.slice(0, -suffix.length) : String(item.at);
+      const batch = batches.get(batchId) || { at: item.at, correct: 0, total: 0 };
+      batch.at = Math.max(batch.at, item.at); batch.total++; if (item.correct) batch.correct++;
+      batches.set(batchId, batch);
+    });
     const errors = [...latest.values()].filter(item => !item.correct).reverse();
-    const title = state.mode === "errors" ? "Errori sul dispositivo" : "I tuoi risultati sul dispositivo";
-    const items = errors.slice(0, state.visibleCount).map(item => `<li class="li-local-error"><p>${escapeHtml(item.question)}</p><small>Ultima risposta salvata: sbagliata · ${escapeHtml(formatDate(item.at))}</small></li>`).join("");
-    return `<div class="li-data-banner" role="note"><span class="li-live-dot" aria-hidden="true"></span><p><strong>Dati locali, storico parziale.</strong> ${storage === "memory" ? "I risultati di questa sessione sono disponibili finché rimani nell’app." : "Mostro i risultati disponibili su questo dispositivo nelle ultime 24 ore."} Lo storico completo tornerà quando il servizio sarà disponibile.</p></div>
-      <section class="li-overview li-local-report" aria-labelledby="learningInsightsHeading">
-        <header class="li-page-heading"><p class="li-kicker">${state.mode === "errors" ? "Errori" : "Statistiche"}</p><h1 id="learningInsightsHeading" tabindex="-1">${title}</h1><p>${entries.length ? "Questi risultati provengono dai quiz già corretti. Non comprendono necessariamente tutti i tuoi quiz." : "Non ci sono ancora correzioni salvate qui. Questo non significa che tu non abbia fatto quiz."}</p></header>
-        <div class="li-metric-grid" aria-label="Risultati locali dei quiz corretti">
-          ${metric("Risposte corrette", entries.length ? `${correct} / ${entries.length}` : "—", "Solo correzioni salvate")}
-          ${metric("Risposte sbagliate", entries.length ? String(wrong) : "—", "Solo correzioni salvate", "is-attention")}
-          ${entries.length ? metric("Quiz con risultato", String(latest.size), "Domande diverse nelle correzioni locali") : metric("Risposte registrate", attempts === null ? "—" : String(attempts), "Attività locale, correzione non disponibile")}
-          ${metric("Da sincronizzare", pending === null ? "—" : String(pending), "Non sono conteggiate come corrette o sbagliate")}
-        </div>
-        ${state.mode === "errors" ? `<div class="li-local-review"><h2>Quiz da rivedere</h2>${errors.length ? `<ul>${items}</ul>${errors.length > state.visibleCount ? '<button class="li-secondary-action d-btn d-btn-ghost d-btn-sm" type="button" data-li-action="more" onclick="MagicBookLearningInsights.handleClick(event)">Mostra altri</button>' : ""}` : `<p>${entries.length ? "Nelle ultime correzioni disponibili qui non risultano quiz da rivedere." : "Gli errori compariranno qui dopo aver concluso e corretto un quiz su questo dispositivo."}</p>`}</div>` : ""}
-        <div class="li-detail-actions"><button class="li-primary-action d-btn d-btn-primary d-btn-sm" type="button" data-li-action="home" onclick="MagicBookLearningInsights.handleClick(event)">Torna a studiare</button></div>
-      </section>`;
+    errors.forEach(item => { const chapter = chapters[localChapter(item.quizId) - 1]; if (chapter) chapter.activeErrors++; });
+    chapters.forEach(chapter => {
+      if (!chapter.attempts) return;
+      chapter.accuracyPct = chapter.correct / chapter.attempts * 100;
+      chapter.status = "in_pratica"; // No mastery classification from a short local history.
+    });
+    const correct = entries.filter(item => item.correct).length;
+    return { localOnly: true, storage: report?.storage, generatedAt: entries.at(-1)?.at || null,
+      chapters, localErrors: errors, batches: [...batches.values()].sort((a, b) => a.at - b.at),
+      summary: { totalAnswers: entries.length, totalCorrect: correct, totalWrong: entries.length - correct,
+        overallAccuracyPct: entries.length ? correct / entries.length * 100 : null,
+        uniqueQuizSeen: latest.size, activeErrors: errors.length },
+      unknownChapterAnswers: entries.filter(item => !localChapter(item.quizId)).length };
+  }
+
+  function resultScope(model) {
+    const updatedAt = model.generatedAt || state.cachedAt;
+    const date = updatedAt ? formatDate(updatedAt) : "";
+    const local = model.localOnly;
+    const partial = local || model.dataQuality?.sourceTruncated;
+    return `<details class="li-result-scope"><summary>${partial ? "Risultati recenti" : "Risultati disponibili"}${date ? ` · ${escapeHtml(date)}` : ""}<span>Come vengono calcolati</span></summary><p>${local
+      ? "Sono incluse le risposte date, già valutate e salvate nelle ultime 24 ore su questo dispositivo, fino a 250. Le risposte in attesa di correzione non entrano nelle percentuali. Lo storico degli altri dispositivi o dei giorni precedenti potrebbe non essere incluso."
+      : "Le percentuali confrontano le risposte corrette con tutte le risposte valutate nello storico disponibile. Ripetere una domanda conta come un nuovo tentativo. Non sono una previsione del risultato d’esame."}${state.isCached && !local ? " Stai vedendo l’ultimo aggiornamento disponibile; i quiz più recenti potrebbero non essere ancora inclusi." : ""}${model.storage === "memory" ? " In questa sessione il salvataggio permanente non è disponibile: questi risultati restano consultabili finché la pagina rimane aperta." : ""}</p></details>`;
+  }
+
+  function accuracyRing(summary) {
+    const total = Number(summary.totalAnswers || 0);
+    const correct = Number(summary.totalCorrect || 0);
+    const pct = total ? clampPercent(correct / total * 100) : null;
+    return `<div class="li-accuracy-ring" style="--li-ring-value:${pct || 0}%" role="img" aria-label="${total ? `${Math.round(pct)}% di risposte corrette: ${correct} su ${total}` : "Percentuale non ancora disponibile"}"><div><strong>${pct === null ? "—" : Math.round(pct)}${pct === null ? "" : "<small>%</small>"}</strong><span>risposte corrette</span></div></div>`;
+  }
+
+  function dashboardHeading(model, errors = false) {
+    return `<header class="li-dashboard-heading"><div><p class="li-kicker">${errors ? "Impara dagli errori" : "Il tuo percorso"}</p><h1 id="learningInsightsHeading" tabindex="-1">${errors ? "Un passo alla volta, meno errori." : "Guarda i tuoi progressi."}</h1><p>${errors ? "Rivedi le domande e scegli il capitolo da allenare." : "Scopri cosa sai già e dove concentrare il prossimo ripasso."}</p></div>${resultScope(model)}</header>`;
+  }
+
+  function scorePanel(model) {
+    const s = model.summary;
+    const total = Number(s.totalAnswers || 0);
+    return `<section class="li-chart-card li-score-panel" aria-labelledby="liAccuracyTitle"><header><p class="li-kicker">Le tue risposte</p><h2 id="liAccuracyTitle">Ogni risposta conta</h2></header><div class="li-score-visual">${accuracyRing(s)}<dl class="li-score-legend"><div><dt><i class="li-chart-key is-correct" aria-hidden="true"></i>Corrette</dt><dd>${total ? Number(s.totalCorrect || 0) : "—"}</dd></div><div><dt><i class="li-chart-key is-wrong" aria-hidden="true"></i>Sbagliate</dt><dd>${total ? Number(s.totalWrong || 0) : "—"}</dd></div></dl></div><footer>${total ? `<strong>${Number(s.totalCorrect || 0)} / ${total}</strong> risposte corrette · ${Number(s.uniqueQuizSeen || 0)} domande diverse` : "Concludi un quiz per vedere il tuo primo risultato."}</footer></section>`;
+  }
+
+  function activityPanel(model) {
+    if (!model.localOnly) {
+      const s = model.summary;
+      const values = [
+        { label: "Tutte le risposte", total: Number(s.totalAnswers || 0), pct: s.overallAccuracyPct },
+        { label: `Ultime ${Number(s.recentWindowSize || 0)} risposte`, total: Number(s.recentWindowSize || 0), pct: s.recentAccuracyPct }
+      ];
+      return `<section class="li-chart-card li-activity-panel"><header><p class="li-kicker">Il confronto</p><h2>Come stanno andando le ultime risposte?</h2><p>Percentuale di risposte corrette, da 0 a 100%.</p></header><div class="li-comparison-bars">${values.map(row => `<div><span>${escapeHtml(row.label)}</span><strong>${row.total ? formatPercent(row.pct) : "—"}</strong><div class="li-chart-track" aria-hidden="true"><span style="width:${row.total ? clampPercent(row.pct) : 0}%"></span></div></div>`).join("")}</div><footer>${Number(s.recentWindowSize || 0) ? escapeHtml(recentComparison(s)) : "Le prossime correzioni daranno forma al tuo andamento."}</footer></section>`;
+    }
+    const batches = model.batches.slice(-8);
+    return `<section class="li-chart-card li-activity-panel"><header><p class="li-kicker">La tua pratica</p><h2>Le ultime correzioni</h2><p>Risposte corrette nelle correzioni disponibili · scala 0–100%.</p></header>${batches.length ? `<div class="li-session-chart"><div class="li-chart-scale" aria-hidden="true"><span>100%</span><span>50%</span><span>0%</span></div><ol class="li-session-bars" style="--li-bar-count:${batches.length}">${batches.map((batch, index) => {
+      const pct = Math.round(batch.correct / batch.total * 100);
+      const time = new Intl.DateTimeFormat("it-IT", { hour: "2-digit", minute: "2-digit" }).format(new Date(batch.at));
+      return `<li><div class="li-session-bar-area"><div class="li-session-fill" style="height:${pct}%" aria-hidden="true"></div><strong>${pct}%</strong></div><span>${time}</span><small>${batch.correct}/${batch.total}</small><span class="sr-only">Correzione ${index + 1}, ${escapeHtml(formatDate(batch.at))}: ${batch.correct} corrette su ${batch.total}</span></li>`;
+    }).join("")}</ol></div>` : `<div class="li-chart-empty"><strong>Il prossimo quiz è il tuo punto di partenza.</strong><p>Qui vedrai i risultati delle correzioni, una dopo l’altra.</p></div>`}<footer>${batches.length ? `${batches.length} ${plural(batches.length, "correzione disponibile", "correzioni disponibili")} nelle ultime 24 ore${model.batches.length > 8 ? " · mostrate le ultime 8" : ""}. I numeri sotto ogni barra indicano corrette / totale.` : "Non ci sono ancora correzioni disponibili in questa vista."}</footer></section>`;
+  }
+
+  function nextStudyPanel(model) {
+    const targets = model.chapters.filter(chapter => Number(chapter.activeErrors || 0) > 0)
+      .sort((a, b) => b.activeErrors - a.activeErrors || a.chapter - b.chapter);
+    const target = targets[0];
+    const reviewNoun = model.localOnly ? ["domanda da rivedere", "domande da rivedere"] : ["elemento da ripassare", "elementi da ripassare"];
+    const total = Number(model.summary.totalAnswers || 0);
+    return `<aside class="li-chart-card li-next-study"><p class="li-kicker">Il prossimo passo</p><h2>${target ? "Un capitolo da rinforzare" : total ? "Continua ad allenarti" : "Comincia da un quiz"}</h2><p>${target ? `Nel capitolo ${target.chapter} ci sono ${target.activeErrors} ${plural(target.activeErrors, ...reviewNoun)}. Un ripasso mirato ti aiuta a riconoscerle.` : total ? "Scegli un capitolo e metti di nuovo alla prova quello che hai imparato." : "Dopo la correzione ritroverai qui percentuali, capitoli e domande da ripassare."}</p>${target ? `<div class="li-next-chapter"><span>${String(target.chapter).padStart(2, "0")}</span><strong>${escapeHtml(target.title)}</strong></div>` : ""}<button class="li-primary-action d-btn d-btn-primary" type="button" data-li-action="${target ? "start-quiz" : "home"}" ${target ? `data-chapter="${target.chapter}"` : ""} onclick="MagicBookLearningInsights.handleClick(event)">${target ? "Allenati su questo capitolo" : "Scegli un quiz"}<img src="icons/next.png" alt=""></button></aside>`;
+  }
+
+  function chapterCharts(model, errorsOnly = false) {
+    const rows = errorsOnly ? model.chapters.filter(chapter => Number(chapter.activeErrors || 0) > 0) : model.chapters;
+    const maxErrors = Math.max(1, ...rows.map(row => Number(row.activeErrors || 0)));
+    const reviewNoun = model.localOnly ? ["domanda da rivedere", "domande da rivedere"] : ["elemento da ripassare", "elementi da ripassare"];
+    const selected = model.chapters.find(chapter => Number(chapter.chapter) === state.selectedChapter);
+    return `<section class="li-chart-card li-chapter-results" aria-labelledby="liChaptersTitle"><header class="li-section-heading"><div><p class="li-kicker">Capitolo per capitolo</p><h2 id="liChaptersTitle">${errorsOnly ? "Dove concentrare il ripasso" : "La mappa dei tuoi risultati"}</h2><p>${errorsOnly ? (model.localOnly ? "Domande da rivedere nell’ultima risposta disponibile." : "Domande, figure e parole da ripassare per capitolo.") : "Percentuale di risposte corrette. Tocca un capitolo per continuare."}</p></div><span class="li-scope-tag">${model.chapters.filter(chapter => Number(chapter.attempts || 0) > 0).length} capitoli affrontati</span></header>
+      ${rows.length ? `<ol class="li-chapter-bars">${rows.map(chapter => {
+        const total = Number(chapter.attempts || 0);
+        const pct = total ? clampPercent(chapter.accuracyPct) : 0;
+        const value = errorsOnly ? Number(chapter.activeErrors || 0) : pct;
+        const width = errorsOnly ? value / maxErrors * 100 : value;
+        return `<li><button type="button" class="li-chapter-bar ${state.selectedChapter === chapter.chapter ? "is-selected" : ""}" data-li-chapter="${chapter.chapter}" onclick="MagicBookLearningInsights.handleClick(event)" aria-expanded="${state.selectedChapter === chapter.chapter}" ${state.selectedChapter === chapter.chapter ? 'aria-controls="liChapterDetail"' : ""}><span class="li-chart-chapter-number">${String(chapter.chapter).padStart(2, "0")}</span><span class="li-chart-chapter-copy"><strong>${escapeHtml(chapter.title)}</strong><small>${errorsOnly ? `${value} ${plural(value, ...reviewNoun)}` : total ? `${Number(chapter.correct || 0)} corrette su ${total}` : model.localOnly ? "Nessun risultato recente" : "Non ancora affrontato"}</small><span class="li-chart-track ${errorsOnly ? "is-review" : ""}" aria-hidden="true"><span style="width:${width}%"></span></span></span><b>${errorsOnly ? value : total ? `${Math.round(pct)}%` : "—"}</b></button></li>`;
+      }).join("")}</ol>` : `<div class="li-chart-empty"><p>${Number(model.summary.totalAnswers || 0) ? "Nei capitoli riconosciuti non ci sono domande da rivedere." : "Concludi un quiz per scoprire quali capitoli ripassare."}</p></div>`}
+      ${model.unknownChapterAnswers ? `<p class="li-chart-footnote">${model.unknownChapterAnswers} ${plural(model.unknownChapterAnswers, "risposta è inclusa", "risposte sono incluse")} nel totale ma non nel grafico per capitolo: il capitolo non è disponibile.</p>` : ""}${chapterDetail(selected)}</section>`;
+  }
+
+  function renderStudyDashboard(model) {
+    return `${dashboardHeading(model)}<div class="li-dashboard-grid">${scorePanel(model)}${activityPanel(model)}${nextStudyPanel(model)}</div>${chapterCharts(model)}`;
+  }
+
+  function renderLocalErrors(model) {
+    const errors = model.localErrors;
+    return `${dashboardHeading(model, true)}<div class="li-dashboard-grid">${scorePanel(model)}<section class="li-chart-card li-review-intro"><p class="li-kicker">Il tuo ripasso</p><h2>${model.summary.totalAnswers ? errors.length : "—"}<span> ${errors.length === 1 ? "domanda da rivedere" : "domande da rivedere"}</span></h2><p>Una domanda esce da questa lista quando l’ultima risposta disponibile è corretta.</p><p>Le risposte sbagliate ripetute alla stessa domanda contano una sola volta nella lista.</p></section>${nextStudyPanel(model)}</div>${chapterCharts(model, true)}
+      <section class="li-chart-card li-local-review" aria-labelledby="liReviewQuestions"><header class="li-section-heading"><div><p class="li-kicker">Rileggi e riprova</p><h2 id="liReviewQuestions">Le domande da rivedere</h2></div><span class="li-scope-tag">${Math.min(errors.length, state.visibleCount)} di ${errors.length}</span></header>${errors.length ? `<ol class="li-review-grid">${errors.slice(0, state.visibleCount).map(item => {
+        const chapter = localChapter(item.quizId);
+        return `<li class="li-local-error"><small>${chapter ? `Capitolo ${chapter}` : "Quiz"} · ${escapeHtml(formatDate(item.at))}</small><p>${escapeHtml(item.question)}</p><button class="li-secondary-action d-btn d-btn-ghost" type="button" data-li-action="${chapter ? "start-quiz" : "home"}" ${chapter ? `data-chapter="${chapter}"` : ""} onclick="MagicBookLearningInsights.handleClick(event)">${chapter ? "Allenati su questo capitolo" : "Torna a studiare"}</button></li>`;
+      }).join("")}</ol>${errors.length > state.visibleCount ? '<button class="li-secondary-action li-more d-btn d-btn-ghost" type="button" data-li-action="more" onclick="MagicBookLearningInsights.handleClick(event)">Mostra altre domande</button>' : ""}` : `<div class="li-chart-empty"><strong>${model.summary.totalAnswers ? "Nessuna domanda da rivedere nelle correzioni disponibili." : "Il tuo ripasso comincia con la prossima correzione."}</strong><p>${model.summary.totalAnswers ? "Puoi continuare con un altro capitolo." : "Se hai già fatto quiz in passato, potrebbero non essere ancora presenti in questa vista."}</p></div>`}</section>`;
   }
 
   const LENSES = Object.freeze([
@@ -524,8 +621,9 @@
     const selected = resolveItem(state.selectedKey);
     const improvingCount = (model.chapters || []).filter(chapter => chapter.status === "in_miglioramento").length;
     return `
-      ${freshnessBanner()}
-      <header class="li-errors-heading"><div><p class="li-kicker">Ripasso</p><h1 id="learningInsightsHeading" tabindex="-1">Errori</h1><p>Qui trovi cosa ripassare e cosa stai già recuperando.</p></div><dl aria-label="Riepilogo del ripasso"><div><dt>Da ripassare</dt><dd>${Number(model.summary.activeErrors || 0)}</dd></div><div><dt>Sta migliorando</dt><dd>${improvingCount}</dd></div><div><dt>Recuperati</dt><dd>${Number(model.summary.recoveredThisWeek || 0)}</dd></div></dl></header>
+      ${dashboardHeading(model, true)}
+      <div class="li-dashboard-grid">${scorePanel(model)}<section class="li-chart-card li-review-intro"><p class="li-kicker">Il tuo ripasso</p><h2>${Number(model.summary.activeErrors || 0)}<span> elementi da ripassare</span></h2><p>Domande, figure e parole individuate nelle tue risposte.</p><p>${improvingCount} capitoli in miglioramento · ${Number(model.summary.recoveredThisWeek || 0)} elementi recuperati questa settimana.</p></section>${nextStudyPanel(model)}</div>
+      ${chapterCharts(model, true)}
       ${renderEmerging(model)}
       <div class="li-errors-layout">
         <section class="li-error-explorer" aria-labelledby="liLensHeading">
@@ -1041,5 +1139,5 @@
     state.isRefreshing = false;
   }
 
-  root.MagicBookLearningInsights = Object.freeze({ show, hide, readProgress, refresh: () => load({ force: true }), handleClick, __testing: { state, isModel, renderLocalReport } });
+  root.MagicBookLearningInsights = Object.freeze({ show, hide, readProgress, refresh: () => load({ force: true }), handleClick, __testing: { state, isModel, renderLocalReport, localStudyModel, renderStudyDashboard } });
 })(typeof window !== "undefined" ? window : globalThis);

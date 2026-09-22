@@ -84,7 +84,8 @@ test("503 without cache shows actual local activity and graded errors, never inv
   assert.equal(h.state.localReport.entries.length, 2);
   h.state.mode = "errors";
   const html = h.ui.__testing.renderLocalReport(h.state.localReport);
-  assert.match(html, /Dati locali, storico parziale/);
+  assert.match(html, /Risultati recenti/);
+  assert.doesNotMatch(html, /Da sincronizzare|Dati locali, storico parziale|Quiz con risultato/);
   assert.match(html, /1 \/ 2/);
   assert.match(html, /Domanda 1/);
   assert.doesNotMatch(html, /Domanda 9|Non riesco a leggere/);
@@ -96,8 +97,9 @@ test("offline and absent local history show unknown scores, not a fabricated emp
   const h = harness({ offline: true });
   await h.ui.refresh();
   const html = h.ui.__testing.renderLocalReport(h.state.localReport);
-  assert.match(html, /Questo non significa che tu non abbia fatto quiz/);
-  assert.match(html, /Risposte corrette<\/span><strong>—/);
+  assert.match(html, /Lo storico degli altri dispositivi/);
+  assert.match(html, /Percentuale non ancora disponibile/);
+  assert.doesNotMatch(html, /<strong>0<small>%/);
   assert.equal(h.calls.length, 0);
   assert.equal(h.timers.size, 0);
 });
@@ -168,6 +170,66 @@ test("local question text is escaped and only the latest saved answer for a quiz
   ] });
   assert.doesNotMatch(html, /Domanda 1|<img src=x/);
   assert.match(html, /&lt;img/);
+});
+
+test("chapter and correction charts use graded answers, not pending activity or inferred mastery", () => {
+  const h = harness();
+  const at = Date.now();
+  const entries = [
+    { ...item("cap2_q1", false), key: "s1:cap2_q1", at },
+    { ...item("cap2_q2", true), key: "s1:cap2_q2", at },
+    { ...item("cap2_q1", true), key: "s2:cap2_q1", at: at + 1 },
+    { ...item("cap3_q1", false), key: "s2:cap3_q1", at: at + 1 },
+    { ...item("exam_q1", true), key: "s2:exam_q1", at: at + 1 }
+  ];
+  const model = h.ui.__testing.localStudyModel({ entries, pending: 900 });
+  assert.equal(model.summary.totalAnswers, 5);
+  assert.equal(model.summary.totalCorrect, 3);
+  assert.equal(model.summary.overallAccuracyPct, 60);
+  assert.equal(model.summary.uniqueQuizSeen, 4);
+  assert.equal(model.summary.activeErrors, 1);
+  assert.equal(model.chapters[1].attempts, 3);
+  assert.equal(model.chapters[1].correct, 2);
+  assert.equal(model.chapters[1].activeErrors, 0);
+  assert.equal(model.chapters[2].activeErrors, 1);
+  assert.equal(model.unknownChapterAnswers, 1);
+  assert.equal(model.batches.length, 2);
+  assert.equal(model.batches[0].total, 2);
+  assert.equal(model.batches[1].correct, 2);
+  assert.equal(model.chapters[0].accuracyPct, null);
+  assert.equal(model.chapters[1].status, "in_pratica");
+  const html = h.ui.__testing.renderStudyDashboard(model);
+  assert.equal((html.match(/class="li-chapter-bar /g) || []).length, 25);
+  assert.match(html, /60<small>%/);
+  assert.match(html, /1 risposta è inclusa/);
+  assert.doesNotMatch(html, /900|Da sincronizzare|pronto per l.esame/);
+});
+
+test("legacy saved quiz IDs map to exactly the canonical chapters, without downloading an answer bank", async () => {
+  const { LOCAL_MAGIC_BOOK_ROWS, LOCAL_EXAM_ROWS } = await import("../api/local-quiz-bank.mjs");
+  const h = harness();
+  for (const row of [...LOCAL_MAGIC_BOOK_ROWS, ...LOCAL_EXAM_ROWS]) {
+    const model = h.ui.__testing.localStudyModel({ entries: [{ ...item(row.id), at: Date.now() }] });
+    const chapter = model.chapters.find(value => value.attempts);
+    assert.equal(chapter?.chapter || 0, Number(row.chapter));
+  }
+  assert.equal(h.calls.length, 0);
+  assert.doesNotMatch(uiSource, /_quiz-bank|fetch\([^)]*catalog/);
+});
+
+test("charts deduplicate saved entries and escape text; eight correction columns are bounded", () => {
+  const h = harness();
+  const entries = Array.from({ length: 10 }, (_, i) => ({ ...item("cap1_q1", i % 2 === 0), key: `s${i}:cap1_q1`, at: Date.now() + i }));
+  const model = h.ui.__testing.localStudyModel({ entries: [...entries, entries[0], { ...item("bad"), correct: "true" }] });
+  assert.equal(model.summary.totalAnswers, 10);
+  assert.equal(model.summary.totalCorrect, 5);
+  assert.equal(model.summary.activeErrors, 1);
+  assert.equal(model.batches.length, 10);
+  assert.match(h.ui.__testing.renderStudyDashboard(model), /--li-bar-count:8/);
+  h.state.selectedChapter = 2;
+  const html = h.ui.__testing.renderStudyDashboard(model);
+  assert.match(html, /id="liChapterDetail"/);
+  assert.doesNotMatch(html, /<dt>Quiz visti|<dt>Recuperati/);
 });
 
 test("screen deadline keeps local data and leaves no timeout or repeated automatic request", async () => {

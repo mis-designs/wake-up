@@ -31,8 +31,8 @@ canonical_ui:
   notes: Existing application tokens remain canonical. Locally compiled, d-prefixed daisyUI controls provide interaction primitives; the scoped learning stylesheet owns layout and visual hierarchy.
 design_context:
   owner: Magic Book
-  last_updated: 2026-09-20
-  revision_notes: "Web live Quiz uses a compact emerald player, stacked navigation and inline responsive translation. Installed Android presentation and Android-only Segnali e figure preview remain unchanged."
+  last_updated: 2026-09-22
+  revision_notes: "Statistics and Errors use a wide learner-facing results workspace on web and Android, including graded local history, real charts and chapter bars. Technical sync counts are not headline content."
 ---
 
 # Magic Book design context
@@ -56,13 +56,13 @@ September 20 Android preview refinement supersedes the earlier density: the visi
 ## Visual direction
 
 - Direction: Adaptive Study Workspace — a calm, adult study tool that changes density with the amount of real data.
-- Signature composition: recent-result band, compact action rail, five-by-five chapter matrix, and recovery stack.
+- Signature composition: a measured correct-answer ring, real correction/comparison bars, one study action and a chapter-by-chapter results map. Server and local history share the same visual owners.
 - Tone: direct, professional, reassuring, and operational. Avoid poetic, analytical, and internal-system language in student-facing copy.
-- Density: useful information in the first viewport, a restrained 1240px reading canvas on desktop, and one natural vertical flow on mobile.
+- Density: a fluid1720px maximum desktop workspace, with three purposeful overview columns and a three-column chapter map; two columns on tablets, one natural vertical flow on phones. Never replace it with a narrow centered fallback card.
 - Surface rule: one bordered surface per section; use dividers for rows and tabs instead of cards nested inside cards. Elevation is reserved for the single next-action panel.
 - Imagery: reuse `icons/statistiche-patente.png`, `icons/errori-patente.png`, `icons/go-back.png`, `icons/next.png`, `assets/admin/update.png`, and authenticated figure assets. Existing SVGs are reused only when their meaning matches.
 - Icon rule: no Unicode characters as UI icons. Use repository assets, text labels, or decorative CSS marks hidden from assistive technology.
-- Avoid giant headings, oversized empty surfaces, decorative gradients, neon, game styling, generic KPI-card grids, traffic-sign decoration, and horizontal scrollers.
+- Avoid giant headings, oversized empty surfaces, neon, game styling, generic KPI-card grids, traffic-sign decoration, and horizontal scrollers. The approved results chart uses a quiet semantic-teal gradient within measured bars and a soft inset ring; the next-study surface fades gently to the same teal-soft role. Other surfaces stay flat.
 - Android WebView compactness is owned by `mobile-experience.css`; it may reduce decoration and spacing without changing route meaning or hiding required controls. Header titles stay visually centered through symmetric live utility rails, and short Home content uses auto margins that collapse safely when vertical scrolling is needed.
 - Installed-app color is owned by `android-app-theme.css` behind the `html.android-webview` marker. Its primitive palette is additionally exposed on `#login` for the explicitly approved shared web/Android login, without exposing native route aliases or styling. Pearl chrome, graphite controls and blue selection/actions follow the owner's latest palette reference; white reading paper stays distinct. Other browser screens keep their existing colors and geometry. Thin section-only Android headers are an explicit shared theme variant; business behavior and route structure remain unchanged.
 
@@ -91,7 +91,7 @@ September 20 Android preview refinement supersedes the earlier density: the visi
 - Main width: up to 1720px with fluid side gutters. Desktop uses a 12-column relationship: Statistics overview about eight columns and immediate action about four; Errori explorer about nine and plan about three.
 - At 1024px, chapter detail becomes sequential and the recovery plan becomes a compact horizontal region.
 - At 767px and below, content becomes one vertical flow. In Errori, `Il tuo ripasso` precedes category exploration.
-- The chapter matrix uses five columns when space permits and two columns on phones. All 25 chapters remain visible without horizontal scrolling.
+- The results map uses three columns on wide screens, two on tablets and one on phones. Each chapter has a readable title, measured bar, numerator/denominator and percentage; unknown is an em dash, not zero. All25 chapters remain reachable without horizontal scrolling.
 - Reading order remains meaningful without CSS. Nothing may create page-level horizontal scrolling at 320px.
 - Public access entry: Promo Code is temporarily disabled by the fail-closed `PROMO_LOGIN_ENABLED` switch in `script.js`; logged-out visitors go directly to the personal phone login and no promo-status request runs. When the switch is restored, the preserved promo landing uses a wide two-column pass from 1024px and keeps its vertical mobile flow.
 
@@ -140,7 +140,8 @@ September 20 Android preview refinement supersedes the earlier density: the visi
 
 ## Data, states, and trust
 
-- Learning service degradation (2026-09-22): keep a valid saved model first. Without one, reuse the existing learning header, overview, metrics, note and actions for a compact local-only report on web and Android. State “Dati locali, storico parziale”; unknown correctness is an em dash, never zero. Errori lists the latest saved wrong answer for each question, eight at a time. No estimated mastery, invented chapters or new image requests. Original palette/type/spacing owners stay unchanged. See UX-CONTRACT.md for retention and request behavior.
+- Owner correction (2026-09-22): replace the technical local report with the same production results workspace on web and Android. `src/learning-insights.js` owns the shared ring, labelled bars, chapter map and next-study action; `src/learning-insights.css` consumes existing `--li-*` roles and the Android palette adapter. Correctness is correct answers / graded attempts, never exam readiness. The local variant groups actual saved corrections into at most8 chronological bars; server history compares actual cumulative/recent-window accuracy because no time series is supplied. Chapter bars always include textual values; missing chapters/grades are never fabricated. The legacy compact matrix and headline synchronization metrics are superseded for these routes.
+- Data scope is a discreet “Risultati recenti/disponibili” disclosure beside the heading, with real update time and accessible details about24-hour local coverage or saved server freshness. Do not put “Da sincronizzare”, “sul dispositivo”, or “storico parziale” into headline KPIs. The details still state retention, missing cross-device history and temporary-memory limitations honestly. Errori presents latest wrong questions in a two-column review list on desktop, one column on phones, eight at a time, with real chapter practice actions. Auth failure still clears private results. No request, retention or grading changes. See UX-CONTRACT.md.
 
 - Admin authentication and device-bound authorization remain unchanged. Its read flow uses a bounded recent-list request, remote phone search, and an explicit complete-list request; the server still validates and normalizes phone data before forwarding it upstream.
 - Empty, insufficient, ready, cached, refreshing, offline-cached, no-cache offline, expired access, timeout, and generic failure are distinct states.

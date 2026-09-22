@@ -157,13 +157,13 @@ test("responsive, reduced-motion and global scrollbar rules are present", () => 
   assert.match(css, /#learningInsightsScreen::-webkit-scrollbar/u);
   assert.match(index, /style\.css\?v=74-compact-loading/u);
   assert.match(index, /assets\/daisyui\.css\?v=2-learning-shell/u);
-  assert.match(index, /src\/learning-insights\.css\?v=10-local-recovery/u);
-  assert.match(index, /src\/learning-insights\.js\?v=11-local-recovery/u);
-  assert.match(worker, /magicbook-pwa-v212-local-learning/u);
+  assert.match(index, /src\/learning-insights\.css\?v=11-study-results/u);
+  assert.match(index, /src\/learning-insights\.js\?v=12-study-results/u);
+  assert.match(worker, /magicbook-pwa-v213-study-results/u);
   assert.match(worker, /style\.css\?v=74-compact-loading/u);
   assert.match(worker, /assets\/daisyui\.css\?v=2-learning-shell/u);
-  assert.match(worker, /src\/learning-insights\.css\?v=10-local-recovery/u);
-  assert.match(worker, /src\/learning-insights\.js\?v=11-local-recovery/u);
+  assert.match(worker, /src\/learning-insights\.css\?v=11-study-results/u);
+  assert.match(worker, /src\/learning-insights\.js\?v=12-study-results/u);
   assert.match(worker, /\/icons\/next\.png/u);
   assert.match(worker, /\/icons\/go-back\.png/u);
   assert.match(worker, /\/assets\/admin\/update\.png/u);
@@ -172,7 +172,7 @@ test("responsive, reduced-motion and global scrollbar rules are present", () => 
 test("learning workspace keeps a flat, aligned surface rhythm", () => {
   assert.match(css, /Quiet study canvas/u);
   assert.match(css, /--li-shadow:\s*none;/u);
-  assert.match(css, /#learningInsightsScreen \.li-main \{\s*width: min\(1240px, calc\(100% - 48px\)\);/u);
+  assert.match(css, /#learningInsightsScreen \.li-main \{\s*width: min\(1720px, calc\(100% - 48px\)\);/u);
   assert.match(css, /\.li-explorer-body \{[\s\S]*?border-top: 1px solid var\(--li-line\);[\s\S]*?border-radius: 0;/u);
   assert.match(css, /\.li-error-row > button \{[\s\S]*?border-bottom: 1px solid var\(--li-line\) !important;/u);
   assert.match(css, /@media \(max-width: 430px\)[\s\S]*?\.li-chapter-cell \{ min-height: 78px;/u);
