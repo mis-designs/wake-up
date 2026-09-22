@@ -140,6 +140,8 @@ September 20 Android preview refinement supersedes the earlier density: the visi
 
 ## Data, states, and trust
 
+- Learning service degradation (2026-09-22): keep a valid saved model first. Without one, reuse the existing learning header, overview, metrics, note and actions for a compact local-only report on web and Android. State “Dati locali, storico parziale”; unknown correctness is an em dash, never zero. Errori lists the latest saved wrong answer for each question, eight at a time. No estimated mastery, invented chapters or new image requests. Original palette/type/spacing owners stay unchanged. See UX-CONTRACT.md for retention and request behavior.
+
 - Admin authentication and device-bound authorization remain unchanged. Its read flow uses a bounded recent-list request, remote phone search, and an explicit complete-list request; the server still validates and normalizes phone data before forwarding it upstream.
 - Empty, insufficient, ready, cached, refreshing, offline-cached, no-cache offline, expired access, timeout, and generic failure are distinct states.
 - Empty/insufficient views stay compact and tell the learner exactly which quiz action is available.

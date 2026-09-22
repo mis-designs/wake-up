@@ -11,6 +11,9 @@
     insightsStoreName: "learning_insights_cache",
     insightsBackupPrefix: "magicbook.learning.insights.v1.",
     maxInsightsBackupBytes: 512_000,
+    localReviewPrefix: "magicbook.learning.review.v1.",
+    maxLocalReviewEntries: 250,
+    maxLocalReviewBytes: 512_000,
     endpoint: "/api/learning-sync",
     maxBatchSize: 25,
     flushIntervalMs: 15_000,
@@ -483,6 +486,60 @@
     }
   }
 
+  // Read-only study aid, never uploaded or used for grading/authorization.
+  // Keep the existing one-day local retention, separate from the durable outbox.
+  const localReviewMemory = new Map();
+  function readLocalReview(auth = defaultAuthContext()) {
+    if (!auth) return { entries: [], storage: "unavailable" };
+    const key = `${auth.userId}:${auth.deviceId}`;
+    let record = localReviewMemory.get(key);
+    let storage = record?.storage || "memory";
+    try {
+      const raw = root.localStorage?.getItem(LEARNING_SYNC_CONFIG.localReviewPrefix + key);
+      if (raw && raw.length * 2 <= LEARNING_SYNC_CONFIG.maxLocalReviewBytes) {
+        const saved = JSON.parse(raw);
+        if (saved.userId === auth.userId && saved.deviceId === auth.deviceId && Array.isArray(saved.entries)) {
+          if (!record || saved.savedAt > record.savedAt || (saved.savedAt === record.savedAt && record.storage === "localStorage")) {
+            record = saved; storage = "localStorage";
+          }
+        }
+      }
+    } catch { /* Storage may be disabled; the current session remains usable. */ }
+    const now = Date.now();
+    const entries = (record?.entries || []).filter(item =>
+      item && typeof item.key === "string" && typeof item.quizId === "string"
+      && typeof item.question === "string" && typeof item.correct === "boolean"
+      && Number.isFinite(item.at) && item.at <= now && now - item.at < LEARNING_SYNC_CONFIG.syncedRetentionMs
+    ).slice(-LEARNING_SYNC_CONFIG.maxLocalReviewEntries);
+    return { entries, storage };
+  }
+
+  function saveLocalReview({ userId, deviceId, sessionId, items } = {}) {
+    const auth = defaultAuthContext();
+    if (!auth || normalizedUserId(userId) !== auth.userId || deviceId !== auth.deviceId
+      || !sessionId || !Array.isArray(items)) return false;
+    const now = Date.now();
+    const byKey = new Map(readLocalReview(auth).entries.map(item => [item.key, item]));
+    for (const item of items.slice(0, 80)) {
+      if (!item || typeof item.correct !== "boolean" || !item.quizId || !item.question) continue;
+      const quizId = String(item.quizId).slice(0, 255);
+      const key = `${String(sessionId).slice(0, 120)}:${quizId}`;
+      byKey.set(key, { key, quizId, question: String(item.question).slice(0, 1600), correct: item.correct, at: now });
+    }
+    const record = { userId: auth.userId, deviceId: auth.deviceId, savedAt: now,
+      entries: [...byKey.values()].sort((a, b) => a.at - b.at).slice(-LEARNING_SYNC_CONFIG.maxLocalReviewEntries) };
+    while (JSON.stringify(record).length * 2 > LEARNING_SYNC_CONFIG.maxLocalReviewBytes) record.entries.shift();
+    const key = `${auth.userId}:${auth.deviceId}`;
+    localReviewMemory.clear(); // Never retain a second account's review in memory.
+    localReviewMemory.set(key, { ...record, storage: "memory" });
+    try {
+      if (!root.localStorage) return false;
+      root.localStorage.setItem(LEARNING_SYNC_CONFIG.localReviewPrefix + key, JSON.stringify(record));
+      localReviewMemory.set(key, { ...record, storage: "localStorage" });
+      return true;
+    } catch { return false; }
+  }
+
   function debugLog(event, details = {}) {
     if (debugEnabled()) console.debug(`[LearningSync] ${event}`, details);
   }
@@ -818,6 +875,8 @@
     enqueueStudyActivity: (payload, options) => manager.enqueueStudyActivity(payload, options),
     flush: options => manager.flush(options),
     getLocalEvents: () => manager.getLocalEvents(),
+    getLocalReview: () => readLocalReview(),
+    saveLocalReview,
     getInsightsCache: userId => manager.getInsightsCache(userId),
     setInsightsCache: (userId, model) => manager.setInsightsCache(userId, model),
     generateEventId: generateLearningEventId,

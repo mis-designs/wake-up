@@ -212,9 +212,9 @@ test("quiz answers enter the outbox without awaiting sync and every app surface 
   assert.match(quizSource, /void window\.MagicBookLearningSync\.enqueueAnswer\(/u);
   assert.doesNotMatch(quizSource, /await window\.MagicBookLearningSync\.enqueueAnswer\(/u);
   [quizPage, homePage, studyPage].forEach(page => {
-    assert.match(page, /learning-sync\.js\?v=5-insights-backup/u);
+    assert.match(page, /learning-sync\.js\?v=6-local-review/u);
   });
-  assert.match(serviceWorker, /learning-sync\.js\?v=5-insights-backup/u);
+  assert.match(serviceWorker, /learning-sync\.js\?v=6-local-review/u);
 });
 
 test("the shared IndexedDB layer keeps learning-insight caches separated by user", async () => {

@@ -16,6 +16,7 @@
     mode: "statistics",
     lens: "figure",
     model: null,
+    localReport: null,
     cachedAt: 0,
     isCached: false,
     isRefreshing: false,
@@ -378,6 +379,29 @@
     return `${freshnessBanner()}<div class="li-stat-layout">${renderOverview(model)}${renderReviewNow(model)}</div>${renderProgressGroups(model)}${renderChapterMatrix(model)}`;
   }
 
+  function renderLocalReport(report) {
+    const { entries, pending, attempts, storage } = report;
+    const correct = entries.filter(item => item.correct).length;
+    const wrong = entries.length - correct;
+    const latest = new Map();
+    entries.forEach(item => latest.set(item.quizId, item));
+    const errors = [...latest.values()].filter(item => !item.correct).reverse();
+    const title = state.mode === "errors" ? "Errori sul dispositivo" : "I tuoi risultati sul dispositivo";
+    const items = errors.slice(0, state.visibleCount).map(item => `<li class="li-local-error"><p>${escapeHtml(item.question)}</p><small>Ultima risposta salvata: sbagliata · ${escapeHtml(formatDate(item.at))}</small></li>`).join("");
+    return `<div class="li-data-banner" role="note"><span class="li-live-dot" aria-hidden="true"></span><p><strong>Dati locali, storico parziale.</strong> ${storage === "memory" ? "I risultati di questa sessione sono disponibili finché rimani nell’app." : "Mostro i risultati disponibili su questo dispositivo nelle ultime 24 ore."} Lo storico completo tornerà quando il servizio sarà disponibile.</p></div>
+      <section class="li-overview li-local-report" aria-labelledby="learningInsightsHeading">
+        <header class="li-page-heading"><p class="li-kicker">${state.mode === "errors" ? "Errori" : "Statistiche"}</p><h1 id="learningInsightsHeading" tabindex="-1">${title}</h1><p>${entries.length ? "Questi risultati provengono dai quiz già corretti. Non comprendono necessariamente tutti i tuoi quiz." : "Non ci sono ancora correzioni salvate qui. Questo non significa che tu non abbia fatto quiz."}</p></header>
+        <div class="li-metric-grid" aria-label="Risultati locali dei quiz corretti">
+          ${metric("Risposte corrette", entries.length ? `${correct} / ${entries.length}` : "—", "Solo correzioni salvate")}
+          ${metric("Risposte sbagliate", entries.length ? String(wrong) : "—", "Solo correzioni salvate", "is-attention")}
+          ${entries.length ? metric("Quiz con risultato", String(latest.size), "Domande diverse nelle correzioni locali") : metric("Risposte registrate", attempts === null ? "—" : String(attempts), "Attività locale, correzione non disponibile")}
+          ${metric("Da sincronizzare", pending === null ? "—" : String(pending), "Non sono conteggiate come corrette o sbagliate")}
+        </div>
+        ${state.mode === "errors" ? `<div class="li-local-review"><h2>Quiz da rivedere</h2>${errors.length ? `<ul>${items}</ul>${errors.length > state.visibleCount ? '<button class="li-secondary-action d-btn d-btn-ghost d-btn-sm" type="button" data-li-action="more" onclick="MagicBookLearningInsights.handleClick(event)">Mostra altri</button>' : ""}` : `<p>${entries.length ? "Nelle ultime correzioni disponibili qui non risultano quiz da rivedere." : "Gli errori compariranno qui dopo aver concluso e corretto un quiz su questo dispositivo."}</p>`}</div>` : ""}
+        <div class="li-detail-actions"><button class="li-primary-action d-btn d-btn-primary d-btn-sm" type="button" data-li-action="home" onclick="MagicBookLearningInsights.handleClick(event)">Torna a studiare</button></div>
+      </section>`;
+  }
+
   const LENSES = Object.freeze([
     { id: "figure", label: "Figure", key: "figures" },
     { id: "quiz", label: "Quiz", key: "questions" },
@@ -555,12 +579,12 @@
     const restoreFocus = content.contains(root.document?.activeElement)
       ? focusSelectorFor(root.document.activeElement)
       : "";
-    if (!state.model) {
+    if (!state.model && !state.localReport) {
       replaceSafeContent(content, renderSkeleton());
       bindRenderedMedia();
       return;
     }
-    replaceSafeContent(content, `<div class="li-shell">${renderTop(state.mode)}<main class="li-main">${state.mode === "errors" ? renderErrors(state.model) : renderStatistics(state.model)}</main></div>`);
+    replaceSafeContent(content, `<div class="li-shell">${renderTop(state.mode)}<main class="li-main">${state.model ? (state.mode === "errors" ? renderErrors(state.model) : renderStatistics(state.model)) : renderLocalReport(state.localReport)}</main></div>`);
     bindRenderedMedia();
     if (state.focusHeading) {
       state.focusHeading = false;
@@ -614,13 +638,29 @@
     finally { root.clearTimeout(timeout); }
   }
 
-  async function localPendingEvents(userId) {
+  async function localAnswerRecords(userId) {
     try {
-      const records = await localOperation(() => root.MagicBookLearningSync?.getLocalEvents?.(), []);
-      return (Array.isArray(records) ? records : []).filter(record => normalizedUserId(record.user_id) === userId).filter(record => record.event_type === "answer_event").filter(record => ["pending", "retry", "sending"].includes(record.status)).slice(-CONFIG.maxLocalEvents).map(({ event_id, event_type, user_id, payload }) => ({ event_id, event_type, user_id, payload }));
+      const records = await localOperation(() => root.MagicBookLearningSync?.getLocalEvents?.(), null);
+      return Array.isArray(records) ? records.filter(record => record && normalizedUserId(record.user_id) === userId && record.event_type === "answer_event") : null;
     } catch {
-      return [];
+      return null;
     }
+  }
+
+  function pendingEvents(records) {
+    return (records || []).filter(record => ["pending", "retry", "sending"].includes(record.status)).slice(-CONFIG.maxLocalEvents).map(({ event_id, event_type, user_id, payload }) => ({ event_id, event_type, user_id, payload }));
+  }
+
+  async function localPendingEvents(userId) {
+    return pendingEvents(await localAnswerRecords(userId));
+  }
+
+  function localReport(records) {
+    let review;
+    try { review = root.MagicBookLearningSync?.getLocalReview?.(); } catch { /* Optional storage. */ }
+    const unique = new Map((records || []).filter(record => record.event_id).map(record => [record.event_id, record]));
+    return { entries: Array.isArray(review?.entries) ? review.entries : [], storage: review?.storage || "unavailable",
+      attempts: records ? unique.size : null, pending: records ? [...unique.values()].filter(record => ["pending", "retry", "sending"].includes(record.status)).length : null };
   }
 
   async function readCache(userId) {
@@ -648,6 +688,7 @@
 
   let authRenewal = null;
   let recentRead = null;
+  let recentFailure = null;
   function renewLearningAccess(auth) {
     const key = `${auth.userId}:${auth.deviceId}`;
     if (authRenewal?.key === key) return authRenewal.promise;
@@ -663,19 +704,35 @@
   async function requestInsights(auth, localEvents, signal, canRenew = true, force = false) {
     assertCurrent(auth, signal);
     const key = JSON.stringify([auth.userId, auth.deviceId, auth.accessToken, localEvents]);
+    const failureKey = JSON.stringify([auth.userId, auth.deviceId, auth.accessToken]);
+    const failureAge = recentFailure ? Date.now() - recentFailure.at : -1;
+    if (!force && recentFailure?.key === failureKey && failureAge >= 0 && failureAge < CONFIG.recentReadMs) {
+      throw new Error("learning_insights_cooldown");
+    }
     const age = recentRead ? Date.now() - recentRead.at : -1;
     if (!force && recentRead?.key === key && age >= 0 && age < CONFIG.recentReadMs) {
       return { response: { ok: true, status: 200 }, data: recentRead.data, auth, reused: true, receivedAt: recentRead.at };
     }
     recentRead = null;
-    const response = await root.fetch(CONFIG.endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${auth.accessToken}` },
-      body: JSON.stringify({ device_id: auth.deviceId, local_events: localEvents }),
-      cache: "no-store", signal
-    });
-    const data = await response.json().catch(() => ({}));
+    let response;
+    let data;
+    try {
+      response = await root.fetch(CONFIG.endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${auth.accessToken}` },
+        body: JSON.stringify({ device_id: auth.deviceId, local_events: localEvents }),
+        cache: "no-store", signal
+      });
+      data = await response.json().catch(() => ({}));
+    } catch (error) {
+      // Navigation cancellation is not a backend failure. No scheduled retry.
+      if (!signal?.aborted && sameAccount(auth)) recentFailure = { key: failureKey, at: Date.now() };
+      throw error;
+    }
     assertCurrent(auth, signal);
+    if (response.status !== 401 && response.status !== 403 && (!response.ok || !isModel(data))) {
+      recentFailure = { key: failureKey, at: Date.now() };
+    } else if (response.ok && isModel(data)) recentFailure = null;
     if (canRenew && response.status === 401 && data.error === "token_expired" && typeof root.ensureAccessToken === "function") {
       const latest = readAuth();
       const renewed = latest.accessToken !== auth.accessToken || await abortable(renewLearningAccess(auth), signal);
@@ -700,12 +757,21 @@
     }
     const localEvents = await localPendingEvents(auth.userId);
     if (!current()) throw new DOMException("Cancelled", "AbortError");
-    const result = await requestInsights(auth, localEvents, signal);
+    let result;
+    try { result = await requestInsights(auth, localEvents, signal); }
+    catch (error) {
+      if (!current() || error?.name === "AbortError") throw error;
+      if (cached) return cached;
+      throw error;
+    }
     const { response, data } = result;
     auth = result.auth;
     if (!current()) throw new DOMException("Cancelled", "AbortError");
     if (response.status === 401 || response.status === 403) throw new Error("progress_auth_required");
-    if (!response.ok || !isModel(data)) throw new Error("progress_unavailable");
+    if (!response.ok || !isModel(data)) {
+      if (cached) return cached;
+      throw new Error("progress_unavailable");
+    }
     if (!result.reused) await localOperation(() => root.MagicBookLearningSync?.setInsightsCache?.(auth.userId, data), false);
     if (!current()) throw new DOMException("Cancelled", "AbortError");
     return { model: data, cached: false };
@@ -714,11 +780,14 @@
   async function load({ force = false } = {}) {
     const auth = readAuth();
     if (!auth) {
+      state.model = null;
+      state.localReport = null;
       showFailure("auth", "Sessione richiesta.");
       return;
     }
     if (state.userId && (state.userId !== auth.userId || state.deviceId !== auth.deviceId)) {
       state.model = null;
+      state.localReport = null;
       state.cachedAt = 0;
       state.isCached = false;
     }
@@ -741,8 +810,10 @@
       }
     }
 
-    const localEvents = await localPendingEvents(auth.userId);
+    const localRecords = await localAnswerRecords(auth.userId);
+    const localEvents = pendingEvents(localRecords);
     if (requestId !== state.requestId || !sameAccount(auth)) return;
+    state.localReport = localReport(localRecords);
     if (root.navigator?.onLine === false) {
       state.isRefreshing = false;
       if (state.model) {
@@ -750,7 +821,10 @@
         state.isCached = true;
         render();
         announce("Modalità offline: mostro l’ultima copia salvata.");
-      } else showFailure("offline", "Sei offline e non esiste ancora una copia locale.");
+      } else {
+        render();
+        announce("Mostro l’attività disponibile sul dispositivo.");
+      }
       return;
     }
 
@@ -764,12 +838,14 @@
       if (requestId !== state.requestId) return;
       if (response.status === 401 || response.status === 403) {
         state.model = null;
+        state.localReport = null;
         state.isRefreshing = false;
         showFailure("auth", "Sessione scaduta.");
         return;
       }
       if (!response.ok || !isModel(data)) throw new Error("learning_insights_unavailable");
       state.model = data;
+      state.localReport = null;
       state.cachedAt = receivedAt;
       state.isCached = false;
       if (!reused) {
@@ -779,20 +855,21 @@
       if (requestId !== state.requestId || !sameAccount(auth)) return;
       announce("Statistiche aggiornate.");
     } catch (error) {
-      if (requestId !== state.requestId) return;
+      if (requestId !== state.requestId || !sameAccount(auth)) return;
       if (error?.name === "AbortError" && !timedOut) return;
+      if (timedOut) recentFailure = { key: JSON.stringify([auth.userId, auth.deviceId, auth.accessToken]), at: Date.now() };
       if (state.model) {
         state.isCached = true;
         announce(timedOut ? "Aggiornamento lento: mostro la copia salvata." : "Aggiornamento non disponibile: mostro la copia salvata.");
       } else {
         state.isRefreshing = false;
-        showFailure(root.navigator?.onLine === false ? "offline" : timedOut ? "timeout" : "network", timedOut ? "Tempo di attesa scaduto." : "Servizio temporaneamente non disponibile.");
+        announce("Il servizio non risponde: mostro i dati locali disponibili.");
       }
     } finally {
       root.clearTimeout(timeout);
-      if (requestId === state.requestId) {
+      if (requestId === state.requestId && sameAccount(auth)) {
         state.isRefreshing = false;
-        if (state.model) render();
+        if (state.model || state.localReport) render();
       }
     }
   }
@@ -932,6 +1009,7 @@
     const auth = readAuth();
     if (!auth || (state.userId && (state.userId !== auth.userId || state.deviceId !== auth.deviceId))) {
       state.model = null;
+      state.localReport = null;
       state.cachedAt = 0;
       state.isCached = false;
     }
@@ -963,5 +1041,5 @@
     state.isRefreshing = false;
   }
 
-  root.MagicBookLearningInsights = Object.freeze({ show, hide, readProgress, refresh: () => load({ force: true }), handleClick, __testing: { state, isModel } });
+  root.MagicBookLearningInsights = Object.freeze({ show, hide, readProgress, refresh: () => load({ force: true }), handleClick, __testing: { state, isModel, renderLocalReport } });
 })(typeof window !== "undefined" ? window : globalThis);

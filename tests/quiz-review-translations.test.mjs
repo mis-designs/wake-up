@@ -215,7 +215,7 @@ test("translation controls meet touch, focus, Bengali typography, and reduced-mo
 test("review translation asset versions match between the page and service worker", () => {
   const expected = new Map([
     ["mystyle.css", "60-web-quiz-layout"],
-    ["quiz.js", "86-request-budget"],
+    ["quiz.js", "87-local-review"],
     ["quiz-help.js", "20260920-web-inline"]
   ]);
 

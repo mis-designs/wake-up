@@ -89,7 +89,8 @@ test("the UI includes stable loading, empty, offline, error and insufficient sta
   assert.match(client, /let timedOut = false/u);
   assert.match(client, /timedOut = true; controller\.abort\(\)/u);
   assert.match(client, /error\?\.name === "AbortError" && !timedOut/u);
-  assert.match(client, /timedOut \? "timeout"/u);
+  assert.match(client, /if \(timedOut\) recentFailure/u);
+  assert.match(client, /renderLocalReport\(state\.localReport\)/u);
   assert.match(client, /kind === "timeout"/u);
   assert.doesNotMatch(client, /requestId !== state\.requestId \|\| error\?\.name === "AbortError"/u);
 });
@@ -156,13 +157,13 @@ test("responsive, reduced-motion and global scrollbar rules are present", () => 
   assert.match(css, /#learningInsightsScreen::-webkit-scrollbar/u);
   assert.match(index, /style\.css\?v=74-compact-loading/u);
   assert.match(index, /assets\/daisyui\.css\?v=2-learning-shell/u);
-  assert.match(index, /src\/learning-insights\.css\?v=9-card-spacing/u);
-  assert.match(index, /src\/learning-insights\.js\?v=10-local-backup/u);
-  assert.match(worker, /magicbook-pwa-v211-web-quiz-layout/u);
+  assert.match(index, /src\/learning-insights\.css\?v=10-local-recovery/u);
+  assert.match(index, /src\/learning-insights\.js\?v=11-local-recovery/u);
+  assert.match(worker, /magicbook-pwa-v212-local-learning/u);
   assert.match(worker, /style\.css\?v=74-compact-loading/u);
   assert.match(worker, /assets\/daisyui\.css\?v=2-learning-shell/u);
-  assert.match(worker, /src\/learning-insights\.css\?v=9-card-spacing/u);
-  assert.match(worker, /src\/learning-insights\.js\?v=10-local-backup/u);
+  assert.match(worker, /src\/learning-insights\.css\?v=10-local-recovery/u);
+  assert.match(worker, /src\/learning-insights\.js\?v=11-local-recovery/u);
   assert.match(worker, /\/icons\/next\.png/u);
   assert.match(worker, /\/icons\/go-back\.png/u);
   assert.match(worker, /\/assets\/admin\/update\.png/u);

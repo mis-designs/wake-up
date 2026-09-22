@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v211-web-quiz-layout";
+const CACHE_NAME = "magicbook-pwa-v212-local-learning";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -53,15 +53,15 @@ const STATIC_ASSETS = [
   "/screen-protection.css?v=1.1.0",
   "/offline-notice.css?v=1.0.0",
   "/offline-notice.js?v=1.1.0",
-  "/learning-sync.js?v=5-insights-backup",
+  "/learning-sync.js?v=6-local-review",
   "/italian-display.js?v=1",
   "/audio-focus.js?v=1-resumable-tts",
   "/app-popup.js?v=2",
   "/figure-detail.js?v=2",
   "/figure-detail.css?v=2",
   "/figure-catalog.mjs?v=1",
-  "/src/learning-insights.css?v=9-card-spacing&ui=10",
-  "/src/learning-insights.js?v=10-local-backup&ui=9-intact-figures",
+  "/src/learning-insights.css?v=10-local-recovery&ui=10",
+  "/src/learning-insights.js?v=11-local-recovery&ui=9-intact-figures",
   "/homebg.css?v=3",
   "/mystyle.css?v=60-web-quiz-layout",
   "/audio-player-ui.css?v=10-web-quiz-slim",
@@ -75,7 +75,7 @@ const STATIC_ASSETS = [
   "/figure-study-data.mjs?v=2",
   "/figure-study-notes.mjs?v=1",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=86-request-budget",
+  "/quiz.js?v=87-local-review",
   "/quiz-help.css?v=20260920-web-layout-2",
   "/quiz-help.js?v=20260920-web-inline",
   "/patenteGlossaryResolver.js?v=1.0.0",

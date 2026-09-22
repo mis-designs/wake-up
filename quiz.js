@@ -3696,6 +3696,7 @@ async function finishQuiz(forceFinish = false) {
   }
 
   isFinishing = true;
+  const localReviewOwner = { userId: getQuizPhone(), deviceId: getQuizDeviceId(), sessionId: learningSessionId };
   const elapsedSeconds = getElapsedQuizSeconds();
   showLoading("Controllo risultato...");
 
@@ -3736,6 +3737,18 @@ async function finishQuiz(forceFinish = false) {
     });
 
     const result = normalizeQuizResult(data, payload.length);
+    // Retain only explicitly server-graded, answered questions. This snapshot
+    // cannot modify the outbox, grading, account state or server statistics.
+    if (!TRIAL_MODE) {
+      window.MagicBookLearningSync?.saveLocalReview?.({
+        ...localReviewOwner,
+        items: (Array.isArray(data.results) ? data.results : []).flatMap(item => {
+          const index = quiz.findIndex(question => String(question.id) === String(item.id));
+          if (index < 0 || payload[index]?.answer === null || typeof item.correct !== "boolean") return [];
+          return [{ quizId: String(item.id), question: quiz[index].question, correct: item.correct }];
+        })
+      });
+    }
     result._nonRisposte = nonRisposte;
     result._elapsedSeconds = elapsedSeconds;
 

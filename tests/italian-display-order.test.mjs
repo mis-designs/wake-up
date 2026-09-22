@@ -51,8 +51,8 @@ test("quiz and study renderers use the shared Italian case owner", () => {
     assert.match(source, /MagicItalianDisplay\.uppercase/u);
   }
 
-  assert.ok(quizPage.indexOf("italian-display.js?v=1") < quizPage.indexOf("quiz.js?v=86-request-budget"));
+  assert.ok(quizPage.indexOf("italian-display.js?v=1") < quizPage.indexOf("quiz.js?v=87-local-review"));
   assert.ok(studyPage.indexOf("italian-display.js?v=1") < studyPage.indexOf("study-quiz.js?v=31-android-figure-refinement"));
-  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v211-web-quiz-layout"/u);
+  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v212-local-learning"/u);
   assert.match(worker, /\/italian-display\.js\?v=1/u);
 });

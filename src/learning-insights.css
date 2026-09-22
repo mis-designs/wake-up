@@ -1,5 +1,13 @@
 body.learning-insights-mode { overflow: hidden; }
 
+/* Degraded reading reuses the learning surface and semantic tokens on both platforms. */
+#learningInsightsScreen .li-local-report { max-width: 960px; margin-inline: auto; }
+#learningInsightsScreen .li-local-review { margin-block: 24px; }
+#learningInsightsScreen .li-local-review h2 { margin-bottom: 12px; }
+#learningInsightsScreen .li-local-error { padding-block: 16px; border-bottom: 1px solid var(--li-line); }
+#learningInsightsScreen .li-local-error p { line-height: 1.6; overflow-wrap: break-word; }
+#learningInsightsScreen .li-local-error small { display: block; margin-top: 6px; color: var(--li-muted); }
+
 /* The learning workspace owns the full-screen chrome. */
 body.learning-insights-mode :where(
   .app-header,
