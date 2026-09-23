@@ -1,6 +1,7 @@
 import { PAGE_SIZE, createVideoCatalogReader, createVideoFavorites, embedSource, selectVideoLessons, supportsVideoEmbed, videoPath } from './video-class-model.mjs?v=2';
 import { createVideoProgress } from './video-progress.mjs?v=1';
 import { trackYouTubePlayer } from './video-player.mjs?v=1';
+import { carIndicatorIcon, createCarIndicator } from './car-indicator.mjs?v=1';
 
 const KIND = { teoria: 'Teoria', quiz: 'Quiz', misto: 'Teoria e quiz', parole: 'Parole', guide: 'Guida' };
 const ASSETS = '/assets/video-class/';
@@ -25,11 +26,19 @@ const link = (label, url, cls = 'vc-button') => node('a', { href: url, class: cl
 const button = (label, action, cls = 'vc-button') => node('button', { type: 'button', 'data-action': action, class: cls }, label);
 function cover(lesson, large = false) {
   const sample = lesson.kind === 'quiz' ? 'section-quiz.webp' : ['teoria','misto'].includes(lesson.kind) ? 'section-theory.webp' : '';
-  const box = node('span', { class: `vc-cover${sample ? ' vc-cover--sample' : ''}`, 'aria-hidden': 'true' });
+  const vocabulary = lesson.kind === 'parole';
+  const box = node('span', { class: `vc-cover${sample ? ' vc-cover--sample' : vocabulary ? ' vc-cover--words' : ''}`, 'aria-hidden': vocabulary ? undefined : 'true' });
   const img = node('img', { src: ASSETS + (sample || 'teacher.webp?v=2e0d6787e201'), alt: '', loading: large ? 'eager' : 'lazy', decoding: 'async', width: 1200, height: 675 });
   img.addEventListener('error', () => { img.hidden = true; box.classList.add('vc-cover--fallback'); }, { once: true });
   box.append(img);
-  if (!sample) box.append(node('span', { class: 'vc-cover-type' }, KIND[lesson.kind] || 'Video', node('b', {}, /^\d+$/.test(lesson.group) ? lesson.group : lesson.group === 'parole' ? 'ABC' : 'APP')));
+  if (vocabulary) {
+    const words = node('span', { class: 'vc-cover-words' });
+    for (const word of (lesson.coverWords || []).slice(0, 2)) {
+      words.append(node('span', { class: 'vc-cover-word' },
+        node('span', { lang: 'it' }, word.it), node('span', { class: 'vc-word-dot', 'aria-hidden': 'true' }, '·'), node('span', { lang: 'bn' }, word.bn)));
+    }
+    box.append(node('span', { class: 'vc-cover-type' }, node('span', { class: 'vc-cover-heading' }, 'Parole', node('small', {}, 'Esempi')), words));
+  } else if (!sample) box.append(node('span', { class: 'vc-cover-type' }, KIND[lesson.kind] || 'Video', node('b', {}, /^\d+$/.test(lesson.group) ? lesson.group : 'APP')));
   if (lesson.minutes) box.append(node('span', { class: 'vc-duration' }, `${lesson.minutes} min`));
   return box;
 }
@@ -41,6 +50,7 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
   let catalog, state = {}, favorites, favoriteScope = '', active = false, version = 0, count = PAGE_SIZE;
   let playback = null, progress = null, iframe = null, currentUrl = '';
   const scrollPositions = new Map();
+  const indicator = createCarIndicator({ isCurrent: () => active && identity() === favoriteScope, announce: status });
   function status(message) { const el = root.querySelector('#vc-status'); if (el) el.textContent = message; }
   function stopPlayer() { playback?.stop(); playback = null; iframe?.remove(); iframe = null; }
   function saveScroll() {
@@ -50,7 +60,7 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
       if (scrollPositions.size > 32) scrollPositions.delete(scrollPositions.keys().next().value);
     }
   }
-  function suspend() { saveScroll(); active = false; version++; data.cancel(); stopPlayer(); }
+  function suspend() { indicator.cancel(); saveScroll(); active = false; version++; data.cancel(); stopPlayer(); }
   function clear() { suspend(); data.clear(); catalog = null; favorites = null; progress = null; favoriteScope = ''; root.replaceChildren(); }
   function guardIdentity() {
     if (identity() === favoriteScope) return true;
@@ -130,8 +140,8 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     for (const group of catalog.groups) {
       const total = catalog.lessons.filter(x => x.group === group.id).length;
       const a = link('', videoPath({ group: group.id }), 'vc-group');
-      a.append(node('span', { class: 'vc-group-number' }, /^\d+$/.test(group.id) ? group.id : group.id === 'parole' ? 'ABC' : 'APP'),
-        node('span', {}, node('strong', {}, group.title), node('small', {}, `${total} video`)), node('span', { class: 'vc-group-arrow', 'aria-hidden': 'true' }, icon('next.png')));
+      a.append(node('span', { class: 'vc-group-number' }, /^\d+$/.test(group.id) ? group.id : group.id === 'parole' ? icon('dictionary.svg') : 'APP'),
+        node('span', {}, node('strong', {}, group.title), node('small', {}, `${total} video`)), node('span', { class: 'vc-group-arrow', 'aria-hidden': 'true' }, carIndicatorIcon()));
       groups.append(a);
     }
     root.append(hero, heading('Capitoli', '', 'vc-chapters-heading'), groups);
@@ -200,6 +210,7 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     if (selected) track.scrollLeft = selected.offsetLeft - track.offsetLeft - track.clientWidth / 2 + selected.clientWidth / 2;
   }
   function paint() {
+    indicator.cancel();
     stopPlayer(); root.replaceChildren(nav());
     if (state.lesson) {
       const lesson = catalog.lessons.find(x => x.id === state.lesson);
@@ -212,6 +223,7 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     updateProgress();
   }
   async function render(url, { restore = false } = {}) {
+    indicator.cancel();
     saveScroll(); stopPlayer(); active = true; const own = ++version;
     currentUrl = url.pathname + url.search;
     state = { group: url.searchParams.get('group') || '', saved: url.searchParams.get('saved') === '1', lesson: url.searchParams.get('lesson') || '', kind: url.searchParams.get('kind') || '' };
@@ -280,6 +292,11 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     const a = event.target.closest('a');
     if (a && !a.target && new URL(a.href).pathname === '/studia-quiz' && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey && event.button === 0) {
       event.preventDefault(); saveScroll();
+      if (a.matches('.vc-group')) {
+        if (!guardIdentity()) return;
+        indicator.start(a, () => navigate(a.getAttribute('href'))); return;
+      }
+      indicator.cancel();
       navigate(a.getAttribute('href')); return;
     }
     const action = event.target.closest('[data-action]')?.dataset.action;
@@ -301,8 +318,9 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     if (!guardIdentity()) return;
     if (document.hidden && iframe) { stopPlayer(); paint(); } // no background playback or automatic resume
   }, { signal: lifetime.signal });
-  return { render, suspend, destroy() { clear(); lifetime.abort(); },
+  return { render, suspend, destroy() { indicator.destroy(); clear(); lifetime.abort(); },
     back() {
+      indicator.cancel();
       if (state.lesson) {
         navigate(videoPath({ ...state, lesson: '' }), { restore: true });
       } else if (state.group || state.saved) navigate(videoPath());

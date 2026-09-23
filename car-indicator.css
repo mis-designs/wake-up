@@ -1,0 +1,14 @@
+/* One shared automotive cue: a stationary black outline and independent lamp.
+   The approved Study lime is intentionally green on web AND Android. */
+.car-indicator { --car-indicator-outline: #111; --car-indicator-green: #67f528; display: block; width: 24px; height: 24px; flex: none; color: var(--car-indicator-outline); }
+.car-indicator-fill { fill: var(--car-indicator-green); opacity: 0; }
+[data-car-lit="true"] .car-indicator-fill { opacity: 1; }
+.car-indicator-outline { fill: none; stroke: currentColor; }
+@media (prefers-reduced-motion: reduce) {
+  [data-car-pending] .car-indicator-fill { opacity: 1; }
+}
+html[data-native-motion-paused] [data-car-pending] .car-indicator-fill { opacity: 1; }
+@media (forced-colors: active) {
+  .car-indicator { color: CanvasText; }
+  .car-indicator-fill { fill: Highlight; }
+}

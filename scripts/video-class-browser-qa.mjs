@@ -11,16 +11,18 @@ const repo = fileURLToPath(new URL('../', import.meta.url));
 const out = path.resolve(process.argv[2] || path.join(repo,'outputs/video-class'));
 fs.mkdirSync(out,{recursive:true});
 const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.gif':'image/gif','.webp':'image/webp','.woff':'font/woff','.woff2':'font/woff2','.ttf':'font/ttf'};
+mime['.mp3']='audio/mpeg';
 const browser=await chromium.launch({headless:true,channel:'msedge'}), report=[];
 try {
   for(const [native,width,height] of [[false,1440,960],[false,1920,1080],[false,768,1024],[false,375,812],[false,320,568],[true,375,812],[true,740,360]]) {
     if(process.env.QA_WIDTH && Number(process.env.QA_WIDTH)!==width)continue;
     const context=await browser.newContext({viewport:{width,height},hasTouch:width<=768,serviceWorkers:'block',reducedMotion:'reduce',...(native?{userAgent:'Mozilla/5.0 (Linux; Android 14; wv) AppleWebKit/537.36 Chrome/130.0.0.0 Mobile Safari/537.36 MagicBookViewer/1.3 MagicBookVideo/1'}:{})});
-    let reads=0,frames=0,apiLoads=0,failed=false,apiBlocked=false,releaseCatalog;
+    let reads=0,frames=0,apiLoads=0,indicatorReads=0,indicatorBlocked=false,failed=false,apiBlocked=false,releaseCatalog;
     let catalogGate = new Promise(resolve => { releaseCatalog = resolve; });
     const errors=[],missing=[];
     await context.route('**/*', async route=>{
       const url=new URL(route.request().url());
+      if(url.pathname.endsWith('/car-indicator.mp3')){indicatorReads++;if(indicatorBlocked)return route.fulfill({status:503,body:''});}
       if(url.href==='https://www.youtube.com/iframe_api'){apiLoads++;return route.fulfill({status:apiBlocked?503:200,contentType:'text/javascript',body:apiBlocked?'':fs.readFileSync(path.join(repo,'scripts/video-player-fixture.js'))});}
       if(url.hostname==='www.youtube-nocookie.com'){frames++;return route.fulfill({contentType:'text/html',body:'<!doctype html><title>Mock player</title><body style="color:white;background:#111;font:24px Arial">YouTube player fixture</body>'});}
       if(url.hostname!=='video.local')return route.fulfill({status:503,body:''});
@@ -113,6 +115,99 @@ try {
     assert.equal(await page.locator('#vc-chapters-heading').textContent(),'Capitoli');
     assert.equal(await page.getByText('Capitoli nell’ordine del documento studenti.').count(),0);
     await shot('catalog');
+    assert.equal(await page.locator('.vc-group .car-indicator-outline').count(),27);
+    assert.equal(indicatorReads,0,'no sound download before an explicit chapter action');
+    if(width===375) {
+      await page.emulateMedia({reducedMotion:'no-preference'});
+      // Observe the real AudioContext and lamp without replacing playback/timing.
+      await page.evaluate(()=>{
+        window.__indicatorQA={sources:[],lamps:[],audio:[]};
+        for(const method of ['resume','decodeAudioData']) {
+          const original=AudioContext.prototype[method];
+          AudioContext.prototype[method]=function(...args){
+            const began=performance.now();
+            return original.apply(this,args).then(value=>{window.__indicatorQA.audio.push({method,ms:performance.now()-began,state:this.state});return value;},error=>{window.__indicatorQA.audio.push({method,error:error.message});throw error;});
+          };
+        }
+        const original=AudioContext.prototype.createBufferSource;
+        AudioContext.prototype.createBufferSource=function(){
+          const source=original.call(this),entry={context:this,stopped:false},start=source.start.bind(source),stop=source.stop.bind(source);
+          window.__indicatorQA.sources.push(entry);
+          source.start=(...args)=>{entry.origin=args[0];entry.wallStart=performance.now();entry.duration=args[2];entry.bufferDuration=source.buffer.duration;return start(...args);};
+          source.stop=(...args)=>{entry.stopped=true;entry.wallElapsed=performance.now()-entry.wallStart;entry.stopTime=this.currentTime-entry.origin;entry.stopState=this.state;return stop(...args);};return source;
+        };
+        const card=document.querySelector('.vc-group');
+        new MutationObserver(()=>{
+          if(!card.hasAttribute('data-car-lit'))return;
+          const value=card.dataset.carLit,audit=window.__indicatorQA,source=audit.sources.at(-1);
+          if(audit.lamps.at(-1)?.value===value)return;
+          const outline=card.querySelector('.car-indicator-outline');
+          audit.lamps.push({value,time:source?source.context.currentTime-source.origin:0,stroke:getComputedStyle(outline).stroke});
+        }).observe(card,{attributes:true,attributeFilter:['data-car-lit']});
+      });
+      const chapter=page.locator('.vc-group').first();
+      await chapter.focus();await page.keyboard.press('Enter');
+      await page.waitForFunction(()=>document.querySelector('.vc-group[data-car-lit="true"]'));
+      const lamp=await chapter.evaluate(el=>({fill:getComputedStyle(el.querySelector('.car-indicator-fill')).fill,stroke:getComputedStyle(el.querySelector('.car-indicator-outline')).stroke}));
+      assert.equal(lamp.stroke,'rgb(17, 17, 17)');assert.equal(lamp.fill,'rgb(103, 245, 40)');
+      await page.locator('.vc-group').nth(1).evaluate(el=>el.click()); // competing card cannot steal the route
+      await page.locator('.vc-lesson').first().waitFor();
+      assert.ok(page.url().includes('group=01'));
+      const cue=await page.evaluate(()=>({audio:window.__indicatorQA.audio,sources:window.__indicatorQA.sources.map(x=>({duration:x.duration,bufferDuration:x.bufferDuration,stopTime:x.stopTime,wallElapsed:x.wallElapsed,stopState:x.stopState,stopped:x.stopped,state:x.context.state})),lamps:window.__indicatorQA.lamps}));
+      assert.equal(cue.sources.length,1,JSON.stringify({cue,indicatorReads}));assert.equal(cue.sources[0].duration,1.32);assert.ok(cue.sources[0].stopped);
+      assert.deepEqual(cue.lamps.map(x=>x.value),['false','true','false','true','false'],JSON.stringify(cue));
+      for(const [i,time] of [.085,.423,.781,1.119].entries())assert.ok(Math.abs(cue.lamps[i+1].time-time)<.09,JSON.stringify(cue));
+      assert.ok(cue.lamps.every(x=>x.stroke==='rgb(17, 17, 17)'),'outline never blinks');
+      assert.equal(indicatorReads,1);assert.equal(reads,1);assert.equal(frames,0);
+      fs.writeFileSync(path.join(out,`${native?'android':'web'}-${width}-indicator-timing.json`),JSON.stringify(cue,null,2));
+      await page.getByRole('link',{name:'Tutte le lezioni',exact:true}).click();await page.locator('.vc-group').first().waitFor();
+      await page.locator('.vc-group').first().click();await page.waitForFunction(()=>!!document.querySelector('[data-car-lit="true"]'));
+      await page.locator('.vc-group').first().screenshot({path:path.join(out,`${native?'android':'web'}-${width}-indicator-on.png`)});
+      await page.keyboard.press('Escape');await page.waitForTimeout(1500);
+      assert.equal(await page.locator('.vc-group').count(),27);assert.equal(await page.locator('[data-car-pending]').count(),0);assert.equal(indicatorReads,1,'replay reuses decoded audio');
+      // A real browser Back during the cue must not redirect again later.
+      await page.locator('.vc-group').first().click();await page.goBack();await page.waitForTimeout(1500);
+      assert.equal(await page.locator('[data-car-pending]').count(),0);
+      await page.emulateMedia({reducedMotion:'reduce'});
+      await page.getByRole('link',{name:'Tutte le lezioni',exact:true}).click();await page.locator('.vc-group').first().waitFor();
+    }
+    // Vocabulary presentation uses the same private read, including pagination/favorites/posters.
+    await page.locator('.vc-group[href$="group=parole"]').click();
+    await page.locator('.vc-cover--words').first().waitFor();
+    assert.equal(await page.locator('.vc-cover--words').count(),12);
+    await page.locator('[data-action="more"]').click();
+    assert.equal(await page.locator('.vc-cover--words').count(),14);
+    await page.evaluate(()=>document.fonts.ready);
+    const wordRows=await page.locator('.vc-cover-word').evaluateAll(rows=>rows.map(row=>{
+      const it=row.querySelector('[lang="it"]'),bn=row.querySelector('[lang="bn"]'),dot=row.querySelector('.vc-word-dot');
+      const a=it.getBoundingClientRect(),b=bn.getBoundingClientRect(),d=dot.getBoundingClientRect(),parent=row.getBoundingClientRect();
+      return {it:it.textContent,bn:bn.textContent,dot:dot.textContent,font:getComputedStyle(bn).fontFamily,
+        aligned:Math.abs(a.top+a.height/2-d.top-d.height/2)<2 && Math.abs(b.top+b.height/2-d.top-d.height/2)<2,
+        fits:b.right<=parent.right+1 && d.left>=a.right-1 && b.left>=d.right-1};
+    }));
+    assert.equal(new Set(wordRows.map(x=>x.it)).size,28);
+    for(const row of wordRows){assert.equal(row.dot,'·');assert.match(row.font,/Adorsho Lipi/);assert.ok(row.fits && row.aligned,JSON.stringify(row));}
+    assert.ok(await page.evaluate(()=>document.fonts.check('16px "Adorsho Lipi"','রাস্তা')));
+    await shot('words');
+    await page.locator('.vc-lesson').first().screenshot({path:path.join(out,`${native?'android':'web'}-${width}-words-card.png`)});
+    const firstWords=await page.locator('.vc-cover-words').first().textContent();
+    if(width===375){
+      await page.evaluate(()=>{document.documentElement.style.fontSize='200%';});await shot('words-large-text');
+      const clippedWords=await page.locator('.vc-cover-word span').evaluateAll(els=>els.filter(el=>el.scrollWidth>el.clientWidth+1).map(el=>el.textContent));
+      assert.deepEqual(clippedWords,[],'enlarged Bangla must wrap without clipped conjuncts');
+      await page.evaluate(()=>{document.documentElement.style.fontSize='';});
+      await page.emulateMedia({forcedColors:'active'});await shot('words-high-contrast');await page.emulateMedia({forcedColors:'none'});
+      await page.locator('.vc-cover--words img').first().evaluate(el=>{el.src='data:image/png;base64,invalid';});
+      await page.locator('.vc-cover--words.vc-cover--fallback').waitFor();
+      assert.equal(await page.locator('.vc-cover-words').first().textContent(),firstWords);
+    }
+    await page.locator('.vc-save').first().click();await page.locator('.vc-favorites').click();
+    assert.equal(await page.locator('.vc-cover-words').textContent(),firstWords);
+    await page.locator('.vc-lesson-link').click();await page.locator('.vc-play').waitFor();
+    assert.equal(await page.locator('.vc-cover-words').textContent(),firstWords);await shot('words-poster');
+    await page.locator('#study-back').click();await page.locator('.vc-save').click();await page.locator('.vc-empty').waitFor();
+    await page.locator('.vc-nav a').filter({hasText:'Tutte le lezioni'}).click();await page.locator('.vc-group').first().waitFor();
+    assert.equal(reads,1,'word examples add no catalogue/glossary/provider reads');assert.equal(frames,0);
     await page.keyboard.press('Tab'); await page.locator('.vc-group').first().focus();
     const chapterFocus = await page.locator('.vc-group').first().evaluate(el=>({outline:getComputedStyle(el).outlineStyle,arrow:getComputedStyle(el.querySelector('.vc-group-arrow')).backgroundColor}));
     assert.equal(chapterFocus.outline,'solid');assert.notEqual(chapterFocus.arrow,'rgba(0, 0, 0, 0)');
@@ -190,9 +285,21 @@ try {
       await page.evaluate(()=>{localStorage.removeItem('user_session');window.dispatchEvent(new StorageEvent('storage',{key:'user_session'}));});
       await page.getByRole('heading',{name:'Accedi di nuovo alle lezioni'}).waitFor();assert.equal(await page.locator('.vc-play').count(),0);assert.equal(await page.locator('iframe').count(),0);
     }
+    if(width===375){
+      indicatorBlocked=true;
+      await page.goto('http://video.local/studia-quiz?view=videos',{waitUntil:'networkidle'});
+      await page.locator('.vc-group').first().waitFor();await page.emulateMedia({reducedMotion:'no-preference'});
+      const beforeSound=indicatorReads;
+      await page.locator('.vc-group').first().click();await page.locator('.vc-lesson').first().waitFor();
+      assert.equal(indicatorReads,beforeSound+1,'failed optional audio never blocks the chapter');
+      await page.getByRole('link',{name:'Tutte le lezioni',exact:true}).click();await page.locator('.vc-group').first().waitFor();
+      await page.locator('.vc-group').nth(1).click();await page.locator('.vc-lesson').first().waitFor();
+      assert.equal(indicatorReads,beforeSound+1,'no retry loop for unavailable decorative audio');
+      await page.emulateMedia({reducedMotion:'reduce'});indicatorBlocked=false;
+    }
     if(!native){await page.goto('http://video.local/studia-quiz?view=figures',{waitUntil:'networkidle'});assert.equal(await page.locator('#study-figures').isVisible(),false);}
     assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);
-    report.push({native,width,height,reads,frames,apiLoads,watchedPercent:30,pass:true}); console.log('PASS',native?'Android':'web',width);
+    report.push({native,width,height,reads,frames,apiLoads,indicatorReads,watchedPercent:30,pass:true}); console.log('PASS',native?'Android':'web',width);
     await context.close();
   }
 } finally { await browser.close();fs.writeFileSync(path.join(out,process.env.QA_WIDTH?`report-${process.env.QA_WIDTH}.json`:'report.json'),JSON.stringify(report,null,2)); }

@@ -71,6 +71,26 @@ const sections = [
 
 export const VIDEO_SOURCE_ENTRIES = sections.flatMap(([group, , rows]) => rows.map(([id, title, minutes]) => ({ group, id, title, ...(minutes ? { minutes } : {}) })));
 
+// Editorial cover examples, not a transcript or a claim about an individual video.
+// The handout associates only the first five vocabulary videos with chapter 01.
+// Meanings are selected verbatim from the local glossary (see source test).
+const vocabularyCovers = {
+  uxra5oJQ_FU: [['strada', 'Strada', 'রাস্তা'], ['corsia', 'Corsia', 'লেন']],
+  '0kQ-Hu3K7yI': [['veicolo', 'Veicolo', 'যানবাহন'], ['pedone', 'Pedone', 'পথচারী']],
+  gFmosJd1PiM: [['traffico', 'Traffico', 'যান চলাচল'], ['incrocio', 'Incrocio', 'সংযোগস্থল']],
+  pvx2lY1_Q_4: [['conducente', 'Conducente', 'চালক'], ['marciapiede', 'Marciapiede', 'ফুটপাত']],
+  '55EauZ6dN0U': [['autovettura', 'Autovettura', 'যাত্রীবাহী গাড়ি'], ['motociclo', 'Motociclo', 'মোটরসাইকেল']],
+  E80fZL2QygY: [['segnale', 'Segnale', 'সংকেত'], ['pericolo', 'Pericolo', 'বিপদ']],
+  '54cU8yBFDto': [['curva', 'Curva', 'বাঁক'], ['dosso', 'Dosso', 'উঁচু অংশ']],
+  ea_X0VrkXck: [['divieto', 'Divieto', 'নিষেধ'], ['obbligo', 'Obbligo', 'বাধ্যবাধকতা']],
+  '1YxLLIltlT0': [['destra', 'Destra', 'ডান দিক'], ['sinistra', 'Sinistra', 'বাম দিক']],
+  FMJRX8G8MS0: [['velocita', 'Velocità', 'গতি'], ['distanza', 'Distanza', 'দূরত্ব']],
+  NZh9eP66HCU: [['frenare', 'Frenare', 'ব্রেক করা'], ['fermarsi', 'Fermarsi', 'থামা']],
+  '3-mG_RGvSVo': [['ruota', 'Ruota', 'চাকা'], ['motore', 'Motore', 'ইঞ্জিন']],
+  '5CEwyZbaEZg': [['luci', 'Luci', 'লাইট'], ['casco', 'Casco', 'হেলমেট']],
+  '2hCt1As2AZI': [['patente', 'Patente', 'ড্রাইভিং লাইসেন্স'], ['documento', 'Documento', 'কাগজপত্র']]
+};
+
 // Display wording is separate from the exact source references above. No guessed
 // topics for untitled links: the first chapter's parts follow document order.
 function displayTitle(lesson) {
@@ -106,8 +126,13 @@ export function getVideoClassCatalog() {
     const teacher = lesson.title.match(/\b(Pial|Borhan) sir\b/i)?.[0];
     if (teacher) lesson.teacher = teacher;
     lesson.title = displayTitle(lesson);
+    if (lesson.kind === 'parole' && vocabularyCovers[lesson.id]) {
+      lesson.coverWords = vocabularyCovers[lesson.id].map(([key, it, bn]) => ({ key: `w_${key}`, it, bn }));
+      const chapter = lesson.sourceTitle.match(/^Parole del capitolo (\d+) ·/);
+      if (chapter) lesson.relatedChapter = chapter[1].padStart(2, '0');
+    }
   }
-  return { version: '2026-09-23.2', groups: sections.map(([id, title]) => ({ id, title })), lessons,
+  return { version: '2026-09-23.3', groups: sections.map(([id, title]) => ({ id, title })), lessons,
     resources: [
       { id: 'tmm-webapp', title: 'TMM · app sul computer', url: 'https://www.tmmpatente.it/webapp/#/', description: 'Apri la pagina e segui le istruzioni per il codice QR.' },
       { id: 'quiz-rmastri', title: 'Quiz misti · sito esterno', url: 'http://www.rmastri.it/quiz-patente-b/', description: 'Collegamento presente nel documento studenti.' }

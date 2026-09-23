@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v218-card-shade";
+const CACHE_NAME = "magicbook-pwa-v220-car-indicator";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -41,9 +41,11 @@ const STATIC_ASSETS = [
   "/icons/native/lines_right_side.svg",
   "/icons/native/roudabout.svg",
   "/icons/study_quiz.svg",
-  "/video-class.css?v=5",
-  "/video-class.js?v=3&art=2e0d6787e201",
+  "/video-class.css?v=7",
+  "/video-class.js?v=5-indicator&art=2e0d6787e201",
   "/video-class-model.mjs?v=2",
+  "/car-indicator.mjs?v=1",
+  "/car-indicator.css?v=1",
   "/video-progress.mjs?v=1",
   "/video-player.mjs?v=1",
   "/assets/video-class/teacher.webp?v=2e0d6787e201",
@@ -82,7 +84,7 @@ const STATIC_ASSETS = [
   "/script.js?v=77-request-budget",
   "/study-quiz.html",
   "/study-quiz.css?v=28-compact",
-  "/study-quiz.js?v=34-study-refinement&art=2e0d6787e201",
+  "/study-quiz.js?v=36-car-indicator&art=2e0d6787e201",
   "/figure-study.css?v=2",
   "/figure-study.js?v=2",
   "/figure-study-catalog.mjs?v=2",

@@ -4,6 +4,10 @@ Owner request:23 September2026. Implemented locally; no deployment, main-reposit
 
 ## Follow-up: watched progress and simpler presentation
 
+### Vocabulary thumbnail examples
+
+The14 vocabulary covers now each contain two different Italian · Bangla pairs, replacing ABC. Meanings are exact selected alternatives from `data/patente/quiz-help-runtime-v2.json` (`words` fields0/1), checked in `tests/video-vocabulary-covers.test.mjs`. They are editorial cover examples, labelled Esempi, not claimed transcripts of the videos. The owner's handout identifies chapter01 only for the first five parts; the other nine get general driving-vocabulary examples without an invented chapter. Related chapter metadata follows that explicit source relationship. Private catalog IDs, order, titles and duplicates remain unchanged; no additional glossary/provider reads, client lookup, random assignment or API calls. Existing teacher art and Adorsho Lipi font are reused without bitmap editing. Vocabulary-specific styles and semantic language spans apply to list, favorites and the pre-play poster on web/native themes.
+
 ### Entry/cards and loading correction
 
 Latest owner clarification: keep the full original landscape, not the earlier68/32 dark-column/portrait split, and add a black gradient OVER the image from the left. `video-class.css` retains the unchanged1200×675 full-width image with intrinsic height and contain sizing. The shade fades to transparent before the face; white copy and the green action sit above it with no pointer interception. Enlarged text can grow the card without cropping/stretching the image; forced colors uses a system text surface. The quiz card and all routing/playback/storage behavior remain unchanged. Cache218 / video stylesheet5 identify this correction. Browser assertions cover image geometry, shade/text layering, unchanged face area and contrast fallback in both web and native themes.
@@ -50,6 +54,16 @@ No bulk YouTube availability scan was run. Provider-deleted/private/age-restrict
 
 ## Request budget and privacy
 
+### Chapter indicator (owner-approved follow-up)
+
+Only an ordinary click or Enter on a chapter/group link starts the supplied arrow and recording. Two green intervals [.085,.423) and [.781,1.119) seconds match the first two tic-tac pairs measured in `icons/car_strument/car_indicator_sound.mp3` (9.6s,24kHz,stereo,192KB). Playback stops at1.32s; the black outline is a separate unchanged SVG path. `car-indicator.mjs` uses one AudioContext clock for both sound and fill,45% gain, then calls the existing navigation owner exactly once. Browser/Android use the same implementation; no native bridge or permission added.
+
+Runtime audio is `assets/car-indicator.mp3?v=1`, a26.9KB lossless stream-copy of the original's first1.344s. The source stays intact; tests compare every compressed frame after the ID3 header. Rebuild explicitly with `ffmpeg -i icons/car_strument/car_indicator_sound.mp3 -t 1.344 -c:a copy -map_metadata -1 -write_xing 0 assets/car-indicator.mp3`, then bump the audio URL if the original changes. Both first-cycle timings are identical after extraction.
+
+Request budget: zero audio reads on entry, hover, focus, scrolling or reduced-motion activation. The first explicit eligible action makes at most one abortable same-origin fetch of the26.9KB clip; its decoded public buffer is reused for the lifetime of this Video Class owner, without per-card reads, storage, provider calls or polling. No eager MP3 service-worker precache; normal public static caching can reuse a completed response.400ms prepare timer aborts slow work and uses two silent pulses; unsupported/blocked/failed audio remains silent for this owner lifetime. No automatic retries. A cancelled request may be retried only by a later explicit click. The actual1.32s playback follows its audio clock; a stalled clock exits after400ms without progress, and a separate4s absolute watchdog handles an abnormally slow device clock. These are failure limits, not added dwell times. Preparation cannot truncate cycle two. Main-thread/browser suspension can delay timers; hidden/pagehide cancels instead of resuming stale work. Navigation is never dependent on audio success.
+
+Duplicate group taps are gated; modifier clicks stay native. Escape, Back/history, other navigation, hidden/pagehide, account changes and teardown clear all transient work; no late decode can navigate or play. The audio engine suspends at rest and closes on owner disposal. Reduced motion, forced colors and native Profile pause skip the cue/audio. Shared app loading remains unchanged. Unit tests cover clocks, cancellation, failures and request bounds; local browser QA uses the actual MP3/AudioContext and checks two fill cycles against its clock on web/native themes. Physical-device volume/latency remains a release smoke check.
+
 | Trigger | Maximum work owned by Magic Book | Cache/cancellation |
 | --- | --- | --- |
 | Open Studia hub |0 catalog requests | Only public images/styles |
@@ -78,7 +92,7 @@ Prompt set (compact reproducible specifications; built-in ImageGen, not CLI):
 - Two image-generation samples only: `road-basics.webp` and `danger-signs.webp`,960px wide and roughly60/51KB respectively. Generated with the built-in ImageGen tool using the supplied portrait as the identity reference; WebP conversion/resizing only afterward with Sharp.
 - Road Basics brief: preserve the man's face/hair/short beard/navy suit; waist-up portrait on the right, large condensed white/lime ROAD BASICS on the left; forest/charcoal background and one clear asphalt road with a white divider; no logos, tiny captions or clutter.
 - Danger Signs brief: same likeness on the left, navy suit, gesturing toward one upright red-bordered white warning triangle with a black exclamation mark; light background with a restrained red shape; large short DANGER SIGNS headline, no extra signs or clutter.
-- Covers are illustrative brand art, not automatically inferred video contents or speaker identification. Additional individualized thumbnails await the owner's direction. Automotive instruments/blinks/sounds are deliberately not included.
+- Covers are illustrative brand art, not automatically inferred video contents or speaker identification. Additional individualized thumbnails await the owner's direction. The subsequent chapter-indicator request is implemented above; other automotive instruments remain deferred.
 
 ## Android integration
 
