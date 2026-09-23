@@ -71,6 +71,26 @@ const sections = [
 
 export const VIDEO_SOURCE_ENTRIES = sections.flatMap(([group, , rows]) => rows.map(([id, title, minutes]) => ({ group, id, title, ...(minutes ? { minutes } : {}) })));
 
+// Display wording is separate from the exact source references above. No guessed
+// topics for untitled links: the first chapter's parts follow document order.
+function displayTitle(lesson) {
+  const title = lesson.title.replace(/ · (?:Pial|Borhan) sir/gi,'');
+  if (lesson.kind === 'parole' || lesson.kind === 'guide') return title;
+  if (lesson.kind === 'quiz') {
+    const numbers = [lesson.title,...lesson.aliases].map(x => x.match(/^Quiz (\d+)\b/)?.[1]).filter(Boolean);
+    if (new Set(numbers).size > 1) return `Quiz ${[...new Set(numbers)].join(' / ')}`;
+    return title.replace(/^Quiz · video (\d+)$/, 'Quiz · Parte $1');
+  }
+  if (/^Lezione \d+$/.test(title)) return title.replace('Lezione ', 'Teoria · Parte ');
+  if (title === 'Lezione completa') return 'Teoria completa';
+  if (/^Parte \d+$/.test(title)) return `Teoria · ${title}`;
+  if (title === 'Parte finale') return 'Teoria · Parte 2 (finale)';
+  if (title === 'Ultima parte') return 'Teoria · Parte 3 (finale)';
+  if (title === 'Asse 2,5 t') return 'Limite di massa per asse · 2,5 t';
+  if (title.startsWith('Punti ·')) return title.replace('Punti ·', 'Punti della patente ·');
+  return title;
+}
+
 export function getVideoClassCatalog() {
   const lessons = [];
   const byId = new Map();
@@ -81,7 +101,13 @@ export function getVideoClassCatalog() {
       url: provider === 'youtube' ? `https://www.youtube.com/watch?v=${entry.id}` : 'https://www.facebook.com/share/v/SaV7bhTHu4JyUnQ2/' };
     lessons.push(lesson); byId.set(entry.id, lesson);
   }
-  return { version: '2026-09-23.1', groups: sections.map(([id, title]) => ({ id, title })), lessons,
+  for (const lesson of lessons) {
+    lesson.sourceTitle = lesson.title;
+    const teacher = lesson.title.match(/\b(Pial|Borhan) sir\b/i)?.[0];
+    if (teacher) lesson.teacher = teacher;
+    lesson.title = displayTitle(lesson);
+  }
+  return { version: '2026-09-23.2', groups: sections.map(([id, title]) => ({ id, title })), lessons,
     resources: [
       { id: 'tmm-webapp', title: 'TMM · app sul computer', url: 'https://www.tmmpatente.it/webapp/#/', description: 'Apri la pagina e segui le istruzioni per il codice QR.' },
       { id: 'quiz-rmastri', title: 'Quiz misti · sito esterno', url: 'http://www.rmastri.it/quiz-patente-b/', description: 'Collegamento presente nel documento studenti.' }

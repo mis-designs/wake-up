@@ -18,6 +18,8 @@
 
 ## Canonical UI map
 
+Video Class refinement (2026-09-23): `video-progress.mjs` owns validated account/device-local watched intervals; `video-player.mjs` owns the lazy official IFrame API lifecycle. `video-class.js` renders the same progress in lesson cards and details. Only an explicit Watch starts a player/autoplay; switching lessons keeps a poster. Paused, hidden, buffering, stale-account, seek and delayed-timer intervals are not assumed watched. Replays union with prior coverage, and ended alone does not mark completion. Unknown remains an em dash. Save and Preferiti · Salvati refer to the same existing collection. Header title stays Video Class; external playback is secondary and cannot contribute unverifiable progress. Existing auth/trial/figure rollout boundaries are unchanged. See `docs/video-class.md` for retention/request limits and `tests/video-progress.test.mjs` plus the browser fixture for evidence.
+
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 | --- | --- | --- | --- | --- |
 | Video Class | `study-quiz.js` existing route/auth owner; `video-class.js/css`, `video-class-model.mjs`; authenticated `api/quiz.js` catalog action | Owner student document2026-09-23; `api/video-class-catalog.mjs`, audited source IDs in `docs/video-class-source-ids.json`; `docs/video-class.md` | Web and installed Android; two Study entry cards; recorded lessons, not live; explicit provider play, chapter/favorites rail; old native wrapper external fallback; trial and Android-only figure preview unchanged | Exact174 source occurrences,166 unique YouTube IDs, Facebook/resources, aliases, auth/no-store, no public IDs, request/cache/cancel, storage failures, responsive browser QA and Android unit tests |

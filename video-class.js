@@ -1,4 +1,6 @@
-import { PAGE_SIZE, createVideoCatalogReader, createVideoFavorites, embedSource, selectVideoLessons, supportsVideoEmbed, videoPath } from './video-class-model.mjs?v=1';
+import { PAGE_SIZE, createVideoCatalogReader, createVideoFavorites, embedSource, selectVideoLessons, supportsVideoEmbed, videoPath } from './video-class-model.mjs?v=2';
+import { createVideoProgress } from './video-progress.mjs?v=1';
+import { trackYouTubePlayer } from './video-player.mjs?v=1';
 
 const KIND = { teoria: 'Teoria', quiz: 'Quiz', misto: 'Teoria e quiz', parole: 'Parole', guide: 'Guida' };
 const ASSETS = '/assets/video-class/';
@@ -22,7 +24,7 @@ function node(tag, attrs = {}, ...children) {
 const link = (label, url, cls = 'vc-button') => node('a', { href: url, class: cls }, label);
 const button = (label, action, cls = 'vc-button') => node('button', { type: 'button', 'data-action': action, class: cls }, label);
 function cover(lesson, large = false) {
-  const sample = lesson.cover === 'road' ? 'road-basics.webp' : lesson.cover === 'danger' ? 'danger-signs.webp' : '';
+  const sample = lesson.kind === 'quiz' ? 'section-quiz.webp' : ['teoria','misto'].includes(lesson.kind) ? 'section-theory.webp' : '';
   const box = node('span', { class: `vc-cover${sample ? ' vc-cover--sample' : ''}`, 'aria-hidden': 'true' });
   const img = node('img', { src: ASSETS + (sample || 'teacher.webp'), alt: '', loading: large ? 'eager' : 'lazy', decoding: 'async', width: sample ? 960 : 560, height: sample ? 540 : 700 });
   img.addEventListener('error', () => { img.hidden = true; box.classList.add('vc-cover--fallback'); }, { once: true });
@@ -37,10 +39,10 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
   const lifetime = new AbortController();
   const embeddedVideo = supportsVideoEmbed(navigator.userAgent);
   let catalog, state = {}, favorites, favoriteScope = '', active = false, version = 0, count = PAGE_SIZE;
-  let playerTimer = 0, iframe = null, currentUrl = '';
+  let playback = null, progress = null, iframe = null, currentUrl = '';
   const scrollPositions = new Map();
   function status(message) { const el = root.querySelector('#vc-status'); if (el) el.textContent = message; }
-  function stopPlayer() { clearTimeout(playerTimer); playerTimer = 0; iframe?.remove(); iframe = null; }
+  function stopPlayer() { playback?.stop(); playback = null; iframe?.remove(); iframe = null; }
   function saveScroll() {
     if (active && currentUrl) {
       const focusedLesson = document.activeElement?.closest('[data-lesson]')?.dataset.lesson;
@@ -49,7 +51,7 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     }
   }
   function suspend() { saveScroll(); active = false; version++; data.cancel(); stopPlayer(); }
-  function clear() { suspend(); data.clear(); catalog = null; favorites = null; favoriteScope = ''; root.replaceChildren(); }
+  function clear() { suspend(); data.clear(); catalog = null; favorites = null; progress = null; favoriteScope = ''; root.replaceChildren(); }
   function guardIdentity() {
     if (identity() === favoriteScope) return true;
     clear();
@@ -57,6 +59,36 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     return false;
   }
   function savedIds() { return favorites?.values() || []; }
+  function progressView(lesson) {
+    const view = node('div', { class: 'vc-progress', 'data-progress': lesson.id },
+      node('div', { class: 'vc-progress-caption' }, node('span', { class: 'vc-progress-label' }), node('strong', { class: 'vc-progress-value' })),
+      node('div', { class: 'vc-progress-track' }, node('span', { class: 'vc-progress-fill', 'aria-hidden': 'true' })));
+    updateProgressView(view,lesson); return view;
+  }
+  function updateProgressView(view, lesson) {
+    const value = progress?.summary(lesson.id) || { known:false,percent:0,seconds:0 };
+    const externalOnly = lesson.provider !== 'youtube' || !embeddedVideo;
+    view.dataset.complete = String(value.known && value.percent === 100);
+    view.querySelector('.vc-progress-label').textContent = value.known ? value.percent === 100 ? 'Lezione completata' : 'Hai visto' : externalOnly ? 'Video esterno' : 'Il tuo progresso';
+    const label = value.known ? value.seconds > 0 && value.percent === 0 ? 'Meno dell’1% visto' : `${value.percent}% visto` : 'Il progresso si aggiorna guardando la lezione qui';
+    view.querySelector('.vc-progress-value').textContent = value.known ? value.seconds > 0 && value.percent === 0 ? '<1%' : `${value.percent}%` : '—';
+    const bar = view.querySelector('.vc-progress-track');
+    bar.setAttribute('role',value.known ? 'progressbar' : 'img');
+    bar.setAttribute('aria-label',`${lesson.title} · ${externalOnly && !value.known ? 'Progresso non disponibile per i video esterni' : label}`);
+    for (const [key,n] of Object.entries({ 'aria-valuemin':0,'aria-valuemax':100,'aria-valuenow':value.percent })) {
+      if (value.known) bar.setAttribute(key,String(n)); else bar.removeAttribute(key);
+    }
+    view.querySelector('.vc-progress-fill').style.width = `${value.percent}%`;
+  }
+  function updateProgress() {
+    for (const view of root.querySelectorAll('[data-progress]')) {
+      const lesson = catalog?.lessons.find(x => x.id === view.dataset.progress);
+      if (lesson) updateProgressView(view,lesson);
+    }
+    if (progress && !progress.durable && !root.querySelector('.vc-progress-storage-note')) {
+      root.append(node('p', { class:'vc-storage-note vc-progress-storage-note', role:'status' }, 'Il dispositivo non consente il salvataggio: per ora i progressi restano solo in questa pagina.'));
+    }
+  }
   function saveButton(lesson, label = false) {
     const saved = savedIds().includes(lesson.id);
     return node('button', { type: 'button', class: 'vc-save vc-button', 'data-save': lesson.id,
@@ -72,9 +104,9 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
   }
   function nav() {
     const saved = link('', videoPath({ saved: true }), 'vc-button vc-favorites');
-    saved.append(icon('favorite_section_icon_heart.png'), 'Preferiti', node('span', { 'data-favorite-count': '' }, String(savedIds().length)));
+    saved.append(icon('favorite_section_icon_heart.png'), 'Preferiti · Salvati', node('span', { 'data-favorite-count': '' }, String(savedIds().length)));
     if (state.saved) saved.setAttribute('aria-current', 'page');
-    return node('nav', { class: 'vc-nav', 'aria-label': 'Video Class' }, link('Studia', '/studia-quiz', 'vc-back-link'), link('Tutte le lezioni', videoPath(), 'vc-back-link'), saved);
+    return node('nav', { class: 'vc-nav', 'aria-label': 'Video Class' }, link('Tutte le lezioni', videoPath(), 'vc-back-link'), saved);
   }
   function heading(title, subtitle) {
     return node('div', { class: 'vc-section-heading' }, node('div', {}, node('p', { class: 'vc-eyebrow' }, 'VIDEO CLASS'), node('h2', { id: 'vc-heading', tabindex: '-1' }, title), subtitle ? node('p', {}, subtitle) : null));
@@ -82,8 +114,8 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
   function tile(lesson) {
     const a = link('', videoPath({ ...state, lesson: lesson.id }), 'vc-lesson-link');
     a.dataset.lesson = lesson.id;
-    a.append(cover(lesson), node('span', { class: 'vc-lesson-copy' }, node('span', { class: 'vc-eyebrow' }, `${/^\d+$/.test(lesson.group) ? `CAPITOLO ${lesson.group} · ` : ''}${KIND[lesson.kind]}`), node('strong', {}, lesson.title)));
-    return node('article', { class: 'vc-lesson' }, a, saveButton(lesson));
+    a.append(cover(lesson), node('span', { class: 'vc-lesson-copy' }, node('span', { class: 'vc-eyebrow' }, `${/^\d+$/.test(lesson.group) ? `CAPITOLO ${lesson.group} · ` : ''}${KIND[lesson.kind]}`), node('strong', {}, lesson.title), lesson.teacher ? node('small', { class:'vc-lesson-teacher' }, lesson.teacher) : null));
+    return node('article', { class: 'vc-lesson' }, a, node('div', { class:'vc-lesson-footer' }, progressView(lesson), saveButton(lesson)));
   }
   function renderHome() {
     const first = catalog.lessons[0];
@@ -109,7 +141,7 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
   function renderList() {
     const group = catalog.groups.find(x => x.id === state.group);
     const all = selectVideoLessons(catalog, state, savedIds());
-    root.append(heading(state.saved ? 'Le tue lezioni preferite' : group?.title || 'Lezioni', state.saved ? 'I video che hai scelto di tenere a portata di mano.' : `${/^\d+$/.test(state.group) ? `Capitolo ${state.group} · ` : ''}${all.length} video`));
+    root.append(heading(state.saved ? 'Preferiti · Lezioni salvate' : group?.title || 'Lezioni', state.saved ? 'Tutti i video che hai salvato, pronti da rivedere.' : `${/^\d+$/.test(state.group) ? `Capitolo ${state.group} · ` : ''}${all.length} video`));
     if (state.saved) root.append(node('p', { class: 'vc-storage-note' }, 'I preferiti restano in questo browser o in questa app, per il tuo account.'));
     if (/^\d+$/.test(state.group) || state.saved) {
       const filters = node('nav', { class: 'vc-filters', 'aria-label': 'Tipo di lezione' });
@@ -140,9 +172,12 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     const information = node('aside', { class: 'vc-lesson-info' },
       node('p', { class: 'vc-eyebrow' }, /^\d+$/.test(lesson.group) ? `CAPITOLO ${lesson.group} · ${KIND[lesson.kind]}` : KIND[lesson.kind]),
       node('h2', { id: 'vc-heading', tabindex: '-1' }, lesson.title), node('p', { class: 'vc-topic' }, group.title),
-      lesson.minutes ? node('p', {}, `Circa ${lesson.minutes} minuti · durata indicata nel documento`) : null,
-      node('div', { class: 'vc-lesson-actions' }, saveButton(lesson, true), external(lesson.provider === 'youtube' ? 'Apri su YouTube' : 'Apri su Facebook', lesson.url)),
-      node('p', { class: 'vc-provider-note' }, lesson.provider !== 'youtube' ? 'Questo video si guarda su Facebook. Puoi salvarlo qui insieme alle altre lezioni.' : embeddedVideo ? 'Premendo Guarda carichi il player YouTube. Se il video non parte qui, aprilo su YouTube.' : 'Questa versione dell’app apre la lezione su YouTube. Torna qui per scegliere il prossimo video.'),
+      progressView(lesson),
+      node('p', { class: 'vc-progress-note' }, lesson.provider === 'youtube' && embeddedVideo ? 'Si aggiorna mentre guardi qui. Ritrovi il progresso su questo dispositivo; i tratti saltati non contano.' : 'I video aperti su un sito esterno non aggiornano il progresso qui.'),
+      lesson.teacher || lesson.minutes ? node('p', {}, [lesson.teacher,lesson.minutes ? `Circa ${lesson.minutes} min` : ''].filter(Boolean).join(' · ')) : null,
+      node('div', { class: 'vc-lesson-actions' }, saveButton(lesson, true)),
+      node('p', { class: 'vc-provider-note' }, lesson.provider !== 'youtube' ? 'Questo video si guarda su Facebook.' : embeddedVideo ? 'Il video non parte?' : 'Questa versione dell’app apre la lezione su YouTube.',
+        external(lesson.provider === 'youtube' ? 'Apri su YouTube' : 'Apri su Facebook', lesson.url)),
       node('p', { id: 'vc-player-status', role: 'status' }),
       link('Tutte le lezioni del capitolo', videoPath({ group: lesson.group }), 'vc-back-link'));
     if (lesson.aliases.length) information.append(node('details', { class: 'vc-source-note' }, node('summary', {}, 'Riferimenti nel documento'), node('p', {}, `Lo stesso video compare anche come: ${lesson.aliases.join('; ')}.`)));
@@ -154,7 +189,7 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     const track = node('div', { class: 'vc-track' });
     queue.forEach((item, i) => {
       const a = link('', videoPath({ ...queueState, lesson: item.id }), 'vc-track-item');
-      a.append(node('span', { class: 'vc-track-number' }, String(i + 1).padStart(2,'0')), node('span', {}, item.title));
+      a.append(node('span', { class: 'vc-track-number' }, String(i + 1).padStart(2,'0')), node('span', {}, item.title, item.teacher ? node('small', { class:'vc-lesson-teacher' }, item.teacher) : null));
       if (item.id === lesson.id) a.setAttribute('aria-current', 'page'); track.append(a);
     });
     const previous = index > 0 ? link(icon('go-back.png'), videoPath({ ...queueState, lesson: queue[index - 1].id }), 'vc-button vc-step') : button(icon('go-back.png'), 'none', 'vc-button vc-step');
@@ -176,13 +211,14 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     else renderHome();
     root.append(node('p', { id: 'vc-status', class: 'sr-only', role: 'status' }));
     if (favorites && !favorites.durable) root.append(node('p', { class: 'vc-storage-note', role: 'status' }, 'Per ora i preferiti restano aperti in questa pagina. Il dispositivo non consente di salvarli.'));
+    updateProgress();
   }
   async function render(url, { restore = false } = {}) {
     saveScroll(); stopPlayer(); active = true; const own = ++version;
     currentUrl = url.pathname + url.search;
     state = { group: url.searchParams.get('group') || '', saved: url.searchParams.get('saved') === '1', lesson: url.searchParams.get('lesson') || '', kind: url.searchParams.get('kind') || '' };
     count = restore ? scrollPositions.get(currentUrl)?.count || PAGE_SIZE : PAGE_SIZE;
-    header('Video Class', 'Lezioni, quiz spiegati e parole'); document.title = 'MagicBook | Video Class';
+    header('Video Class', ''); document.title = 'MagicBook | Video Class';
     if (!catalog) root.replaceChildren(node('div', { class: 'vc-loading', role: 'status', 'aria-busy': 'true' }, node('span', { class: 'magic-loading-indicator__media' }, node('img', { class: 'magic-loading-indicator__image', src: '/icons/loading.gif', alt: '' })), node('p', {}, 'Apro le lezioni…')));
     try {
       catalog = await data.read();
@@ -190,6 +226,7 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
       if (!favorites || favoriteScope !== identity()) {
         favoriteScope = identity(); let storage; try { storage = window.localStorage; } catch (_) { /* memory only */ }
         favorites = createVideoFavorites(storage, favoriteScope, new Set(catalog.lessons.map(x => x.id)));
+        progress = createVideoProgress(storage, favoriteScope, new Set(catalog.lessons.filter(x => x.provider === 'youtube').map(x => x.id)));
       }
       paint();
       const selected = catalog.lessons.find(x => x.id === state.lesson);
@@ -210,14 +247,16 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     if (!lesson) return;
     if (lesson.provider !== 'youtube' || !embeddedVideo) { window.open(lesson.url, '_blank', 'noopener'); return; }
     stopPlayer();
-    iframe = node('iframe', { src: embedSource(lesson, location.origin), title: `${lesson.title} · YouTube`, allow: 'encrypted-media; picture-in-picture; fullscreen', allowfullscreen: '', referrerpolicy: 'strict-origin-when-cross-origin' });
+    iframe = node('iframe', { src: embedSource(lesson, location.origin, { autoplay:true }), title: `${lesson.title} · YouTube`, allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: '', referrerpolicy: 'strict-origin-when-cross-origin' });
     const own = iframe;
     const message = root.querySelector('#vc-player-status');
-    const fail = () => { if (iframe === own && message) message.textContent = 'Il player non risponde. Puoi usare Apri su YouTube.'; };
+    const fail = () => { if (iframe === own && message) message.textContent = 'Non riesco a collegare il player: il progresso non si aggiorna. Puoi riaprire la lezione o usare Apri su YouTube.'; };
     own.addEventListener('error', fail, { once: true });
-    own.addEventListener('load', () => { if (iframe === own) { clearTimeout(playerTimer); if (message) message.textContent = ''; } }, { once: true });
-    playerTimer = setTimeout(fail, 15000);
     root.querySelector('#vc-stage').replaceChildren(own);
+    playback = trackYouTubePlayer({ frame:own, id:lesson.id, store:progress,
+      isCurrent:() => active && iframe === own && identity() === favoriteScope,
+      changed:updateProgress, ready:() => { if (message) message.textContent = ''; }, failed:fail,
+      blocked:() => { if (message) message.textContent = 'Premi Play nel video: il browser richiede un tocco sul player.'; } });
     own.focus();
   }
   root.addEventListener('click', event => {
@@ -257,6 +296,7 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     if (!active) return;
     if (!guardIdentity()) return;
     if (event.key === favorites?.key) { favorites.read(); if (state.saved && !state.lesson) paint(); else updateSavedButtons(); }
+    if (event.key === progress?.key) { progress.read(); updateProgress(); }
   }, { signal: lifetime.signal });
   document.addEventListener('visibilitychange', () => {
     if (!active) return;

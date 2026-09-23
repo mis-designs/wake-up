@@ -1814,7 +1814,7 @@
     try {
       if (!videoClass) {
         root.textContent = 'Apro Video Class…';
-        videoClassModule ||= import('./video-class.js?v=1').catch(error => { videoClassModule = null; throw error; });
+        videoClassModule ||= import('./video-class.js?v=2').catch(error => { videoClassModule = null; throw error; });
         const module = await videoClassModule;
         if (ownRequest !== loadRequestId || !videoView) return;
         videoClass = module.createVideoClass({ root, identity: studyVideoIdentity, toast: showToast,

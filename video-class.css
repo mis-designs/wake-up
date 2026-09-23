@@ -2,6 +2,10 @@
    those roles to pearl/graphite/blue. No second app palette or scroll owner. */
 .vc-hub, .vc-library { --vc-accent: var(--purple-dark); --vc-soft: color-mix(in srgb, var(--purple) 8%, var(--surface)); font-family: var(--font-ui); color: var(--ink); }
 .study-video-active .study-main, .study-hub-active .study-main { width: min(1480px, calc(100% - 48px)); padding-top: 26px; }
+.study-page.study-video-active .study-header { grid-template-columns: 44px minmax(0, 1fr) 44px; min-height: 64px; gap: 12px; padding: 8px max(14px, calc((100vw - 1480px) / 2)); background: var(--surface); box-shadow: none; backdrop-filter: none; }
+.study-page.study-video-active .study-heading { display: block; text-align: center; }
+.study-page.study-video-active .study-heading h1 { margin: 0; font: 700 1.2rem/1.4 var(--font-ui); }
+.study-page.study-video-active .study-heading :is(small,p), .study-page.study-video-active .study-practice-link, html.android-webview .study-page.study-video-active .study-heading::before { display: none; }
 .vc-hub *, .vc-library * { min-width: 0; }
 .vc-library img, .vc-hub img { max-width: 100%; object-fit: contain; }
 .vc-library a, .vc-hub a { text-decoration: none; color: inherit; }
@@ -63,13 +67,24 @@
 .vc-group > img { width: 18px; height: 18px; }
 .vc-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
 .vc-lessons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px 24px; }
-.vc-lesson { position: relative; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); overflow: hidden; }
-.vc-lesson-link { display: block; height: 100%; }
+.vc-lesson { display: flex; flex-direction: column; position: relative; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); overflow: hidden; }
+.vc-lesson-link { display: block; flex: 1; }
 .vc-lesson-link:hover { background: var(--vc-soft); }
-.vc-lesson-copy { display: block; padding: 18px 65px 22px 18px; }
+.vc-lesson-copy { display: block; padding: 18px 18px 12px; }
 .vc-lesson-copy strong { display: block; line-height: 1.5; font-size: 1rem; margin-top: 7px; }
+.vc-lesson-teacher { display: block; margin-top: 4px; color: var(--muted); font-size: .72rem; line-height: 1.5; }
 .vc-save { flex-shrink: 0; min-width: 44px; }
-.vc-lesson > .vc-save { position: absolute; bottom: 16px; right: 12px; width: 44px; padding: 10px; }
+.vc-lesson-footer { display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: center; gap: 20px; padding: 2px 18px 20px; }
+.vc-lesson-footer > .vc-save { width: 44px; padding: 10px; }
+.vc-progress { width: 100%; }
+.vc-progress-caption { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 9px; font-size: .72rem; line-height: 1.4; }
+.vc-progress-label { color: var(--muted); }
+.vc-progress-value { color: var(--vc-accent); font-size: .8rem; font-weight: 750; font-variant-numeric: tabular-nums; }
+.vc-progress-track { height: 7px; border-radius: 99px; overflow: hidden; background: color-mix(in srgb, var(--purple) 13%, var(--surface)); box-shadow: inset 0 1px 2px color-mix(in srgb, var(--ink) 8%, transparent); }
+.vc-progress-fill { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--vc-accent), var(--purple)); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface) 28%, transparent); transition: width .3s ease; }
+.vc-progress[data-complete="true"] .vc-progress-label { color: var(--vc-accent); }
+.vc-lesson-info > .vc-progress { margin-top: 24px; }
+.vc-lesson-info > .vc-progress-note { font-size: .75rem; }
 .vc-save[aria-pressed="true"] { border-color: var(--vc-accent); background: var(--vc-soft); }
 .vc-cover { display: block; position: relative; overflow: hidden; aspect-ratio: 16 / 9; width: 100%; background: var(--forest); color: var(--surface); text-align: left; }
 .vc-cover > img { position: absolute; width: 52%; height: 100%; right: 0; object-fit: cover; object-position: 70% 16%; }
@@ -100,6 +115,8 @@
 .vc-topic { color: var(--vc-accent); font-weight: 700; }
 .vc-lesson-info > p:not(.vc-topic):not(.vc-eyebrow) { margin-top: 14px; color: var(--muted); font-size: .82rem; }
 .vc-lesson-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 24px; }
+.vc-provider-note .vc-external { display: inline-flex; margin-left: 8px; min-height: 44px; padding: 6px 0; border: 0; border-radius: 0; background: transparent; color: var(--vc-accent); font-size: .78rem; text-decoration: underline; text-underline-offset: 3px; }
+.vc-provider-note .vc-external img { width: 14px; height: 14px; }
 .vc-source-note { font-size: .8rem; border-top: 1px solid var(--line); margin-top: 14px; }
 .vc-source-note summary { display: flex; align-items: center; min-height: 44px; color: var(--vc-accent); }
 .vc-source-note p { padding-bottom: 12px; }
@@ -168,4 +185,6 @@ html:has(.study-page) { --study-scroll-thumb: var(--muted); --study-scroll-track
   .study-page, .study-page * { scrollbar-color: auto; }
   .vc-library [aria-current="page"], .vc-library [aria-pressed="true"] { outline: 2px solid Highlight; }
   .vc-cover, .vc-hub-card, .vc-play-label, .vc-rail { border: 1px solid CanvasText; }
+  .vc-progress-track { border: 1px solid CanvasText; background: Canvas; }
+  .vc-progress-fill { background: Highlight; }
 }
