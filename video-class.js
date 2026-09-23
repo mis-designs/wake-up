@@ -26,7 +26,7 @@ const button = (label, action, cls = 'vc-button') => node('button', { type: 'but
 function cover(lesson, large = false) {
   const sample = lesson.kind === 'quiz' ? 'section-quiz.webp' : ['teoria','misto'].includes(lesson.kind) ? 'section-theory.webp' : '';
   const box = node('span', { class: `vc-cover${sample ? ' vc-cover--sample' : ''}`, 'aria-hidden': 'true' });
-  const img = node('img', { src: ASSETS + (sample || 'teacher.webp'), alt: '', loading: large ? 'eager' : 'lazy', decoding: 'async', width: sample ? 960 : 560, height: sample ? 540 : 700 });
+  const img = node('img', { src: ASSETS + (sample || 'teacher.webp?v=2e0d6787e201'), alt: '', loading: large ? 'eager' : 'lazy', decoding: 'async', width: 1200, height: 675 });
   img.addEventListener('error', () => { img.hidden = true; box.classList.add('vc-cover--fallback'); }, { once: true });
   box.append(img);
   if (!sample) box.append(node('span', { class: 'vc-cover-type' }, KIND[lesson.kind] || 'Video', node('b', {}, /^\d+$/.test(lesson.group) ? lesson.group : lesson.group === 'parole' ? 'ABC' : 'APP')));
@@ -108,8 +108,8 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     if (state.saved) saved.setAttribute('aria-current', 'page');
     return node('nav', { class: 'vc-nav', 'aria-label': 'Video Class' }, link('Tutte le lezioni', videoPath(), 'vc-back-link'), saved);
   }
-  function heading(title, subtitle) {
-    return node('div', { class: 'vc-section-heading' }, node('div', {}, node('p', { class: 'vc-eyebrow' }, 'VIDEO CLASS'), node('h2', { id: 'vc-heading', tabindex: '-1' }, title), subtitle ? node('p', {}, subtitle) : null));
+  function heading(title, subtitle, id = 'vc-heading') {
+    return node('div', { class: 'vc-section-heading' }, node('div', {}, node('h2', { id, tabindex: '-1' }, title), subtitle ? node('p', {}, subtitle) : null));
   }
   function tile(lesson) {
     const a = link('', videoPath({ ...state, lesson: lesson.id }), 'vc-lesson-link');
@@ -120,10 +120,8 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
   function renderHome() {
     const first = catalog.lessons[0];
     const hero = node('div', { class: 'vc-hero' }, node('div', { class: 'vc-hero-copy' },
-      node('p', { class: 'vc-eyebrow' }, 'LA TUA AULA, QUANDO VUOI'),
       node('h2', { id: 'vc-heading', tabindex: '-1' }, 'Guarda. Capisci.', node('br'), 'Poi mettiti alla prova.'),
       node('p', { lang: 'bn', class: 'vc-bangla-title' }, 'ভিডিও দেখে শিখুন, কুইজ দিয়ে অনুশীলন করুন।'),
-      node('p', {}, 'Teoria, quiz spiegati e parole da imparare. Scegli il capitolo e segui le lezioni al tuo ritmo.'),
       node('div', { class: 'vc-facts' }, node('span', {}, '25 capitoli'), node('span', {}, `${catalog.lessons.length} video`)),
       link('Inizia dal capitolo 01', videoPath({ group: '01' }), 'vc-button vc-primary')),
       node('div', { class: 'vc-feature' }, link(cover(first, true), videoPath({ group: '01', lesson: first.id }), 'vc-feature-image'),
@@ -133,10 +131,10 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
       const total = catalog.lessons.filter(x => x.group === group.id).length;
       const a = link('', videoPath({ group: group.id }), 'vc-group');
       a.append(node('span', { class: 'vc-group-number' }, /^\d+$/.test(group.id) ? group.id : group.id === 'parole' ? 'ABC' : 'APP'),
-        node('span', {}, node('strong', {}, group.title), node('small', {}, `${total} video`)), icon('next.png'));
+        node('span', {}, node('strong', {}, group.title), node('small', {}, `${total} video`)), node('span', { class: 'vc-group-arrow', 'aria-hidden': 'true' }, icon('next.png')));
       groups.append(a);
     }
-    root.append(hero, heading('Scegli cosa studiare', 'Capitoli nell’ordine del documento studenti.'), groups);
+    root.append(hero, heading('Capitoli', '', 'vc-chapters-heading'), groups);
   }
   function renderList() {
     const group = catalog.groups.find(x => x.id === state.group);
@@ -219,7 +217,7 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     state = { group: url.searchParams.get('group') || '', saved: url.searchParams.get('saved') === '1', lesson: url.searchParams.get('lesson') || '', kind: url.searchParams.get('kind') || '' };
     count = restore ? scrollPositions.get(currentUrl)?.count || PAGE_SIZE : PAGE_SIZE;
     header('Video Class', ''); document.title = 'MagicBook | Video Class';
-    if (!catalog) root.replaceChildren(node('div', { class: 'vc-loading', role: 'status', 'aria-busy': 'true' }, node('span', { class: 'magic-loading-indicator__media' }, node('img', { class: 'magic-loading-indicator__image', src: '/icons/loading.gif', alt: '' })), node('p', {}, 'Apro le lezioni…')));
+    if (!catalog) root.replaceChildren(node('div', { class: 'vc-loading magic-loading-indicator magic-loading-indicator--panel', role: 'status', 'aria-busy': 'true' }, node('span', { class: 'magic-loading-indicator__media', 'aria-hidden': 'true' }, node('img', { class: 'magic-loading-indicator__image', src: '/icons/loading.gif', alt: '', width: 88, height: 88 })), node('p', { class: 'magic-loading-indicator__label' }, 'Apro le lezioni…')));
     try {
       catalog = await data.read();
       if (!active || own !== version) return;

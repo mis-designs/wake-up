@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:video-card": "node scripts/build-video-card-asset.mjs",
     "build:css": "tailwindcss -i ./src/daisyui.css -o ./assets/daisyui.css --minify",
     "watch:css": "tailwindcss -i ./src/daisyui.css -o ./assets/daisyui.css --watch",
     "security:audit": "node --test tests/repository-security.test.mjs tests/security.test.mjs tests/promo-access-security.test.mjs tests/trial-access-security.test.mjs tests/trial-book-security.test.mjs tests/trial-security.test.mjs tests/upstream-fetch.test.mjs tests/book-content-security.test.mjs tests/magic-reader-watermark.test.mjs tests/screen-protection.test.mjs",

@@ -2,10 +2,10 @@
    those roles to pearl/graphite/blue. No second app palette or scroll owner. */
 .vc-hub, .vc-library { --vc-accent: var(--purple-dark); --vc-soft: color-mix(in srgb, var(--purple) 8%, var(--surface)); font-family: var(--font-ui); color: var(--ink); }
 .study-video-active .study-main, .study-hub-active .study-main { width: min(1480px, calc(100% - 48px)); padding-top: 26px; }
-.study-page.study-video-active .study-header { grid-template-columns: 44px minmax(0, 1fr) 44px; min-height: 64px; gap: 12px; padding: 8px max(14px, calc((100vw - 1480px) / 2)); background: var(--surface); box-shadow: none; backdrop-filter: none; }
-.study-page.study-video-active .study-heading { display: block; text-align: center; }
-.study-page.study-video-active .study-heading h1 { margin: 0; font: 700 1.2rem/1.4 var(--font-ui); }
-.study-page.study-video-active .study-heading :is(small,p), .study-page.study-video-active .study-practice-link, html.android-webview .study-page.study-video-active .study-heading::before { display: none; }
+.study-page:is(.study-video-active,.study-hub-active) .study-header { grid-template-columns: 44px minmax(0, 1fr) 44px; min-height: 64px; gap: 12px; padding: 8px max(14px, calc((100vw - 1480px) / 2)); background: var(--surface); box-shadow: none; backdrop-filter: none; }
+.study-page:is(.study-video-active,.study-hub-active) .study-heading { display: block; text-align: center; }
+.study-page:is(.study-video-active,.study-hub-active) .study-heading h1 { margin: 0; font: 700 1.2rem/1.4 var(--font-ui); }
+.study-page:is(.study-video-active,.study-hub-active) .study-heading :is(small,p), .study-page:is(.study-video-active,.study-hub-active) .study-practice-link, html.android-webview .study-page:is(.study-video-active,.study-hub-active) .study-heading::before { display: none; }
 .vc-hub *, .vc-library * { min-width: 0; }
 .vc-library img, .vc-hub img { max-width: 100%; object-fit: contain; }
 .vc-library a, .vc-hub a { text-decoration: none; color: inherit; }
@@ -33,20 +33,28 @@
 .vc-favorites > img { width: 30px; height: 30px; }
 .vc-favorites [data-favorite-count] { font-variant-numeric: tabular-nums; min-width: 20px; }
 .vc-hub-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; }
-.vc-hub-card { position: relative; min-height: 380px; overflow: hidden; border-radius: 24px; border: 1px solid var(--line); background: var(--surface); transition: border-color .18s ease; }
+.vc-hub-card { position: relative; display: flex; align-items: center; min-height: 330px; overflow: hidden; border-radius: 24px; border: 1px solid var(--line); background: var(--surface); transition: border-color .18s ease, box-shadow .18s ease; container-type: inline-size; }
 .vc-hub-card:hover { border-color: var(--vc-accent); }
+.vc-hub-card:active { box-shadow: inset 0 0 0 2px var(--vc-accent); }
+.vc-hub > .vc-section-heading { margin-top: 10px; }
 .vc-hub-copy { position: relative; z-index: 1; padding: clamp(24px, 3vw, 44px); }
 .vc-hub-copy h3 { font-family: Norwester, var(--font-ui); font-weight: 400; font-size: clamp(2rem, 4vw, 3.5rem); margin: 10px 0; }
 .vc-hub-copy p { line-height: 1.7; margin-bottom: 18px; font-size: .94rem; }
 .vc-hub-copy p[lang="bn"] { font-size: 1.25rem; }
-.vc-hub .vc-hub-video { background: var(--forest); color: var(--surface); }
-.vc-hub-video::before { content: ''; position: absolute; inset: 0; z-index: 1; background: linear-gradient(90deg, var(--forest) 30%, transparent 80%); pointer-events: none; }
-.vc-hub-video .vc-hub-copy { width: 66%; }
-.vc-hub-video .vc-eyebrow { color: var(--mint); }
-.vc-hub .vc-hub-art { position: absolute; right: 0; height: 100%; width: 57%; object-fit: cover; object-position: 75% top; }
+.vc-hub .vc-hub-video { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; align-self: start; background: var(--surface); color: var(--ink); }
+/* The supplied landscape is the whole card, not a cropped portrait beside a dark panel. */
+.vc-hub-video .vc-hub-copy { grid-area: 1 / 1; align-self: center; width: 58%; padding: clamp(16px, 5cqw, 44px); text-shadow: 0 1px 3px color-mix(in srgb, var(--surface) 80%, transparent); }
+.vc-hub-video .vc-hub-copy h3 { font-size: clamp(1.25rem, 7cqw, 3.5rem); line-height: 1.12; }
+.vc-hub-video .vc-hub-copy p[lang="bn"] { font-size: clamp(.94rem, 3cqw, 1.25rem); }
+.vc-hub .vc-hub-art { position: static; grid-area: 1 / 1; align-self: start; display: block; height: auto; width: 100%; aspect-ratio: 1200 / 675; object-fit: contain; }
 .vc-hub-cta { display: inline-flex; align-items: center; gap: 16px; min-height: 44px; font-weight: 700; font-size: .9rem; border-bottom: 1px solid currentColor; }
-.vc-hub-video .vc-hub-cta img { filter: brightness(0) invert(1); }
-.vc-hub-quiz-icon { position: absolute; right: 28px; top: 28px; opacity: .08; }
+.vc-hub-quiz-art { position: absolute; right: 0; inset-block: 0; width: 28%; display: grid; place-items: center; background: linear-gradient(90deg, transparent, var(--vc-soft)); }
+.vc-hub-quiz-icon { opacity: .14; }
+.vc-hub-quiz .vc-hub-copy { width: 88%; }
+.vc-hub-cta img { flex: none; transition: transform .18s ease; }
+@media (hover: hover) {
+  .vc-hub-card:hover .vc-hub-cta img { transform: translateX(4px); }
+}
 #study-hub-figures { margin-top: 22px; }
 .vc-hero { display: grid; grid-template-columns: .9fr 1.1fr; gap: clamp(26px, 5vw, 70px); align-items: center; padding: 18px 0 38px; border-bottom: 1px solid var(--line); }
 .vc-hero-copy h2 { font-family: Norwester, var(--font-ui); font-weight: 400; font-size: clamp(2.4rem, 4.8vw, 4.7rem); line-height: 1.04; margin: 16px 0; letter-spacing: -.025em; }
@@ -58,13 +66,21 @@
 .vc-feature-caption { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 18px; }
 .vc-feature-caption strong, .vc-feature-caption small { display: block; }
 .vc-feature-caption small { color: var(--muted); margin-bottom: 7px; font-size: .65rem; letter-spacing: .1em; }
-.vc-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 30px; }
-.vc-group { display: grid; grid-template-columns: 50px minmax(0, 1fr) 20px; align-items: center; gap: 16px; padding: 20px 8px; border-bottom: 1px solid var(--line); min-height: 108px; border-radius: 10px 10px 0 0; }
-.vc-group:hover { background: var(--vc-soft); }
-.vc-group-number { font: 400 2rem/1 Norwester, var(--font-ui); color: var(--vc-accent); }
+.vc-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.vc-group { display: grid; grid-template-columns: 48px minmax(0, 1fr) 36px; align-items: center; gap: 14px; padding: 18px 16px; border: 1px solid var(--line); min-height: 104px; border-radius: 16px; background: var(--surface); transition: border-color .18s ease, background .18s ease, transform .18s ease; }
+.vc-group:is(:hover,:focus-visible) { border-color: var(--vc-accent); background: var(--vc-soft); }
+.vc-group:active { background: color-mix(in srgb, var(--purple) 14%, var(--surface)); }
+.vc-group-number { display: grid; place-items: center; height: 52px; border-radius: 12px; background: var(--vc-soft); font: 400 1.7rem/1 Norwester, var(--font-ui); color: var(--vc-accent); }
 .vc-group strong { display: block; font-size: .91rem; line-height: 1.4; }
 .vc-group small { display: block; margin-top: 8px; color: var(--muted); font-size: .76rem; }
-.vc-group > img { width: 18px; height: 18px; }
+.vc-group-arrow { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 50%; transition: background .18s ease, transform .18s ease; }
+.vc-group-arrow img { width: 18px; height: 18px; }
+.vc-group:is(:hover,:focus-visible,:active) .vc-group-arrow { background: var(--vc-accent); border-color: var(--vc-accent); }
+.vc-group:is(:hover,:focus-visible,:active) .vc-group-arrow img { filter: brightness(0) invert(1); }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .vc-group:hover { transform: translateY(-2px); }
+  .vc-group:hover .vc-group-arrow { transform: translateX(2px); }
+}
 .vc-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
 .vc-lessons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px 24px; }
 .vc-lesson { display: flex; flex-direction: column; position: relative; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); overflow: hidden; }
@@ -128,7 +144,7 @@
 .vc-track-item[aria-current="page"], .vc-track-item:hover { background: var(--vc-soft); border-color: var(--vc-accent); }
 .vc-track-number { color: var(--vc-accent); font: 400 1.5rem/1 Norwester, var(--font-ui); }
 .vc-step { height: 48px; padding: 12px; }
-.vc-loading { display: grid; justify-items: center; align-content: center; min-height: 380px; gap: 20px; }
+.vc-loading { min-height: 260px; gap: 14px; color: var(--muted); font-size: .9rem; }
 /* Global Study scrollbar baseline also covers new rails without opt-in classes. */
 html:has(.study-page) { --study-scroll-thumb: var(--muted); --study-scroll-track: transparent; --study-scroll-hover: var(--purple-dark); }
 .study-page, .study-page * { scrollbar-width: thin; scrollbar-color: var(--study-scroll-thumb) var(--study-scroll-track); }
@@ -143,7 +159,8 @@ html:has(.study-page) { --study-scroll-thumb: var(--muted); --study-scroll-track
   .vc-watch { grid-template-columns: minmax(0, 1fr); }
   .vc-lesson-info { padding: 0; }
   .vc-hub-grid { grid-template-columns: 1fr 1fr; gap: 16px; }
-  .vc-hub-video .vc-hub-copy { width: 85%; }
+  .vc-hub-video .vc-hub-description { display: none; }
+  .vc-hub-copy h3 { font-size: 2.5rem; }
 }
 @media (max-width: 650px) {
   .study-video-active .study-main, .study-hub-active .study-main { width: calc(100% - 28px); padding-top: 12px; }
@@ -152,20 +169,28 @@ html:has(.study-page) { --study-scroll-thumb: var(--muted); --study-scroll-track
   .vc-favorites { padding: 6px 10px; gap: 6px; }
   .vc-favorites > img { width: 24px; height: 24px; }
   .vc-hub-grid, .vc-hero, .vc-groups, .vc-lessons { grid-template-columns: minmax(0, 1fr); }
-  .vc-hub-card { min-height: 300px; }
-  .vc-hub-copy { padding: 26px 22px; }
-  .vc-hub-video .vc-hub-copy { width: 77%; }
-  .vc-hub-quiz { min-height: 260px; }
-  .vc-hub-copy h3 { font-size: 2.5rem; }
-  .vc-hub-copy p { font-size: .86rem; }
-  .vc-hub-copy p[lang="bn"] { font-size: 1.1rem; }
+  /* Quiz keeps its compact icon rail; Video Class keeps the complete landscape. */
+  .vc-hub-grid { gap: 14px; }
+  .vc-hub-card { min-height: 176px; border-radius: 20px; }
+  .vc-hub-copy { padding: 18px 14px 14px 18px; }
+  .vc-hub-quiz .vc-hub-copy { width: 68%; }
+  .vc-hub-quiz-art { width: 32%; }
+  .vc-hub-quiz-art { background: var(--vc-soft); }
+  .vc-hub-quiz-icon { width: 56px; height: 56px; opacity: .7; }
+  .vc-hub-copy h3 { font-size: clamp(1.6rem, 7vw, 2rem); line-height: 1.12; margin: 0 0 8px; }
+  .vc-hub-copy p[lang="bn"] { font-size: .94rem; line-height: 1.5; margin-bottom: 10px; }
+  .vc-hub-copy .vc-hub-description { display: none; }
+  .vc-hub-cta { gap: 8px; font-size: .78rem; border-bottom: 0; }
+  .vc-hub-cta img { width: 20px; height: 20px; }
+  .vc-hub > .vc-section-heading { margin: 6px 0 20px; }
+  .vc-hub > .vc-section-heading h2 { font-size: 1.45rem; line-height: 1.25; margin-top: 0; }
   .vc-hero { padding: 8px 0 28px; }
-  .vc-hero-copy h2 { font-size: 3rem; }
+  .vc-hero-copy h2 { font-size: 2.5rem; margin-top: 0; }
   .vc-feature-caption { padding: 14px; }
   .vc-feature-caption strong { font-size: .9rem; }
   .vc-feature-caption .vc-button { font-size: .75rem; padding: 8px 10px; }
   .vc-section-heading { margin-top: 24px; }
-  .vc-group { min-height: 94px; gap: 10px; }
+  .vc-group { min-height: 90px; gap: 12px; padding: 14px; }
   .vc-lessons { gap: 20px; }
   .vc-cover-type { font-size: 1.5rem; }
   .vc-cover-type b { font-size: 4.5rem; }
@@ -187,4 +212,7 @@ html:has(.study-page) { --study-scroll-thumb: var(--muted); --study-scroll-track
   .vc-cover, .vc-hub-card, .vc-play-label, .vc-rail { border: 1px solid CanvasText; }
   .vc-progress-track { border: 1px solid CanvasText; background: Canvas; }
   .vc-progress-fill { background: Highlight; }
+  .vc-group { border-color: CanvasText; }
+  .vc-group:is(:hover,:focus-visible,:active) .vc-group-arrow { background: Canvas; border-color: CanvasText; }
+  .vc-group:is(:hover,:focus-visible,:active) .vc-group-arrow img { filter: none; }
 }

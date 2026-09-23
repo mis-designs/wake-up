@@ -15,8 +15,10 @@ const browser=await chromium.launch({headless:true,channel:'msedge'}), report=[]
 try {
   for(const [native,width,height] of [[false,1440,960],[false,1920,1080],[false,768,1024],[false,375,812],[false,320,568],[true,375,812],[true,740,360]]) {
     if(process.env.QA_WIDTH && Number(process.env.QA_WIDTH)!==width)continue;
-    const context=await browser.newContext({viewport:{width,height},serviceWorkers:'block',reducedMotion:'reduce',...(native?{userAgent:'Mozilla/5.0 (Linux; Android 14; wv) AppleWebKit/537.36 Chrome/130.0.0.0 Mobile Safari/537.36 MagicBookViewer/1.3 MagicBookVideo/1'}:{})});
-    let reads=0,frames=0,apiLoads=0,failed=false,apiBlocked=false; const errors=[],missing=[];
+    const context=await browser.newContext({viewport:{width,height},hasTouch:width<=768,serviceWorkers:'block',reducedMotion:'reduce',...(native?{userAgent:'Mozilla/5.0 (Linux; Android 14; wv) AppleWebKit/537.36 Chrome/130.0.0.0 Mobile Safari/537.36 MagicBookViewer/1.3 MagicBookVideo/1'}:{})});
+    let reads=0,frames=0,apiLoads=0,failed=false,apiBlocked=false,releaseCatalog;
+    let catalogGate = new Promise(resolve => { releaseCatalog = resolve; });
+    const errors=[],missing=[];
     await context.route('**/*', async route=>{
       const url=new URL(route.request().url());
       if(url.href==='https://www.youtube.com/iframe_api'){apiLoads++;return route.fulfill({status:apiBlocked?503:200,contentType:'text/javascript',body:apiBlocked?'':fs.readFileSync(path.join(repo,'scripts/video-player-fixture.js'))});}
@@ -24,7 +26,7 @@ try {
       if(url.hostname!=='video.local')return route.fulfill({status:503,body:''});
       if(url.pathname==='/api/quiz'){
         const action=url.searchParams.get('action');
-        if(action==='getVideoClasses'){reads++;return route.fulfill({status:failed?503:200,json:failed?{error:'fixture_failure'}:{ok:true,catalog:getVideoClassCatalog()}});}
+        if(action==='getVideoClasses'){reads++;if(catalogGate)await catalogGate;return route.fulfill({status:failed?503:200,json:failed?{error:'fixture_failure'}:{ok:true,catalog:getVideoClassCatalog()}});}
         if(action==='getStudyQuiz')return route.fulfill({json:{ok:true,quiz:[],quizSessionToken:'fixture',quizSessionTokenExpiresAt:Date.now()+60000}});
         return route.fulfill({json:{ok:true,available:false}});
       }
@@ -57,9 +59,55 @@ try {
     assert.equal(await page.locator('.vc-hub-card').count(),2);assert.equal(reads,0);
     assert.equal(await page.locator('#study-hub-figures').isVisible(),native);
     await shot('hub');
-    await page.locator('.vc-hub-video').click(); await page.locator('.vc-group').first().waitFor();
+    assert.equal(await page.locator('.study-header small').isVisible(),false);
+    assert.equal(await page.locator('.study-practice-link').isVisible(),false);
+    assert.equal(await page.locator('#study-title').textContent(),'Studia');
+    const hubLayout = await page.evaluate(() => {
+      const box = selector => { const b = document.querySelector(selector).getBoundingClientRect(); return {left:b.left,right:b.right,top:b.top,bottom:b.bottom,height:b.height}; };
+      return {video:box('.vc-hub-video'),quiz:box('.vc-hub-quiz'),copy:box('.vc-hub-video .vc-hub-copy'),image:box('.vc-hub-art'),header:box('#study-back')};
+    });
+    if(width<=650) {
+      assert.ok(hubLayout.copy.right <= hubLayout.image.left + (hubLayout.image.right-hubLayout.image.left)*.59,'copy stays in the quiet left of the landscape, away from the face');
+      assert.ok(hubLayout.quiz.top >= hubLayout.video.bottom,'distinct stacked choices');
+      assert.ok(hubLayout.quiz.bottom <= height,'both choices visible on entry at normal font size');
+      assert.ok(hubLayout.header.left <= 20,'Back aligned with phone gutter');
+    } else assert.ok(Math.abs(hubLayout.video.top-hubLayout.quiz.top)<1,'desktop keeps two choices side by side');
+    const fullArtwork = await page.locator('.vc-hub-art').evaluate(el=>{
+      const image = el.getBoundingClientRect(), card = el.closest('a').getBoundingClientRect(), css = getComputedStyle(el);
+      return {width:image.width,height:image.height,cardWidth:card.width,ratio:el.naturalWidth/el.naturalHeight,fit:css.objectFit,
+        overlay:getComputedStyle(el.closest('a'),'::before').content,background:getComputedStyle(el.closest('a')).backgroundColor};
+    });
+    assert.ok(Math.abs(fullArtwork.width-fullArtwork.cardWidth+2)<1,'artwork spans the whole card');
+    assert.ok(Math.abs(fullArtwork.width/fullArtwork.height-fullArtwork.ratio)<.003,'original landscape aspect ratio, no crop or distortion');
+    assert.equal(fullArtwork.fit,'contain'); assert.equal(fullArtwork.overlay,'none');
+    assert.equal(fullArtwork.background,'rgb(255, 255, 255)','no dark or native-blue filler panel');
+    const artwork = JSON.parse(fs.readFileSync(path.join(repo,'assets/video-class/card-artwork.json'),'utf8'));
+    assert.equal(await page.locator('.vc-hub-art').getAttribute('src'),artwork.url);
+    await page.locator('.vc-hub-video').click();
+    await page.locator('.vc-loading').waitFor();
+    // Hold the only catalogue read to inspect the real animated loader, not just source classes.
+    await page.emulateMedia({reducedMotion:'no-preference'});
+    const loading = await page.locator('.vc-loading .magic-loading-indicator__media').evaluate(el => {
+      const c = getComputedStyle(el), b = el.getBoundingClientRect();
+      return {width:b.width,height:b.height,radius:parseFloat(c.borderRadius),animation:c.animationName,transform:c.transform};
+    });
+    assert.ok(loading.width>=64 && loading.width<=88,JSON.stringify(loading));
+    assert.equal(loading.height,loading.width); assert.ok(loading.radius>=14);
+    assert.equal(loading.animation,'none'); assert.equal(loading.transform,'none');
+    await shot('loading');
+    await page.emulateMedia({reducedMotion:'reduce'});
+    assert.equal(await page.locator('.vc-loading img').evaluate(el=>getComputedStyle(el).visibility),'hidden');
+    assert.equal(reads,1); releaseCatalog(); catalogGate=null;
+    await page.locator('.vc-group').first().waitFor();
     assert.equal(reads,1);assert.equal(frames,0);assert.equal(await page.locator('.vc-group').count(),27);
+    assert.equal(await page.locator('#vc-heading').count(),1);
+    assert.equal(await page.locator('#vc-chapters-heading').textContent(),'Capitoli');
+    assert.equal(await page.getByText('Capitoli nell’ordine del documento studenti.').count(),0);
     await shot('catalog');
+    await page.keyboard.press('Tab'); await page.locator('.vc-group').first().focus();
+    const chapterFocus = await page.locator('.vc-group').first().evaluate(el=>({outline:getComputedStyle(el).outlineStyle,arrow:getComputedStyle(el.querySelector('.vc-group-arrow')).backgroundColor}));
+    assert.equal(chapterFocus.outline,'solid');assert.notEqual(chapterFocus.arrow,'rgba(0, 0, 0, 0)');
+    assert.equal(reads,1,'focus/hover never fetch chapter details');
     await page.locator('.vc-group').first().click();await page.locator('.vc-lesson').first().waitFor();
     assert.equal(await page.locator('.vc-lesson').count(),12);assert.equal(reads,1);await shot('lessons');
     assert.equal(await page.locator('.vc-lesson .vc-progress').count(),12);
@@ -97,6 +145,21 @@ try {
     failed=false;await page.locator('[data-action="retry"]').click();await page.locator('.vc-empty h3').waitFor();assert.equal(reads,4);
     await page.locator('#study-back').click();await page.locator('.vc-group').first().waitFor();await page.locator('#study-back').click();await page.locator('.vc-hub-quiz').click();await page.locator('.study-chapter').first().waitFor();assert.equal(await page.locator('.study-chapter').count(),25);
     await page.locator('#study-back').click();await page.locator('#study-hub').waitFor({state:'visible'});
+    if(width===375) {
+      await page.evaluate(()=>{document.documentElement.style.fontSize='200%';});
+      await shot('hub-large-text');
+      const clipped = await page.locator('.vc-hub-copy :is(h3,p,span)').evaluateAll(elements=>elements.filter(el=>getComputedStyle(el).display!=='none' && el.scrollWidth>el.clientWidth+1).map(el=>el.textContent));
+      assert.deepEqual(clipped,[],'enlarged text must wrap, not be clipped by a card');
+      await page.evaluate(()=>{document.documentElement.style.fontSize='';});
+      await page.emulateMedia({forcedColors:'active'});await shot('hub-high-contrast');
+      await page.emulateMedia({forcedColors:'none'});
+      // A broken decorative portrait leaves both route names/actions operable.
+      await page.locator('.vc-hub-art').evaluate(el=>{el.src='data:image/png;base64,invalid';});
+      await page.locator('.vc-hub-quiz').click();await page.locator('.study-chapter').first().waitFor();
+      await page.locator('#study-back').click();await page.locator('#study-hub').waitFor({state:'visible'});
+      await page.locator('.vc-hub-art').evaluate((el,url)=>{el.src=url;},artwork.url);
+      assert.equal(reads,4,'presentation and image failure do not add API reads');
+    }
     // One representative keyboard/long-title/sample-cover and session-expiry flow.
     if(!native && width===375){
       await page.locator('.vc-hub-video').focus();await page.keyboard.press('Enter');await page.locator('.vc-group').first().waitFor();
