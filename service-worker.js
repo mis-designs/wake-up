@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v217-full-card-art";
+const CACHE_NAME = "magicbook-pwa-v218-card-shade";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -41,7 +41,7 @@ const STATIC_ASSETS = [
   "/icons/native/lines_right_side.svg",
   "/icons/native/roudabout.svg",
   "/icons/study_quiz.svg",
-  "/video-class.css?v=4",
+  "/video-class.css?v=5",
   "/video-class.js?v=3&art=2e0d6787e201",
   "/video-class-model.mjs?v=2",
   "/video-progress.mjs?v=1",

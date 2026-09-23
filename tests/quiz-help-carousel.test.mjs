@@ -65,7 +65,7 @@ test("the bilingual card and Admin marker ship through fresh PWA assets", () => 
   assert.match(page, /quiz\.js\?v=87-local-review/u);
   assert.match(page, /quiz-help\.css\?v=20260920-web-layout-2/u);
   assert.match(page, /quiz-help\.js\?v=20260920-web-inline/u);
-  assert.match(worker, /magicbook-pwa-v217-full-card-art/u);
+  assert.match(worker, /magicbook-pwa-v218-card-shade/u);
   assert.match(worker, /mystyle\.css\?v=60-web-quiz-layout/u);
   assert.match(worker, /quiz\.js\?v=87-local-review/u);
   assert.match(worker, /quiz-help\.css\?v=20260920-web-layout-2/u);

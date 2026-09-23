@@ -74,12 +74,21 @@ try {
     } else assert.ok(Math.abs(hubLayout.video.top-hubLayout.quiz.top)<1,'desktop keeps two choices side by side');
     const fullArtwork = await page.locator('.vc-hub-art').evaluate(el=>{
       const image = el.getBoundingClientRect(), card = el.closest('a').getBoundingClientRect(), css = getComputedStyle(el);
+      const cardNode=el.closest('a'), overlay=getComputedStyle(cardNode,'::before');
       return {width:image.width,height:image.height,cardWidth:card.width,ratio:el.naturalWidth/el.naturalHeight,fit:css.objectFit,
-        overlay:getComputedStyle(el.closest('a'),'::before').content,background:getComputedStyle(el.closest('a')).backgroundColor};
+        overlay:overlay.backgroundImage,pointerEvents:overlay.pointerEvents,shadeLayer:Number(overlay.zIndex),imageFilter:css.filter,
+        copyLayer:Number(getComputedStyle(cardNode.querySelector('.vc-hub-copy')).zIndex),
+        textColor:getComputedStyle(cardNode.querySelector('h3')).color,ctaColor:getComputedStyle(cardNode.querySelector('.vc-hub-cta')).color,
+        background:getComputedStyle(cardNode).backgroundColor};
     });
     assert.ok(Math.abs(fullArtwork.width-fullArtwork.cardWidth+2)<1,'artwork spans the whole card');
     assert.ok(Math.abs(fullArtwork.width/fullArtwork.height-fullArtwork.ratio)<.003,'original landscape aspect ratio, no crop or distortion');
-    assert.equal(fullArtwork.fit,'contain'); assert.equal(fullArtwork.overlay,'none');
+    assert.equal(fullArtwork.fit,'contain'); assert.equal(fullArtwork.imageFilter,'none');
+    assert.match(fullArtwork.overlay,/linear-gradient\(90deg,/,'left-to-right shade overlays the intact photo');
+    assert.match(fullArtwork.overlay,/rgba\(0, 0, 0, 0\) 65%\)/,'face area remains unshaded');
+    assert.equal(fullArtwork.pointerEvents,'none','shade cannot intercept navigation');
+    assert.ok(fullArtwork.copyLayer>fullArtwork.shadeLayer,'labels stay above the shade');
+    assert.equal(fullArtwork.textColor,'rgb(255, 255, 255)');assert.equal(fullArtwork.ctaColor,'rgb(103, 245, 40)');
     assert.equal(fullArtwork.background,'rgb(255, 255, 255)','no dark or native-blue filler panel');
     const artwork = JSON.parse(fs.readFileSync(path.join(repo,'assets/video-class/card-artwork.json'),'utf8'));
     assert.equal(await page.locator('.vc-hub-art').getAttribute('src'),artwork.url);
@@ -152,6 +161,7 @@ try {
       assert.deepEqual(clipped,[],'enlarged text must wrap, not be clipped by a card');
       await page.evaluate(()=>{document.documentElement.style.fontSize='';});
       await page.emulateMedia({forcedColors:'active'});await shot('hub-high-contrast');
+      assert.equal(await page.locator('.vc-hub-video').evaluate(el=>getComputedStyle(el,'::before').display),'none','system contrast uses a readable text surface instead of the gradient');
       await page.emulateMedia({forcedColors:'none'});
       // A broken decorative portrait leaves both route names/actions operable.
       await page.locator('.vc-hub-art').evaluate(el=>{el.src='data:image/png;base64,invalid';});

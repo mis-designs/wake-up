@@ -48,6 +48,15 @@ test('the study entry and chapter list omit redundant copy and keep heading IDs 
 test('the Video Class hub preserves the whole landscape rather than a dark portrait split', () => {
   const css = text('video-class.css');
   assert.match(css, /\.vc-hub \.vc-hub-art \{[^}]*width: 100%;[^}]*aspect-ratio: 1200 \/ 675;[^}]*object-fit: contain;/);
-  assert.doesNotMatch(css, /\.vc-hub-video::before|\.vc-hub \.vc-hub-video \{[^}]*background: var\(--forest\)/);
+  assert.doesNotMatch(css, /\.vc-hub \.vc-hub-video \{[^}]*background: var\(--forest\)/);
   assert.doesNotMatch(css, /\.vc-hub \.vc-hub-art[^}]*width: (?:32|57)%;/);
+});
+
+test('the full-image card shades only the left copy and keeps a high-contrast fallback', () => {
+  const css = text('video-class.css');
+  assert.match(css, /\.vc-hub-video::before \{[^}]*pointer-events: none;[^}]*linear-gradient\(90deg,[^}]*\/ 0\) 65%\)/);
+  assert.match(css, /\.vc-hub-video \.vc-hub-copy \{[^}]*z-index: 2/);
+  assert.match(css, /\.vc-hub-video \.vc-hub-cta \{ color: var\(--vc-card-highlight\)/);
+  assert.match(css, /@media \(forced-colors: active\)[\s\S]*\.vc-hub-video::before \{ display: none; \}/);
+  assert.match(css, /\.vc-hub-video \.vc-hub-copy \{ background: Canvas; color: CanvasText;/);
 });

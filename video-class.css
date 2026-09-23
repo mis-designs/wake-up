@@ -41,9 +41,10 @@
 .vc-hub-copy h3 { font-family: Norwester, var(--font-ui); font-weight: 400; font-size: clamp(2rem, 4vw, 3.5rem); margin: 10px 0; }
 .vc-hub-copy p { line-height: 1.7; margin-bottom: 18px; font-size: .94rem; }
 .vc-hub-copy p[lang="bn"] { font-size: 1.25rem; }
-.vc-hub .vc-hub-video { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; align-self: start; background: var(--surface); color: var(--ink); }
-/* The supplied landscape is the whole card, not a cropped portrait beside a dark panel. */
-.vc-hub-video .vc-hub-copy { grid-area: 1 / 1; align-self: center; width: 58%; padding: clamp(16px, 5cqw, 44px); text-shadow: 0 1px 3px color-mix(in srgb, var(--surface) 80%, transparent); }
+.vc-hub .vc-hub-video { --vc-card-shade: 0 0 0; --vc-card-on-image: #fff; --vc-card-highlight: #67f528; display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; align-self: start; background: var(--surface); color: var(--vc-card-on-image); isolation: isolate; }
+/* Shade overlays the intact landscape; it is fully transparent before the face. */
+.vc-hub-video::before { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, rgb(var(--vc-card-shade) / .90) 0%, rgb(var(--vc-card-shade) / .82) 30%, rgb(var(--vc-card-shade) / .70) 50%, rgb(var(--vc-card-shade) / .40) 57%, rgb(var(--vc-card-shade) / 0) 65%); }
+.vc-hub-video .vc-hub-copy { grid-area: 1 / 1; z-index: 2; align-self: center; width: 58%; padding: clamp(16px, 5cqw, 44px); text-shadow: 0 1px 3px rgb(var(--vc-card-shade) / .35); }
 .vc-hub-video .vc-hub-copy h3 { font-size: clamp(1.25rem, 7cqw, 3.5rem); line-height: 1.12; }
 .vc-hub-video .vc-hub-copy p[lang="bn"] { font-size: clamp(.94rem, 3cqw, 1.25rem); }
 .vc-hub .vc-hub-art { position: static; grid-area: 1 / 1; align-self: start; display: block; height: auto; width: 100%; aspect-ratio: 1200 / 675; object-fit: contain; }
@@ -52,6 +53,8 @@
 .vc-hub-quiz-icon { opacity: .14; }
 .vc-hub-quiz .vc-hub-copy { width: 88%; }
 .vc-hub-cta img { flex: none; transition: transform .18s ease; }
+.vc-hub-video .vc-hub-cta { color: var(--vc-card-highlight); }
+.vc-hub-video .vc-hub-cta img { filter: brightness(0) invert(1); }
 @media (hover: hover) {
   .vc-hub-card:hover .vc-hub-cta img { transform: translateX(4px); }
 }
@@ -210,6 +213,10 @@ html:has(.study-page) { --study-scroll-thumb: var(--muted); --study-scroll-track
   .study-page, .study-page * { scrollbar-color: auto; }
   .vc-library [aria-current="page"], .vc-library [aria-pressed="true"] { outline: 2px solid Highlight; }
   .vc-cover, .vc-hub-card, .vc-play-label, .vc-rail { border: 1px solid CanvasText; }
+  .vc-hub-video::before { display: none; }
+  .vc-hub-video .vc-hub-copy { background: Canvas; color: CanvasText; text-shadow: none; }
+  .vc-hub-video .vc-hub-cta { color: LinkText; }
+  .vc-hub-video .vc-hub-cta img { filter: none; }
   .vc-progress-track { border: 1px solid CanvasText; background: Canvas; }
   .vc-progress-fill { background: Highlight; }
   .vc-group { border-color: CanvasText; }
