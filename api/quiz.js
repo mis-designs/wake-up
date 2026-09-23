@@ -15,6 +15,7 @@ import { neon } from "@neondatabase/serverless";
 import { applyQuizFigureCorrections } from "./quiz-figure-corrections.mjs";
 import { getExplanationFiguresFromObjectKeys, explanationListingMatchesAssets, explanationFilesFromObjects } from "./quiz-explanation-availability.mjs";
 import { selectFigureStudyExamples } from "./figure-study.mjs";
+import { getVideoClassCatalog } from "./video-class-catalog.mjs";
 import { detectQuizAudioMimeType, normalizeQuizAudioMimeType } from "./audio-mime.mjs";
 import { fetchUpstream, publicApiError, withOperationalTimeout } from "./upstream-fetch.mjs";
 import { normalizeStudyChapter, selectStudyChapterRows } from "./study-quiz.mjs";
@@ -1118,6 +1119,16 @@ export default async function handler(req, res) {
           accessTokenExpiresAt: access.accessTokenExpiresAt
         } : {})
       });
+    }
+
+    if (req.method === "GET" && action === "getVideoClasses") {
+      res.setHeader("Cache-Control", "private, no-store");
+      res.setHeader("CDN-Cache-Control", "no-store");
+      res.setHeader("Vercel-CDN-Cache-Control", "no-store");
+      const access = await ensureAccess({ phone, deviceId, accessToken });
+      if (!access.ok) return res.status(access.statusCode || 401).json({ error: access.error || "unauthorized" });
+      return res.status(200).json({ ok: true, catalog: getVideoClassCatalog(),
+        ...(access.accessToken ? { accessToken: access.accessToken, accessTokenExpiresAt: access.accessTokenExpiresAt } : {}) });
     }
 
     if (req.method === "GET" && action === "getFigureStudy") {

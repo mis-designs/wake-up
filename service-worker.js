@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v213-study-results";
+const CACHE_NAME = "magicbook-pwa-v214-video-class";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -41,6 +41,16 @@ const STATIC_ASSETS = [
   "/icons/native/lines_right_side.svg",
   "/icons/native/roudabout.svg",
   "/icons/study_quiz.svg",
+  "/video-class.css?v=1",
+  "/video-class.js?v=1",
+  "/video-class-model.mjs?v=1",
+  "/assets/video-class/teacher.webp",
+  "/assets/video-class/road-basics.webp",
+  "/assets/video-class/danger-signs.webp",
+  "/icons/save_before.svg",
+  "/icons/save_after.svg",
+  "/icons/link_interface_icon.svg",
+  "/icons/favorite_section_icon_heart.png",
   "/icons/native-action-scallop.svg",
   "/icons/do_quiz.svg",
   "/icons/dictionary.svg",
@@ -68,7 +78,7 @@ const STATIC_ASSETS = [
   "/script.js?v=77-request-budget",
   "/study-quiz.html",
   "/study-quiz.css?v=28-compact",
-  "/study-quiz.js?v=31-android-figure-refinement",
+  "/study-quiz.js?v=32-video-class",
   "/figure-study.css?v=2",
   "/figure-study.js?v=2",
   "/figure-study-catalog.mjs?v=2",

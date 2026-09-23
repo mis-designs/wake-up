@@ -25,17 +25,29 @@ canonical_ui:
     - src/learning-insights.css
     - assets/fonts/magicbook-bangla-fonts.css
     - study-quiz.css
+    - video-class.css
     - figure-study.css
     - libreria-font.css
     - magic-styles.css
   notes: Existing application tokens remain canonical. Locally compiled, d-prefixed daisyUI controls provide interaction primitives; the scoped learning stylesheet owns layout and visual hierarchy.
 design_context:
   owner: Magic Book
-  last_updated: 2026-09-22
-  revision_notes: "Statistics and Errors use a wide learner-facing results workspace on web and Android, including graded local history, real charts and chapter bars. Technical sync counts are not headline content."
+  last_updated: 2026-09-23
+  revision_notes: "Studia now offers Video Class and Quiz per capitolo on web and Android. The video library uses the approved Study palette, supplied portrait/icons, two sample covers, private source-backed catalog and a horizontal lesson rail. Figure study remains Android-only."
 ---
 
 # Magic Book design context
+
+## Video Class — approved scope, 2026-09-23
+
+- The Studia landing owns two choices: Video Class and Quiz per capitolo. Recorded classes are not labelled live. The existing chapter/quiz/auth/trial owners remain unchanged. Figure study stays an installed-Android preview; do not expose it on the browser website.
+- `video-class.css` adapts Study's semantic surface/ink/muted/line/action roles; it does not introduce another palette. Web retains forest/mint; the native theme maps the same roles to its pearl/graphite/blue presentation. Norwester is the editorial display face, Inter the control/body face and Adorsho Lipi the Bangla support face. Native and browser content/functionality are shared, with responsive layout rather than duplicated screens.
+- Desktop uses a wide 1480px workspace, a two-card study hub, a three-column chapter/lesson library and a large video beside its details. Tablet uses two-column lists; phone uses one column. The player preserves at least a 200px viewing height; no page-wide horizontal overflow at320px. A horizontally scrollable lesson rail is the explicit next-video control, with accessible Previous/Next and a visible selected lesson. It is not styled or announced as a search input.
+- The two editorial thumbnail samples are Road Basics and Danger Signs. Both use the supplied person's likeness, large short text and one readable road/sign subject. They are illustrative brand covers, not proof of which teacher speaks in a video. Other lessons deliberately retain a neutral numbered portrait template pending the owner's approval. Do not generate166 different covers before that review. Supplied bookmark/link/heart assets are reused; car instruments, indicator sounds and the future Car Instrument folder remain deferred.
+- Catalog/labels come from the owner's student document, not guessed YouTube metadata. Unknown lesson topics use neutral ordered labels. The source chapter22 is Primo soccorso; do not silently substitute the quiz-book taxonomy. Duplicates have retained aliases, not inflated lesson counts. Link availability and embedding restrictions belong to the provider and still require a live acceptance check.
+- YouTube is contacted only after the learner presses Watch. One standard privacy-enhanced iframe, visible provider controls, no autoplay, no overlays on a running player, and an external-provider fallback. The native wrapper requires its VideoFramePolicy/fullscreen update for embedded playback. Older installed wrappers explicitly open YouTube instead, with no broken iframe or silent external navigation. No Play Store build/version or release is produced by this web change.
+- Favorites contain only validated IDs, scoped to account and device, bounded to250. Storage failure visibly switches to temporary page-only favorites. No password, token, full catalog or quiz answer is added to this storage. No server polling or per-tile metadata requests; see `docs/video-class.md` for the request budget, provenance and release checks.
+- Verification: model/source/security tests, mocked browser flows at320/375/768/1440/1920px and native-theme portrait/landscape, actual image decoding, failure/retry, favorite removal/persistence, one-frame lifecycle, web figure exclusion, CSS build, strict audit and design lint. A browser native-theme fixture is not physical Android playback evidence.
 
 ## Product intent
 

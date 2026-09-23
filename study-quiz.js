@@ -86,6 +86,10 @@
   let figureStudy = null;
   let figureStudyModule = null;
   let figureView = false;
+  let videoClass = null;
+  let videoClassModule = null;
+  let videoView = false;
+  let hubView = false;
   let wordTtsRequestId = 0;
   let ttsRequest = null;
   const QUIZ_SESSION_REFRESH_SKEW_MS = 90 * 1000;
@@ -458,6 +462,7 @@
   }
 
   function showPicker({ updateHistory = false, scroll = true } = {}) {
+    hideVideoSurfaces();
     loadRequestId += 1;
     figureStudy?.suspend();
     figureView = false;
@@ -481,7 +486,7 @@
       : "Scegli un capitolo e studia tutte le domande.";
     renderStudyIntro();
     document.title = FIGURE_STUDY_ENABLED ? "MagicBook | Studia" : "MagicBook | Studia quiz";
-    if (updateHistory) history.pushState({ screen: "study" }, "", TRIAL_MODE ? "/studia-quiz/prova-gratis" : "/studia-quiz");
+    if (updateHistory) history.pushState({ screen: "study" }, "", TRIAL_MODE ? "/studia-quiz/prova-gratis" : "/studia-quiz?view=chapters");
     if (scroll) window.scrollTo({ top: 0, behavior: "auto" });
   }
 
@@ -491,6 +496,7 @@
       window.location.href = trialOfferUrl(`Studia quiz · Capitolo ${chapter}`);
       return;
     }
+    hideVideoSurfaces();
     const ownRequest = ++loadRequestId;
     figureStudy?.suspend();
     figureView = false;
@@ -1762,6 +1768,98 @@
     elements.emptySearch.classList.toggle("hidden", visible !== 0);
   }
 
+  function hideVideoSurfaces() {
+    videoClass?.suspend();
+    videoView = false; hubView = false;
+    document.getElementById('study-hub').classList.add('hidden');
+    document.getElementById('study-videos').classList.add('hidden');
+    document.body.classList.remove('study-video-active', 'study-hub-active');
+  }
+
+  function showStudyHub() {
+    if (TRIAL_MODE) { showPicker(); return; }
+    showPicker({ scroll: false });
+    hubView = true;
+    elements.chapters.classList.add('hidden');
+    document.getElementById('study-paths').classList.add('hidden');
+    document.getElementById('study-hub').classList.remove('hidden');
+    document.getElementById('study-hub-figures').classList.toggle('hidden', !FIGURE_STUDY_ENABLED);
+    document.body.classList.add('study-hub-active');
+    elements.title.textContent = 'Studia';
+    elements.subtitle.textContent = 'Video Class e quiz per capitolo';
+    document.title = 'MagicBook | Studia';
+    document.getElementById('study-hub-title').focus({ preventScroll: true });
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  function studyVideoIdentity() {
+    const current = getSession();
+    return current?.phone === session.phone && current?.deviceId === session.deviceId
+      ? `${current.phone}:${current.deviceId}` : '';
+  }
+
+  async function showVideoClass({ restore = false } = {}) {
+    if (TRIAL_MODE) { showPicker(); return; }
+    showPicker({ scroll: false });
+    const ownRequest = loadRequestId;
+    videoView = true;
+    elements.chapters.classList.add('hidden');
+    document.getElementById('study-paths').classList.add('hidden');
+    const root = document.getElementById('study-videos');
+    root.classList.remove('hidden');
+    document.body.classList.add('study-video-active');
+    elements.title.textContent = 'Video Class';
+    elements.subtitle.textContent = 'Lezioni, quiz spiegati e parole';
+    document.title = 'MagicBook | Video Class';
+    try {
+      if (!videoClass) {
+        root.textContent = 'Apro Video Class…';
+        videoClassModule ||= import('./video-class.js?v=1').catch(error => { videoClassModule = null; throw error; });
+        const module = await videoClassModule;
+        if (ownRequest !== loadRequestId || !videoView) return;
+        videoClass = module.createVideoClass({ root, identity: studyVideoIdentity, toast: showToast,
+          request: async options => {
+            if (!studyVideoIdentity()) throw new Error('unauthorized');
+            const query = new URLSearchParams({ action: 'getVideoClasses', phone: session.phone, deviceId: session.deviceId });
+            const data = await fetchStudyJson(`${API}?${query}`, { ...options, headers: authHeaders(), cache: 'no-store' });
+            saveAccessToken(data.accessToken, data.accessTokenExpiresAt);
+            return data;
+          },
+          navigate: navigateStudy,
+          header: (title, subtitle) => { elements.title.textContent = title; elements.subtitle.textContent = subtitle; }
+        });
+      }
+      await videoClass.render(new URL(location.href), { restore });
+    } catch (_) {
+      if (ownRequest !== loadRequestId || !videoView) return;
+      root.textContent = 'Non è stato possibile aprire Video Class. ';
+      const retry = document.createElement('button'); retry.type = 'button'; retry.className = 'vc-button'; retry.textContent = 'Riprova';
+      retry.addEventListener('click', () => void showVideoClass(), { once: true }); root.append(retry);
+    }
+  }
+
+  function navigateStudy(path, options = {}) {
+    history.pushState({ screen: 'study' }, '', path);
+    renderStudyRoute(options);
+  }
+
+  function renderStudyRoute(options = {}) {
+    normalizeFigureStudyLocation();
+    const chapter = chapterFromLocation();
+    const view = new URLSearchParams(location.search).get('view');
+    if (isFigureStudyLocation()) void showFigureStudy();
+    else if (chapter) void openChapter(chapter, { updateHistory: false });
+    else if (!TRIAL_MODE && view === 'videos') void showVideoClass(options);
+    else if (TRIAL_MODE || view === 'chapters') showPicker();
+    else showStudyHub();
+  }
+
+  document.getElementById('study-hub').addEventListener('click', event => {
+    const link = event.target.closest('a');
+    if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault(); navigateStudy(link.getAttribute('href'));
+  });
+
   function isFigureStudyLocation() {
     return FIGURE_STUDY_ENABLED && !chapterFromLocation() && new URLSearchParams(location.search).get('view') === 'figures';
   }
@@ -1826,23 +1924,24 @@
   });
 
   elements.back.addEventListener("click", () => {
-    if (figureView) {
+    if (videoView) {
+      if (videoClass) videoClass.back(); else navigateStudy('/studia-quiz');
+    } else if (figureView) {
       if (!figureStudy || figureStudy.isRoot()) showPicker({ updateHistory: true });
       else figureStudy.back();
     } else if (currentChapter) showPicker({ updateHistory: true });
+    else if (!TRIAL_MODE && !hubView) navigateStudy('/studia-quiz');
     else window.location.href = HOME;
   });
   elements.retry.addEventListener("click", () => currentChapter && openChapter(currentChapter, { updateHistory: false }));
   elements.search.addEventListener("input", filterQuestions);
   window.addEventListener("popstate", () => {
     normalizeFigureStudyLocation();
-    if (isFigureStudyLocation()) { void showFigureStudy(); return; }
-    const chapter = chapterFromLocation();
-    if (chapter) openChapter(chapter, { updateHistory: false });
-    else showPicker();
+    renderStudyRoute({ restore: true });
   });
   window.addEventListener("pageshow", event => {
     normalizeFigureStudyLocation();
+    if (event.persisted && videoView) void showVideoClass({ restore: true });
     if (event.persisted && isFigureStudyLocation()) void showFigureStudy();
     if (!currentChapter) renderStudyIntro();
     if (event.persisted && currentChapter) {
@@ -1857,6 +1956,8 @@
     if (document.visibilityState === "visible" && !currentChapter) renderStudyIntro();
   });
   window.addEventListener("pagehide", event => {
+    if (event.persisted) videoClass?.suspend();
+    else videoClass?.destroy();
     if (event.persisted) figureStudy?.suspend();
     else figureStudy?.destroy();
     if (currentChapter) markStudyChapterExit(currentChapter);
@@ -1865,9 +1966,5 @@
   });
 
   buildChapterPicker();
-  normalizeFigureStudyLocation();
-  const initialChapter = chapterFromLocation();
-  if (isFigureStudyLocation()) void showFigureStudy();
-  else if (initialChapter) void openChapter(initialChapter, { updateHistory: false });
-  else showPicker();
+  renderStudyRoute();
 })();
