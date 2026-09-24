@@ -4103,7 +4103,7 @@ function stopViewerLoadingAnimation() {}
 function startViewerLoadingAnimation(loader) {
   const img = loader?.querySelector(".viewer-loading-figure-img");
   if (!loader || !img) return;
-  img.src = "icons/loading.gif";
+  img.src = "icons/loading_headlight.gif";
 }
 
 async function fetchMagicBookPage({ type, chapter, page }) {
@@ -4295,7 +4295,7 @@ function setMagicBookLoading(pages, visible, { active = true } = {}) {
 
   const img = document.createElement("img");
   img.className = "viewer-loading-figure-img magic-loading-indicator__image";
-  img.src = "icons/loading.gif";
+  img.src = "icons/loading_headlight.gif";
   img.alt = "";
   img.setAttribute("aria-hidden", "true");
   img.draggable = false;
@@ -5416,7 +5416,7 @@ function renderAdminLoading() {
   const list = document.getElementById("adminUserList");
   if (list) list.innerHTML = `
     <div class="admin-loading magic-loading-indicator magic-loading-indicator--panel" role="status">
-      <span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading.gif" alt=""></span>
+      <span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading_headlight.gif" alt=""></span>
       <strong class="magic-loading-indicator__label">Caricamento utenti…</strong>
     </div>`;
 }
@@ -5530,7 +5530,7 @@ function renderAdminUsers() {
   if (adminState.tab === "promo" && adminState.promoLoading) {
     list.innerHTML = `
       <div class="admin-promo-state is-loading" role="status">
-        <span class="admin-promo-spinner magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading.gif" alt=""></span>
+        <span class="admin-promo-spinner magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading_headlight.gif" alt=""></span>
         <strong>Caricamento utenti promo...</strong>
         <small>Sto leggendo i dati promozionali dal database.</small>
       </div>

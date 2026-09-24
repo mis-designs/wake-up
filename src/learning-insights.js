@@ -234,7 +234,7 @@
           <div class="li-skeleton-matrix">${cells}</div>
         </main>
         <p class="li-loading-copy magic-loading-indicator" role="status">
-          <span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading.gif" alt=""></span>
+          <span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading_headlight.gif" alt=""></span>
           <span class="magic-loading-indicator__label">Carico i tuoi risultati…</span>
         </p>
       </div>`;

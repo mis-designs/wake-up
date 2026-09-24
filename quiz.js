@@ -140,7 +140,7 @@ function stopQuizLoadingFigures() {}
 
 function startQuizLoadingFigures() {
   const img = document.getElementById("quiz-loading-figure-img");
-  if (img) img.src = "icons/loading.gif";
+  if (img) img.src = "icons/loading_headlight.gif";
 }
 
 function buildExplanationImageUrl(figure, value, ext) {
@@ -3017,7 +3017,7 @@ function renderReviewTranslationLoading(panel) {
   media.setAttribute("aria-hidden", "true");
   const image = document.createElement("img");
   image.className = "magic-loading-indicator__image";
-  image.src = "icons/loading.gif";
+  image.src = "icons/loading_headlight.gif";
   image.alt = "";
   const label = document.createElement("span");
   label.className = "magic-loading-indicator__label";

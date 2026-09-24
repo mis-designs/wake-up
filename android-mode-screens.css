@@ -152,7 +152,7 @@ html.android-webview .native-mode-screen .qms-start:not(:disabled):hover { backg
 html.android-webview .native-mode-screen .qms-start:not(:disabled):active { transform: scale(.985); }
 html.android-webview .native-mode-screen button:focus-visible { outline: 3px solid var(--mode-focus); outline-offset: 3px; }
 html.android-webview .native-mode-screen[data-launching] .qms-start:disabled { background: var(--mode-blue); color: var(--mode-paper); }
-html.android-webview .native-mode-screen[data-launching] .qms-start-arrow { background: url("/icons/loading.gif") center/contain no-repeat; }
+html.android-webview .native-mode-screen[data-launching] .qms-start-arrow { background: var(--magic-loading-asset) center/contain no-repeat; }
 html.android-webview .native-mode-screen[data-launching] .qms-start-arrow svg { visibility: hidden; }
 @media (max-width: 350px), (max-height: 660px) {
   html.android-webview .native-mode-screen .qms-body { padding: 18px 16px max(14px, env(safe-area-inset-bottom, 0px)); }

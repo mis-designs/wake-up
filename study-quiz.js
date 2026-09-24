@@ -947,7 +947,7 @@
     section.setAttribute("aria-busy", "true");
     section.innerHTML = `
       <div class="magic-loading-indicator magic-loading-indicator--panel" role="status">
-        <span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading.gif" alt=""></span>
+        <span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading_headlight.gif" alt=""></span>
         <span class="magic-loading-indicator__label">Caricamento traduzione…</span>
       </div>`;
     return section;
@@ -1814,7 +1814,7 @@
     try {
       if (!videoClass) {
         root.textContent = 'Apro Video Class…';
-        videoClassModule ||= import('./video-class.js?v=5-indicator&art=2e0d6787e201').catch(error => { videoClassModule = null; throw error; });
+        videoClassModule ||= import('./video-class.js?v=6-headlight&art=2e0d6787e201').catch(error => { videoClassModule = null; throw error; });
         const module = await videoClassModule;
         if (ownRequest !== loadRequestId || !videoView) return;
         videoClass = module.createVideoClass({ root, identity: studyVideoIdentity, toast: showToast,
@@ -1888,7 +1888,7 @@
     try {
       if (!figureStudy) {
         root.textContent = 'Apro le figure…';
-        figureStudyModule ||= import('./figure-study.js?v=2').catch(error => { figureStudyModule = null; throw error; });
+        figureStudyModule ||= import('./figure-study.js?v=3-headlight').catch(error => { figureStudyModule = null; throw error; });
         const module = await figureStudyModule;
         if (ownRequest !== loadRequestId || !figureView) return;
         figureStudy ||= module.createFigureStudy({ root,

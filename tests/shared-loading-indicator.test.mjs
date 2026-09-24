@@ -22,12 +22,14 @@ const dictionary = read("magic-dictionary.js");
 const learning = read("src/learning-insights.js");
 const worker = read("service-worker.js");
 
-test("the supplied 640px GIF is the canonical shared loading asset", () => {
-  const gif = readFileSync(path.join(root, "icons", "loading.gif"));
-  assert.equal(gif.subarray(0, 6).toString("ascii"), "GIF89a");
-  assert.equal(gif.readUInt16LE(6), 640);
-  assert.equal(gif.readUInt16LE(8), 640);
-  assert.match(loadingCss, /url\("\/icons\/loading\.gif"\)/u);
+test("the supplied headlight GIF and backup retain their original 640px media", () => {
+  for (const name of ['loading_headlight.gif', 'loading_backup.gif']) {
+    const gif = readFileSync(path.join(root, 'icons', name));
+    assert.equal(gif.subarray(0, 6).toString('ascii'), 'GIF89a');
+    assert.equal(gif.readUInt16LE(6), 640);
+    assert.equal(gif.readUInt16LE(8), 640);
+  }
+  assert.match(loadingCss, /url\("\/icons\/loading_headlight\.gif"\)/u);
   assert.match(loadingCss, /\.magic-loading-indicator--panel/u);
   assert.match(loadingCss, /\.magic-loading-control\.is-loading::after/u);
   assert.match(loadingCss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?visibility: hidden/u);
@@ -36,27 +38,28 @@ test("the supplied 640px GIF is the canonical shared loading asset", () => {
 
 test("every asynchronous application entry loads the shared indicator stylesheet", () => {
   for (const html of [page, quizPage, studyPage, audioAdminPage]) {
-    assert.match(html, /loading-ui\.css\?v=2-compact/u);
+    assert.match(html, /loading-ui\.css\?v=3-headlight/u);
+    assert.match(html, /loading-ui\.js\?v=1-headlight/u);
   }
-  assert.match(page, /login-submit-spinner[\s\S]*?icons\/loading\.gif/u);
-  assert.match(page, /promo-access-submit[\s\S]*?icons\/loading\.gif/u);
-  assert.match(studyPage, /study-loader[\s\S]*?icons\/loading\.gif/u);
+  assert.match(page, /login-submit-spinner[\s\S]*?icons\/loading_headlight\.gif/u);
+  assert.match(page, /promo-access-submit[\s\S]*?icons\/loading_headlight\.gif/u);
+  assert.match(studyPage, /study-loader[\s\S]*?icons\/loading_headlight\.gif/u);
   assert.doesNotMatch(studyPage, /icons\/driving-license\.gif/u);
 });
 
 test("main, Admin, book, dictionary and learning operations expose truthful GIF loading states", () => {
   assert.match(script, /function setLoginButtonBusy[\s\S]*?aria-busy[\s\S]*?spinner\?\.classList\.toggle\("hidden", !isBusy\)/u);
-  assert.match(script, /renderAdminLoading[\s\S]*?magic-loading-indicator--panel[\s\S]*?icons\/loading\.gif/u);
-  assert.match(script, /admin-promo-spinner magic-loading-indicator__media[\s\S]*?icons\/loading\.gif/u);
-  assert.match(script, /viewer-loading magic-loading-indicator[\s\S]*?img\.src = "icons\/loading\.gif"/u);
+  assert.match(script, /renderAdminLoading[\s\S]*?magic-loading-indicator--panel[\s\S]*?icons\/loading_headlight\.gif/u);
+  assert.match(script, /admin-promo-spinner magic-loading-indicator__media[\s\S]*?icons\/loading_headlight\.gif/u);
+  assert.match(script, /viewer-loading magic-loading-indicator[\s\S]*?img\.src = "icons\/loading_headlight\.gif"/u);
   assert.doesNotMatch(script, /VIEWER_LOADING_FIGURES/u);
-  assert.match(dictionary, /renderGateLoading[\s\S]*?icons\/loading\.gif/u);
-  assert.match(dictionary, /magicDictionaryList[\s\S]*?aria-busy[\s\S]*?icons\/loading\.gif/u);
-  assert.match(learning, /li-loading-copy magic-loading-indicator[\s\S]*?icons\/loading\.gif/u);
+  assert.match(dictionary, /renderGateLoading[\s\S]*?icons\/loading_headlight\.gif/u);
+  assert.match(dictionary, /magicDictionaryList[\s\S]*?aria-busy[\s\S]*?icons\/loading_headlight\.gif/u);
+  assert.match(learning, /li-loading-copy magic-loading-indicator[\s\S]*?icons\/loading_headlight\.gif/u);
 });
 
 test("quiz, study and explanation operations reuse the same busy-control contract", () => {
-  assert.match(quizPage, /quiz-loading-figure[\s\S]*?icons\/loading\.gif/u);
+  assert.match(quizPage, /quiz-loading-figure[\s\S]*?icons\/loading_headlight\.gif/u);
   assert.match(quizPage, /id="loading-text" class="sr-only"/u);
   assert.match(quizStyle, /\.loading-overlay\s*\{[\s\S]*?background:\s*#ffffff;/u);
   assert.match(quizStyle, /\.loading-card\s*\{\s*display:\s*contents;/u);
@@ -64,13 +67,13 @@ test("quiz, study and explanation operations reuse the same busy-control contrac
   assert.doesNotMatch(quizStyle, /#loading-text\s*\{[\s\S]*?font-weight/u);
   assert.doesNotMatch(quiz, /QUIZ_LOADING_FIGURES/u);
   assert.match(quiz, /"Risultato non disponibile"[\s\S]*?"Non siamo riusciti a controllare il risultato\. Verifica la connessione e riprova\."/u);
-  assert.match(quiz, /modal-review-translation-loading magic-loading-indicator[\s\S]*?icons\/loading\.gif/u);
+  assert.match(quiz, /modal-review-translation-loading magic-loading-indicator[\s\S]*?icons\/loading_headlight\.gif/u);
   assert.match(quiz, /modal-review-audio-button magic-loading-control/u);
   assert.match(quizHelp, /quiz-help-word-audio magic-loading-control/u);
   assert.match(quizHelp, /magic-loading-inline-status", "is-loading/u);
   assert.match(study, /study-action magic-loading-control/u);
   assert.match(study, /study-explanation-player magic-loading-host/u);
-  assert.match(study, /Caricamento traduzione…[\s\S]*?icons\/loading\.gif|icons\/loading\.gif[\s\S]*?Caricamento traduzione…/u);
+  assert.match(study, /Caricamento traduzione…[\s\S]*?icons\/loading_headlight\.gif|icons\/loading_headlight\.gif[\s\S]*?Caricamento traduzione…/u);
   assert.match(audioAdmin, /audio-admin-help-status magic-loading-inline-status is-loading/u);
   assert.match(audioAdmin, /audio-admin-italian-listen magic-loading-control/u);
   assert.match(audioAdmin, /save\.classList\.toggle\("is-loading", item\.saving\)/u);
@@ -78,16 +81,18 @@ test("quiz, study and explanation operations reuse the same busy-control contrac
 });
 
 test("the shared loader and all changed consumers ship in one fresh PWA cache", () => {
-  assert.match(worker, /magicbook-pwa-v224-chapter-spacing/u);
-  assert.match(worker, /loading-ui\.css\?v=2-compact/u);
-  assert.match(worker, /icons\/loading\.gif/u);
+  assert.match(worker, /magicbook-pwa-v225-headlight/u);
+  assert.match(worker, /loading-ui\.css\?v=3-headlight/u);
+  assert.match(worker, /icons\/loading_headlight\.gif/u);
+  assert.match(worker, /icons\/loading_backup\.gif/u);
+  assert.match(worker, /loading-ui\.js\?v=1-headlight/u);
   assert.match(worker, /style\.css\?v=74-compact-loading/u);
-  assert.match(worker, /script\.js\?v=78-web-study-actions/u);
+  assert.match(worker, /script\.js\?v=79-headlight/u);
   assert.match(worker, /mystyle\.css\?v=60-web-quiz-layout/u);
   assert.match(worker, /audio-player-ui\.css\?v=10-web-quiz-slim/u);
-  assert.match(worker, /quiz\.js\?v=87-local-review/u);
+  assert.match(worker, /quiz\.js\?v=88-headlight/u);
   assert.match(worker, /quiz-help\.js\?v=20260920-web-inline/u);
-  assert.match(worker, /study-quiz\.js\?v=36-car-indicator/u);
-  assert.match(worker, /magic-dictionary\.js\?v=1\.4\.1-dictionary-cleanup/u);
-  assert.match(worker, /learning-insights\.js\?v=12-study-results&ui=9-intact-figures/u);
+  assert.match(worker, /study-quiz\.js\?v=37-headlight/u);
+  assert.match(worker, /magic-dictionary\.js\?v=1\.4\.2-headlight/u);
+  assert.match(worker, /learning-insights\.js\?v=13-headlight&ui=9-intact-figures/u);
 });

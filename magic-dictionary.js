@@ -661,7 +661,7 @@
     content.innerHTML = `
       <span class="magic-word-kicker">IL TUO RIPASSO</span>
       <div class="magic-loading-indicator magic-loading-indicator--panel" role="status">
-        <span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading.gif" alt=""></span>
+        <span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading_headlight.gif" alt=""></span>
         <span class="sr-only">Preparazione parole in corso</span>
       </div>
       <h2 id="magicWordGateTitle">Preparo le tue 5 parole…</h2>
@@ -987,7 +987,7 @@
       title="Ascolta italiano, Bangla e descrizione">
       <img class="magic-dictionary-audio-icon" src="/icons/human_talking.png" width="28" height="28" alt="" draggable="false">
       <span class="magic-dictionary-audio-fallback" aria-hidden="true">IT/BN</span>
-      <span class="magic-loading-indicator magic-loading-indicator--inline magic-dictionary-audio-loading" aria-hidden="true"><img class="magic-loading-indicator__image" src="/icons/loading.gif" alt=""></span>
+      <span class="magic-loading-indicator magic-loading-indicator--inline magic-dictionary-audio-loading" aria-hidden="true"><img class="magic-loading-indicator__image" src="/icons/loading_headlight.gif" alt=""></span>
     </button>`;
   }
 
@@ -1227,7 +1227,7 @@
       list.setAttribute("aria-busy", "true");
       list.innerHTML = `
         <div class="magic-loading-indicator magic-loading-indicator--panel magic-loading-indicator--grid" role="status">
-          <span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading.gif" alt=""></span>
+          <span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading_headlight.gif" alt=""></span>
           <span class="magic-loading-indicator__label">Caricamento del dizionario…</span>
         </div>`;
     }

@@ -114,15 +114,15 @@ test("promo metadata is lazy, gets enough time and never appears as a false empt
   assert.match(renderUsers, /adminState\.tab === "promo" && adminState\.promoError[\s\S]*?adminRetryPromoUsers\(\)/u);
   assert.match(script, /readOnlyAction = action === "recent" \|\| action === "list" \|\| action === "search" \|\| action === "promo_users"/u);
   assert.match(adminApi, /action === "promo_users" \? 20_000 : 12_000/u);
-  assert.match(renderUsers, /admin-promo-spinner magic-loading-indicator__media[\s\S]*?icons\/loading\.gif/u);
+  assert.match(renderUsers, /admin-promo-spinner magic-loading-indicator__media[\s\S]*?icons\/loading_headlight\.gif/u);
   assert.doesNotMatch(style, /@keyframes adminPromoSpin/u);
   assert.doesNotMatch(adminApi, /if \(action === "list"\) \{[\s\S]*?admin_promo_users/u);
 });
 
 test("promo admin UI ships with fresh PWA assets", () => {
   assert.match(page, /style\.css\?v=74-compact-loading/u);
-  assert.match(page, /script\.js\?v=78-web-study-actions/u);
-  assert.match(worker, /magicbook-pwa-v224-chapter-spacing/u);
+  assert.match(page, /script\.js\?v=79-headlight/u);
+  assert.match(worker, /magicbook-pwa-v225-headlight/u);
   assert.match(worker, /style\.css\?v=74-compact-loading/u);
-  assert.match(worker, /script\.js\?v=78-web-study-actions/u);
+  assert.match(worker, /script\.js\?v=79-headlight/u);
 });

@@ -229,7 +229,7 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     state = { group: url.searchParams.get('group') || '', saved: url.searchParams.get('saved') === '1', lesson: url.searchParams.get('lesson') || '', kind: url.searchParams.get('kind') || '' };
     count = restore ? scrollPositions.get(currentUrl)?.count || PAGE_SIZE : PAGE_SIZE;
     header('Video Class', ''); document.title = 'MagicBook | Video Class';
-    if (!catalog) root.replaceChildren(node('div', { class: 'vc-loading magic-loading-indicator magic-loading-indicator--panel', role: 'status', 'aria-busy': 'true' }, node('span', { class: 'magic-loading-indicator__media', 'aria-hidden': 'true' }, node('img', { class: 'magic-loading-indicator__image', src: '/icons/loading.gif', alt: '', width: 88, height: 88 })), node('p', { class: 'magic-loading-indicator__label' }, 'Apro le lezioni…')));
+    if (!catalog) root.replaceChildren(node('div', { class: 'vc-loading magic-loading-indicator magic-loading-indicator--panel', role: 'status', 'aria-busy': 'true' }, node('span', { class: 'magic-loading-indicator__media', 'aria-hidden': 'true' }, node('img', { class: 'magic-loading-indicator__image', src: '/icons/loading_headlight.gif', alt: '', width: 88, height: 88 })), node('p', { class: 'magic-loading-indicator__label' }, 'Apro le lezioni…')));
     try {
       catalog = await data.read();
       if (!active || own !== version) return;

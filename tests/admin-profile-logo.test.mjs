@@ -27,7 +27,7 @@ test("the Admin and Profile buttons have opaque non-glass surfaces", () => {
 
 test("the Admin profile image ships in the current PWA cache", () => {
   assert.match(page, /style\.css\?v=74-compact-loading/u);
-  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v224-chapter-spacing"/u);
+  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v225-headlight"/u);
   assert.match(worker, /style\.css\?v=74-compact-loading/u);
   assert.match(worker, /assets\/admin\/ADMIN_PROFILE_LOGO\.jpg/u);
 });

@@ -19,7 +19,7 @@ function loading(label) {
   const box = node('div', 'magic-loading-indicator magic-loading-indicator--panel');
   box.setAttribute('role', 'status');
   const media = node('span', 'magic-loading-indicator__media');
-  const image = node('img', 'magic-loading-indicator__image'); image.src = '/icons/loading.gif'; image.alt = '';
+  const image = node('img', 'magic-loading-indicator__image'); image.src = '/icons/loading_headlight.gif'; image.alt = '';
   media.append(image); box.append(media, node('span', 'magic-loading-indicator__label', label)); return box;
 }
 
