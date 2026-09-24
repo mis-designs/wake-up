@@ -3301,6 +3301,7 @@ function showWhatsAppGroupPopup() {
  ***********************/
 function hideAll() {
   dismissLoginPendingPopup?.({ restoreFocus: false });
+  window.MagicBookWebStudyActions?.reset();
   window.MagicBookModeScreens?.reset();
   window.MagicBookAndroidStudy?.hide();
   cleanupMagicBookViewer();
@@ -3824,6 +3825,7 @@ function openExamModeScreen() {
 }
 
 function closeExamModeScreen(options = {}) {
+  if (window.MagicBookWebStudyActions?.close(options)) return;
   if (window.MagicBookModeScreens?.close("exam", options)) return;
   const overlay = document.getElementById("examModeOverlay");
   if (!overlay) return;
@@ -4583,6 +4585,7 @@ function openQuizModeScreen() {
     document.body.classList.add("qms-open");
     currentScreen = "quizMode";
     decorateGuestQuizUI();
+    window.MagicBookWebStudyActions?.open();
     window.MagicBookModeScreens?.open("quiz");
   }, { holdMs: 320 });
 }
@@ -4609,6 +4612,7 @@ function decorateGuestQuizUI() {
 }
 
 function closeQuizModeScreen(options = {}) {
+  if (window.MagicBookWebStudyActions?.close(options)) return;
   if (window.MagicBookModeScreens?.close("quiz", options)) return;
   const overlay = document.getElementById("quizModeOverlay");
   if (!overlay) return;

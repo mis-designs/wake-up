@@ -71,7 +71,7 @@ test("timeout dialog uses the shared emerald pill language and fresh cached asse
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/u);
   assert.match(page, /mystyle\.css\?v=60-web-quiz-layout/u);
   assert.match(page, /quiz\.js\?v=87-local-review/u);
-  assert.match(worker, /magicbook-pwa-v220-car-indicator/u);
+  assert.match(worker, /magicbook-pwa-v221-web-study-actions/u);
   assert.match(worker, /mystyle\.css\?v=60-web-quiz-layout/u);
   assert.match(worker, /quiz\.js\?v=87-local-review/u);
 });

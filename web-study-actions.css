@@ -1,0 +1,136 @@
+/* Browser chapter actions. Native mounts its unchanged six-action rail. */
+.web-study-action { display: none; }
+html:not(.android-webview) #quizModeOverlay.hidden { display: none; }
+html:not(.android-webview) #quizModeOverlay .qms-back { width: 44px; height: 44px; min-width: 44px; }
+html:not(.android-webview) #quizModeOverlay button:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 3px; }
+html:not(.android-webview) #chapters .lesson-kicker,
+html:not(.android-webview) #chapters #examButton,
+html:not(.android-webview) #qmsCardStudy { display: none; }
+
+html:not(.android-webview) #chapters .lesson-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding-top: 12px;
+}
+html:not(.android-webview) #chapters .lesson-tool {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 68px;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid transparent;
+  font-family: Inter, Arial, sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter 160ms ease, box-shadow 160ms ease;
+}
+html:not(.android-webview) #chapters .lesson-tool strong {
+  font: 800 clamp(16px, 1.7vw, 22px)/1.25 Inter, Arial, sans-serif;
+  letter-spacing: 0;
+}
+html:not(.android-webview) #chapters .lesson-tool-study {
+  color: var(--color-dark);
+  background: var(--color-accent);
+  box-shadow: none;
+}
+html:not(.android-webview) #chapters .lesson-tool-class {
+  color: var(--color-dark);
+  background: var(--color-white);
+  border-color: var(--color-surface-strong);
+  box-shadow: 0 5px 16px color-mix(in srgb, var(--color-dark) 9%, transparent);
+}
+html:not(.android-webview) #chapters .lesson-tool img { flex: 0 0 auto; object-fit: contain; }
+.lesson-class-icon { display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 auto; }
+.lesson-class-icon img { width: 40px; height: 40px; }
+html:not(.android-webview) #chapters .lesson-tool:hover { filter: brightness(.96); }
+html:not(.android-webview) #chapters .lesson-tool:active { filter: brightness(.89); }
+html:not(.android-webview) #chapters .lesson-tool:focus-visible,
+html:not(.android-webview) .web-exam-options summary:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+}
+html:not(.android-webview)[data-app-transition] #chapters .lesson-tool {
+  cursor: progress;
+  opacity: .7;
+}
+.lesson-new {
+  position: absolute;
+  top: -10px;
+  right: 14px;
+  width: 44px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--color-accent);
+  color: var(--color-dark);
+}
+.lesson-new > span { font: 800 10px/1 Inter, Arial, sans-serif; letter-spacing: .05em; }
+.lesson-new img { display: none; width: 44px; height: 24px; }
+.is-introducing .lesson-new img { display: block; }
+.is-introducing .lesson-new > span { display: none; }
+.web-exam-options {
+  border: 1px solid var(--color-surface-strong);
+  border-radius: 16px;
+  background: var(--color-white);
+  color: var(--color-dark);
+  margin-bottom: 16px;
+}
+.web-exam-options summary {
+  min-height: 64px;
+  padding: 14px 48px 14px 18px;
+  position: relative;
+  cursor: pointer;
+  list-style: none;
+  border-radius: inherit;
+}
+.web-exam-options summary::-webkit-details-marker { display: none; }
+.web-exam-options summary strong { display: block; font-size: 18px; }
+.web-exam-options summary span { display: block; margin-top: 4px; font-size: 13px; }
+.web-exam-options summary::after {
+  content: '';
+  position: absolute;
+  right: 22px;
+  top: 25px;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+.web-exam-options[open] summary::after { transform: rotate(225deg); top: 29px; }
+.web-exam-options summary:hover { background: var(--color-surface); }
+.web-exam-options summary:active { background: var(--color-surface-strong); }
+.web-exam-content { padding: 0 12px 12px; }
+.web-exam-content .qms-card:last-child { margin-bottom: 0; }
+
+@media (max-width: 600px) {
+  html:not(.android-webview) #chapters .lesson-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  html:not(.android-webview) #chapters .lesson-tool { min-height: 54px; padding: 8px 10px; border-radius: 16px; gap: 8px; }
+  html:not(.android-webview) #webClassButton { grid-column: 1 / -1; }
+  html:not(.android-webview) #webStudyButton img { width: 26px; height: 26px; }
+}
+/* The chapter page owns this scroller; short screens must not clip the new row. */
+@media (max-height: 660px) {
+  html:not(.android-webview) body.app-mode #chapters { overflow-y: auto; }
+  html:not(.android-webview) body.app-mode #chapters .lesson-board { overflow: visible; min-height: 440px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html:not(.android-webview) #quizModeOverlay,
+  html:not(.android-webview) #quizModeOverlay .qms-sheet { transition: none; }
+  html:not(.android-webview) #chapters .lesson-tool { transition: none; }
+  .is-introducing .lesson-new img { display: none; }
+  .is-introducing .lesson-new > span { display: inline; }
+}
+html[data-native-motion-paused] .is-introducing .lesson-new img { display: none; }
+html[data-native-motion-paused] .is-introducing .lesson-new > span { display: inline; }
+@media (forced-colors: active) {
+  html:not(.android-webview) #chapters .lesson-tool,
+  .web-exam-options { background: Canvas; color: CanvasText; border: 1px solid ButtonText; box-shadow: none; }
+  .lesson-new { background: Highlight; color: HighlightText; }
+  .lesson-new img { display: none; }
+  .is-introducing .lesson-new > span { display: inline; }
+}

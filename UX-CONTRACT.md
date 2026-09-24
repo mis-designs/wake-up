@@ -1,5 +1,12 @@
 # Magic Book learning insights UX contract
 
+## Browser chapter shortcuts (2026-09-24)
+
+- Owner-confirmed three actions only: Quiz opens existing mode selection with an Exam disclosure; Studia quiz links directly to `/studia-quiz?view=chapters`; Pial sir class links to `/studia-quiz?view=videos`. This supersedes the old duplicate browser Study card. Android's dedicated six actions and native mode pages are unchanged.
+- `web-study-actions.js` is the browser-only adapter. It temporarily moves the original80/30/PDF Exam cards into the disclosure and restores those exact nodes on close, leaving the direct side-menu Exam path valid. Trial Exam/Video activate the existing paywall; Study trial keeps `/studia-quiz/prova-gratis`. The existing exclusive navigation gate, quiz selection/minimums, auth checks, timers and grading remain canonical.
+- The existing `app-popup.js` owns modal focus, inert background, Escape/backdrop and focus restoration. One same-URL history entry lets Back close the Quiz sheet and cancel delayed launches. Route/page exit cleans up. No new server request, user storage, polling or authenticated cache: two small public decorative assets and the supplied GIF use the static asset cache. The Video destination retains its existing one lazy catalog request, bounded memory lease, cancellation and explicit Retry; opening Quiz/Exam costs zero quiz-data requests.
+- NEW appears only on the video shortcut; finite GIF motion, static fallback and touch/reflow coverage are required. Verification lives in `tests/web-study-actions.test.mjs` and the local-only `scripts/web-study-actions-browser-qa.mjs`.
+
 ## Learning read recovery (web and installed Android)
 
 - Device snapshot recovery (2026-09-14): `learning-sync.js` remains the storage owner. Mirror only the existing user-scoped insights model to a bounded512KB localStorage record, in addition to IndexedDB; it is not a new answer store or a change to grading/sync. This copy can be read immediately when IndexedDB is unavailable or blocked and survives a document reload. Corrupt/over-quota/unavailable storage is non-blocking; a memory-only copy is labelled temporary rather than durable. Close old IndexedDB connections on version changes and close late connections after a blocked upgrade. No Android external-storage permission, auth token copy, database deletion, GAS change or new server endpoint.

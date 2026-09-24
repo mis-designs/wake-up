@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v220-car-indicator";
+const CACHE_NAME = "magicbook-pwa-v221-web-study-actions";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -14,6 +14,11 @@ const STATIC_ASSETS = [
   "/assets/daisyui.css?v=2-learning-shell",
   "/loading-ui.css?v=2-compact",
   "/style.css?v=74-compact-loading",
+  "/web-study-actions.css?v=1",
+  "/web-study-actions.js?v=1",
+  "/icons/easy_video.gif",
+  "/assets/easy-video-still.png",
+  "/assets/new-class.gif",
   "/mobile-experience.css?v=4-admin-scroll",
   "/login-experience.css?v=4-pending-access",
   "/login-experience.js?v=2-unibody",
@@ -81,7 +86,7 @@ const STATIC_ASSETS = [
   "/homebg.css?v=3",
   "/mystyle.css?v=60-web-quiz-layout",
   "/audio-player-ui.css?v=10-web-quiz-slim",
-  "/script.js?v=77-request-budget",
+  "/script.js?v=78-web-study-actions",
   "/study-quiz.html",
   "/study-quiz.css?v=28-compact",
   "/study-quiz.js?v=36-car-indicator&art=2e0d6787e201",

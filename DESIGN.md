@@ -39,6 +39,13 @@ design_context:
 
 # Magic Book design context
 
+## Web chapter actions — owner clarification, 2026-09-24
+
+- Exactly three browser actions below the existing carousel/instruments: Quiz, Studia quiz and Pial sir class. The owner corrected the initial count of four to three. Remove the License Journey eyebrow on browsers; keep the existing Android six-action shell unchanged.
+- `web-study-actions.css` adapts existing `style.css` tokens: primary Quiz, accent-lime Study and white/dark Video with the supplied `icons/easy_video.gif`. Existing Inter labels,18px action corners and68px desktop/54px phone targets; three columns on desktop, two plus a full-width video action below600px. No explanatory subtitle on these controls. Short screens scroll the chapter surface without clipping the bottom row.
+- Only Pial sir class carries NEW. `assets/new-class.gif` is a small code-native lime badge with a quiet sheen, not a flashing warning. Its generated vector geometry and colors follow the existing accent/dark roles. `scripts/build-class-action-assets.mjs` also produces the static frame of the supplied video icon. Motion settles within4s, cancels on hide, and is static for reduced motion/Profile pause/forced colors. Failed decoration never disables a labelled action.
+- This browser-specific request supersedes the earlier retained duplicate Study entry in the Quiz sheet. Exam is a disclosure inside Quiz using the original Exam nodes and handlers, not another quiz engine; native presentation and all entitlement rules remain unchanged. The shared popup owner supplies focus/inert/Escape behavior.
+
 ## Video Class — approved scope, 2026-09-23
 
 - Car indicator, owner request: Video Class chapter/group arrows reuse the supplied outlined24px SVG in the existing36px circular slot. `car-indicator.css` owns fixed #111 outline and #67f528 green lamp (approved Study lime, intentionally green on both themes). Only the interior lights; no whole-icon fade, rotation, jumping circle or hover sound. `car-indicator.mjs` owns the two measured tic-tac cycles before chapter navigation, about1.32s, with the original `icons/car_strument/car_indicator_sound.mp3` at45% gain. Audio time drives the fill, not a competing CSS timer. Busy status is textual/ARIA as well as green. Reduced motion, native Profile pause and forced colors bypass the effect and audio immediately. This is a named chapter-navigation cue, not a replacement for the shared loading GIF. Other automotive assets remain deferred.
