@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v222-liquid-actions";
+const CACHE_NAME = "magicbook-pwa-v223-liquid-actions";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -16,7 +16,7 @@ const STATIC_ASSETS = [
   "/style.css?v=74-compact-loading",
   "/web-study-actions.css?v=2-liquid",
   "/web-study-actions.js?v=1",
-  "/web-action-effects.js?v=1",
+  "/web-action-effects.js?v=2-resume",
   "/icons/easy_video.gif",
   "/assets/easy-video-still.png",
   "/assets/new-class.gif",

@@ -9,8 +9,8 @@
   const button = doc.getElementById('webClassButton');
   const row = page.querySelector('.lesson-actions');
   const toggle = doc.getElementById('webActionMotionToggle');
-  let reduced = win.matchMedia('(prefers-reduced-motion: reduce)');
-  let contrast = win.matchMedia('(forced-colors: active)');
+  const reduced = win.matchMedia('(prefers-reduced-motion: reduce)');
+  const contrast = win.matchMedia('(forced-colors: active)');
   const canvas = doc.createElement('canvas');
   canvas.className = 'web-action-core';
   canvas.setAttribute('aria-hidden', 'true');
@@ -101,7 +101,10 @@
 
   function paint(now) {
     frame = 0;
-    if (!program || !allowed() || lost) return;
+    if (!program || lost) return;
+    // A preference/visibility change can precede its event after restoration.
+    // Settle CSS and controls too, rather than leaving a stale running state.
+    if (!allowed()) { sync(); return; }
     // One small canvas only; same 24fps / 1.5 DPR budget as native liquid.
     if (previous && now - previous < 1000 / 24) { frame = win.requestAnimationFrame(paint); return; }
     const delta = previous ? Math.min(.1, (now - previous) / 1000) : 0;
@@ -157,10 +160,7 @@
   win.addEventListener('pageshow', event => {
     if (!event.persisted) return;
     suspended = false; attempted = false;
-    // Re-resolve media preferences after bfcache; old query objects can retain
-    // the pre-freeze state in embedded/browser lifecycle implementations.
-    reduced = win.matchMedia('(prefers-reduced-motion: reduce)');
-    contrast = win.matchMedia('(forced-colors: active)');
+    // Reattach the document's original live media-query subscriptions.
     reduced.addEventListener('change', sync); contrast.addEventListener('change', sync);
     observer.observe(row);
     attributes.observe(root, { attributes: true, attributeFilter: ['data-native-motion-paused','data-app-transition'] });

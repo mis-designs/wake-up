@@ -29,7 +29,7 @@ test('animated badge is a real bounded GIF with cached static fallbacks',()=>{
   const source=read('web-study-actions.js'), css=read('web-study-actions.css');
   assert.match(source,/setTimeout\(settle, 4000\)/);assert.match(source,/visibilitychange/);
   for(const pattern of [/prefers-reduced-motion/,/forced-colors/,/:focus-visible/,/min-height: 54px/])assert.match(css,pattern);
-  for(const asset of ['web-study-actions.css?v=2-liquid','web-study-actions.js?v=1','web-action-effects.js?v=1','icons/easy_video.gif','assets/new-class.gif','assets/easy-video-still.png']){
+  for(const asset of ['web-study-actions.css?v=2-liquid','web-study-actions.js?v=1','web-action-effects.js?v=2-resume','icons/easy_video.gif','assets/new-class.gif','assets/easy-video-still.png']){
     assert.ok(read('service-worker.js').includes(asset));assert.ok(existsSync(new URL(`../${asset.split('?')[0]}`,import.meta.url)));
   }
 });

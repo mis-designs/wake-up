@@ -14,6 +14,7 @@ const browser=await chromium.launch({headless:true,channel:'msedge'}),report=[];
 try {
  for(const [width,height,native,fallback] of [[320,568,false,false],[375,812,false,false],[430,844,false,false],[740,360,false,false],[768,1024,false,false],[1440,900,false,false],[1920,1080,false,false],[375,812,false,true],[375,812,true,false]]){
   if(process.env.QA_WIDTH && +process.env.QA_WIDTH!==width)continue;
+  if(process.env.QA_SKIP_WIDTH && +process.env.QA_SKIP_WIDTH===width)continue;
   const ctx=await browser.newContext({viewport:{width,height},hasTouch:width<800,serviceWorkers:'block',...(native?{userAgent:'Mozilla/5.0 (Linux; Android 14; wv) AppleWebKit/537.36 Chrome/130.0.0.0 Mobile Safari/537.36 MagicBookViewer/1.3'}:{})});
   const errors=[];
   await ctx.route('**/*',async route=>{
