@@ -9,8 +9,28 @@ html:not(.android-webview) #qmsCardStudy { display: none; }
 
 html:not(.android-webview) #chapters .lesson-actions {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  padding-top: 12px;
+  gap: 18px;
+  padding: 16px 12px 26px;
+  overflow: visible;
+}
+/* Preserve the carousel's own clip; the action row needs its full glow gutter. */
+html:not(.android-webview) body.app-mode #chapters { overflow-y: auto; }
+html:not(.android-webview) #chapters .lesson-board {
+  overflow: visible;
+  min-height: 440px;
+  flex-shrink: 0;
+}
+html:not(.android-webview) #chapters {
+  --action-quiz-base: #2537ad;
+  --action-quiz-wave: #4345d9;
+  --action-quiz-light: #145a9e;
+  --action-study-base: #075b48;
+  --action-study-wave: #087562;
+  --action-study-light: #22624b;
+  --action-core-base: #062630;
+  --action-core-edge: #06c9dc;
+  --action-core-highlight: #c8ffff;
+  --action-on-color: #fff;
 }
 html:not(.android-webview) #chapters .lesson-tool {
   position: relative;
@@ -24,26 +44,92 @@ html:not(.android-webview) #chapters .lesson-tool {
   font-family: Inter, Arial, sans-serif;
   text-decoration: none;
   cursor: pointer;
+  isolation: isolate;
+  overflow: visible;
   transition: filter 160ms ease, box-shadow 160ms ease;
 }
 html:not(.android-webview) #chapters .lesson-tool strong {
   font: 800 clamp(16px, 1.7vw, 22px)/1.25 Inter, Arial, sans-serif;
   letter-spacing: 0;
 }
+html:not(.android-webview) #chapters :is(.lesson-tool-quiz, .lesson-tool-study) {
+  --action-base: var(--action-quiz-base);
+  --action-wave: var(--action-quiz-wave);
+  --action-light: var(--action-quiz-light);
+  color: var(--action-on-color);
+  border-color: color-mix(in srgb, var(--action-wave) 60%, white);
+  background-color: var(--action-base);
+  background-image: radial-gradient(ellipse at 25% 20%, var(--action-wave), transparent 58%),
+    radial-gradient(ellipse at 80% 80%, var(--action-light), transparent 62%),
+    linear-gradient(115deg, var(--action-base), var(--action-wave), var(--action-base));
+  background-size: 180% 230%, 190% 210%, 220% 100%;
+  animation: web-action-liquid 14s ease-in-out infinite;
+  animation-play-state: paused;
+  box-shadow: 0 10px 20px -6px color-mix(in srgb, var(--action-wave) 35%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 24%);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 16%);
+}
 html:not(.android-webview) #chapters .lesson-tool-study {
-  color: var(--color-dark);
-  background: var(--color-accent);
-  box-shadow: none;
+  --action-base: var(--action-study-base);
+  --action-wave: var(--action-study-wave);
+  --action-light: var(--action-study-light);
+  animation-duration: 18s;
+  animation-delay: -5s;
+}
+html:not(.android-webview) #chapters .lesson-tool-study > img { filter: brightness(0) invert(1); }
+html:not(.android-webview) #chapters .lesson-tool-quiz::before {
+  inset: 4px; border-radius: 13px; border-color: rgb(255 255 255 / 12%);
+}
+html:not(.android-webview) #chapters[data-action-motion="running"] :is(.lesson-tool-quiz, .lesson-tool-study) {
+  animation-play-state: running;
+}
+@keyframes web-action-liquid {
+  0%, 100% { background-position: 0% 20%, 100% 80%, 0% 50%; }
+  50% { background-position: 100% 80%, 0% 20%, 100% 50%; }
 }
 html:not(.android-webview) #chapters .lesson-tool-class {
-  color: var(--color-dark);
-  background: var(--color-white);
-  border-color: var(--color-surface-strong);
-  box-shadow: 0 5px 16px color-mix(in srgb, var(--color-dark) 9%, transparent);
+  color: var(--action-on-color);
+  background: radial-gradient(ellipse at 50% 140%, color-mix(in srgb, var(--action-core-edge) 24%, var(--action-core-base)), var(--action-core-base) 76%);
+  border-color: var(--action-core-edge);
+  box-shadow: 0 10px 22px -7px rgb(6 100 125 / 28%), 0 0 12px rgb(6 201 220 / 12%), inset 0 0 12px rgb(6 201 220 / 12%);
+  text-shadow: 0 0 10px rgb(6 201 220 / 16%);
+}
+.web-action-core {
+  position: absolute; inset: -12px;
+  width: calc(100% + 24px); height: calc(100% + 24px);
+  pointer-events: none; z-index: 0;
+}
+html:not(.android-webview) #chapters .lesson-tool > :not(.web-action-core) { position: relative; z-index: 1; }
+html:not(.android-webview) #chapters .lesson-tool > .lesson-new { position: absolute; z-index: 2; }
+html:not(.android-webview) #chapters > .watermark-link { display: none; }
+html:not(.android-webview) #chapters .web-action-footer {
+  position: relative; display: flex; justify-content: center; align-items: center;
+  flex: 0 0 auto; min-height: 56px; margin-top: 10px; padding: 6px 52px;
+}
+.web-action-signature {
+  display: flex; justify-content: center; align-items: center; min-height: 44px;
+  width: 148px; padding: 0 8px; border-radius: 8px; cursor: pointer;
+}
+.web-action-signature img { display: block; width: 132px; height: auto; aspect-ratio: 512 / 137; object-fit: contain; filter: grayscale(1) brightness(0); opacity: .6; }
+.web-action-signature:hover { background: var(--color-surface); }
+.web-action-signature:active { background: var(--color-surface-strong); }
+.web-action-motion {
+  position: absolute; right: 12px; bottom: 6px; display: grid; place-items: center;
+  width: 44px; height: 44px; min-width: 44px; padding: 0;
+  border: 1px solid transparent; border-radius: 50%; box-shadow: none;
+  background: transparent; color: #596075; cursor: pointer;
+}
+.web-action-motion[hidden] { display: none; }
+.web-action-motion:hover { background: var(--color-surface); }
+.web-action-motion:active { background: var(--color-surface-strong); }
+.action-motion-play, .web-action-motion[aria-pressed="true"] .action-motion-pause { display: none; }
+.web-action-motion[aria-pressed="true"] .action-motion-play { display: block; }
+.web-action-motion:focus-visible, .web-action-signature:focus-visible {
+  outline: 3px solid var(--color-primary); outline-offset: 3px;
 }
 html:not(.android-webview) #chapters .lesson-tool img { flex: 0 0 auto; object-fit: contain; }
 .lesson-class-icon { display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 auto; }
-.lesson-class-icon img { width: 40px; height: 40px; }
+.lesson-class-icon img { width: 32px; height: 32px; border-radius: 7px; }
 html:not(.android-webview) #chapters .lesson-tool:hover { filter: brightness(.96); }
 html:not(.android-webview) #chapters .lesson-tool:active { filter: brightness(.89); }
 html:not(.android-webview) #chapters .lesson-tool:focus-visible,
@@ -108,7 +194,7 @@ html:not(.android-webview)[data-app-transition] #chapters .lesson-tool {
 .web-exam-content .qms-card:last-child { margin-bottom: 0; }
 
 @media (max-width: 600px) {
-  html:not(.android-webview) #chapters .lesson-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  html:not(.android-webview) #chapters .lesson-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 12px; padding-inline: 8px; }
   html:not(.android-webview) #chapters .lesson-tool { min-height: 54px; padding: 8px 10px; border-radius: 16px; gap: 8px; }
   html:not(.android-webview) #webClassButton { grid-column: 1 / -1; }
   html:not(.android-webview) #webStudyButton img { width: 26px; height: 26px; }
@@ -122,6 +208,7 @@ html:not(.android-webview)[data-app-transition] #chapters .lesson-tool {
   html:not(.android-webview) #quizModeOverlay,
   html:not(.android-webview) #quizModeOverlay .qms-sheet { transition: none; }
   html:not(.android-webview) #chapters .lesson-tool { transition: none; }
+  html:not(.android-webview) #chapters :is(.lesson-tool-quiz, .lesson-tool-study) { animation: none; }
   .is-introducing .lesson-new img { display: none; }
   .is-introducing .lesson-new > span { display: inline; }
 }
@@ -129,7 +216,11 @@ html[data-native-motion-paused] .is-introducing .lesson-new img { display: none;
 html[data-native-motion-paused] .is-introducing .lesson-new > span { display: inline; }
 @media (forced-colors: active) {
   html:not(.android-webview) #chapters .lesson-tool,
+  html:not(.android-webview) #chapters :is(.lesson-tool-quiz, .lesson-tool-study),
   .web-exam-options { background: Canvas; color: CanvasText; border: 1px solid ButtonText; box-shadow: none; }
+  .web-action-core { display: none; }
+  html:not(.android-webview) #chapters .lesson-tool-study > img { filter: none; }
+  .web-action-signature { forced-color-adjust: none; background: white; }
   .lesson-new { background: Highlight; color: HighlightText; }
   .lesson-new img { display: none; }
   .is-introducing .lesson-new > span { display: inline; }

@@ -29,7 +29,24 @@ test('animated badge is a real bounded GIF with cached static fallbacks',()=>{
   const source=read('web-study-actions.js'), css=read('web-study-actions.css');
   assert.match(source,/setTimeout\(settle, 4000\)/);assert.match(source,/visibilitychange/);
   for(const pattern of [/prefers-reduced-motion/,/forced-colors/,/:focus-visible/,/min-height: 54px/])assert.match(css,pattern);
-  for(const asset of ['web-study-actions.css?v=1','web-study-actions.js?v=1','icons/easy_video.gif','assets/new-class.gif','assets/easy-video-still.png']){
+  for(const asset of ['web-study-actions.css?v=2-liquid','web-study-actions.js?v=1','web-action-effects.js?v=1','icons/easy_video.gif','assets/new-class.gif','assets/easy-video-still.png']){
     assert.ok(read('service-worker.js').includes(asset));assert.ok(existsSync(new URL(`../${asset.split('?')[0]}`,import.meta.url)));
   }
+});
+test('liquid action decoration is isolated from Android and has no network or navigation owner',()=>{
+  const window={document:{documentElement:{classList:{contains:()=>true}}}};
+  const source=read('web-action-effects.js');
+  vm.runInNewContext(source,{window});
+  assert.doesNotMatch(source,/\bfetch\s*\(|localStorage|\.innerHTML\s*=|location\.href\s*=|\bgsap\./);
+  for(const pattern of [/cancelAnimationFrame/,/IntersectionObserver/,/visibilitychange/,/webglcontextlost/,/webglcontextrestored/,/deleteProgram/,/pagehide/,/pageshow/,/page\.inert/,/aria-pressed/,/1000 \/ 24/,/Math\.min\(win\.devicePixelRatio \|\| 1, 1\.5\)/])assert.match(source,pattern);
+});
+test('liquid gradients keep white label contrast and the existing signature asset',()=>{
+  const css=read('web-study-actions.css');
+  const luminance=hex=>{const c=hex.match(/[a-f\d]{2}/gi).map(v=>parseInt(v,16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);return c[0]*.2126+c[1]*.7152+c[2]*.0722;};
+  const stops=[...css.matchAll(/--action-(?:quiz|study)-(?:base|wave|light): (#[a-f\d]{6})/g)].map(m=>m[1]);
+  assert.equal(stops.length,6);
+  for(const color of stops)assert.ok(1.05/(luminance(color)+.05)>=4.5,color);
+  assert.match(read('index.html'),/class="web-action-signature"[\s\S]*?src="\/icons\/mdesignstextlogo\.png"/);
+  assert.match(css,/padding: 16px 12px 26px/);
+  assert.match(css,/\.lesson-board \{\s+overflow: visible/);
 });
