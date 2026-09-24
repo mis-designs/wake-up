@@ -49,6 +49,30 @@ try {
    assert.equal(await page.locator('.native-actions [data-native-action]').count(),6);
    await shot('unchanged');
   }else{
+   assert.equal(await page.locator('#webActionMotionToggle').count(),0);
+   // First, last and middle selection preserve the real 140x185 card and its
+   // full shadow gutter. Keyboard navigation must still center the same track.
+   await page.locator('.chapter-card.is-active').focus();
+   for(const keys of [['Home'],['End'],['Home',...Array(12).fill('ArrowRight')]]){
+    for(const key of keys)await page.keyboard.press(key);
+    await page.waitForTimeout(450);
+    const cardLayout=await page.evaluate(()=>{
+     const v=document.getElementById('cardSelectorViewport').getBoundingClientRect();
+     const c=document.querySelector('.chapter-card.is-active').getBoundingClientRect();
+     const selector=document.querySelector('#chapters .card-selector').getBoundingClientRect();
+     const dash=document.querySelector('#chapters .dashboard').getBoundingClientRect();
+     const actions=document.querySelector('#chapters .lesson-actions').getBoundingClientRect();
+     return {above:c.top-v.top,below:v.bottom-c.bottom,center:Math.abs((c.left+c.right-v.left-v.right)/2),width:c.width,height:c.height,section1:dash.top-selector.bottom,section2:actions.top-dash.bottom};
+    });
+    assert.ok(cardLayout.above>=23&&cardLayout.below>=50,JSON.stringify(cardLayout));
+    assert.ok(cardLayout.center<1&&cardLayout.width===140&&cardLayout.height===185,JSON.stringify(cardLayout));
+    assert.ok(cardLayout.section1>=19&&cardLayout.section1<=33&&cardLayout.section2>=19&&cardLayout.section2<=33,JSON.stringify(cardLayout));
+   }
+   await page.keyboard.press('Home');await page.waitForTimeout(450);
+   await page.locator('.chapter-card.is-active').evaluate(e=>e.blur());
+   await page.mouse.move(4,4);
+   await page.evaluate(()=>document.getElementById('chapters').scrollTop=0);
+   await shot('chapter-shadows');
    await page.locator('.web-action-footer').scrollIntoViewIfNeeded();
    await page.waitForTimeout(1100);
    assert.equal(await page.locator('#chapters').getAttribute('data-action-motion'),'running');
@@ -71,12 +95,11 @@ try {
     assert.ok(intervals.reduce((a,b)=>a+b,0)/intervals.length>=1000/25,JSON.stringify(intervals));
    }else assert.equal(await canvas.isVisible(),false);
    await shot('liquid');
-   const button=page.locator('#webActionMotionToggle');
-   await button.focus();await page.keyboard.press('Enter');
-   assert.equal(await button.getAttribute('aria-pressed'),'true');
+   await page.emulateMedia({reducedMotion:'reduce'});
+   await page.waitForFunction(()=>document.getElementById('chapters').dataset.actionMotion==='paused');
    assert.equal(await page.locator('#chapters').getAttribute('data-action-motion'),'paused');
    let frames=await page.evaluate(()=>window.__coreFrames.length);await page.waitForTimeout(180);assert.equal(await page.evaluate(()=>window.__coreFrames.length),frames);
-   await page.keyboard.press('Enter');
+   await page.emulateMedia({reducedMotion:'no-preference'});
    if(width===375&&!fallback){
     // Actual modal makes the decorative background inert; closing resumes it.
     await page.locator('#quizButton').click();await page.locator('#quizModeOverlay.qms-visible').waitFor();
@@ -99,9 +122,9 @@ try {
    }
    await page.emulateMedia({reducedMotion:'reduce'});
    await page.waitForFunction(()=>document.getElementById('chapters').dataset.actionMotion==='paused').catch(async error=>{
-    console.log(JSON.stringify(await page.evaluate(()=>({motion:document.getElementById('chapters').dataset.actionMotion,reduced:matchMedia('(prefers-reduced-motion: reduce)').matches,hidden:document.hidden,canvasHidden:document.querySelector('.web-action-core').hidden,toggleHidden:document.getElementById('webActionMotionToggle').hidden}))),errors);throw error;
+    console.log(JSON.stringify(await page.evaluate(()=>({motion:document.getElementById('chapters').dataset.actionMotion,reduced:matchMedia('(prefers-reduced-motion: reduce)').matches,hidden:document.hidden,canvasHidden:document.querySelector('.web-action-core').hidden}))),errors);throw error;
    });
-   assert.equal(await canvas.isVisible(),false);assert.equal(await button.isVisible(),false);
+   assert.equal(await canvas.isVisible(),false);
    assert.equal(await page.locator('#quizButton').evaluate(e=>getComputedStyle(e).animationName),'none');
    await shot('reduced');
    await page.emulateMedia({forcedColors:'active'});await shot('contrast');

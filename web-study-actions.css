@@ -13,12 +13,49 @@ html:not(.android-webview) #chapters .lesson-actions {
   padding: 16px 12px 26px;
   overflow: visible;
 }
-/* Preserve the carousel's own clip; the action row needs its full glow gutter. */
+/* One chapter scroller, natural-height sections, and explicit shadow gutters. */
 html:not(.android-webview) body.app-mode #chapters { overflow-y: auto; }
+html:not(.android-webview) #chapters .lesson-head { flex-shrink: 0; }
 html:not(.android-webview) #chapters .lesson-board {
   overflow: visible;
-  min-height: 440px;
-  flex-shrink: 0;
+  min-height: 0;
+  flex: 0 0 auto;
+  grid-template-rows: auto auto auto;
+  align-content: start;
+  gap: clamp(20px, 3.5dvh, 32px);
+  margin-top: 12px;
+  padding-top: 0;
+}
+html:not(.android-webview) #chapters .card-selector {
+  overflow: visible;
+  gap: 4px;
+  padding: 0;
+}
+html:not(.android-webview) #chapters .card-selector-viewport {
+  height: 260px;
+  /* Clip distant chapters horizontally, with 24px above / 51px below the card.
+     Do not use overflow: visible here: all 25 offscreen cards share this track. */
+  overflow: hidden;
+}
+html:not(.android-webview) #chapters .chapter-card-track {
+  top: 24px;
+  height: 185px;
+}
+html:not(.android-webview) #chapters .chapter-card {
+  box-shadow: 0 10px 18px -8px rgb(37 41 67 / 24%);
+}
+html:not(.android-webview) #chapters .chapter-card.is-active {
+  box-shadow: 0 14px 24px -8px rgb(58 78 251 / 30%);
+}
+html:not(.android-webview) #chapters .chapter-card:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 4px;
+}
+html:not(.android-webview) #chapters .dashboard {
+  min-height: 104px;
+  padding: 12px 0;
+  margin: 0;
+  align-self: start;
 }
 html:not(.android-webview) #chapters {
   --action-quiz-base: #2537ad;
@@ -104,7 +141,7 @@ html:not(.android-webview) #chapters .lesson-tool > .lesson-new { position: abso
 html:not(.android-webview) #chapters > .watermark-link { display: none; }
 html:not(.android-webview) #chapters .web-action-footer {
   position: relative; display: flex; justify-content: center; align-items: center;
-  flex: 0 0 auto; min-height: 56px; margin-top: 10px; padding: 6px 52px;
+  flex: 0 0 auto; min-height: 56px; margin-top: 10px; padding: 6px 12px;
 }
 .web-action-signature {
   display: flex; justify-content: center; align-items: center; min-height: 44px;
@@ -113,18 +150,7 @@ html:not(.android-webview) #chapters .web-action-footer {
 .web-action-signature img { display: block; width: 132px; height: auto; aspect-ratio: 512 / 137; object-fit: contain; filter: grayscale(1) brightness(0); opacity: .6; }
 .web-action-signature:hover { background: var(--color-surface); }
 .web-action-signature:active { background: var(--color-surface-strong); }
-.web-action-motion {
-  position: absolute; right: 12px; bottom: 6px; display: grid; place-items: center;
-  width: 44px; height: 44px; min-width: 44px; padding: 0;
-  border: 1px solid transparent; border-radius: 50%; box-shadow: none;
-  background: transparent; color: #596075; cursor: pointer;
-}
-.web-action-motion[hidden] { display: none; }
-.web-action-motion:hover { background: var(--color-surface); }
-.web-action-motion:active { background: var(--color-surface-strong); }
-.action-motion-play, .web-action-motion[aria-pressed="true"] .action-motion-pause { display: none; }
-.web-action-motion[aria-pressed="true"] .action-motion-play { display: block; }
-.web-action-motion:focus-visible, .web-action-signature:focus-visible {
+.web-action-signature:focus-visible {
   outline: 3px solid var(--color-primary); outline-offset: 3px;
 }
 html:not(.android-webview) #chapters .lesson-tool img { flex: 0 0 auto; object-fit: contain; }
@@ -194,15 +220,11 @@ html:not(.android-webview)[data-app-transition] #chapters .lesson-tool {
 .web-exam-content .qms-card:last-child { margin-bottom: 0; }
 
 @media (max-width: 600px) {
+  html:not(.android-webview) #chapters .lesson-board { gap: 20px; }
   html:not(.android-webview) #chapters .lesson-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 12px; padding-inline: 8px; }
   html:not(.android-webview) #chapters .lesson-tool { min-height: 54px; padding: 8px 10px; border-radius: 16px; gap: 8px; }
   html:not(.android-webview) #webClassButton { grid-column: 1 / -1; }
   html:not(.android-webview) #webStudyButton img { width: 26px; height: 26px; }
-}
-/* The chapter page owns this scroller; short screens must not clip the new row. */
-@media (max-height: 660px) {
-  html:not(.android-webview) body.app-mode #chapters { overflow-y: auto; }
-  html:not(.android-webview) body.app-mode #chapters .lesson-board { overflow: visible; min-height: 440px; }
 }
 @media (prefers-reduced-motion: reduce) {
   html:not(.android-webview) #quizModeOverlay,

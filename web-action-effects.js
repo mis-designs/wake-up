@@ -8,7 +8,6 @@
   const page = doc.getElementById('chapters');
   const button = doc.getElementById('webClassButton');
   const row = page.querySelector('.lesson-actions');
-  const toggle = doc.getElementById('webActionMotionToggle');
   const reduced = win.matchMedia('(prefers-reduced-motion: reduce)');
   const contrast = win.matchMedia('(forced-colors: active)');
   const canvas = doc.createElement('canvas');
@@ -17,11 +16,11 @@
   button.prepend(canvas);
   let gl, program, buffer, uniforms, shaders = [];
   let frame = 0, previous = 0, time = 3, arcs = 2.4, hovered = false;
-  let visible = false, paused = false, suspended = false, lost = false, attempted = false;
+  let visible = false, suspended = false, lost = false, attempted = false;
   const stop = () => { win.cancelAnimationFrame(frame); frame = 0; previous = 0; };
   const allowed = () => visible && !suspended && !doc.hidden && !page.classList.contains('hidden') && !page.inert &&
     !root.hasAttribute('data-app-transition') && !root.hasAttribute('data-native-motion-paused') &&
-    !paused && !reduced.matches && !contrast.matches;
+    !reduced.matches && !contrast.matches;
 
   function release() {
     stop();
@@ -129,10 +128,6 @@
     stop();
     const running = allowed();
     page.dataset.actionMotion = running ? 'running' : 'paused';
-    toggle.hidden = reduced.matches || contrast.matches || root.hasAttribute('data-native-motion-paused');
-    toggle.setAttribute('aria-pressed', String(paused));
-    const label = paused ? 'Riprendi animazioni' : 'Pausa animazioni';
-    toggle.setAttribute('aria-label', label); toggle.title = label;
     if (!running) { canvas.hidden = true; return; }
     if (!attempted && !lost) initialize();
     if (program) frame = win.requestAnimationFrame(paint);
@@ -143,7 +138,6 @@
   const attributes = new MutationObserver(sync);
   attributes.observe(root, { attributes: true, attributeFilter: ['data-native-motion-paused','data-app-transition'] });
   attributes.observe(page, { attributes: true, attributeFilter: ['class','inert'] });
-  toggle.addEventListener('click', () => { paused = !paused; sync(); });
   button.addEventListener('pointerenter', event => { if (event.pointerType === 'mouse') hovered = true; });
   button.addEventListener('pointerleave', () => { hovered = false; });
   button.addEventListener('focus', () => { hovered = true; });

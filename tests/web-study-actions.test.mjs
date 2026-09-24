@@ -29,7 +29,7 @@ test('animated badge is a real bounded GIF with cached static fallbacks',()=>{
   const source=read('web-study-actions.js'), css=read('web-study-actions.css');
   assert.match(source,/setTimeout\(settle, 4000\)/);assert.match(source,/visibilitychange/);
   for(const pattern of [/prefers-reduced-motion/,/forced-colors/,/:focus-visible/,/min-height: 54px/])assert.match(css,pattern);
-  for(const asset of ['web-study-actions.css?v=2-liquid','web-study-actions.js?v=1','web-action-effects.js?v=2-resume','icons/easy_video.gif','assets/new-class.gif','assets/easy-video-still.png']){
+  for(const asset of ['web-study-actions.css?v=3-spacing','web-study-actions.js?v=1','web-action-effects.js?v=3-system-motion','icons/easy_video.gif','assets/new-class.gif','assets/easy-video-still.png']){
     assert.ok(read('service-worker.js').includes(asset));assert.ok(existsSync(new URL(`../${asset.split('?')[0]}`,import.meta.url)));
   }
 });
@@ -38,7 +38,15 @@ test('liquid action decoration is isolated from Android and has no network or na
   const source=read('web-action-effects.js');
   vm.runInNewContext(source,{window});
   assert.doesNotMatch(source,/\bfetch\s*\(|localStorage|\.innerHTML\s*=|location\.href\s*=|\bgsap\./);
-  for(const pattern of [/cancelAnimationFrame/,/IntersectionObserver/,/visibilitychange/,/webglcontextlost/,/webglcontextrestored/,/deleteProgram/,/pagehide/,/pageshow/,/page\.inert/,/aria-pressed/,/1000 \/ 24/,/Math\.min\(win\.devicePixelRatio \|\| 1, 1\.5\)/])assert.match(source,pattern);
+  for(const pattern of [/cancelAnimationFrame/,/IntersectionObserver/,/visibilitychange/,/webglcontextlost/,/webglcontextrestored/,/deleteProgram/,/pagehide/,/pageshow/,/page\.inert/,/1000 \/ 24/,/Math\.min\(win\.devicePixelRatio \|\| 1, 1\.5\)/])assert.match(source,pattern);
+});
+test('chapter shadows have reserved space and the owner-removed motion control is absent',()=>{
+  for(const file of ['index.html','web-action-effects.js','web-study-actions.css'])assert.doesNotMatch(read(file),/webActionMotionToggle|web-action-motion/);
+  const css=read('web-study-actions.css');
+  assert.match(css,/html:not\(\.android-webview\) #chapters \.card-selector-viewport \{\s+height: 260px/);
+  assert.match(css,/\.chapter-card-track \{\s+top: 24px;\s+height: 185px/);
+  assert.match(css,/grid-template-rows: auto auto auto/);
+  assert.match(css,/gap: clamp\(20px, 3.5dvh, 32px\)/);
 });
 test('liquid gradients keep white label contrast and the existing signature asset',()=>{
   const css=read('web-study-actions.css');

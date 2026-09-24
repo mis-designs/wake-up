@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v223-liquid-actions";
+const CACHE_NAME = "magicbook-pwa-v224-chapter-spacing";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -14,9 +14,9 @@ const STATIC_ASSETS = [
   "/assets/daisyui.css?v=2-learning-shell",
   "/loading-ui.css?v=2-compact",
   "/style.css?v=74-compact-loading",
-  "/web-study-actions.css?v=2-liquid",
+  "/web-study-actions.css?v=3-spacing",
   "/web-study-actions.js?v=1",
-  "/web-action-effects.js?v=2-resume",
+  "/web-action-effects.js?v=3-system-motion",
   "/icons/easy_video.gif",
   "/assets/easy-video-still.png",
   "/assets/new-class.gif",

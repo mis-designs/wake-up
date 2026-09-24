@@ -29,5 +29,5 @@ test("leaving the admin panel restores the entry and ships the new script versio
   assert.match(hideAll, /adminPanel[\s\S]*?classList\.add\("hidden"\)[\s\S]*?updateAdminEntryVisibility\(\)/);
   assert.match(htmlSource, /script\.js\?v=78-web-study-actions/);
   assert.match(workerSource, /script\.js\?v=78-web-study-actions/);
-  assert.match(workerSource, /CACHE_NAME = "magicbook-pwa-v223-liquid-actions"/);
+  assert.match(workerSource, /CACHE_NAME = "magicbook-pwa-v224-chapter-spacing"/);
 });
