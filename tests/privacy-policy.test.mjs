@@ -23,7 +23,8 @@ test("the privacy policy is a public, indexable static route", () => {
   assert.match(page, /privacy-policy\.css\?v=1-editorial-policy/u);
   assert.match(page, /privacy-policy\.js\?v=1-index-navigation/u);
   assert.doesNotMatch(page, /googletagmanager|googleapis|banglawebfonts/u);
-  assert.match(index, /<footer class="welcome-footer">\s*<a href="\/privacypolicy">Privacy policy<\/a>/u);
+  const welcome = index.split('<!-- PUBLIC LANDING -->')[1].split('<main id="trialHub"')[0];
+  assert.doesNotMatch(welcome, /href="\/privacypolicy"/u);
   assert.match(index, /<a href="\/privacypolicy">Privacy policy<\/a>/u);
 });
 

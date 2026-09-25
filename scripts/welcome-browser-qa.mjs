@@ -15,7 +15,7 @@ const report = [];
 const phone = '3310000000';
 const token = 'test.' + Buffer.from(JSON.stringify({ phone, role: 'user', exp: 2208988800 })).toString('base64url') + '.fixture';
 try {
-  for (const [width, height, native] of [[320,568,false], [375,812,false], [430,844,false], [740,360,false], [768,1024,false], [1440,900,false], [1920,1080,false], [375,812,true], [740,360,true]]) {
+  for (const [width, height, native] of [[320,568,false], [375,568,false], [375,812,false], [430,844,false], [568,320,false], [740,360,false], [768,1024,false], [1024,768,false], [1280,720,false], [1366,768,false], [1512,730,false], [1440,900,false], [1920,1080,false], [375,812,true], [740,360,true]]) {
     if (process.env.QA_WIDTH && Number(process.env.QA_WIDTH) !== width) continue;
     const ctx = await browser.newContext({ viewport: { width, height }, serviceWorkers: 'block', hasTouch: width < 800,
       ...(native ? { userAgent: 'Mozilla/5.0 (Linux; Android 14; wv) AppleWebKit/537.36 Chrome/130.0.0.0 Mobile Safari/537.36 MagicBookViewer/1.3' } : {}) });
@@ -23,6 +23,8 @@ try {
     let failBook = false;
     await ctx.route('**/*', async route => {
       const u = new URL(route.request().url());
+      // Exercise the real sponsor destination without contacting Facebook.
+      if (u.href === 'https://www.facebook.com/share/14aaeMyWJGw/') return route.fulfill({ contentType: 'text/html', body: '<title>Sponsor fixture</title>' });
       if (u.hostname !== 'welcome.local') return route.fulfill({ status: 503, body: '' });
       if (failBook && u.pathname === '/icons/mg_book.svg') return route.fulfill({ status: 404, body: '' });
       if (u.pathname.startsWith('/api/')) {
@@ -53,17 +55,46 @@ try {
     assert.equal(await page.locator('#welcomeBook').evaluate(img => img.complete && img.naturalWidth > 0), true);
     const bounds = await page.evaluate(() => ({
       doc: document.documentElement.scrollWidth, width: innerWidth,
+      docHeight: document.documentElement.scrollHeight,
+      contentWidth: document.querySelector('.welcome-content').getBoundingClientRect().width,
+      footer: document.querySelector('.welcome-sponsor').getBoundingClientRect().toJSON(),
+      heading: document.querySelector('.welcome-heading').getBoundingClientRect().toJSON(),
+      book: document.querySelector('.welcome-book-stage').getBoundingClientRect().toJSON(),
+      background: getComputedStyle(document.querySelector('#landing')).backgroundColor,
+      accent: getComputedStyle(document.querySelector('.welcome-action--login')).backgroundColor,
       actions: Array.from(document.querySelectorAll('.welcome-action'), a => { const b = a.getBoundingClientRect(); return { height: b.height, bottom: b.bottom, width: b.width }; }),
-      image: document.querySelector('#welcomeBook').getBoundingClientRect().height
+      image: document.querySelector('#welcomeBook').offsetHeight
     }));
     assert.ok(bounds.doc <= width + 1, JSON.stringify(bounds));
+    assert.ok(bounds.docHeight <= height + 1, `whole welcome must fit, including sponsor: ${JSON.stringify(bounds)}`);
+    assert.ok(bounds.footer.height >= 44 && bounds.footer.top > 0 && bounds.footer.bottom <= height, JSON.stringify(bounds));
+    assert.equal(bounds.background, 'rgb(255, 255, 255)');
+    assert.equal(bounds.accent, native ? 'rgb(7, 106, 224)' : 'rgb(9, 98, 40)');
+    if (width >= 900 || (width >= 520 && height <= 560)) {
+      if (width >= 900) assert.ok(bounds.contentWidth >= Math.min(width * .85, 1320) - 1, 'desktop uses available width, not a shrunken center track');
+      assert.ok(bounds.book.left > bounds.heading.right, `wide view must put book to the right: ${JSON.stringify(bounds)}`);
+      if (height >= 568) assert.ok(bounds.image >= Math.min(height * .58, 600), `desktop book must dominate: ${JSON.stringify(bounds)}`);
+    } else {
+      assert.ok(bounds.book.top >= bounds.heading.bottom - 1, 'phones retain heading, book, actions order');
+    }
     assert.ok(bounds.actions.every(a => a.height >= 44 && a.width >= 44));
     if (height >= 568) assert.ok(bounds.actions.every(a => a.bottom <= height), JSON.stringify(bounds));
     assert.deepEqual(requests.filter(x => !x.startsWith('/api/asset')), [], 'welcome performs no business API reads');
-    const shot = label => page.screenshot({ path: path.join(out, `${native ? 'native' : 'web'}-${width}-${label}.png`), fullPage: true });
+    const shot = label => page.screenshot({ path: path.join(out, `${native ? 'native' : 'web'}-${width}x${height}-${label}.png`), fullPage: true });
     await shot('welcome');
     assert.equal(await page.locator('#welcomeMotionToggle').count(), 0);
     assert.equal(await page.locator('.welcome-footer button').count(), 0);
+    assert.equal(await page.locator('#landing a[href="/privacypolicy"]').count(), 0);
+    const sponsor = page.locator('.welcome-sponsor');
+    assert.equal(await sponsor.getAttribute('href'), 'https://www.facebook.com/share/14aaeMyWJGw/');
+    assert.equal(await sponsor.getAttribute('target'), '_blank');
+    await sponsor.focus();
+    const sponsorTab = page.waitForEvent('popup');
+    await page.keyboard.press('Enter');
+    const popup = await sponsorTab;
+    await popup.waitForLoadState('domcontentloaded');
+    assert.equal(popup.url(), 'https://www.facebook.com/share/14aaeMyWJGw/');
+    await popup.close();
     await page.locator('.welcome-action--login').focus();
     await page.keyboard.press('Enter');
     await page.waitForURL('**/login');
@@ -111,6 +142,13 @@ try {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
       await page.locator('.welcome-action--join').scrollIntoViewIfNeeded();
       assert.ok(await page.locator('.welcome-action--join').isVisible());
+      assert.equal(await page.locator('.welcome-action').evaluateAll(links => links.every(link => {
+        const frame = link.getBoundingClientRect();
+        return [...link.children].every(child => {
+          const rect = child.getBoundingClientRect();
+          return rect.left >= frame.left && rect.right <= frame.right + 1;
+        });
+      })), true, 'zoom must keep labels and arrows inside both buttons');
       await shot('zoom-200');
       await page.evaluate(() => document.documentElement.style.zoom = '');
     }

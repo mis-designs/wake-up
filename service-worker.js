@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v227-welcome-clean";
+const CACHE_NAME = "magicbook-pwa-v228-welcome-split";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -24,13 +24,13 @@ const STATIC_ASSETS = [
   "/mobile-experience.css?v=4-admin-scroll",
   "/login-experience.css?v=4-pending-access",
   "/login-experience.js?v=2-unibody",
-  "/welcome-page.css?v=2-clean",
+  "/welcome-page.css?v=3-split",
   "/welcome-page.js?v=2-clean",
   "/login-signs.mjs?v=1",
   "/greeting-view.mjs?v=1-shared-login",
   "/icons/mdesignstextlogo.png",
   "/android-webview-mode.js?v=7-native-only",
-  "/android-app-theme.css?v=13-welcome",
+  "/android-app-theme.css?v=14-welcome-split",
   "/assets/fonts/magicbook-latin-fonts.css?v=1",
   "/android-study-shell.css?v=20-liquid",
   "/android-study-shell.js?v=14-liquid",
@@ -87,7 +87,7 @@ const STATIC_ASSETS = [
   "/figure-catalog.mjs?v=1",
   "/src/learning-insights.css?v=11-study-results&ui=10",
   "/src/learning-insights.js?v=13-headlight&ui=9-intact-figures",
-  "/homebg.css?v=3",
+  "/homebg.css?v=4-welcome",
   "/mystyle.css?v=60-web-quiz-layout",
   "/audio-player-ui.css?v=10-web-quiz-slim",
   "/script.js?v=80-welcome",

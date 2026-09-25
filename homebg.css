@@ -11,6 +11,20 @@
         linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 30%, rgba(0, 0, 0, 0.22) 100%);
 }
 
+/* Public web welcome: white paper and the established forest-green study accent.
+   Android aliases these semantic roles only behind its installed-app marker. */
+#landing {
+    --welcome-paper: #ffffff;
+    --welcome-ink: #102419;
+    --welcome-accent: #096228;
+    --welcome-accent-strong: #061b0d;
+    --welcome-on-accent: #ffffff;
+    --welcome-muted: #647269;
+    --welcome-line: #dce8df;
+    --welcome-surface: #f1f7f3;
+    --welcome-shadow: color-mix(in srgb, var(--welcome-ink) 12%, transparent);
+}
+
 .public-landing {
     background: var(--home-bg-base);
 }

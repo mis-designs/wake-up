@@ -8,7 +8,7 @@
 
 /* Canonical colors are also consumed by shared web/Android login and live Quiz.
    Only custom properties cross that boundary, never native route styling. */
-html.android-webview, #login, #landing, body.quiz-focus {
+html.android-webview, #login, body.quiz-focus {
   --app-palette-primary: #076AE0;
   --app-palette-primary-strong: #0755B3;
   --app-palette-secondary: #1D1D1F;
@@ -29,6 +29,19 @@ html.android-webview, #login, #landing, body.quiz-focus {
   --app-palette-primary-line: color-mix(in srgb, var(--app-palette-primary) 35%, var(--app-palette-border));
   --app-palette-accent-soft: color-mix(in srgb, var(--app-palette-accent) 16%, transparent);
   --app-palette-shadow: color-mix(in srgb, var(--app-palette-text) 8%, transparent);
+}
+
+/* The public browser welcome must not inherit the installed app's blue palette. */
+html.android-webview #landing {
+  --welcome-paper: var(--app-palette-paper);
+  --welcome-ink: var(--app-palette-text);
+  --welcome-accent: var(--app-palette-primary);
+  --welcome-accent-strong: var(--app-palette-primary-strong);
+  --welcome-on-accent: var(--app-palette-on-primary);
+  --welcome-muted: var(--app-palette-muted);
+  --welcome-line: var(--app-palette-divider);
+  --welcome-surface: var(--app-palette-surface);
+  --welcome-shadow: var(--app-palette-shadow);
 }
 
 html.android-webview {

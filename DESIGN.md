@@ -21,6 +21,7 @@ canonical_ui:
     - login-signs.mjs
     - welcome-page.css
     - welcome-page.js
+    - homebg.css
     - greeting-view.mjs
     - src/daisyui.css
     - assets/daisyui.css
@@ -36,7 +37,7 @@ canonical_ui:
 design_context:
   owner: Magic Book
   last_updated: 2026-09-25
-  revision_notes: "Public entry now presents the original floating book with Login and Join below it. Existing authentication, packages and signed-in Home remain canonical."
+  revision_notes: "Owner correction: white/forest-green web welcome; desktop copy left and large book right, centered phones, full-viewport sponsor linked to Facebook. Android palette stays installed-only. No welcome Privacy or animation control."
 ---
 
 # Magic Book design context
@@ -44,10 +45,11 @@ design_context:
 ## Public welcome — owner request, 2026-09-25
 
 - The logged-out `/` route is an intentional welcome, not the login form. Reuse the existing `#landing` and `script.js` public routes. `welcome-page.css/js` own its named presentation variant; `/login` preserves phone/admin access and `/join` preserves the existing three packages and purchase actions. Signed-in visitors retain automatic entry to their existing Home. Disabled Promo access remains disabled.
-- One continuous pearl canvas, original `icons/mg_book.svg` fully contained in a stable frame, original Norwester display and a short supporting line. Reuse the canonical shared-login palette from `android-app-theme.css`: graphite text, blue Login, white bordered Join. No new token palette, generic feature grid, Spline scene, marketing statistics or duplicated form. The two equal-width, minimum58px actions sit directly below the book; concise captions explain access versus packages. The original signature sits quietly in the footer.
-- A six-second book float travels12px with three degrees of rotation and a soft ground shadow. It never delays navigation. Owner correction: no page-level pause/restart button for this decorative animation, and do not introduce similar controls on future pages without an explicit request. System reduced motion, forced colors and the existing Profile preference stop it automatically; hidden routes, background tabs and pagehide suspend it. The footer contains only Privacy and the signature. Buttons have only hover/press feedback. No sound, polling, animation timer or new business API call.
+- Owner correction: web uses a white canvas and the established study forest-green accent, NOT the installed Android blue palette. `homebg.css` owns the semantic `--welcome-*` roles: paper/on-accent#fff, ink#102419, accent#096228, strong#061b0d, muted#647269, line#dce8df and surface#f1f7f3. `android-app-theme.css` aliases these roles to its canonical palette only under `html.android-webview #landing`. The shared login remains unchanged. Keep original `icons/mg_book.svg` fully contained, Norwester title, a short supporting line, green Login and white bordered Join on browsers. No feature grid, Spline scene, invented statistics or duplicated form.
+- Desktop is a deliberate split composition from900px: heading/information and two equal-width actions on the left, a dominant book (up to620px high) on the right. Phones retain the approved centered heading/book/actions flow. Short landscape from520px also uses two columns. The root reserves header/content/footer rows; viewport-relative book sizing keeps the complete normal-zoom welcome within one screen, including the sponsor. Preserve safe-area gutters and readable reflow at magnification or extreme heights; never hide overflow to fake a fit.
+- A six-second book float travels12px with three degrees of rotation and a soft ground shadow. It never delays navigation. Owner correction: no page-level pause/restart button for this decorative animation, and do not introduce similar controls on future pages without an explicit request. System reduced motion, forced colors and the existing Profile preference stop it automatically; hidden routes, background tabs and pagehide suspend it. The footer contains only the original monochrome `icons/mdesignstextlogo.png`, linked to the same sponsor destination as login (`https://www.facebook.com/share/14aaeMyWJGw/`) in a new tab with44px target, explicit accessible name and focus ring. Do not replace a sponsor link with a noninteractive image. No Privacy link on this welcome; the policy route and its other entry points remain. Buttons have only hover/press feedback. No sound, polling, animation timer or new business API call.
 - Natural document scrolling on short screens, safe-area gutters,320px minimum layout without horizontal scroll, stable book geometry on failure. Unavailable artwork becomes a quiet labelled book-shaped fallback; both destinations stay usable. Public links retain modifier/new-tab semantics, route changes focus headings rather than summoning the phone keyboard, and the login has a small explicit Home link. Browser Back/Forward and direct `/login`/`/join` reloads keep existing routing.
-- Verify local mocked web/native-marker matrix320–1920px, short landscape, keyboard, package prices unchanged, login recovery, book failure, reduced motion, lifecycle pause and zero new business reads. Evidence: `scripts/welcome-browser-qa.mjs` and `tests/welcome-page.test.mjs`. Real-device Safari/Android remains a release smoke check.
+- Verify local mocked web/native-marker matrix320–1920px, short landscape and laptop1280x720/1366x768/1512x730. Assert the FULL document and sponsor bounds fit, not just buttons. Check desktop book position/scale, phone reading order, actual white/green versus native-blue computed colors, sponsor keyboard/new-tab navigation with an intercepted destination, package prices unchanged, login recovery, book failure, reduced motion, lifecycle pause and zero new business reads. Evidence: `scripts/welcome-browser-qa.mjs` and `tests/welcome-page.test.mjs`. Real-device Safari/Android remains a release smoke check.
 
 ## Web chapter actions — owner clarification, 2026-09-24
 
@@ -137,7 +139,7 @@ September 20 Android preview refinement supersedes the earlier density: the visi
 - At 767px and below, content becomes one vertical flow. In Errori, `Il tuo ripasso` precedes category exploration.
 - The results map uses three columns on wide screens, two on tablets and one on phones. Each chapter has a readable title, measured bar, numerator/denominator and percentage; unknown is an em dash, not zero. All25 chapters remain reachable without horizontal scrolling.
 - Reading order remains meaningful without CSS. Nothing may create page-level horizontal scrolling at 320px.
-- Public access entry: Promo Code is temporarily disabled by the fail-closed `PROMO_LOGIN_ENABLED` switch in `script.js`; logged-out visitors go directly to the personal phone login and no promo-status request runs. When the switch is restored, the preserved promo landing uses a wide two-column pass from 1024px and keeps its vertical mobile flow.
+- Public access entry: logged-out visitors open the welcome with Login/Join. Promo Code remains disabled by the fail-closed `PROMO_LOGIN_ENABLED` switch in `script.js`, with no promo-status request. Desktop welcome is split copy-left/book-right; phones center the same content. Personal login and existing packages remain separate canonical routes. Re-enabling Promo requires reviewing the preserved pass layout against this welcome rather than silently restoring direct-to-login behavior.
 
 ## Components and behavior
 

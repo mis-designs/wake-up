@@ -54,7 +54,44 @@ test('welcome has deterministic motion, accessible targets and shared offline as
   assert.match(css, /#landing #promoAccessCard\[hidden\] \{ display: none; \}/);
   assert.match(css, /min-height: 58px/);
   assert.match(css, /object-fit: contain/);
-  assert.match(css, /outline: 3px solid var\(--app-palette-primary\)/);
+  assert.match(css, /#landing :is\(a, button\):focus-visible \{ outline: 3px solid var\(--welcome-accent\)/);
   assert.match(css, /min-height: 100svh; height: auto/);
-  for (const asset of ['welcome-page.css?v=2-clean', 'welcome-page.js?v=2-clean']) { assert.ok(page.includes(asset)); assert.ok(worker.includes(asset)); }
+  for (const asset of ['welcome-page.css?v=3-split', 'welcome-page.js?v=2-clean', 'homebg.css?v=4-welcome', 'android-app-theme.css?v=14-welcome-split']) { assert.ok(page.includes(asset)); assert.ok(worker.includes(asset)); }
+});
+
+test('web welcome owns green-on-white roles while installed Android keeps its own palette', () => {
+  const palette = read('homebg.css'), native = read('android-app-theme.css');
+  assert.match(palette, /--welcome-paper: #ffffff/);
+  assert.match(palette, /--welcome-accent: #096228/);
+  assert.doesNotMatch(native, /html\.android-webview, #login, #landing/);
+  assert.match(native, /html\.android-webview #landing \{[\s\S]*?--welcome-accent: var\(--app-palette-primary\)/);
+  assert.doesNotMatch(css.split('/* Quiet, explicit way back')[0].replace(/#login \.public-return:focus-visible[^\n]*/, ''), /var\(--app-palette-/);
+  assert.match(css, /grid-template-areas: "heading book" "actions book"/);
+  assert.match(css, /grid-template-areas: "heading" "book" "actions"/);
+  assert.match(css, /grid-template-rows: auto 1fr auto/);
+});
+
+test('welcome sponsor preserves the existing Facebook destination, without a Privacy link or motion button', () => {
+  const welcome = page.split('<!-- PUBLIC LANDING -->')[1].split('<main id="trialHub"')[0];
+  const footer = welcome.match(/<footer class="welcome-footer">([\s\S]*?)<\/footer>/)[1];
+  const loginSponsor = page.match(/class="watermark-link"[^>]*href="([^"]+)"[^>]*>[\s\S]*?class="login-watermark-logo"/);
+  assert.ok(loginSponsor);
+  assert.ok(footer.includes(`href="${loginSponsor[1]}"`));
+  assert.match(footer, /target="_blank" rel="noopener noreferrer"/);
+  assert.match(footer, /<a class="welcome-sponsor"[^>]*>\s*<img src="\/icons\/mdesignstextlogo.png"/);
+  assert.doesNotMatch(footer, /Privacy|privacypolicy|<button/);
+});
+
+test('public welcome text, hints and action labels retain AA contrast', () => {
+  const palette = read('homebg.css');
+  const value = role => palette.match(new RegExp(`--welcome-${role}: (#[0-9a-f]{6})`))[1];
+  const luminance = hex => {
+    const channels = [1, 3, 5].map(start => parseInt(hex.slice(start, start + 2), 16) / 255)
+      .map(c => c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4);
+    return channels.reduce((sum, c, i) => sum + c * [.2126, .7152, .0722][i], 0);
+  };
+  for (const [foreground, background] of [['ink', 'paper'], ['muted', 'paper'], ['accent', 'paper'], ['on-accent', 'accent']]) {
+    const levels = [luminance(value(foreground)), luminance(value(background))].sort((a, b) => b - a);
+    assert.ok((levels[0] + .05) / (levels[1] + .05) >= 4.5, `${foreground}/${background}`);
+  }
 });

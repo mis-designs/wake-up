@@ -58,7 +58,7 @@ test("the app marker precedes styles; only the named native variants may follow 
     const html = read(page);
     const markerIndex = html.indexOf("/android-webview-mode.js?v=7-native-only");
     const firstStylesheetIndex = html.indexOf('rel="stylesheet"');
-    const themeIndex = html.indexOf(page === "quiz.html" ? "/android-app-theme.css?v=13-welcome" : "/android-app-theme.css?v=13-welcome");
+    const themeIndex = html.indexOf(page === "quiz.html" ? "/android-app-theme.css?v=14-welcome-split" : "/android-app-theme.css?v=14-welcome-split");
     const lastStylesheetIndex = html.lastIndexOf('rel="stylesheet"');
 
     assert.ok(markerIndex >= 0, `${page} must load the WebView marker`);
@@ -78,7 +78,7 @@ test("the app marker precedes styles; only the named native variants may follow 
 
 test("the app theme assets are available offline", () => {
   assert.match(worker, /\/android-webview-mode\.js\?v=7-native-only/);
-  assert.match(worker, /\/android-app-theme\.css\?v=13-welcome/);
+  assert.match(worker, /\/android-app-theme\.css\?v=14-welcome-split/);
 });
 
 test("primary app color pairings meet WCAG AA for normal text", () => {
