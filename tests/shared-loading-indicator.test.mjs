@@ -81,13 +81,13 @@ test("quiz, study and explanation operations reuse the same busy-control contrac
 });
 
 test("the shared loader and all changed consumers ship in one fresh PWA cache", () => {
-  assert.match(worker, /magicbook-pwa-v225-headlight/u);
+  assert.match(worker, /magicbook-pwa-v227-welcome-clean/u);
   assert.match(worker, /loading-ui\.css\?v=3-headlight/u);
   assert.match(worker, /icons\/loading_headlight\.gif/u);
   assert.match(worker, /icons\/loading_backup\.gif/u);
   assert.match(worker, /loading-ui\.js\?v=1-headlight/u);
   assert.match(worker, /style\.css\?v=74-compact-loading/u);
-  assert.match(worker, /script\.js\?v=79-headlight/u);
+  assert.match(worker, /script\.js\?v=80-welcome/u);
   assert.match(worker, /mystyle\.css\?v=60-web-quiz-layout/u);
   assert.match(worker, /audio-player-ui\.css\?v=10-web-quiz-slim/u);
   assert.match(worker, /quiz\.js\?v=88-headlight/u);

@@ -19,6 +19,8 @@ canonical_ui:
     - login-experience.css
     - login-experience.js
     - login-signs.mjs
+    - welcome-page.css
+    - welcome-page.js
     - greeting-view.mjs
     - src/daisyui.css
     - assets/daisyui.css
@@ -33,11 +35,19 @@ canonical_ui:
   notes: Existing application tokens remain canonical. Locally compiled, d-prefixed daisyUI controls provide interaction primitives; the scoped learning stylesheet owns layout and visual hierarchy.
 design_context:
   owner: Magic Book
-  last_updated: 2026-09-23
-  revision_notes: "Studia now offers Video Class and Quiz per capitolo on web and Android. The video library uses the approved Study palette, supplied portrait/icons, two sample covers, private source-backed catalog and a horizontal lesson rail. Figure study remains Android-only."
+  last_updated: 2026-09-25
+  revision_notes: "Public entry now presents the original floating book with Login and Join below it. Existing authentication, packages and signed-in Home remain canonical."
 ---
 
 # Magic Book design context
+
+## Public welcome — owner request, 2026-09-25
+
+- The logged-out `/` route is an intentional welcome, not the login form. Reuse the existing `#landing` and `script.js` public routes. `welcome-page.css/js` own its named presentation variant; `/login` preserves phone/admin access and `/join` preserves the existing three packages and purchase actions. Signed-in visitors retain automatic entry to their existing Home. Disabled Promo access remains disabled.
+- One continuous pearl canvas, original `icons/mg_book.svg` fully contained in a stable frame, original Norwester display and a short supporting line. Reuse the canonical shared-login palette from `android-app-theme.css`: graphite text, blue Login, white bordered Join. No new token palette, generic feature grid, Spline scene, marketing statistics or duplicated form. The two equal-width, minimum58px actions sit directly below the book; concise captions explain access versus packages. The original signature sits quietly in the footer.
+- A six-second book float travels12px with three degrees of rotation and a soft ground shadow. It never delays navigation. Owner correction: no page-level pause/restart button for this decorative animation, and do not introduce similar controls on future pages without an explicit request. System reduced motion, forced colors and the existing Profile preference stop it automatically; hidden routes, background tabs and pagehide suspend it. The footer contains only Privacy and the signature. Buttons have only hover/press feedback. No sound, polling, animation timer or new business API call.
+- Natural document scrolling on short screens, safe-area gutters,320px minimum layout without horizontal scroll, stable book geometry on failure. Unavailable artwork becomes a quiet labelled book-shaped fallback; both destinations stay usable. Public links retain modifier/new-tab semantics, route changes focus headings rather than summoning the phone keyboard, and the login has a small explicit Home link. Browser Back/Forward and direct `/login`/`/join` reloads keep existing routing.
+- Verify local mocked web/native-marker matrix320–1920px, short landscape, keyboard, package prices unchanged, login recovery, book failure, reduced motion, lifecycle pause and zero new business reads. Evidence: `scripts/welcome-browser-qa.mjs` and `tests/welcome-page.test.mjs`. Real-device Safari/Android remains a release smoke check.
 
 ## Web chapter actions — owner clarification, 2026-09-24
 

@@ -8,7 +8,7 @@
 
 /* Canonical colors are also consumed by shared web/Android login and live Quiz.
    Only custom properties cross that boundary, never native route styling. */
-html.android-webview, #login, body.quiz-focus {
+html.android-webview, #login, #landing, body.quiz-focus {
   --app-palette-primary: #076AE0;
   --app-palette-primary-strong: #0755B3;
   --app-palette-secondary: #1D1D1F;

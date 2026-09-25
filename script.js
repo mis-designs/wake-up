@@ -1631,11 +1631,6 @@ function clearSessionData() {
 }
 
 function showLandingScreen(options = {}) {
-  if (!PROMO_LOGIN_ENABLED) {
-    showLoginScreen("", { replace: options.replace === true });
-    return;
-  }
-
   hideAll();
   document.getElementById("landing")?.classList.remove("hidden");
   const promoLandingError = document.getElementById("promoLandingError");

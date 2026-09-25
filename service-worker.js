@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v225-headlight";
+const CACHE_NAME = "magicbook-pwa-v227-welcome-clean";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -24,11 +24,13 @@ const STATIC_ASSETS = [
   "/mobile-experience.css?v=4-admin-scroll",
   "/login-experience.css?v=4-pending-access",
   "/login-experience.js?v=2-unibody",
+  "/welcome-page.css?v=2-clean",
+  "/welcome-page.js?v=2-clean",
   "/login-signs.mjs?v=1",
   "/greeting-view.mjs?v=1-shared-login",
   "/icons/mdesignstextlogo.png",
   "/android-webview-mode.js?v=7-native-only",
-  "/android-app-theme.css?v=12-study-contrast",
+  "/android-app-theme.css?v=13-welcome",
   "/assets/fonts/magicbook-latin-fonts.css?v=1",
   "/android-study-shell.css?v=20-liquid",
   "/android-study-shell.js?v=14-liquid",
@@ -88,7 +90,7 @@ const STATIC_ASSETS = [
   "/homebg.css?v=3",
   "/mystyle.css?v=60-web-quiz-layout",
   "/audio-player-ui.css?v=10-web-quiz-slim",
-  "/script.js?v=79-headlight",
+  "/script.js?v=80-welcome",
   "/study-quiz.html",
   "/study-quiz.css?v=28-compact",
   "/study-quiz.js?v=37-headlight&art=2e0d6787e201",

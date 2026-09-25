@@ -64,5 +64,5 @@ test("chapter drag work is frame-batched and native navigation is shorter", () =
   assert.match(script, /const appActionGate = \(\(\) =>/u);
   assert.match(script, /function scheduleExclusiveAppNavigation/u);
   assert.match(worker, /mobile-experience\.css\?v=4-admin-scroll/u);
-  assert.match(worker, /script\.js\?v=79-headlight/u);
+  assert.match(worker, /script\.js\?v=80-welcome/u);
 });

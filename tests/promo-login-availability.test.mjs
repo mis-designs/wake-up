@@ -6,10 +6,11 @@ const page = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const script = readFileSync(new URL("../script.js", import.meta.url), "utf8");
 const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
 
-test("Promo Code stays fail-closed and logged-out visitors use personal login", () => {
+test("Promo Code stays fail-closed while the public welcome offers personal login", () => {
   assert.match(script, /const PROMO_LOGIN_ENABLED = false;/);
   assert.match(page, /class="promo-access-card hidden"[^>]*id="promoAccessCard"[^>]*aria-hidden="true"[^>]*hidden/);
-  assert.match(script, /function showLandingScreen\(options = \{\}\) \{\s*if \(!PROMO_LOGIN_ENABLED\) \{\s*showLoginScreen\("", \{ replace: options\.replace === true \}\);\s*return;/u);
+  assert.match(script, /function showLandingScreen\(options = \{\}\) \{\s*hideAll\(\);\s*document\.getElementById\("landing"\)/u);
+  assert.match(page, /href="\/login" data-public-route="login"/u);
   assert.match(script, /function syncPromoLoginAvailability\(\)[\s\S]*?card\.hidden = !PROMO_LOGIN_ENABLED;[\s\S]*?card\.classList\.toggle\("hidden", !PROMO_LOGIN_ENABLED\);/u);
 });
 
@@ -21,7 +22,7 @@ test("disabled promo access does not initialize or request campaign status", () 
 });
 
 test("the disabled promo release uses matching cache-busted assets", () => {
-  assert.match(page, /script\.js\?v=79-headlight/u);
-  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v225-headlight"/u);
-  assert.match(worker, /script\.js\?v=79-headlight/u);
+  assert.match(page, /script\.js\?v=80-welcome/u);
+  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v227-welcome-clean"/u);
+  assert.match(worker, /script\.js\?v=80-welcome/u);
 });
