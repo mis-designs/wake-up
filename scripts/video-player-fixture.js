@@ -12,7 +12,7 @@ window.YT = { Player:class {
   setState(state){this.position=this.getCurrentTime();this.started=performance.now();this.state=state;this.events.onStateChange({data:state,target:this});}
   playVideo(){this.playCalls++;this.setState(1);}
   pauseVideo(){this.setState(2);}
-  seekTo(time){this.setState(3);this.position=time;this.setState(1);}
+  seekTo(time){const playing=this.state===1;this.setState(3);this.position=time;this.setState(playing?1:2);}
   destroy(){this.destroyed=true;this.frame.remove();}
 } };
 window.onYouTubeIframeAPIReady();

@@ -1814,7 +1814,7 @@
     try {
       if (!videoClass) {
         root.textContent = 'Apro Video Class…';
-        videoClassModule ||= import('./video-class.js?v=6-headlight&art=2e0d6787e201').catch(error => { videoClassModule = null; throw error; });
+        videoClassModule ||= import('./video-class.js?v=7-resume&art=2e0d6787e201').catch(error => { videoClassModule = null; throw error; });
         const module = await videoClassModule;
         if (ownRequest !== loadRequestId || !videoView) return;
         videoClass = module.createVideoClass({ root, identity: studyVideoIdentity, toast: showToast,
@@ -1941,7 +1941,7 @@
   });
   window.addEventListener("pageshow", event => {
     normalizeFigureStudyLocation();
-    if (event.persisted && videoView) void showVideoClass({ restore: true });
+    if (event.persisted && videoView) videoClass?.foreground();
     if (event.persisted && isFigureStudyLocation()) void showFigureStudy();
     if (!currentChapter) renderStudyIntro();
     if (event.persisted && currentChapter) {
@@ -1956,7 +1956,7 @@
     if (document.visibilityState === "visible" && !currentChapter) renderStudyIntro();
   });
   window.addEventListener("pagehide", event => {
-    if (event.persisted) videoClass?.suspend();
+    if (event.persisted) videoClass?.pause();
     else videoClass?.destroy();
     if (event.persisted) figureStudy?.suspend();
     else figureStudy?.destroy();

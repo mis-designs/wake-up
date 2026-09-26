@@ -117,7 +117,7 @@ try {
     await shot('catalog');
     assert.equal(await page.locator('.vc-group .car-indicator-outline').count(),27);
     assert.equal(indicatorReads,0,'no sound download before an explicit chapter action');
-    if(width===375) {
+    if(width===375 && !process.env.QA_SKIP_INDICATOR_TIMING) {
       await page.emulateMedia({reducedMotion:'no-preference'});
       // Observe the real AudioContext and lamp without replacing playback/timing.
       await page.evaluate(()=>{
@@ -232,15 +232,43 @@ try {
     await page.evaluate(()=>window.__videoFixture.pauseVideo());await page.clock.runFor(5000);
     assert.equal(await page.locator('.vc-progress-value').textContent(),'30%','pause is not viewing');
     assert.equal(apiLoads,1);await shot('progress-watch');
+    // Notification shade, app switching and bfcache preserve the exact same DOM/player.
+    const identityBefore=await page.evaluate(()=>{window.__preservedFrame=document.querySelector('#vc-stage iframe');return window.__videoFixture.playCalls;});
+    for(const boundary of ['visibility','native','bfcache']) {
+      await page.evaluate(boundary=>{
+        window.__videoFixture.playVideo();
+        if(boundary==='visibility'){Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));}
+        if(boundary==='native'){window.__magicBookVideoActive=false;window.dispatchEvent(new Event('magicbook:video-activity'));}
+        if(boundary==='bfcache')window.dispatchEvent(new PageTransitionEvent('pagehide',{persisted:true}));
+      },boundary);
+      await page.clock.runFor(30000);
+      assert.equal(await page.evaluate(()=>window.__videoFixture.state),2,'background pauses playback');
+      assert.equal(await page.evaluate(()=>document.querySelector('#vc-stage iframe')===window.__preservedFrame),true);
+      await page.evaluate(boundary=>{
+        if(boundary==='visibility'){delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));}
+        if(boundary==='native'){window.__magicBookVideoActive=true;window.dispatchEvent(new Event('magicbook:video-activity'));}
+        if(boundary==='bfcache')window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}));
+      },boundary);
+      assert.equal(await page.evaluate(()=>window.__videoFixture.state),2,'return does not autoplay');
+      assert.equal(await page.locator('.vc-progress-value').textContent(),'30%');assert.equal(reads,1);assert.equal(frames,1);
+    }
+    assert.equal(await page.evaluate(()=>window.__videoFixture.playCalls),identityBefore+3);
     assert.ok(await page.evaluate(()=>document.querySelector('.vc-rail').getBoundingClientRect().top>=document.querySelector('.vc-stage').getBoundingClientRect().bottom),'lesson rail must not cover player');
     await page.getByRole('link',{name:'Lezione successiva',exact:true}).click();await page.locator('.vc-play').waitFor();assert.equal(await page.locator('iframe').count(),0);
     assert.equal(frames,1);assert.equal(reads,1);
     await page.goBack();await page.locator('.vc-play').waitFor();assert.match(await page.locator('#vc-heading').textContent(),/Parte 1/);
+    assert.match(await page.locator('.vc-play-label').textContent(),/Riprendi da 0:06/);
     await page.locator('.vc-favorites').click();await page.locator('.vc-lesson').first().waitFor();assert.equal(await page.locator('.vc-lesson').count(),1);
     assert.equal(await page.locator('.vc-progress-value').textContent(),'30%');await shot('progress-saved');
     await page.clock.resume();
     await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('.vc-lesson').count(),1);assert.equal(reads,2);
     assert.equal(await page.locator('.vc-progress-value').textContent(),'30%','coverage persists reload');
+    await page.locator('.vc-lesson-link').first().click();await page.locator('.vc-play').waitFor();
+    assert.match(await page.locator('.vc-play-label').textContent(),/Riprendi da 0:06/);
+    await shot('resume');await page.locator('.vc-play').click();await page.waitForFunction(()=>window.__videoFixture?.state===1);
+    assert.equal(new URL(await page.locator('#vc-stage iframe').getAttribute('src')).searchParams.get('start'),'6');
+    assert.ok(await page.evaluate(()=>window.__videoFixture.getCurrentTime()>=6),'provider seeks to the saved position');
+    await page.locator('.vc-favorites').click();await page.locator('.vc-lesson').first().waitFor();
     await page.locator('.vc-lesson .vc-save').click();
     await page.locator('.vc-empty').waitFor();assert.equal(await page.locator('.vc-lesson').count(),0);
     await page.locator('.vc-nav a').filter({hasText:'Tutte le lezioni'}).click();await page.locator('.vc-group').first().waitFor();
@@ -280,8 +308,8 @@ try {
       await page.locator('.vc-play').click();await page.waitForFunction(()=>!!window.__videoFixture);await page.clock.runFor(1);await page.clock.runFor(6000);
       await page.locator('.vc-progress-storage-note').waitFor();assert.equal(await page.locator('.vc-progress-value').textContent(),'10%');
       await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));});
-      await page.clock.runFor(30000);assert.equal(await page.locator('iframe').count(),0);assert.equal(await page.locator('.vc-progress-value').textContent(),'10%');
-      await page.evaluate(()=>{delete document.hidden;});await page.clock.resume();await shot('temporary-progress');
+      await page.clock.runFor(30000);assert.equal(await page.locator('iframe').count(),1);assert.equal(await page.locator('.vc-progress-value').textContent(),'10%');
+      await page.evaluate(()=>{delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));});await page.clock.resume();await shot('temporary-progress');
       await page.evaluate(()=>{localStorage.removeItem('user_session');window.dispatchEvent(new StorageEvent('storage',{key:'user_session'}));});
       await page.getByRole('heading',{name:'Accedi di nuovo alle lezioni'}).waitFor();assert.equal(await page.locator('.vc-play').count(),0);assert.equal(await page.locator('iframe').count(),0);
     }
@@ -299,7 +327,7 @@ try {
     }
     if(!native){await page.goto('http://video.local/studia-quiz?view=figures',{waitUntil:'networkidle'});assert.equal(await page.locator('#study-figures').isVisible(),false);}
     assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);
-    report.push({native,width,height,reads,frames,apiLoads,indicatorReads,watchedPercent:30,pass:true}); console.log('PASS',native?'Android':'web',width);
+    report.push({native,width,height,reads,frames,apiLoads,indicatorReads,indicatorTimingChecked:width===375 && !process.env.QA_SKIP_INDICATOR_TIMING,watchedPercent:30,pass:true}); console.log('PASS',native?'Android':'web',width);
     await context.close();
   }
 } finally { await browser.close();fs.writeFileSync(path.join(out,process.env.QA_WIDTH?`report-${process.env.QA_WIDTH}.json`:'report.json'),JSON.stringify(report,null,2)); }

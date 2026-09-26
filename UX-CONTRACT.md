@@ -1,5 +1,12 @@
 # Magic Book learning insights UX contract
 
+## Video playback continuity (2026-09-26)
+
+- Source: owner-approved student feedback about notification shade, app switching and resuming lessons. Existing Video Class route, auth, storage and player owners remain canonical. Visibility/native focus loss pauses and flushes without removing the iframe; bfcache return preserves the same player and does not refetch the catalog. Explicit route exit destroys it only after saving, while stale identities cannot write observations.
+- `video-progress.mjs` extends its bounded v1 account/device record with an independent latest position/time; cumulative coverage and latest playhead merge separately. Legacy coverage is retained without guessing an earlier position. The next explicit Watch sets validated embed seconds and seeks through the official API. Ended resets the resume point but cannot invent watched coverage. Five-second saves plus immediate interruption/navigation flushes are best-effort; abrupt OS termination can lose the final few seconds. No background playback, automatic foreground playback, new server request or cross-device promise.
+- Android `VideoPlaybackPolicy.kt` supplements browser visibility using activity lifecycle and native window focus, only for exact trusted HTTPS origins, with a second in-document origin check. Native fullscreen is not dismissed merely by backgrounding; Back, navigation, recovery and disposal retain their existing exits. No inbound bridge, storage permission, capture-policy change or auth bypass. A new installed build is required for this native behavior.
+- Verification: player/storage unit tests, local browser fixtures for web/native markers and native Gradle tests/build; real YouTube, notification shade and fullscreen behavior on physical devices remain release acceptance checks.
+
 ## Browser chapter shortcuts (2026-09-24)
 
 - Owner-confirmed three actions only: Quiz opens existing mode selection with an Exam disclosure; Studia quiz links directly to `/studia-quiz?view=chapters`; Pial sir class links to `/studia-quiz?view=videos`. This supersedes the old duplicate browser Study card. Android's dedicated six actions and native mode pages are unchanged.

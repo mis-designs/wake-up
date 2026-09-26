@@ -16,10 +16,11 @@ export function selectVideoLessons(catalog, state, favorites = []) {
     && (!state.kind || x.kind === state.kind || (['teoria', 'quiz'].includes(state.kind) && x.kind === 'misto'))
     && (!state.saved || favorites.includes(x.id)));
 }
-export function embedSource(lesson, origin, { autoplay = false } = {}) {
+export function embedSource(lesson, origin, { autoplay = false, start = 0 } = {}) {
   if (lesson?.provider !== 'youtube' || !VIDEO_ID.test(lesson.id)) return '';
   const url = new URL(`https://www.youtube-nocookie.com/embed/${lesson.id}`);
   url.search = new URLSearchParams({ enablejsapi: '1', playsinline: '1', autoplay: autoplay ? '1' : '0', controls: '1', rel: '0', hl: 'it', origin: new URL(origin).origin }).toString();
+  if (Number.isFinite(start) && start > 0 && start <= 86400) url.searchParams.set('start',String(Math.floor(start)));
   return url.href;
 }
 export function createVideoFavorites(storage, scope, allowedIds) {

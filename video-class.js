@@ -1,6 +1,6 @@
-import { PAGE_SIZE, createVideoCatalogReader, createVideoFavorites, embedSource, selectVideoLessons, supportsVideoEmbed, videoPath } from './video-class-model.mjs?v=2';
-import { createVideoProgress } from './video-progress.mjs?v=1';
-import { trackYouTubePlayer } from './video-player.mjs?v=1';
+import { PAGE_SIZE, createVideoCatalogReader, createVideoFavorites, embedSource, selectVideoLessons, supportsVideoEmbed, videoPath } from './video-class-model.mjs?v=3';
+import { createVideoProgress } from './video-progress.mjs?v=2';
+import { trackYouTubePlayer } from './video-player.mjs?v=2';
 import { carIndicatorIcon, createCarIndicator } from './car-indicator.mjs?v=1';
 
 const KIND = { teoria: 'Teoria', quiz: 'Quiz', misto: 'Teoria e quiz', parole: 'Parole', guide: 'Guida' };
@@ -60,7 +60,13 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
       if (scrollPositions.size > 32) scrollPositions.delete(scrollPositions.keys().next().value);
     }
   }
-  function suspend() { indicator.cancel(); saveScroll(); active = false; version++; data.cancel(); stopPlayer(); }
+  function suspend() { indicator.cancel(); saveScroll(); stopPlayer(); active = false; version++; data.cancel(); }
+  function pause() { if (active && guardIdentity()) playback?.pause(); }
+  function foreground() {
+    if (!active || !guardIdentity()) return;
+    if (document.hidden || window.__magicBookVideoActive === false) playback?.pause();
+    else playback?.foreground();
+  }
   function clear() { suspend(); data.clear(); catalog = null; favorites = null; progress = null; favoriteScope = ''; root.replaceChildren(); }
   function guardIdentity() {
     if (identity() === favoriteScope) return true;
@@ -174,14 +180,16 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
   function renderLesson(lesson) {
     const group = catalog.groups.find(x => x.id === lesson.group);
     const stage = node('div', { class: 'vc-stage', id: 'vc-stage' });
-    const play = button('', 'play', 'vc-play'); play.append(cover(lesson, true), node('span', { class: 'vc-play-label' }, playIcon(), lesson.provider !== 'youtube' ? 'Apri su Facebook' : embeddedVideo ? 'Guarda la lezione' : 'Guarda su YouTube'));
+    const seconds = Math.floor(progress?.resume(lesson.id) || 0);
+    const resumeLabel = seconds > 0 ? `Riprendi da ${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}` : 'Guarda la lezione';
+    const play = button('', 'play', 'vc-play'); play.append(cover(lesson, true), node('span', { class: 'vc-play-label' }, playIcon(), lesson.provider !== 'youtube' ? 'Apri su Facebook' : embeddedVideo ? resumeLabel : 'Guarda su YouTube'));
     // Do not create a frame, contact YouTube or imply playback before this action.
     stage.append(play);
     const information = node('aside', { class: 'vc-lesson-info' },
       node('p', { class: 'vc-eyebrow' }, /^\d+$/.test(lesson.group) ? `CAPITOLO ${lesson.group} · ${KIND[lesson.kind]}` : KIND[lesson.kind]),
       node('h2', { id: 'vc-heading', tabindex: '-1' }, lesson.title), node('p', { class: 'vc-topic' }, group.title),
       progressView(lesson),
-      node('p', { class: 'vc-progress-note' }, lesson.provider === 'youtube' && embeddedVideo ? 'Si aggiorna mentre guardi qui. Ritrovi il progresso su questo dispositivo; i tratti saltati non contano.' : 'I video aperti su un sito esterno non aggiornano il progresso qui.'),
+      node('p', { class: 'vc-progress-note' }, lesson.provider === 'youtube' && embeddedVideo ? 'Riparti da dove ti sei fermato, su questo dispositivo. La barra indica le parti guardate, senza contare quelle saltate.' : 'I video aperti su un sito esterno non aggiornano il progresso qui.'),
       lesson.teacher || lesson.minutes ? node('p', {}, [lesson.teacher,lesson.minutes ? `Circa ${lesson.minutes} min` : ''].filter(Boolean).join(' · ')) : null,
       node('div', { class: 'vc-lesson-actions' }, saveButton(lesson, true)),
       node('p', { class: 'vc-provider-note' }, lesson.provider !== 'youtube' ? 'Questo video si guarda su Facebook.' : embeddedVideo ? 'Il video non parte?' : 'Questa versione dell’app apre la lezione su YouTube.',
@@ -257,16 +265,18 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     if (!lesson) return;
     if (lesson.provider !== 'youtube' || !embeddedVideo) { window.open(lesson.url, '_blank', 'noopener'); return; }
     stopPlayer();
-    iframe = node('iframe', { src: embedSource(lesson, location.origin, { autoplay:true }), title: `${lesson.title} · YouTube`, allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: '', referrerpolicy: 'strict-origin-when-cross-origin' });
+    const start = progress.resume(lesson.id);
+    iframe = node('iframe', { src: embedSource(lesson, location.origin, { autoplay:true, start }), title: `${lesson.title} · YouTube`, allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: '', referrerpolicy: 'strict-origin-when-cross-origin' });
     const own = iframe;
     const message = root.querySelector('#vc-player-status');
     const fail = () => { if (iframe === own && message) message.textContent = 'Non riesco a collegare il player: il progresso non si aggiorna. Puoi riaprire la lezione o usare Apri su YouTube.'; };
     own.addEventListener('error', fail, { once: true });
     root.querySelector('#vc-stage').replaceChildren(own);
-    playback = trackYouTubePlayer({ frame:own, id:lesson.id, store:progress,
+    playback = trackYouTubePlayer({ frame:own, id:lesson.id, store:progress, start,
       isCurrent:() => active && iframe === own && identity() === favoriteScope,
       changed:updateProgress, ready:() => { if (message) message.textContent = ''; }, failed:fail,
       blocked:() => { if (message) message.textContent = 'Premi Play nel video: il browser richiede un tocco sul player.'; } });
+    foreground();
     own.focus();
   }
   root.addEventListener('click', event => {
@@ -313,12 +323,11 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     if (event.key === favorites?.key) { favorites.read(); if (state.saved && !state.lesson) paint(); else updateSavedButtons(); }
     if (event.key === progress?.key) { progress.read(); updateProgress(); }
   }, { signal: lifetime.signal });
-  document.addEventListener('visibilitychange', () => {
-    if (!active) return;
-    if (!guardIdentity()) return;
-    if (document.hidden && iframe) { stopPlayer(); paint(); } // no background playback or automatic resume
-  }, { signal: lifetime.signal });
-  return { render, suspend, destroy() { indicator.destroy(); clear(); lifetime.abort(); },
+  document.addEventListener('visibilitychange', foreground, { signal: lifetime.signal });
+  window.addEventListener('magicbook:video-activity', foreground, { signal: lifetime.signal });
+  window.addEventListener('pagehide', pause, { signal: lifetime.signal });
+  window.addEventListener('pageshow', foreground, { signal: lifetime.signal });
+  return { render, suspend, pause, foreground, destroy() { indicator.destroy(); clear(); lifetime.abort(); },
     back() {
       indicator.cancel();
       if (state.lesson) {

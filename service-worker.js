@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v228-welcome-split";
+const CACHE_NAME = "magicbook-pwa-v229-video-resume";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -51,12 +51,12 @@ const STATIC_ASSETS = [
   "/icons/native/roudabout.svg",
   "/icons/study_quiz.svg",
   "/video-class.css?v=7",
-  "/video-class.js?v=6-headlight&art=2e0d6787e201",
-  "/video-class-model.mjs?v=2",
+  "/video-class.js?v=7-resume&art=2e0d6787e201",
+  "/video-class-model.mjs?v=3",
   "/car-indicator.mjs?v=1",
   "/car-indicator.css?v=1",
-  "/video-progress.mjs?v=1",
-  "/video-player.mjs?v=1",
+  "/video-progress.mjs?v=2",
+  "/video-player.mjs?v=2",
   "/assets/video-class/teacher.webp?v=2e0d6787e201",
   "/assets/video-class/road-basics.webp",
   "/assets/video-class/danger-signs.webp",
@@ -93,7 +93,7 @@ const STATIC_ASSETS = [
   "/script.js?v=80-welcome",
   "/study-quiz.html",
   "/study-quiz.css?v=28-compact",
-  "/study-quiz.js?v=37-headlight&art=2e0d6787e201",
+  "/study-quiz.js?v=38-resume&art=2e0d6787e201",
   "/figure-study.css?v=2",
   "/figure-study.js?v=3-headlight",
   "/figure-study-catalog.mjs?v=2",

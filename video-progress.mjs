@@ -34,12 +34,22 @@ export function createVideoProgress(storage, scope, allowedIds, now = Date.now) 
   let records = Object.create(null), dirty = false, durable = !!storage;
   function normalize(record) {
     if (!record || !validDuration(record.duration) || !Array.isArray(record.ranges) || record.ranges.length > MAX_RANGES) return null;
-    return { duration:record.duration, ranges:mergeWatchedRanges(record.ranges,record.duration), updatedAt:Number.isFinite(record.updatedAt) ? record.updatedAt : 0 };
+    const checkpoint = Number.isFinite(record.position) && record.position >= 0 && record.position <= record.duration && Number.isFinite(record.positionUpdatedAt) && record.positionUpdatedAt > 0
+      ? { position:record.position, positionUpdatedAt:record.positionUpdatedAt } : {};
+    return { duration:record.duration, ranges:mergeWatchedRanges(record.ranges,record.duration), updatedAt:Number.isFinite(record.updatedAt) ? record.updatedAt : 0, ...checkpoint };
   }
   function merge(id, record) {
     const old = records[id];
     const duration = !old || record.updatedAt >= old.updatedAt ? record.duration : old.duration;
-    records[id] = { duration, ranges:mergeWatchedRanges([...(old?.ranges || []),...record.ranges],duration), updatedAt:Math.max(old?.updatedAt || 0,record.updatedAt) };
+    // Coverage is cumulative; the resume point is the latest choice, even a backward seek.
+    const checkpoint = (record.positionUpdatedAt || 0) > (old?.positionUpdatedAt || 0) ? record : old;
+    records[id] = { duration, ranges:mergeWatchedRanges([...(old?.ranges || []),...record.ranges],duration), updatedAt:Math.max(old?.updatedAt || 0,record.updatedAt),
+      ...(checkpoint?.positionUpdatedAt ? { position:Math.min(duration,checkpoint.position), positionUpdatedAt:checkpoint.positionUpdatedAt } : {}) };
+  }
+  function trim() {
+    if (Object.keys(records).length > MAX_ITEMS) {
+      const oldest = Object.entries(records).sort((a,b) => a[1].updatedAt-b[1].updatedAt)[0][0]; delete records[oldest];
+    }
   }
   function read() {
     if (!durable) return;
@@ -70,12 +80,17 @@ export function createVideoProgress(storage, scope, allowedIds, now = Date.now) 
   read();
   return { key, read, flush, get durable() { return durable; },
     summary(id) { return watchedSummary(records[id]); },
+    resume(id) { return records[id]?.position || 0; },
+    checkpoint(id, position, duration) {
+      if (!allowedIds.has(id) || !validDuration(duration) || !Number.isFinite(position) || position < 0 || position > duration) return false;
+      const stamp = Math.max(now(),(records[id]?.positionUpdatedAt || 0)+1);
+      merge(id,{ duration, ranges:[], position, positionUpdatedAt:stamp, updatedAt:stamp }); dirty = true; trim();
+      return true;
+    },
     add(id, start, end, duration) {
       if (!allowedIds.has(id) || !validDuration(duration) || !Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start || end > duration) return false;
       merge(id,{ duration, ranges:[[start,end]], updatedAt:now() }); dirty = true;
-      if (Object.keys(records).length > MAX_ITEMS) {
-        const oldest = Object.entries(records).sort((a,b) => a[1].updatedAt-b[1].updatedAt)[0][0]; delete records[oldest];
-      }
+      trim();
       return true;
     }
   };

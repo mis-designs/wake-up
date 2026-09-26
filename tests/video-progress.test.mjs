@@ -7,6 +7,32 @@ import { embedSource } from '../video-class-model.mjs';
 const memory = () => { const m=new Map(); let writes=0; return {getItem:k=>m.get(k)||null,setItem(k,v){writes++;m.set(k,v);},get writes(){return writes;}}; };
 const ids = new Set(['abcdefghijk','bcdefghijkl']);
 
+test('resume persists actual seconds separately from coverage, including backwards and zero', () => {
+  const storage=memory(),a=createVideoProgress(storage,'a',ids,()=>10);
+  a.add('abcdefghijk',0,20,100);a.checkpoint('abcdefghijk',80.75,100);a.flush();
+  assert.equal(createVideoProgress(storage,'a',ids).resume('abcdefghijk'),80.75);assert.equal(a.summary('abcdefghijk').percent,20);
+  a.checkpoint('abcdefghijk',3.5,100);a.flush();assert.equal(createVideoProgress(storage,'a',ids).resume('abcdefghijk'),3.5);
+  a.checkpoint('abcdefghijk',0,100);a.flush();assert.equal(createVideoProgress(storage,'a',ids).resume('abcdefghijk'),0);
+  assert.equal(a.summary('abcdefghijk').percent,20);assert.equal(createVideoProgress(storage,'b',ids).resume('abcdefghijk'),0);
+});
+test('old coverage does not invent a playhead; metadata is validated and latest checkpoint wins across tabs', () => {
+  const storage=memory(),a=createVideoProgress(storage,'a',ids,()=>10);
+  a.add('abcdefghijk',70,80,100);a.flush();assert.equal(createVideoProgress(storage,'a',ids).resume('abcdefghijk'),0);
+  const b=createVideoProgress(storage,'a',ids,()=>20);
+  a.checkpoint('abcdefghijk',80,100);a.flush();b.checkpoint('abcdefghijk',5,100);b.flush();a.read();assert.equal(a.resume('abcdefghijk'),5);
+  a.add('abcdefghijk',90,95,100);a.flush();assert.equal(createVideoProgress(storage,'a',ids).resume('abcdefghijk'),5);
+  for(const value of [NaN,Infinity,-1,101,'20'])assert.equal(a.checkpoint('abcdefghijk',value,100),false);
+  assert.equal(a.checkpoint('unknown',10,100),false);
+  storage.setItem(a.key,JSON.stringify({version:1,items:{abcdefghijk:{duration:100,ranges:[[0,20]],updatedAt:1,position:200,positionUpdatedAt:30}}}));
+  const clean=createVideoProgress(storage,'a',ids);assert.equal(clean.resume('abcdefghijk'),0);assert.equal(clean.summary('abcdefghijk').percent,20);
+  const memoryOnly=createVideoProgress(undefined,'a',ids);memoryOnly.checkpoint('abcdefghijk',15,100);memoryOnly.flush();assert.equal(memoryOnly.resume('abcdefghijk'),15);
+});
+test('embed resumes at validated seconds, not accumulated watched coverage', () => {
+  const lesson={id:'abcdefghijk',provider:'youtube'};
+  assert.equal(new URL(embedSource(lesson,'https://test.invalid',{start:725.75,autoplay:true})).searchParams.get('start'),'725');
+  for(const start of [0,-1,Infinity,NaN,86401,'12'])assert.equal(new URL(embedSource(lesson,'https://test.invalid',{start})).searchParams.has('start'),false);
+});
+
 test('watched coverage unions replays and leaves seek gaps untouched', () => {
   assert.deepEqual(mergeWatchedRanges([[0,10],[5,15],[15,20],[90,100]],100),[[0,20],[90,100]]);
   assert.deepEqual(watchedSummary({duration:100,ranges:[[0,20],[90,100]]}),{known:true,percent:30,seconds:30});
