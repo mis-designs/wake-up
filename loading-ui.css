@@ -1,16 +1,13 @@
 :root {
-  --magic-loading-asset: url("/icons/loading_headlight.gif");
+  /* Shared CSS-only controls are compact: use the legible circular GIF. */
+  --magic-loading-asset: url("/icons/loading_backup.gif");
   --magic-loading-button-size: 22px;
   --magic-loading-inline-size: 36px;
   --magic-loading-panel-size: clamp(64px, 14vw, 88px);
   --magic-loading-page-size: clamp(88px, 20vw, 112px);
 }
 
-:root[data-loading-asset="backup"] {
-  --magic-loading-asset: url("/icons/loading_backup.gif");
-}
-
-:root[data-loading-asset="unavailable"] {
+:root[data-loading-compact="unavailable"] {
   --magic-loading-asset: none;
 }
 
@@ -120,17 +117,17 @@
   opacity: .22;
 }
 
-/* Keep a quiet, asset-independent mark if neither supplied GIF can be decoded. */
-:root[data-loading-asset="unavailable"] :is(.magic-loading-image, .magic-loading-indicator__image) {
+/* Keep a quiet static mark if this size's GIF (and any eligible fallback) fails. */
+:is(.magic-loading-image, .magic-loading-indicator__image)[data-loading-unavailable] {
   box-sizing: border-box;
   border: 0;
   background: radial-gradient(circle, transparent 24%, currentColor 25% 29%, transparent 30%);
   opacity: .58;
 }
 
-:root[data-loading-asset="unavailable"] :is(.magic-loading-inline-status.is-loading)::before,
-:root[data-loading-asset="unavailable"] .magic-loading-control.is-loading::after,
-:root[data-loading-asset="unavailable"] .magic-loading-host.is-loading .magic-loading-control::after {
+:root[data-loading-compact="unavailable"] :is(.magic-loading-inline-status.is-loading)::before,
+:root[data-loading-compact="unavailable"] .magic-loading-control.is-loading::after,
+:root[data-loading-compact="unavailable"] .magic-loading-host.is-loading .magic-loading-control::after {
   border: 3px solid currentColor;
   border-radius: 50%;
   background: #fff;

@@ -168,11 +168,6 @@ body.login-pending-popup-open { overflow: hidden; }
   position: relative; display: grid; justify-items: center; gap: 4px;
   padding: 12px 8px 0; margin-top: 0;
 }
-#login .login-device-note {
-  max-width: 280px; margin: 0; gap: 9px;
-  color: var(--app-palette-muted); font: 400 12px/1.5 "Inter", system-ui, sans-serif;
-}
-#login .login-device-note svg { width: 18px; height: 18px; color: var(--app-palette-muted); }
 #login .watermark-link {
   position: relative; inset: auto; display: flex; align-items: center; justify-content: center;
   width: 146px; min-height: 44px; margin: 0; padding: 0 7px;
@@ -186,17 +181,6 @@ body.login-pending-popup-open { overflow: hidden; }
 #login .watermark-link:hover { background: var(--app-palette-primary-soft); transform: none; }
 #login .watermark-link:active { background: var(--app-palette-accent-soft); transform: none; }
 #login .watermark-link:focus-visible { outline: 3px solid var(--app-palette-primary); outline-offset: 2px; }
-#login .login-motion-toggle {
-  position: absolute; right: 0; bottom: 0; display: grid; place-items: center;
-  width: 44px; height: 44px; min-width: 44px; padding: 0; margin: 0;
-  border: 1px solid transparent; border-radius: 50%; background: transparent;
-  color: var(--app-palette-muted); cursor: pointer; box-shadow: none;
-}
-#login .login-motion-toggle:hover { background: var(--app-palette-primary-soft); transform: none; }
-#login .login-motion-toggle:active { background: var(--app-palette-accent-soft); transform: none; }
-#login .login-motion-toggle:focus-visible { outline: 3px solid var(--app-palette-primary); outline-offset: 2px; }
-#login .login-motion-play, #login .login-motion-toggle[aria-pressed="true"] .login-motion-pause { display: none; }
-#login .login-motion-toggle[aria-pressed="true"] .login-motion-play { display: block; }
 #login[data-login-paused] .login-hero-img { animation-play-state: paused; }
 html[data-native-motion-paused] #login .login-hero-img { animation: none; transform: none; }
 @media (max-width: 359px) {
@@ -220,7 +204,6 @@ html[data-native-motion-paused] #login .login-hero-img { animation: none; transf
   #login .login-hero-img { animation: none; transform: none; }
   #login .login-submit:active:not(:disabled) { transform: none; }
   #login :is(.login-submit, .login-input) { transition: none; }
-  #login .login-motion-toggle { visibility: hidden; }
 }
 @media (forced-colors: active) {
   #login:not(.hidden) { background: Canvas; color: CanvasText; }

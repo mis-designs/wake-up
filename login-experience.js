@@ -6,15 +6,14 @@ if (loginScreen) {
   const sign = document.getElementById("loginSign");
   const art = sign.querySelector("img");
   const caption = sign.querySelector("figcaption");
-  const toggle = document.getElementById("loginMotionToggle");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const loaded = new Map();
   const failed = new Set();
   let selected = -1, step = 0, timer = 0, frame = 0, viewportTimer = 0, revision = 0;
-  let pending = null, motion = null, userPaused = false, pageHidden = false;
+  let pending = null, motion = null, pageHidden = false;
   let active = false, runnable = false;
   const visible = () => !loginScreen.classList.contains("hidden") && !document.hidden && !pageHidden;
-  const canRun = () => visible() && !userPaused && !reduced.matches && !loginScreen.querySelector(".login-form").contains(document.activeElement) && !document.documentElement.hasAttribute("data-native-motion-paused");
+  const canRun = () => visible() && !reduced.matches && !loginScreen.querySelector(".login-form").contains(document.activeElement) && !document.documentElement.hasAttribute("data-native-motion-paused");
 
   function cancelWork() {
     revision++;
@@ -132,13 +131,6 @@ if (loginScreen) {
     // after keyboard settling, without a polling loop or fighting manual scrolling.
     if (inputFocused) viewportTimer = setTimeout(() => { frame = requestAnimationFrame(alignForm); }, 140);
   }
-  toggle.addEventListener("click", () => {
-    userPaused = !userPaused;
-    toggle.setAttribute("aria-pressed", String(userPaused));
-    const label = userPaused ? "Riprendi animazioni" : "Pausa animazioni";
-    toggle.setAttribute("aria-label", label); toggle.title = label;
-    sync();
-  });
   loginScreen.addEventListener("focusin", () => { sync(); keepFormVisible(); });
   loginScreen.addEventListener("focusout", () => queueMicrotask(() => { sync(); keepFormVisible(); }));
   new MutationObserver(sync).observe(loginScreen, { attributes: true, attributeFilter: ["class"] });

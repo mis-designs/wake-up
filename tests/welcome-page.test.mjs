@@ -56,7 +56,7 @@ test('welcome has deterministic motion, accessible targets and shared offline as
   assert.match(css, /object-fit: contain/);
   assert.match(css, /#landing :is\(a, button\):focus-visible \{ outline: 3px solid var\(--welcome-accent\)/);
   assert.match(css, /min-height: 100svh; height: auto/);
-  for (const asset of ['welcome-page.css?v=3-split', 'welcome-page.js?v=2-clean', 'homebg.css?v=4-welcome', 'android-app-theme.css?v=14-welcome-split']) { assert.ok(page.includes(asset)); assert.ok(worker.includes(asset)); }
+  for (const asset of ['welcome-page.css?v=4-login-home', 'welcome-page.js?v=2-clean', 'homebg.css?v=4-welcome', 'android-app-theme.css?v=14-welcome-split']) { assert.ok(page.includes(asset)); assert.ok(worker.includes(asset)); }
 });
 
 test('web welcome owns green-on-white roles while installed Android keeps its own palette', () => {

@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v229-video-resume";
+const CACHE_NAME = "magicbook-pwa-v231-login-clean";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -12,8 +12,8 @@ const STATIC_ASSETS = [
   "/privacy-policy.js?v=1-index-navigation",
   "/assets/fonts/magicbook-bangla-fonts.css?v=1-adorsho",
   "/assets/daisyui.css?v=2-learning-shell",
-  "/loading-ui.css?v=3-headlight",
-  "/loading-ui.js?v=1-headlight",
+  "/loading-ui.css?v=4-context",
+  "/loading-ui.js?v=2-context",
   "/style.css?v=74-compact-loading",
   "/web-study-actions.css?v=3-spacing",
   "/web-study-actions.js?v=1",
@@ -22,9 +22,9 @@ const STATIC_ASSETS = [
   "/assets/easy-video-still.png",
   "/assets/new-class.gif",
   "/mobile-experience.css?v=4-admin-scroll",
-  "/login-experience.css?v=4-pending-access",
-  "/login-experience.js?v=2-unibody",
-  "/welcome-page.css?v=3-split",
+  "/login-experience.css?v=5-clean",
+  "/login-experience.js?v=3-clean",
+  "/welcome-page.css?v=4-login-home",
   "/welcome-page.js?v=2-clean",
   "/login-signs.mjs?v=1",
   "/greeting-view.mjs?v=1-shared-login",

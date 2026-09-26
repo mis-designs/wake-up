@@ -29,7 +29,7 @@ test("the supplied headlight GIF and backup retain their original 640px media", 
     assert.equal(gif.readUInt16LE(6), 640);
     assert.equal(gif.readUInt16LE(8), 640);
   }
-  assert.match(loadingCss, /url\("\/icons\/loading_headlight\.gif"\)/u);
+  assert.match(loadingCss, /--magic-loading-asset: url\("\/icons\/loading_backup\.gif"\)/u);
   assert.match(loadingCss, /\.magic-loading-indicator--panel/u);
   assert.match(loadingCss, /\.magic-loading-control\.is-loading::after/u);
   assert.match(loadingCss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?visibility: hidden/u);
@@ -38,11 +38,11 @@ test("the supplied headlight GIF and backup retain their original 640px media", 
 
 test("every asynchronous application entry loads the shared indicator stylesheet", () => {
   for (const html of [page, quizPage, studyPage, audioAdminPage]) {
-    assert.match(html, /loading-ui\.css\?v=3-headlight/u);
-    assert.match(html, /loading-ui\.js\?v=1-headlight/u);
+    assert.match(html, /loading-ui\.css\?v=4-context/u);
+    assert.match(html, /loading-ui\.js\?v=2-context/u);
   }
-  assert.match(page, /login-submit-spinner[\s\S]*?icons\/loading_headlight\.gif/u);
-  assert.match(page, /promo-access-submit[\s\S]*?icons\/loading_headlight\.gif/u);
+  assert.match(page, /login-submit-spinner[\s\S]*?icons\/loading_backup\.gif/u);
+  assert.match(page, /promo-access-submit[\s\S]*?icons\/loading_backup\.gif/u);
   assert.match(studyPage, /study-loader[\s\S]*?icons\/loading_headlight\.gif/u);
   assert.doesNotMatch(studyPage, /icons\/driving-license\.gif/u);
 });
@@ -81,11 +81,11 @@ test("quiz, study and explanation operations reuse the same busy-control contrac
 });
 
 test("the shared loader and all changed consumers ship in one fresh PWA cache", () => {
-  assert.match(worker, /magicbook-pwa-v229-video-resume/u);
-  assert.match(worker, /loading-ui\.css\?v=3-headlight/u);
+  assert.match(worker, /magicbook-pwa-v231-login-clean/u);
+  assert.match(worker, /loading-ui\.css\?v=4-context/u);
   assert.match(worker, /icons\/loading_headlight\.gif/u);
   assert.match(worker, /icons\/loading_backup\.gif/u);
-  assert.match(worker, /loading-ui\.js\?v=1-headlight/u);
+  assert.match(worker, /loading-ui\.js\?v=2-context/u);
   assert.match(worker, /style\.css\?v=74-compact-loading/u);
   assert.match(worker, /script\.js\?v=80-welcome/u);
   assert.match(worker, /mystyle\.css\?v=60-web-quiz-layout/u);

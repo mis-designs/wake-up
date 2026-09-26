@@ -154,6 +154,26 @@ try {
     }
     await page.goto('http://welcome.local/login', { waitUntil: 'networkidle' });
     assert.equal(await page.locator('#login').isVisible(), true);
+    const homeLink = page.getByRole('link', { name: 'Home', exact: true });
+    const homeBox = await homeLink.boundingBox();
+    assert.ok(homeBox.width >= 44 && homeBox.width <= 120, `Home must fit its icon and label: ${JSON.stringify(homeBox)}`);
+    assert.ok(homeBox.height >= 44 && homeBox.x >= 0 && homeBox.x + homeBox.width <= width);
+    assert.equal(await page.locator('#loginMotionToggle, #login .login-device-note').count(), 0);
+    assert.equal(await page.locator('#login .watermark-link').getAttribute('href'), 'https://www.facebook.com/share/14aaeMyWJGw/');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+    await homeLink.focus();
+    assert.equal(await homeLink.evaluate(el => getComputedStyle(el).outlineStyle), 'solid');
+    await page.keyboard.press('Enter');
+    await page.waitForURL('http://welcome.local/');
+    await page.goBack();
+    assert.equal(await page.locator('#login').isVisible(), true);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.waitForFunction(() => document.getElementById('login').hasAttribute('data-login-paused'));
+    assert.equal(await page.locator('.login-hero-img').evaluate(el => getComputedStyle(el).animationName), 'none');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.evaluate(() => document.documentElement.dataset.nativeMotionPaused = 'true');
+    await page.waitForFunction(() => document.getElementById('login').hasAttribute('data-login-paused'));
+    await page.evaluate(() => delete document.documentElement.dataset.nativeMotionPaused);
     await shot('login');
     await page.locator('#user').fill('3310000000');
     await page.locator('.login-submit').click();

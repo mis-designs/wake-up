@@ -43,7 +43,19 @@ test("sign presentation is bounded, motion-safe and never owns authentication", 
   assert.doesNotMatch(shell, /fetch\(|setInterval|requestAuthAction|localStorage\.setItem|completeLogin\(/u);
   assert.match(loginStyles, /prefers-reduced-motion: reduce/u);
   assert.match(loginStyles, /data-native-motion-paused/u);
-  assert.match(page, /id="loginMotionToggle"[^>]*aria-label="Pausa animazioni"[^>]*aria-pressed="false"/u);
+  assert.doesNotMatch(page, /id="loginMotionToggle"|class="login-device-note"|Accesso protetto e associato al tuo dispositivo/u);
+  assert.doesNotMatch(shell, /loginMotionToggle|userPaused|toggle\.addEventListener/u);
+  assert.doesNotMatch(loginStyles, /login-motion-toggle|login-motion-play|login-motion-pause/u);
+});
+
+test("login Home is a compact labelled house link, not the legacy full-width child", () => {
+  const welcomeStyles = readFileSync(new URL("../welcome-page.css", import.meta.url), "utf8");
+  assert.match(page, /class="public-return" href="\/" data-public-route="welcome"[^>]*><svg[^>]*aria-hidden="true"[\s\S]*?<span>Home<\/span><\/a>/u);
+  assert.match(welcomeStyles, /#login \.public-return \{[^}]*width: max-content;[^}]*margin: 0;[^}]*min-height: 44px/u);
+  for (const state of ['hover', 'active', 'focus-visible']) assert.ok(welcomeStyles.includes(`#login .public-return:${state}`));
+  const footer = page.match(/<footer class="login-footer">([\s\S]*?)<\/footer>/u)[1];
+  assert.doesNotMatch(footer, /<button|login-device-note/u);
+  assert.match(footer, /href="https:\/\/www.facebook.com\/share\/14aaeMyWJGw\/"/u);
 });
 
 test("original signature remains small and readable without a black container", () => {
@@ -56,7 +68,7 @@ test("original signature remains small and readable without a black container", 
 test("shared login assets are versioned without exposing Android Home to browsers", () => {
   const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
   const native = readFileSync(new URL("../android-study-shell.js", import.meta.url), "utf8");
-  for (const asset of ["login-experience.css?v=4-pending-access", "login-experience.js?v=2-unibody"]) {
+  for (const asset of ["login-experience.css?v=5-clean", "login-experience.js?v=3-clean"]) {
     assert.ok(page.includes(asset)); assert.ok(worker.includes(asset));
   }
   for (const asset of ["login-signs.mjs?v=1", "/icons/mdesignstextlogo.png", "/assets/fonts/norwester/norwester.woff"]) assert.ok(worker.includes(asset));

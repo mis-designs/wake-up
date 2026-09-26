@@ -92,11 +92,16 @@
 #login:not(.hidden) { position: relative; padding-top: max(84px, calc(env(safe-area-inset-top, 0px) + 68px)); }
 #login .public-return {
   position: absolute; top: max(16px, env(safe-area-inset-top, 0px)); left: max(20px, env(safe-area-inset-left, 0px));
+  /* Override the legacy direct-child login width, not the phone form geometry. */
+  width: max-content; max-width: calc(100% - 40px); margin: 0;
   display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px;
   color: var(--app-palette-text); border: 1px solid var(--app-palette-divider); border-radius: 14px;
   background: var(--app-palette-paper); font: 500 14px/1.4 "Inter", system-ui, sans-serif; text-decoration: none;
+  cursor: pointer;
 }
-#login .public-return svg { width: 20px; height: 20px; }
+#login .public-return svg { flex: 0 0 20px; width: 20px; height: 20px; }
+#login .public-return:hover { background: var(--app-palette-primary-soft); }
+#login .public-return:active { background: var(--app-palette-accent-soft); }
 @keyframes welcome-book-float { 0%, 100% { transform: translateY(3px) rotate(-2deg); } 50% { transform: translateY(-9px) rotate(1deg); } }
 @keyframes welcome-book-shadow { 0%, 100% { transform: scaleX(1); opacity: .12; } 50% { transform: scaleX(.87); opacity: .07; } }
 @media (hover: hover) {

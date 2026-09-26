@@ -132,7 +132,7 @@ test("the shared player ships through the current PWA cache", () => {
   assert.match(studyPage, /audio-focus\.js\?v=1-resumable-tts[\s\S]*?study-quiz\.js\?v=38-resume/u);
   assert.match(quizPage, /quiz\.js\?v=88-headlight/u);
   assert.match(studyPage, /study-quiz\.js\?v=38-resume/u);
-  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v229-video-resume"/u);
+  assert.match(worker, /CACHE_NAME = "magicbook-pwa-v231-login-clean"/u);
   assert.match(worker, /audio-player-ui\.css\?v=10-web-quiz-slim/u);
   assert.match(worker, /audio-focus\.js\?v=1-resumable-tts/u);
   assert.match(worker, /quiz\.js\?v=88-headlight/u);
