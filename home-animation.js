@@ -1,7 +1,6 @@
 // Browser Home decoration only. One cached catalog per document; no API or polling.
 let catalogPromise;
-const catalog = () => catalogPromise ||= import('./assets/home-animations/catalog.mjs?v=17f11c77bde0').then(module => module.default).catch(() => []);
-const selectionKey = 'magicbook.homeAnimation.v1';
+const catalog = () => catalogPromise ||= import('./assets/home-animations/catalog.mjs?v=fbda23c8df0e').then(module => module.default).catch(() => []);
 
 export function mountHomeAnimation(home) {
   const slot = home?.querySelector('.member-animation');
@@ -10,7 +9,7 @@ export function mountHomeAnimation(home) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const forced = matchMedia('(forced-colors: active)');
   let entered = false, stopped = false, generation = 0, selected = null;
-  let clip = null, still = null, timer = 0, ready = false, failed = false, previous = '';
+  let clip = null, still = null, timer = 0, ready = false, failed = false;
   const visible = () => !stopped && !home.classList.contains('hidden') && !root.classList.contains('android-webview');
   const canAnimate = () => visible() && !document.hidden && !home.inert && !reduced.matches && !forced.matches && !root.hasAttribute('data-native-motion-paused');
   function stopClip() {
@@ -57,10 +56,9 @@ export function mountHomeAnimation(home) {
   async function enter(current) {
     const items = await catalog();
     if (current !== generation || !visible() || !items.length) return;
-    try { previous = localStorage.getItem(selectionKey) || previous; } catch { /* Memory-only rotation still works. */ }
-    selected = items[(items.findIndex(item => item.id === previous) + 1) % items.length];
-    previous = selected.id;
-    try { localStorage.setItem(selectionKey, previous); } catch { /* No personal data or required persistence. */ }
+    // The owner chose the graduation cap only: never substitute another decoration.
+    selected = items.find(item => /^Graduation_Hat\./i.test(item.id));
+    if (!selected) return;
     slot.dataset.asset = selected.id;
     const poster = new Image();
     still = poster;

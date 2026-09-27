@@ -40,18 +40,32 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
 .member-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 24px; }
 .member-library { position: relative; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: center; gap: 16px; padding: clamp(20px, 3vw, 36px); background: var(--welcome-surface); border: 1px solid var(--welcome-line); border-radius: 28px; }
 .member-cover, .member-entry { min-width: 0; }
-.member-entry { display: grid; justify-items: center; align-content: center; gap: clamp(18px, 3vw, 30px); }
-.member-animation { position: relative; width: min(100%, 156px); aspect-ratio: 1; }
+.member-entry { display: grid; justify-self: center; justify-items: center; align-content: center; width: min(100%, 160px); gap: 0; }
+/* The original cap has transparent margins: its brim overlaps the button, not the label.
+   Extra side room keeps the hanging tassel to the left of the text at phone sizes. */
+.member-animation { position: relative; z-index: 3; width: calc(100% + 32px); aspect-ratio: 1; margin-bottom: calc(-38% - 12px); transform: translateX(-12%); pointer-events: none; }
 .member-animation img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
 .member-animation img[hidden] { display: none; }
-.member-book { display: block; width: 100%; height: clamp(260px, 39svh, 420px); object-fit: contain; }
+.member-book { display: block; width: 100%; height: clamp(260px, 39svh, 420px); object-fit: contain; transform-origin: 50% 80%; animation: member-book-shake 12s ease-in-out infinite; animation-play-state: paused; }
+#home[data-home-motion="running"] .member-book { animation-play-state: running; }
+/* A short book-only shudder after a long rest; never shake the page or its controls. */
+@keyframes member-book-shake {
+  0%, 90%, 98%, 100% { transform: translate(0, 0) rotate(0); }
+  91% { transform: translate(-4px, 1px) rotate(-1.4deg); }
+  92% { transform: translate(4px, -1px) rotate(1.4deg); }
+  93% { transform: translate(-3px, 0) rotate(-1.1deg); }
+  94% { transform: translate(3px, 1px) rotate(1deg); }
+  95% { transform: translate(-2px, -1px) rotate(-.7deg); }
+  96% { transform: translate(2px, 0) rotate(.5deg); }
+  97% { transform: translate(-1px, 0) rotate(-.3deg); }
+}
 .member-book[hidden], .member-book-fallback[hidden] { display: none; }
 .member-book-fallback { display: grid; place-content: center; height: clamp(260px, 39svh, 420px); padding: 12px; border: 1px solid var(--welcome-line); border-radius: 10px; color: var(--welcome-muted); font: 14px/1.5 'Inter', sans-serif; text-align: center; }
 .member-home .member-open {
   --member-action-light: color-mix(in srgb, var(--welcome-accent) 88%, var(--welcome-on-accent));
   --member-action-fill: radial-gradient(65.28% 65.28% at 50% 100%, var(--member-action-light) 0%, transparent 100%), linear-gradient(0deg, var(--welcome-accent), var(--welcome-accent-strong));
   position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center;
-  width: auto; min-width: 102px; min-height: 50px; margin: 0; padding: 13px 20px;
+  width: 100%; min-width: 0; min-height: 60px; margin: 0; padding: 20px 8px 10px;
   overflow: hidden; border: 0; border-radius: 12px; background: var(--member-action-fill);
   color: var(--welcome-on-accent); font: 700 15px/1.5 'Inter', sans-serif;
   box-shadow: 0 5px 16px color-mix(in srgb, var(--welcome-accent) 18%, transparent);
@@ -62,7 +76,7 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
 }
 .member-home .member-open::before { inset: 1px; border-radius: 11px; background: linear-gradient(177.95deg, color-mix(in srgb, var(--welcome-on-accent) 30%, transparent), transparent); }
 .member-home .member-open::after { inset: 2px; border-radius: 10px; background: var(--member-action-fill); }
-.member-open-label { position: relative; z-index: 2; }
+.member-home .member-open-label { position: relative; z-index: 2; font: 700 24px/1.15 'El Messiri', Georgia, serif; white-space: nowrap; }
 .member-open-points { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
 .member-open-points i { position: absolute; bottom: -10px; width: 2px; height: 2px; border-radius: 50%; background: var(--welcome-on-accent); animation: member-floating-point 2.35s infinite ease-in-out; animation-play-state: paused; }
 #home[data-home-motion="running"] .member-open-points i { animation-play-state: running; }
@@ -158,8 +172,8 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
   .member-layout { grid-template-columns: 1fr; gap: 18px; }
   .member-library { padding: 22px 18px; gap: 12px; border-radius: 22px; }
   .member-book, .member-book-fallback { height: clamp(180px, 49vw, 280px); }
-  .member-animation { width: min(100%, 126px); }
-  .member-home .member-open { padding: 12px 14px; font-size: 14px; }
+  .member-entry { width: min(100%, 140px); }
+  .member-home .member-open-label { font-size: clamp(18px, 5.1vw, 20px); }
   .member-links { gap: 12px; }
   .member-home .member-link { min-height: 84px; padding: 16px; gap: 14px; }
   .member-link strong { font-size: 16px; margin-bottom: 3px; }
@@ -169,7 +183,6 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
 }
 @media (max-width: 350px) {
   .member-library { padding: 18px 12px; }
-  .member-home .member-open { padding-inline: 10px; }
   .member-utilities { gap: 4px; padding: 6px; }
   .member-products { padding-inline: 4px; font-size: 12px; }
 }
@@ -182,13 +195,16 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
   html:not(.android-webview) body.app-mode #home:not(.hidden) { --member-header-height: 54px; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .member-book { animation: none; transform: none; }
   .member-home button, .member-home .member-open::after { transition: none; }
   .member-open-points { display: none; }
   .member-home .member-open:active { transform: none; }
 }
 html[data-native-motion-paused] .member-open-points { display: none; }
+html[data-native-motion-paused] .member-book { animation: none; transform: none; }
 html[data-native-motion-paused] .member-home .member-open:active { transform: none; }
 @media (forced-colors: active) {
+  .member-book { animation: none; transform: none; }
   .member-open-points, .member-home .member-open::before, .member-home .member-open::after { display: none; }
   .member-home .member-open { background: ButtonFace; color: ButtonText; box-shadow: none; }
   .member-library, .member-home button, .member-products, .offer-dialog, .offer-join { border: 1px solid ButtonText; }

@@ -1,4 +1,4 @@
-// Scan only the owner's Home folder. Generate posters/catalog and cache revisions.
+// Publish only the owner's chosen graduation cap. Preserve other source artwork on disk.
 // SVG animation posters use the same local Playwright setup as browser QA.
 import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
@@ -12,8 +12,8 @@ const hash = data => createHash('sha256').update(data).digest('hex').slice(0, 12
 const assetUrl = (file, data) => '/' + file.split('/').map(encodeURIComponent).join('/') + '?v=' + hash(data);
 await mkdir(new URL(output, root), { recursive: true });
 const names = (await readdir(new URL(folder, root), { withFileTypes: true }))
-  .filter(file => file.isFile() && /\.(gif|svg|png|jpe?g|webp|avif|tiff?)$/i.test(file.name))
-  .map(file => file.name).sort();
+  .filter(file => file.isFile() && /^Graduation_Hat\.(gif|svg|png|jpe?g|webp|avif|tiff?)$/i.test(file.name))
+  .map(file => file.name).sort().slice(0, 1);
 const items = [];
 let browser;
 try {

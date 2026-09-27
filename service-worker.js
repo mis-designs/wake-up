@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v239-home-dock";
+const CACHE_NAME = "magicbook-pwa-v240-home-hat";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -26,16 +26,14 @@ const STATIC_ASSETS = [
   "/login-experience.js?v=3-clean",
   "/welcome-page.css?v=4-login-home",
   "/welcome-page.js?v=2-clean",
-  "/home-offers.css?v=6-dock",
-  "/home-offers.js?v=5-motion&art=17f11c77bde0",
-  "/home-animation.js?v=3-loop&art=17f11c77bde0",
+  "/home-offers.css?v=7-hat",
+  "/home-offers.js?v=6-hat&art=fbda23c8df0e",
+  "/home-animation.js?v=4-hat&art=fbda23c8df0e",
   "/home-utilities.js?v=2-admin",
   // HOME_ANIMATION_ASSETS_START
-  "/assets/home-animations/catalog.mjs?v=17f11c77bde0",
+  "/assets/home-animations/catalog.mjs?v=fbda23c8df0e",
   "/icons/Home%20Page%20Animation/Graduation_Hat.svg?v=bf38809e3e4c",
   "/assets/home-animations/40f2b1238323.png?v=6406120541f0",
-  "/icons/Home%20Page%20Animation/trophy.svg?v=6ba0f3152f23",
-  "/assets/home-animations/d589cc07ff84.png?v=0d55bca881a2",
   // HOME_ANIMATION_ASSETS_END
   "/offer-frequency.mjs?v=1",
   "/login-signs.mjs?v=1",

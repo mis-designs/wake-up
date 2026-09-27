@@ -153,8 +153,14 @@ try {
       const actionBox = await page.locator('.member-open').boundingBox();
       const artBox = await page.locator('.member-animation').boundingBox();
       assert.ok(bookBox.x + bookBox.width <= actionBox.x + 1, 'book left, action right');
-      assert.ok(artBox.y + artBox.height < actionBox.y, 'icon above the button');
-      assert.ok(Math.abs(artBox.x + artBox.width / 2 - actionBox.x - actionBox.width / 2) < 1);
+      const overlap = artBox.y + artBox.height - actionBox.y;
+      assert.ok(overlap >= artBox.height * .36 && overlap <= artBox.height * .40, 'transparent cap frame overlaps the button so the brim rests on it');
+      assert.equal(await page.locator('.member-animation').evaluate(el => getComputedStyle(el).pointerEvents), 'none');
+      await page.evaluate(() => document.fonts.ready);
+      assert.ok(await page.locator('.member-open-label').evaluate(el => getComputedStyle(el).fontFamily.includes('El Messiri') && document.fonts.check('700 24px "El Messiri"')));
+      const labelBox = await page.locator('.member-open-label').boundingBox();
+      assert.ok(labelBox.x >= actionBox.x + 5 && labelBox.x + labelBox.width <= actionBox.x + actionBox.width - 5, 'ornamental label stays inside its button');
+      assert.equal(firstAsset, 'Graduation_Hat.svg');
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.waitForFunction(() => document.querySelector('.member-animation img')?.src.includes('/assets/home-animations/'));
       assert.equal(await page.locator('.member-animation img').count(), 1, 'reduced motion uses only the still');
@@ -189,7 +195,8 @@ try {
       assert.equal(await page.evaluate(() => document.getElementById('profileBtn') === window.fixtureProfileNode && document.getElementById('whatsappBtn') === window.fixtureWhatsappNode), true, 'route transitions preserve node identity and attached handlers');
       await page.goBack();
       await page.locator('#home:not(.hidden)').waitFor();
-      await page.waitForFunction(first => document.querySelector('.member-animation')?.dataset.asset && document.querySelector('.member-animation').dataset.asset !== first, firstAsset);
+      await page.waitForFunction(first => document.querySelector('.member-animation')?.dataset.asset === first, firstAsset);
+      assert.ok(!f.assets.some(url => /trophy/i.test(url)), 'returning Home never loads another decoration');
       assert.equal(f.assets.filter(url => url.endsWith('/catalog.mjs')).length, 1, 'catalog imported once through repeat navigation');
       assert.equal(await page.locator('#offerPopupOverlay').count(), 0);
       assert.equal(f.frames(), 1);
