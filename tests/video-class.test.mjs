@@ -83,6 +83,27 @@ test('catalogue timeout aborts once; no timer-driven retry', async t => {
   const pending=reader.read(); await Promise.resolve(); deadline(); await assert.rejects(pending,{name:'AbortError'});
   assert.equal(calls,1);assert.equal(cleared,1); reader.clear();
 });
+test('an account change during a pending read rejects the late catalog without relying on storage events', async () => {
+  let scope = 'account-a:device', release, calls = 0;
+  const reader = createVideoCatalogReader(() => { calls++; return new Promise(resolve => { release = resolve; }); }, () => scope);
+  const pending = reader.read(); await Promise.resolve();
+  scope = 'account-b:device'; release({ catalog });
+  await assert.rejects(pending, { name: 'AbortError' });
+  const next = reader.read(); await Promise.resolve(); release({ catalog });
+  assert.equal(await next, catalog); assert.equal(calls, 2); reader.clear();
+});
+test('Video Class binds a nonempty route identity before loading, independently of its saved-data scope', () => {
+  const source = read('video-class.js');
+  const render = source.slice(source.indexOf('async function render('), source.indexOf('function play()'));
+  assert.ok(render.indexOf('activeScope = identity()') < render.indexOf('await data.read()'));
+  assert.match(source, /if \(activeScope && identity\(\) === activeScope\) return true/);
+  assert.match(render, /const loadedCatalog = await data\.read\(\);\s*if \(!active \|\| own !== version \|\| !guardIdentity\(\)\) return;\s*catalog = loadedCatalog/);
+  assert.match(render, /favoriteScope = activeScope/);
+  assert.doesNotMatch(render, /catalog = await data\.read/);
+  assert.match(read('study-quiz.js'), /video-class\.js\?v=8-session/);
+  assert.match(read('study-quiz.html'), /study-quiz\.js\?v=39-session/);
+  assert.match(read('service-worker.js'), /video-class\.js\?v=8-session/);
+});
 test('server catalogue uses established device-bound authorization, is never publicly cacheable and adds zero upstream reads for signed users', async t => {
   const env={SESSION_SECRET:'video-catalog-test',GAS_ACCESS_URL:'https://fixture.invalid',GAS_SECRET:'fixture',QUIZ_GAS_URL:'https://fixture.invalid',QUIZ_PROXY_SECRET:'fixture'};
   for(const [key,value] of Object.entries(env)){const old=process.env[key];process.env[key]=value;t.after(()=>{if(old===undefined)delete process.env[key];else process.env[key]=old;});}

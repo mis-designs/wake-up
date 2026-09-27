@@ -76,7 +76,7 @@ test('new owners are versioned and cached without caching Canva or account data'
     assert.ok(page.includes(asset)); assert.ok(worker.includes(asset));
   }
   assert.ok(worker.includes('/offer-frequency.mjs?v=1'));
-  assert.ok(worker.includes('magicbook-pwa-v240-home-hat'));
+  assert.ok(worker.includes('magicbook-pwa-v241-video-session'));
 });
 
 test('owner-replaced Home icons use source-hash URLs, intact slots and shared web artwork', () => {

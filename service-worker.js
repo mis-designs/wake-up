@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v240-home-hat";
+const CACHE_NAME = "magicbook-pwa-v241-video-session";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -61,7 +61,7 @@ const STATIC_ASSETS = [
   "/icons/native/roudabout.svg",
   "/icons/study_quiz.svg",
   "/video-class.css?v=7",
-  "/video-class.js?v=7-resume&art=2e0d6787e201",
+  "/video-class.js?v=8-session&art=2e0d6787e201",
   "/video-class-model.mjs?v=3",
   "/car-indicator.mjs?v=1",
   "/car-indicator.css?v=1",
@@ -103,7 +103,7 @@ const STATIC_ASSETS = [
   "/script.js?v=83-home-admin",
   "/study-quiz.html",
   "/study-quiz.css?v=28-compact",
-  "/study-quiz.js?v=38-resume&art=2e0d6787e201",
+  "/study-quiz.js?v=39-session&art=2e0d6787e201",
   "/figure-study.css?v=2",
   "/figure-study.js?v=3-headlight",
   "/figure-study-catalog.mjs?v=2",

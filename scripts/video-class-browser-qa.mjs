@@ -96,6 +96,16 @@ try {
     assert.equal(await page.locator('.vc-hub-art').getAttribute('src'),artwork.url);
     await page.locator('.vc-hub-video').click();
     await page.locator('.vc-loading').waitFor();
+    // A normal pageshow/resume/storage event may arrive before the first catalog.
+    // The account has not changed: loading must not be mistaken for a logout.
+    await page.evaluate(() => {
+      window.dispatchEvent(new PageTransitionEvent('pageshow'));
+      document.dispatchEvent(new Event('visibilitychange'));
+      window.dispatchEvent(new Event('magicbook:video-activity'));
+      window.dispatchEvent(new StorageEvent('storage', { key: 'accessToken' }));
+    });
+    assert.equal(await page.getByRole('heading', { name: 'Accedi di nuovo alle lezioni' }).count(), 0, 'unchanged session survives lifecycle events while the first catalog is pending');
+    assert.equal(await page.locator('.vc-loading').count(), 1);
     // Hold the only catalogue read to inspect the real animated loader, not just source classes.
     await page.emulateMedia({reducedMotion:'no-preference'});
     const loading = await page.locator('.vc-loading .magic-loading-indicator__media').evaluate(el => {

@@ -48,6 +48,7 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
   const lifetime = new AbortController();
   const embeddedVideo = supportsVideoEmbed(navigator.userAgent);
   let catalog, state = {}, favorites, favoriteScope = '', active = false, version = 0, count = PAGE_SIZE;
+  let activeScope = '';
   let playback = null, progress = null, iframe = null, currentUrl = '';
   const scrollPositions = new Map();
   const indicator = createCarIndicator({ isCurrent: () => active && identity() === favoriteScope, announce: status });
@@ -67,9 +68,11 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     if (document.hidden || window.__magicBookVideoActive === false) playback?.pause();
     else playback?.foreground();
   }
-  function clear() { suspend(); data.clear(); catalog = null; favorites = null; progress = null; favoriteScope = ''; root.replaceChildren(); }
+  function clear() { suspend(); data.clear(); catalog = null; favorites = null; progress = null; favoriteScope = ''; activeScope = ''; root.replaceChildren(); }
   function guardIdentity() {
-    if (identity() === favoriteScope) return true;
+    // Bind the route before awaiting its catalog. Favorites are initialized later;
+    // their empty initial scope is not evidence that the signed-in account changed.
+    if (activeScope && identity() === activeScope) return true;
     clear();
     root.append(node('div', { class: 'vc-empty', role: 'alert' }, node('h2', {}, 'Accedi di nuovo alle lezioni'), node('p', {}, 'La sessione è cambiata. I tuoi preferiti restano salvati per il tuo account.'), link('Torna alla Home', '/', 'vc-button vc-primary')));
     return false;
@@ -233,16 +236,19 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
   async function render(url, { restore = false } = {}) {
     indicator.cancel();
     saveScroll(); stopPlayer(); active = true; const own = ++version;
+    activeScope = identity();
     currentUrl = url.pathname + url.search;
     state = { group: url.searchParams.get('group') || '', saved: url.searchParams.get('saved') === '1', lesson: url.searchParams.get('lesson') || '', kind: url.searchParams.get('kind') || '' };
     count = restore ? scrollPositions.get(currentUrl)?.count || PAGE_SIZE : PAGE_SIZE;
     header('Video Class', ''); document.title = 'MagicBook | Video Class';
+    if (!guardIdentity()) return;
     if (!catalog) root.replaceChildren(node('div', { class: 'vc-loading magic-loading-indicator magic-loading-indicator--panel', role: 'status', 'aria-busy': 'true' }, node('span', { class: 'magic-loading-indicator__media', 'aria-hidden': 'true' }, node('img', { class: 'magic-loading-indicator__image', src: '/icons/loading_headlight.gif', alt: '', width: 88, height: 88 })), node('p', { class: 'magic-loading-indicator__label' }, 'Apro le lezioni…')));
     try {
-      catalog = await data.read();
-      if (!active || own !== version) return;
+      const loadedCatalog = await data.read();
+      if (!active || own !== version || !guardIdentity()) return;
+      catalog = loadedCatalog;
       if (!favorites || favoriteScope !== identity()) {
-        favoriteScope = identity(); let storage; try { storage = window.localStorage; } catch (_) { /* memory only */ }
+        favoriteScope = activeScope; let storage; try { storage = window.localStorage; } catch (_) { /* memory only */ }
         favorites = createVideoFavorites(storage, favoriteScope, new Set(catalog.lessons.map(x => x.id)));
         progress = createVideoProgress(storage, favoriteScope, new Set(catalog.lessons.filter(x => x.provider === 'youtube').map(x => x.id)));
       }
@@ -254,7 +260,7 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
       (focusTarget || root.querySelector('#vc-heading'))?.focus({ preventScroll: true });
       window.scrollTo({ top: restore ? scrollPositions.get(currentUrl)?.top || 0 : 0, behavior: 'auto' });
     } catch (_) {
-      if (!active || own !== version) return;
+      if (!active || own !== version || !guardIdentity()) return;
       catalog = null; stopPlayer();
       root.replaceChildren(nav(), node('div', { class: 'vc-empty', role: 'alert' }, node('h2', {}, 'Le lezioni non si sono caricate'), node('p', {}, 'Controlla la connessione e riprova. I tuoi preferiti non vengono cancellati.'), button('Riprova', 'retry', 'vc-button vc-primary')));
     }
