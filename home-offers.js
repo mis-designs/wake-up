@@ -1,4 +1,6 @@
 import { OFFER_KEY, reserveImpression } from './offer-frequency.mjs?v=1';
+import { mountHomeAnimation } from './home-animation.js?v=1&art=cc8fc71c2247';
+import { mountHomeUtilities } from './home-utilities.js?v=1';
 
 const doc = document;
 const home = doc.getElementById('home');
@@ -12,38 +14,65 @@ let baseState, baseUrl, closing = false, afterClose = null;
 const visible = node => node && !node.classList.contains('hidden');
 
 function embed(host) {
-  const frame = doc.createElement('iframe');
-  frame.title = 'Offerte TMM Bangla Patente';
-  frame.referrerPolicy = 'strict-origin-when-cross-origin';
-  frame.allow = 'fullscreen';
-  frame.allowFullscreen = true;
-  const status = doc.createElement('div');
-  status.className = 'offer-loading';
-  status.setAttribute('role', 'status');
-  status.innerHTML = '<span class="magic-loading-indicator magic-loading-indicator--panel"><span class="magic-loading-indicator__media"><img class="magic-loading-indicator__image" src="/icons/loading_headlight.gif" alt=""></span><span>Caricamento offerta…</span></span>';
-  const image = status.querySelector('img');
-  image.addEventListener('error', () => {
-    if (image.dataset.backup) image.hidden = true;
-    else { image.dataset.backup = 'true'; image.src = '/icons/loading_backup.gif'; }
-  });
-  let disposed = false;
-  const finish = () => { clearTimeout(timer); status.remove(); };
-  const timer = setTimeout(() => {
+  let disposed = false, cancelAttempt = () => {};
+  function start(focusPending = false) {
     if (disposed) return;
-    status.textContent = 'L’offerta sta impiegando più tempo. Puoi aprirla dal link qui sotto.';
-  }, 12000);
-  frame.addEventListener('load', finish, { once: true });
-  frame.addEventListener('error', () => {
-    clearTimeout(timer);
-    status.textContent = 'Non riesco a caricare l’offerta. Usa il link qui sotto.';
-  }, { once: true });
-  frame.src = `${source}?embed`;
-  host.append(status, frame);
+    cancelAttempt();
+    const frame = doc.createElement('iframe');
+    frame.title = 'Prodotti per Te! — TMM Bangla Patente';
+    frame.referrerPolicy = 'strict-origin-when-cross-origin';
+    frame.allow = 'fullscreen';
+    frame.allowFullscreen = true;
+    const status = doc.createElement('div');
+    status.className = 'offer-loading';
+    status.setAttribute('role', 'status');
+    status.tabIndex = -1;
+    status.innerHTML = '<span class="magic-loading-indicator magic-loading-indicator--panel"><span class="magic-loading-indicator__media"><img class="magic-loading-indicator__image" src="/icons/loading_headlight.gif" alt=""></span><span>Caricamento prodotti…</span></span>';
+    const image = status.querySelector('img');
+    image.addEventListener('error', () => {
+      if (image.dataset.backup) image.hidden = true;
+      else { image.dataset.backup = 'true'; image.src = '/icons/loading_backup.gif'; }
+    });
+    let active = true;
+    const finish = () => {
+      if (!active || disposed) return;
+      clearTimeout(timer);
+      if (doc.activeElement === status) frame.focus();
+      status.remove();
+    };
+    const fail = message => {
+      if (!active || disposed) return;
+      active = false;
+      clearTimeout(timer);
+      frame.removeEventListener('load', finish);
+      frame.remove();
+      status.classList.add('offer-loading--error');
+      const copy = doc.createElement('p');
+      copy.textContent = message;
+      const retry = doc.createElement('button');
+      retry.type = 'button';
+      retry.className = 'offer-retry';
+      retry.textContent = 'Riprova';
+      retry.addEventListener('click', () => start(true), { once: true });
+      status.replaceChildren(copy, retry);
+    };
+    const timer = setTimeout(() => fail('Il riquadro prodotti sta impiegando più tempo. Puoi riprovare.'), 12000);
+    frame.addEventListener('load', finish, { once: true });
+    frame.addEventListener('error', () => fail('Non riesco a caricare i prodotti. Controlla la connessione e riprova.'), { once: true });
+    frame.src = `${source}?embed`;
+    host.append(status, frame);
+    if (focusPending) status.focus();
+    cancelAttempt = () => {
+      active = false;
+      clearTimeout(timer);
+      frame.removeEventListener('load', finish);
+      frame.remove(); status.remove();
+    };
+  }
+  start();
   return () => {
     disposed = true;
-    clearTimeout(timer);
-    frame.removeEventListener('load', finish);
-    frame.remove(); status.remove();
+    cancelAttempt();
   };
 }
 
@@ -163,3 +192,5 @@ sync();
 const book = home.querySelector('.member-book');
 book.addEventListener('error', () => { book.hidden = true; home.querySelector('.member-book-fallback').hidden = false; });
 if (book.complete && !book.naturalWidth) book.dispatchEvent(new Event('error'));
+mountHomeAnimation(home);
+mountHomeUtilities(home);

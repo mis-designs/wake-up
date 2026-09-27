@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v234-home-icons";
+const CACHE_NAME = "magicbook-pwa-v236-home-footer";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -14,7 +14,7 @@ const STATIC_ASSETS = [
   "/assets/daisyui.css?v=2-learning-shell",
   "/loading-ui.css?v=4-context",
   "/loading-ui.js?v=2-context",
-  "/style.css?v=74-compact-loading",
+  "/style.css?v=75-home-footer",
   "/web-study-actions.css?v=3-spacing",
   "/web-study-actions.js?v=1",
   "/web-action-effects.js?v=3-system-motion",
@@ -26,8 +26,17 @@ const STATIC_ASSETS = [
   "/login-experience.js?v=3-clean",
   "/welcome-page.css?v=4-login-home",
   "/welcome-page.js?v=2-clean",
-  "/home-offers.css?v=2-clean",
-  "/home-offers.js?v=1",
+  "/home-offers.css?v=4-home-footer",
+  "/home-offers.js?v=3-home-footer&art=cc8fc71c2247",
+  "/home-animation.js?v=1&art=cc8fc71c2247",
+  "/home-utilities.js?v=1",
+  // HOME_ANIMATION_ASSETS_START
+  "/assets/home-animations/catalog.mjs?v=cc8fc71c2247",
+  "/icons/Home%20Page%20Animation/Graduation_Hat.gif?v=40e3f7ab2f7d",
+  "/assets/home-animations/a5e1125ee69d.png?v=44b840ee3bab",
+  "/icons/Home%20Page%20Animation/trophy.svg?v=6ba0f3152f23",
+  "/assets/home-animations/d589cc07ff84.png?v=0d55bca881a2",
+  // HOME_ANIMATION_ASSETS_END
   "/offer-frequency.mjs?v=1",
   "/login-signs.mjs?v=1",
   "/greeting-view.mjs?v=1-shared-login",
@@ -93,7 +102,7 @@ const STATIC_ASSETS = [
   "/homebg.css?v=5-home-offers",
   "/mystyle.css?v=60-web-quiz-layout",
   "/audio-player-ui.css?v=10-web-quiz-slim",
-  "/script.js?v=81-home-offers",
+  "/script.js?v=82-home-footer",
   "/study-quiz.html",
   "/study-quiz.css?v=28-compact",
   "/study-quiz.js?v=38-resume&art=2e0d6787e201",

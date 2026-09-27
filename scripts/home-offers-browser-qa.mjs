@@ -16,17 +16,17 @@ const reports = [];
 async function fixture(width, height, native = false, mode = '') {
   const ctx = await browser.newContext({ viewport: { width, height }, serviceWorkers: 'block',
     ...(native ? { userAgent: 'Mozilla/5.0 (Linux; Android 14; wv) AppleWebKit/537.36 Chrome/130.0.0.0 Mobile Safari/537.36 MagicBookViewer/1.3' } : {}) });
-  const reads = [], errors = [];
+  const reads = [], errors = [], assets = [];
   let frames = 0, held = null;
   await ctx.route('**/*', async route => {
     const u = new URL(route.request().url());
     if (u.hostname === 'www.canva.com') {
       frames++;
-      if (mode === 'slow') return new Promise(resolve => { held = () => { route.abort().catch(() => {}); resolve(); }; });
-      if (mode === 'error') return route.abort();
+      if (mode === 'slow' || (mode === 'error' && frames === 1)) return new Promise(resolve => { held = () => { route.abort().catch(() => {}); resolve(); }; });
       return route.fulfill({ contentType: 'text/html', body: '<!doctype html><html lang="it"><body style="margin:0;background:#fff;font:16px Arial;padding:24px;color:#102419"><p>OFFERTA — FIXTURE LOCALE</p><p>Riquadro Canva simulato per il test, nessuna richiesta esterna.</p><a href="#">Dettagli</a></body></html>' });
     }
     if (u.hostname !== 'home.local') return route.fulfill({ status: 503, body: '' });
+    if (u.pathname.includes('home-animations/') || u.pathname.includes('Home%20Page%20Animation/')) assets.push(u.pathname);
     if (u.pathname.startsWith('/api/')) {
       reads.push(u.pathname + u.search);
       if (u.pathname === '/api/getPages') return route.fulfill({ json: { success: true, role: 'user', accessToken: token, accessTokenExpiresAt: Date.now() + 86400000, expiry: '2035-01-01', pages: [], totalPages: 0 } });
@@ -53,7 +53,7 @@ async function fixture(width, height, native = false, mode = '') {
   }, { phone, token, mode });
   const page = await ctx.newPage();
   page.on('pageerror', error => errors.push(error.message));
-  return { ctx, page, reads, errors, frames: () => frames, release: () => held?.() };
+  return { ctx, page, reads, errors, assets, frames: () => frames, release: () => held?.() };
 }
 const count = page => page.evaluate(() => JSON.parse(localStorage.getItem('magicbook.offerNotice.v1')).count);
 try {
@@ -67,6 +67,8 @@ try {
       throw error;
     });
     assert.equal(await count(page), 1);
+    assert.equal(await page.locator('#offerPopupTitle').innerText(), 'Prodotti per Te!');
+    assert.equal(await page.locator('.offer-source').count(), 0);
     assert.equal(f.frames(), 1, 'one provider document per offer opening');
     assert.equal(await page.locator('#home iframe').count(), 0);
     const box = await page.locator('.offer-dialog').boundingBox();
@@ -100,23 +102,79 @@ try {
       })));
       assert.deepEqual(icons.map(icon => icon.path), ['/icons/dizionario.png', '/icons/statistiche-patente.png', '/icons/errori-patente.png']);
       assert.ok(icons.every(icon => icon.decoded && icon.version && icon.width === 48 && icon.height === 48 && icon.fit === 'contain'));
-      assert.equal(await page.locator('.member-open').innerText(), 'Apri il libro');
+      assert.equal(await page.locator('.member-open').innerText(), 'Magic Here');
       assert.ok(await page.locator('.member-open').evaluate(el => el === document.activeElement));
-      assert.ok(await page.locator('.member-open, .member-link, .member-offers-link, .member-sponsor').evaluateAll(els => els.every(el => el.getBoundingClientRect().height >= 44)));
+      assert.ok(await page.locator('.member-open, .member-link, .member-products, .member-sponsor, .member-utilities button').evaluateAll(els => els.every(el => !el.getClientRects().length || el.getBoundingClientRect().height >= 44)));
+      assert.equal(await page.locator('.member-welcome a').count(), 0);
+      assert.equal(await page.locator('.member-products').innerText(), 'Our Products');
+      assert.equal(await page.locator('.member-products').getAttribute('href'), '/join');
+      assert.equal(await page.locator('#profileBtn').count(), 1);
+      assert.equal(await page.locator('.member-utilities #profileBtn').count(), 1);
+      assert.equal(await page.locator('.member-utilities #whatsappBtn').count(), 1);
+      assert.equal(await page.locator('#profileBtn').evaluate(el => getComputedStyle(el).position), 'static');
+      assert.equal(await page.locator('#whatsappBtn').evaluate(el => getComputedStyle(el).position), 'static');
+      await page.evaluate(() => { window.fixtureProfileNode = document.getElementById('profileBtn'); window.fixtureWhatsappNode = document.getElementById('whatsappBtn'); });
+      const [profileBox, productsBox, whatsappBox, sponsorBox, linksBox] = await Promise.all(['#profileBtn', '.member-products', '#whatsappBtn', '.member-sponsor', '.member-links'].map(selector => page.locator(selector).boundingBox()));
+      assert.ok(profileBox.x + profileBox.width < productsBox.x && productsBox.x + productsBox.width < whatsappBox.x);
+      assert.ok(Math.abs(profileBox.y - whatsappBox.y) < 1 && Math.abs(profileBox.y - productsBox.y) < 1);
+      assert.ok(profileBox.y >= linksBox.y + linksBox.height + 20);
+      assert.ok(sponsorBox.y >= profileBox.y + profileBox.height + 16);
+      assert.deepEqual(await page.locator('.member-products').evaluate(el => ({ color: getComputedStyle(el).color, background: getComputedStyle(el).backgroundColor })), { color: 'rgb(0, 0, 0)', background: 'rgba(0, 0, 0, 0)' });
+      await page.waitForFunction(() => document.querySelector('.member-animation img')?.naturalWidth > 0);
+      const firstAsset = await page.locator('.member-animation').getAttribute('data-asset');
+      const bookBox = await page.locator('.member-book').boundingBox();
+      const actionBox = await page.locator('.member-open').boundingBox();
+      const artBox = await page.locator('.member-animation').boundingBox();
+      assert.ok(bookBox.x + bookBox.width <= actionBox.x + 1, 'book left, action right');
+      assert.ok(artBox.y + artBox.height < actionBox.y, 'icon above the button');
+      assert.ok(Math.abs(artBox.x + artBox.width / 2 - actionBox.x - actionBox.width / 2) < 1);
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.waitForFunction(() => document.querySelectorAll('.member-animation img').length === 1);
+      assert.equal(await page.locator('.member-animation img').count(), 1, 'reduced motion uses only the still');
       await page.screenshot({ path: path.join(out, `web-${width}-home.png`), fullPage: true });
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
+      await page.locator('#profileBtn').click();
+      await page.locator('#profilePanel:not(.hidden)').waitFor();
+      await page.waitForFunction(() => document.getElementById('profilePanel').style.getPropertyValue('--member-panel-y'));
+      const panelBox = await page.locator('#profilePanel').boundingBox();
+      assert.ok(panelBox.x >= 0 && panelBox.y >= 0 && panelBox.x + panelBox.width <= width + 1 && panelBox.y + panelBox.height <= height + 1, 'footer profile remains inside the viewport');
+      assert.equal(await page.locator('#profileBtn').getAttribute('aria-expanded'), 'true');
+      await page.keyboard.press('Tab');
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'logoutBtn');
+      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#profileBtn').getAttribute('aria-expanded'), 'false');
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'profileBtn');
+      await page.evaluate(() => { window.fixtureOriginalExternal = window.openExternalUrl; window.openExternalUrl = url => { window.fixtureContactUrl = url; }; });
+      assert.equal(await page.locator('#whatsappBtn').evaluate(el => {
+        const before = el.getAttribute('style');
+        const touch = (type, x, y) => { const event = new Event(type, { bubbles: true }); Object.defineProperty(event, 'touches', { value: [{ clientX: x, clientY: y }] }); el.dispatchEvent(event); };
+        touch('touchstart', 100, 100); touch('touchmove', 100, 70);
+        return before === el.getAttribute('style') && getComputedStyle(el).touchAction === 'manipulation';
+      }), true, 'footer touch movement cannot drag the WhatsApp control');
+      await page.locator('#whatsappBtn').focus();
+      await page.keyboard.press('Enter');
+      assert.equal(await page.evaluate(() => window.fixtureContactUrl), 'https://api.whatsapp.com/send/?phone=393663584525&text&type=phone_number&app_absent=0');
+      await page.evaluate(() => { window.openExternalUrl = window.fixtureOriginalExternal; delete window.fixtureOriginalExternal; });
       await page.locator('.member-open').click();
       await page.waitForURL('**/magic-book');
+      assert.equal(await page.locator('.member-utilities #profileBtn, .member-utilities #whatsappBtn, .member-utilities #profilePanel').count(), 0, 'leaving Home restores original nodes');
+      assert.equal(await page.evaluate(() => document.getElementById('profileBtn') === window.fixtureProfileNode && document.getElementById('whatsappBtn') === window.fixtureWhatsappNode), true, 'route transitions preserve node identity and attached handlers');
       await page.goBack();
       await page.locator('#home:not(.hidden)').waitFor();
+      await page.waitForFunction(first => document.querySelector('.member-animation')?.dataset.asset && document.querySelector('.member-animation').dataset.asset !== first, firstAsset);
+      assert.equal(f.assets.filter(url => url.endsWith('/catalog.mjs')).length, 1, 'catalog imported once through repeat navigation');
       assert.equal(await page.locator('#offerPopupOverlay').count(), 0);
       assert.equal(f.frames(), 1);
-      await page.locator('.member-offers-link').click();
+      await page.locator('.member-products').click();
     } else {
+      assert.equal(await page.locator('.member-utilities #profileBtn, .member-utilities #whatsappBtn').count(), 0, 'native dock ownership unchanged');
+      assert.deepEqual(f.assets, [], 'native Home never loads browser decoration');
       await page.evaluate(() => showJoinScreen());
     }
     await page.waitForURL('**/join');
     await page.locator('#joinOfferHost iframe').waitFor();
     await page.locator('#joinOfferHost .offer-loading').waitFor({ state: 'detached' });
+    assert.equal(await page.locator('#joinOfferTitle').innerText(), 'Prodotti per Te!');
     assert.equal(f.frames(), 2, 'Join creates one fresh embed, no hidden second iframe');
     assert.equal(await count(page), 1, 'manual Join never consumes the automatic quota');
     assert.deepEqual(await page.locator('.join-package-price strong').allTextContents(), ['10€','20€','40€']);
@@ -149,6 +207,19 @@ try {
       await page.emulateMedia({ forcedColors: 'none' });
       await page.evaluate(() => document.documentElement.style.zoom = '2');
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+      await page.locator('#profileBtn').click();
+      await page.locator('#profilePanel:not(.hidden)').waitFor();
+      await page.waitForFunction(() => {
+        const r = document.getElementById('profilePanel').getBoundingClientRect();
+        return r.x >= 0 && r.y >= 0 && r.right <= innerWidth + 1 && r.bottom <= innerHeight + 1;
+      });
+      await page.keyboard.press('Escape');
+      await page.evaluate(() => document.documentElement.style.zoom = '1');
+      await page.locator('#profileBtn').click();
+      await page.locator('#logoutBtn').click();
+      await page.waitForURL('http://home.local/');
+      assert.equal(await page.locator('#profileBtn').isVisible(), false);
+      assert.equal(await page.locator('#whatsappBtn').isVisible(), false);
     }
     assert.deepEqual(f.errors, []);
     reports.push({ width, height, native, providerDocuments: f.frames(), errors: f.errors, passed: true });
@@ -173,7 +244,24 @@ try {
         await page.locator('.offer-loading').filter({ hasText: 'impiegando più tempo' }).waitFor({ timeout: 15000 });
         assert.equal(f.frames(), 1, 'timeout never retries automatically');
       }
-      assert.ok(await page.locator('.offer-dialog .offer-source').isVisible());
+      if (mode === 'error') {
+        await page.locator('.offer-embed iframe').dispatchEvent('error');
+        await page.locator('.offer-retry').waitFor();
+        assert.equal(f.frames(), 1, 'reported frame error never retries automatically');
+        f.release();
+        await page.locator('.offer-retry').click();
+        await page.locator('.offer-loading').waitFor({ state: 'detached' });
+        assert.equal(f.frames(), 2);
+        assert.equal(await page.evaluate(() => document.activeElement.tagName), 'IFRAME', 'retry success retains keyboard focus');
+      }
+      assert.equal(await page.locator('.offer-dialog .offer-source').count(), 0);
+      assert.ok(await page.locator('.offer-dialog .offer-join').isVisible());
+      if (mode === 'slow') {
+        f.release();
+        await page.locator('.offer-retry').click();
+        await page.waitForFunction(() => !!document.querySelector('.offer-embed iframe'));
+        assert.equal(f.frames(), 2, 'one explicit retry creates one new provider document');
+      }
       await page.locator('.offer-close').click();
       await page.locator('#offerPopupOverlay').waitFor({ state: 'detached' });
       f.release();

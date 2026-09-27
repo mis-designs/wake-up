@@ -2310,7 +2310,7 @@ function syncAppUtilityLayout() {
   const isVisible = element => Boolean(element && !element.classList.contains("hidden"));
   const headerVisible = Boolean(header?.classList.contains("is-visible"));
   const adminVisible = isVisible(adminEntry);
-  const profileVisible = isVisible(profile);
+  const profileVisible = isVisible(profile) && !profile.closest('.member-utilities');
   const menuVisible = Boolean(headerVisible && menu && !menu.classList.contains("menu-btn-hidden"));
   const utilityCount = Number(adminVisible) + Number(profileVisible) + Number(menuVisible);
 
@@ -5983,13 +5983,15 @@ if (whatsappBtn) {
     const dy = Math.abs(e.touches[0].clientY - startY);
     if (dx > 6 || dy > 6) {
       moved = true;
+      // Home's footer is ordinary scrollable content, not a draggable floating control.
+      if (whatsappBtn.closest('.member-utilities')) return;
       whatsappBtn.style.left = (e.touches[0].clientX - 30) + "px";
       whatsappBtn.style.top = (e.touches[0].clientY - 30) + "px";
     }
   }, { passive: true });
 
-  whatsappBtn.addEventListener("click", () => {
-    if (!moved) {
+  whatsappBtn.addEventListener("click", event => {
+    if (!moved || event.detail === 0) {
       openExternalUrl("https://api.whatsapp.com/send/?phone=393663584525&text&type=phone_number&app_absent=0");
     }
   });

@@ -14,6 +14,7 @@ html:not(.android-webview) body.app-mode #home:not(.hidden) {
   box-shadow: none;
 }
 #home > .member-home {
+  --member-utility-ink: #000;
   width: min(100%, 1240px);
   max-width: none;
   margin: auto;
@@ -23,22 +24,22 @@ html:not(.android-webview) body.app-mode #home:not(.hidden) {
 }
 .member-home :where(p, small, a, button, span) { font-family: 'Inter', Arial, sans-serif; }
 .member-home [lang="bn"] { font-family: 'Adorsho Lipi', sans-serif; }
-.member-home .member-library h2 { color: var(--welcome-ink); }
-.member-home .member-library p { font-family: 'Inter', Arial, sans-serif; }
 html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader { background: var(--welcome-paper); border-bottom: 1px solid var(--welcome-line); box-shadow: none; }
 html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .chapter-status { color: var(--welcome-ink); }
 html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .status-icon { filter: brightness(0); }
 .member-home *, .offer-dialog *, .join-offer * { box-sizing: border-box; }
 .member-welcome { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; }
 .member-welcome h1 { margin: 0; color: inherit; font: 700 clamp(25px, 3vw, 36px)/1.15 'Inter', sans-serif; letter-spacing: -.04em; }
-.member-offers-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--welcome-accent); font-size: 14px; font-weight: 600; text-underline-offset: 5px; }
 .member-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 24px; }
-.member-library { position: relative; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 12px; padding: clamp(24px, 3vw, 42px); background: var(--welcome-surface); border: 1px solid var(--welcome-line); border-radius: 28px; }
-.member-library h2 { margin: 0 0 14px; color: var(--welcome-ink); font: 400 clamp(36px, 4vw, 60px)/1 'Norwester', sans-serif; }
-.member-library p { max-width: 22ch; margin: 0 0 28px; color: var(--welcome-muted); font-size: 15px; line-height: 1.65; }
+.member-library { position: relative; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: center; gap: 16px; padding: clamp(20px, 3vw, 36px); background: var(--welcome-surface); border: 1px solid var(--welcome-line); border-radius: 28px; }
+.member-cover, .member-entry { min-width: 0; }
+.member-entry { display: grid; justify-items: center; align-content: center; gap: clamp(18px, 3vw, 30px); }
+.member-animation { position: relative; width: min(100%, 156px); aspect-ratio: 1; }
+.member-animation img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.member-animation img[hidden] { display: none; }
 .member-book { display: block; width: 100%; height: clamp(220px, 29vw, 350px); object-fit: contain; }
 .member-book[hidden], .member-book-fallback[hidden] { display: none; }
-.member-book-fallback { display: grid; place-content: center; min-height: 220px; border: 1px solid var(--welcome-line); border-radius: 10px; font: 30px 'Norwester', sans-serif; }
+.member-book-fallback { display: grid; place-content: center; height: clamp(220px, 29vw, 350px); padding: 12px; border: 1px solid var(--welcome-line); border-radius: 10px; color: var(--welcome-muted); font: 14px/1.5 'Inter', sans-serif; text-align: center; }
 .member-home .member-open { display: inline-flex; align-items: center; justify-content: center; width: auto; min-height: 50px; margin: 0; padding: 13px 20px; border: 1px solid var(--welcome-accent); border-radius: 14px; background: var(--welcome-accent); color: var(--welcome-on-accent); font: 700 15px 'Inter', sans-serif; box-shadow: none; }
 .member-links { display: grid; gap: 14px; }
 .member-home .member-link { display: grid; grid-template-columns: 48px minmax(0, 1fr); align-items: center; gap: 18px; width: 100%; min-height: 104px; margin: 0; padding: 22px; border: 1px solid var(--welcome-line); border-radius: 20px; background: var(--welcome-paper); color: var(--welcome-ink); box-shadow: none; text-align: left; }
@@ -47,15 +48,31 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
 .member-link strong { margin-bottom: 6px; font-size: 18px; font-weight: 700; }
 .member-link small { color: var(--welcome-muted); font-size: 13px; line-height: 1.5; }
 .member-link strong:only-child { margin-bottom: 0; }
-.member-home :is(button, a), .offer-dialog :is(button, a), .join-offer a { cursor: pointer; }
+.member-home :is(button, a), .offer-dialog :is(button, a), .join-offer :is(button, a) { cursor: pointer; }
 .member-home button { transition: background .18s ease, border-color .18s ease, transform .18s ease; }
 .member-home .member-link:hover { background: var(--welcome-surface); border-color: var(--welcome-accent); }
 .member-home .member-open:hover { background: var(--welcome-accent-strong); }
-.member-home :is(button, a):focus-visible, .offer-dialog :is(button, a, iframe):focus-visible, .join-offer a:focus-visible { outline: 3px solid var(--welcome-accent); outline-offset: 4px; }
+.member-home :is(button, a):focus-visible, .offer-dialog :is(button, a, iframe):focus-visible, .join-offer :is(button, a, iframe):focus-visible { outline: 3px solid var(--welcome-accent); outline-offset: 4px; }
 .member-home button:active { transform: translateY(1px); }
 .member-home button:disabled { opacity: .55; cursor: default; transform: none; }
-.member-offers-link:hover { color: var(--welcome-accent-strong); text-decoration-thickness: 2px; }
-.member-footer { display: flex; justify-content: center; padding: 24px 0 0; }
+.member-footer { display: grid; justify-items: center; gap: 22px; padding: 32px 0 0; }
+.member-utilities { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 16px; width: min(100%, 420px); }
+.member-profile-slot, .member-whatsapp-slot { width: 44px; min-height: 44px; }
+.member-products { justify-self: center; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; max-width: 100%; padding: 8px 18px; border: 1.5px solid currentColor; border-radius: 999px; background: transparent; color: var(--member-utility-ink); font: 600 13px/1.25 'Inter', Arial, sans-serif; text-align: center; text-decoration: none; }
+.member-products:hover { background: var(--welcome-surface); }
+.member-products:active { background: var(--welcome-line); }
+.member-utilities #profileBtn, .member-utilities #whatsappBtn { position: static; inset: auto; display: grid; place-items: center; width: 44px; min-width: 44px; height: 44px; margin: 0; padding: 0; border-radius: 50%; box-shadow: none; transform: none; opacity: 1; z-index: auto; touch-action: manipulation; }
+.member-utilities #profileBtn { background: var(--welcome-paper); border: 1px solid var(--welcome-line); }
+.member-utilities #profileBtn:hover { background: var(--welcome-surface); border-color: var(--welcome-muted); }
+.member-utilities #profileBtn:active { background: var(--welcome-line); }
+.member-utilities #whatsappBtn:hover { opacity: .85; }
+.member-utilities #whatsappBtn:active { opacity: .7; }
+.member-utilities #profilePanel { position: fixed; inset: auto; left: var(--member-panel-x, 12px); top: var(--member-panel-y, 12px); width: min(280px, var(--member-panel-max-width, calc(100vw - 36px))); max-height: var(--member-panel-max-height, calc(100dvh - 24px)); overflow-y: auto; padding: 16px; border: 1px solid var(--welcome-line); border-radius: 18px; background: var(--welcome-paper); box-shadow: 0 8px 28px var(--welcome-shadow); backdrop-filter: none; -webkit-backdrop-filter: none; animation: none; transform: none; }
+.member-utilities #profilePanel::before { display: none; }
+.member-utilities #profilePanel p { min-height: 0; margin: 0 0 16px; padding: 0; color: var(--welcome-ink); font: 500 14px/1.5 'Inter', Arial, sans-serif; }
+.member-utilities #profilePanel p::before { display: none; }
+.member-utilities #profilePanel button { min-height: 44px; margin: 0; background: var(--welcome-accent); color: var(--welcome-on-accent); box-shadow: none; }
+.member-utilities #profilePanel button:hover { background: var(--welcome-accent-strong); }
 .member-sponsor { display: inline-flex; align-items: center; min-height: 44px; }
 .member-sponsor img { width: 132px; height: auto; filter: grayscale(1) brightness(0); opacity: .6; }
 .member-sponsor:hover img { opacity: 1; }
@@ -67,8 +84,11 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
 .offer-embed { position: relative; width: 100%; aspect-ratio: 1 / 1.503704; overflow: hidden; border-radius: 12px; background: #f1f7f3; }
 .offer-embed iframe { display: block; position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; }
 .offer-loading { display: grid; position: absolute; inset: 0; z-index: 1; place-content: center; padding: 22px; color: #647269; font-size: 14px; line-height: 1.5; text-align: center; pointer-events: none; background: #f1f7f3; }
-.offer-source { display: inline-flex; align-items: center; min-height: 44px; color: #096228; font: 500 13px/1.5 'Inter', sans-serif; text-underline-offset: 4px; }
-.offer-source:hover { color: #061b0d; text-decoration-thickness: 2px; }
+.offer-loading--error { gap: 16px; pointer-events: auto; }
+.offer-loading--error p { margin: 0; }
+.offer-loading .offer-retry { justify-self: center; width: auto; min-height: 44px; margin: 0; padding: 10px 22px; border: 1px solid var(--welcome-accent); border-radius: 12px; background: var(--welcome-paper); color: var(--welcome-accent); box-shadow: none; font: 700 14px 'Inter', sans-serif; }
+.offer-loading .offer-retry:hover { background: var(--welcome-line); }
+.offer-loading .offer-retry:active { background: var(--welcome-surface); }
 .offer-popup-open { overflow: hidden; }
 .offer-overlay { position: fixed; inset: 0; z-index: var(--layer-dialog-backdrop); display: grid; place-items: center; padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); background: rgba(10, 23, 17, .58); }
 .offer-dialog { width: min(100%, 440px); max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); display: flex; flex-direction: column; min-height: 0; border-radius: 24px; background: #fff; color: #102419; box-shadow: 0 24px 70px #10241940; overflow: hidden; font-family: 'Inter', sans-serif; }
@@ -86,23 +106,24 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
 @media (max-width: 740px) {
   .member-welcome { margin-bottom: 18px; }
   .member-layout { grid-template-columns: 1fr; gap: 18px; }
-  .member-library { padding: 24px; border-radius: 22px; }
-  .member-book { height: clamp(180px, 49vw, 280px); }
-  .member-library h2 { font-size: clamp(32px, 7.5vw, 46px); }
-  .member-library p { font-size: 13px; margin-bottom: 18px; }
-  .member-home .member-open { padding: 12px 14px; font-size: 13px; }
+  .member-library { padding: 22px 18px; gap: 12px; border-radius: 22px; }
+  .member-book, .member-book-fallback { height: clamp(180px, 49vw, 280px); }
+  .member-animation { width: min(100%, 126px); }
+  .member-home .member-open { padding: 12px 14px; font-size: 14px; }
   .member-links { gap: 12px; }
   .member-home .member-link { min-height: 84px; padding: 16px; gap: 14px; }
   .member-link strong { font-size: 16px; margin-bottom: 3px; }
-  .member-footer { padding-top: 18px; }
+  .member-footer { padding-top: 28px; gap: 20px; }
   .join-offer { grid-template-columns: 1fr; gap: 16px; }
   .join-offer .offer-embed { max-width: 360px; margin: auto; }
 }
 @media (max-width: 350px) {
-  .member-library { padding: 18px; grid-template-columns: 1.15fr 1fr; }
+  .member-library { padding: 18px 12px; }
+  .member-home .member-open { padding-inline: 10px; }
 }
 @media (prefers-reduced-motion: reduce) { .member-home button { transition: none; } }
 @media (forced-colors: active) {
-  .member-library, .member-home button, .offer-dialog, .offer-join { border: 1px solid ButtonText; }
-  .member-home :is(button, a):focus-visible, .offer-dialog :is(button, a, iframe):focus-visible, .join-offer a:focus-visible { outline-color: Highlight; }
+  .member-library, .member-home button, .member-products, .offer-dialog, .offer-join { border: 1px solid ButtonText; }
+  .member-products { color: LinkText; }
+  .member-home :is(button, a):focus-visible, .offer-dialog :is(button, a, iframe):focus-visible, .join-offer :is(button, a, iframe):focus-visible { outline-color: Highlight; }
 }

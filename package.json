@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:home-animations": "node scripts/build-home-animation-assets.mjs",
     "build:video-card": "node scripts/build-video-card-asset.mjs",
     "build:css": "tailwindcss -i ./src/daisyui.css -o ./assets/daisyui.css --minify",
     "watch:css": "tailwindcss -i ./src/daisyui.css -o ./assets/daisyui.css --watch",

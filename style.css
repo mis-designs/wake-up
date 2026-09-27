@@ -5869,6 +5869,8 @@ html[data-native-motion-paused] #home .home-start-tap-cue {
 
 /* WHATSAPP FLOATING BUTTON */
 #whatsappBtn {
+    margin: 0;
+    padding: 0;
     position: fixed;
     bottom: 18px;
     right: 14px;
