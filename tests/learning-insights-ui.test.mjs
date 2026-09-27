@@ -11,7 +11,7 @@ const daisySource = readFileSync(new URL("../src/daisyui.css", import.meta.url),
 const daisyBuild = readFileSync(new URL("../assets/daisyui.css", import.meta.url), "utf8");
 const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
 const redirects = readFileSync(new URL("../_redirects", import.meta.url), "utf8");
-const homeLearningStart = index.indexOf('<div class="home-learning-entries"');
+const homeLearningStart = index.indexOf('<nav class="member-links"');
 const homeLearningEnd = index.indexOf("<!-- LEARNING INSIGHTS", homeLearningStart);
 const homeLearningMarkup = index.slice(homeLearningStart, homeLearningEnd);
 
@@ -22,10 +22,8 @@ test("home, history routing and deployment expose both learning screens", () => 
   assert.match(index, /showLearningErrors\(\)/u);
   assert.match(index, /icons\/statistiche-patente\.png/u);
   assert.match(index, /icons\/errori-patente\.png/u);
-  assert.equal((homeLearningMarkup.match(/<span class="home-learning-arrow" aria-hidden="true"><\/span>/gu) || []).length, 2);
-  assert.doesNotMatch(homeLearningMarkup, /(?:→|&rarr;|&#8594;|&#x0*2192;)/iu);
-  assert.match(appCss, /#home \.home-learning-entry > \.home-learning-icon\s*\{[^}]*width:\s*52px;[^}]*height:\s*52px;[^}]*object-fit:\s*contain;/u);
-  assert.match(appCss, /#home \.home-learning-arrow\s*\{[^}]*background:\s*url\("icons\/next\.png"\) center \/ contain no-repeat;/u);
+  assert.equal((homeLearningMarkup.match(/class="member-link"/gu) || []).length, 3);
+  assert.doesNotMatch(homeLearningMarkup, /class="member-arrow"/u);
   assert.match(client, /<img src="icons\/next\.png" alt="">/u);
   assert.doesNotMatch(client, /[→›]/u);
   assert.match(script, /path === "\/statistiche"/u);
@@ -158,12 +156,12 @@ test("responsive, reduced-motion and global scrollbar rules are present", () => 
   assert.match(index, /style\.css\?v=74-compact-loading/u);
   assert.match(index, /assets\/daisyui\.css\?v=2-learning-shell/u);
   assert.match(index, /src\/learning-insights\.css\?v=11-study-results/u);
-  assert.match(index, /src\/learning-insights\.js\?v=13-headlight/u);
-  assert.match(worker, /magicbook-pwa-v231-login-clean/u);
+  assert.match(index, /src\/learning-insights\.js\?v=14-home-icons/u);
+  assert.match(worker, /magicbook-pwa-v234-home-icons/u);
   assert.match(worker, /style\.css\?v=74-compact-loading/u);
   assert.match(worker, /assets\/daisyui\.css\?v=2-learning-shell/u);
   assert.match(worker, /src\/learning-insights\.css\?v=11-study-results/u);
-  assert.match(worker, /src\/learning-insights\.js\?v=13-headlight/u);
+  assert.match(worker, /src\/learning-insights\.js\?v=14-home-icons/u);
   assert.match(worker, /\/icons\/next\.png/u);
   assert.match(worker, /\/icons\/go-back\.png/u);
   assert.match(worker, /\/assets\/admin\/update\.png/u);

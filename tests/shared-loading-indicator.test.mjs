@@ -81,18 +81,18 @@ test("quiz, study and explanation operations reuse the same busy-control contrac
 });
 
 test("the shared loader and all changed consumers ship in one fresh PWA cache", () => {
-  assert.match(worker, /magicbook-pwa-v231-login-clean/u);
+  assert.match(worker, /magicbook-pwa-v234-home-icons/u);
   assert.match(worker, /loading-ui\.css\?v=4-context/u);
   assert.match(worker, /icons\/loading_headlight\.gif/u);
   assert.match(worker, /icons\/loading_backup\.gif/u);
   assert.match(worker, /loading-ui\.js\?v=2-context/u);
   assert.match(worker, /style\.css\?v=74-compact-loading/u);
-  assert.match(worker, /script\.js\?v=80-welcome/u);
+  assert.match(worker, /script\.js\?v=81-home-offers/u);
   assert.match(worker, /mystyle\.css\?v=60-web-quiz-layout/u);
   assert.match(worker, /audio-player-ui\.css\?v=10-web-quiz-slim/u);
   assert.match(worker, /quiz\.js\?v=88-headlight/u);
   assert.match(worker, /quiz-help\.js\?v=20260920-web-inline/u);
   assert.match(worker, /study-quiz\.js\?v=38-resume/u);
   assert.match(worker, /magic-dictionary\.js\?v=1\.4\.2-headlight/u);
-  assert.match(worker, /learning-insights\.js\?v=13-headlight&ui=9-intact-figures/u);
+  assert.match(worker, /learning-insights\.js\?v=14-home-icons&ui=9-intact-figures/u);
 });

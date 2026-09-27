@@ -13,7 +13,7 @@
 
 /* Public web welcome: white paper and the established forest-green study accent.
    Android aliases these semantic roles only behind its installed-app marker. */
-#landing {
+#landing, #home, #appHeader, .offer-overlay, .join-offer {
     --welcome-paper: #ffffff;
     --welcome-ink: #102419;
     --welcome-accent: #096228;

@@ -51,8 +51,8 @@ test("popup presentation belongs to shared CSS and ships in the current cache", 
   assert.doesNotMatch(script, /injectWhatsAppGroupPopupStyles|whatsappGroupPopupStyles/u);
   assert.doesNotMatch(script, /icon\.textContent\s*=/u);
   assert.match(page, /style\.css\?v=74-compact-loading/u);
-  assert.match(page, /script\.js\?v=80-welcome/u);
-  assert.match(worker, /magicbook-pwa-v231-login-clean/u);
+  assert.match(page, /script\.js\?v=81-home-offers/u);
+  assert.match(worker, /magicbook-pwa-v234-home-icons/u);
   assert.match(worker, /style\.css\?v=74-compact-loading/u);
-  assert.match(worker, /script\.js\?v=80-welcome/u);
+  assert.match(worker, /script\.js\?v=81-home-offers/u);
 });

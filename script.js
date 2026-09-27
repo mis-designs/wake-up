@@ -2518,6 +2518,7 @@ function checkRenewReminder(force = false) {
 }
 
 function showBanglaRenewPopup(message, daysLeft = null) {
+  window.MagicBookOffers?.dismissForNotice();
   const old = document.getElementById("renewPopupOverlay");
   if (old) old.remove();
 
@@ -3040,6 +3041,7 @@ function hasVisibleBlockingPopup() {
   const menuOverlay = document.getElementById("menuOverlay");
 
   return Boolean(
+    document.getElementById("offerPopupOverlay") ||
     document.getElementById("renewPopupOverlay") ||
     document.getElementById("whatsNewPopupOverlay") ||
     document.getElementById("whatsappGroupPopupOverlay") ||
@@ -3989,6 +3991,7 @@ function openChapterFromMenu(chapterNum) {
 
 // Context-aware back navigation
 function goBack() {
+  if (window.MagicBookOffers?.close()) return;
   if (appActionGate.isBusy()) return;
   closeChapterMenu();
   if (trialGuestMode && currentScreen === "chapters") {

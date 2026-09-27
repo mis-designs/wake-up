@@ -30,8 +30,8 @@ test("Statistics and Errors use the new PNGs only in Android, including the sect
   const helper = source.slice(source.indexOf("  function iconForMode(mode)"), source.indexOf("  function figureUrl("));
   for (const native of [true, false]) {
     const getIcon = runInNewContext(`${helper}; iconForMode`, { document: { documentElement: { classList: { contains: () => native } } } });
-    assert.equal(getIcon("statistics"), native ? "icons/Statistics.png" : "icons/statistiche-patente.png");
-    assert.equal(getIcon("errors"), native ? "icons/errors.png" : "icons/errori-patente.png");
+    assert.equal(getIcon("statistics"), native ? "icons/Statistics.png" : "icons/statistiche-patente.png?v=bf425fd51a49");
+    assert.equal(getIcon("errors"), native ? "icons/errors.png" : "icons/errori-patente.png?v=cfedf73692e7");
   }
   assert.ok(source.includes('<img src="${iconForMode("statistics")}" alt="">'));
   assert.ok(source.includes('<img src="${iconForMode("errors")}" alt="">'));

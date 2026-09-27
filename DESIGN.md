@@ -22,6 +22,8 @@ canonical_ui:
     - welcome-page.css
     - welcome-page.js
     - homebg.css
+    - home-offers.css
+    - home-offers.js
     - greeting-view.mjs
     - src/daisyui.css
     - assets/daisyui.css
@@ -36,11 +38,23 @@ canonical_ui:
   notes: Existing application tokens remain canonical. Locally compiled, d-prefixed daisyUI controls provide interaction primitives; the scoped learning stylesheet owns layout and visual hierarchy.
 design_context:
   owner: Magic Book
-  last_updated: 2026-09-26
-  revision_notes: "Owner correction: Headlight for page/panel loading; circular backup GIF for compact controls and inline status. Preserve white/forest-green web welcome, installed-only Android palette, responsive book layout and Facebook sponsor; no welcome Privacy or animation control."
+  last_updated: 2026-09-27
+  revision_notes: "Owner Home redesign: study-first browser layout; move the original offer into Join and a dismissible, device-local daily-capped dialog. Preserve native Home, purchase actions, shared loading and Facebook sponsor."
 ---
 
 # Magic Book design context
+
+## Signed-in Home and offers — owner annotations, 2026-09-27
+
+- Owner-replaced browser icons: use the original `icons/dizionario.png`, `icons/statistiche-patente.png` and `icons/errori-patente.png` without recoloring or cropping, contained in the existing48px Home slots. Statistics/Errori headers and tabs reuse the same revised artwork. Version each URL by its source hash and precache that exact URL; preserve the separate installed Android symbols and all labels/routes.
+
+- Follow-up annotated correction: no trailing arrows on Apri il libro, Dizionario, Statistiche or Errori. Statistics and Errors show only their icon and title, vertically centered; Dictionary retains Italiano · বাংলা. Remove the unused third grid column and arrow styles rather than hiding the marks. Keep whole-card targets, hover/press/focus, artwork and existing routes. No new copy or decoration replaces the removed content.
+
+- The browser Home is a study destination, not an advertising poster. `home-offers.css` owns the new `.member-home` composition: a contained original Magic Book cover and explicit Apri il libro action, alongside three useful routes (Dizionario, Statistiche, Errori). Above740px a1.3:1 split uses up to1240px; narrower screens stack the compact book panel and44px-plus navigation controls in natural document flow. No fabricated metrics, stale NEW badge, extra motion toggle or repeated promotional copy. The original MiskatDesigns PNG remains a keyboard-accessible Facebook sponsor. This replaces the old browser OPEN GIF/hand and side-by-side promotion layout, not the installed Android Home/rotary shell.
+- Reuse the welcome white/forest-green runtime roles; `homebg.css` supplies them to browser Home and offer surfaces without aliasing Home to Android blue. Norwester is reserved for the book title, Inter for navigation and body, the existing Bangla font fallback for বাংলা. Whole cover, restrained ruled cards, clear hover/press/focus, stable image-failure fallback. No clipping of shadows or controls on short screens or200% zoom.
+- Move the original Canva offer, unchanged, into Join before the existing package cards. `home-offers.js` owns exactly one lazy iframe implementation, shared with the promotional dialog. Prices and WhatsApp purchase actions are unchanged; the external Canva link is always available. No iframe request on logged-out welcome, login or ordinary hidden Home. Entry creates one provider document; leaving Join or dismissing the dialog removes it and its12-second status timer. Canva controls its own subrequests/caching; no application retry/poll or authenticated cache is added.
+- The same offer may appear in the foreground on authenticated Home, at most once per document visit and three times per device-local calendar day. Existing renewal, learning and invitation notices take precedence; do not queue an ad immediately behind them or interrupt Quiz/Video. X, Escape, backdrop and Back dismiss through `app-popup.js`, restore focus and remove the provider frame; forward never resurrects a dismissed ad. A single fixed local counter contains only day/count, without user identity. Unavailable/corrupt persistence suppresses auto-display, but Join stays available. Web Locks serialize quota updates across tabs where supported. Native Home remains visually unchanged; the shared offer dialog/Join also work under the installed marker.
+- The dialog keeps its header/X and footer visible, confines any long content to its body, and bounds the poster to the remaining viewport. Existing global layer tokens and modal focus/inert behavior remain canonical. The panel loading indicator uses the shared Headlight/backup assets, not a custom spinner. No claim is made that iframe `load` proves the remote design is available; a persistent external link supports provider failures. Verify actual app routes with local fixtures across320–1920px, short landscape, native marker, history, focus, cap/rollover, failures, reduced motion, forced colors and zoom. Evidence: `tests/home-offers.test.mjs`, `scripts/home-offers-browser-qa.mjs`.
 
 ## Login cleanup — owner annotations, 2026-09-26
 

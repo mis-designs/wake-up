@@ -150,8 +150,8 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   const vercel = JSON.parse(fs.readFileSync(path.join(root, "vercel.json"), "utf8"));
   const redirects = fs.readFileSync(path.join(root, "_redirects"), "utf8");
 
-  assert.match(index, /home-dictionary-entry/u);
-  assert.match(index, /premium-new-badge home-dictionary-new-badge/u);
+  assert.match(index, /class="member-link" onclick="showMagicDictionary\(\)"/u);
+  assert.match(index, /<strong>Dizionario<\/strong><small>Italiano · <span lang="bn">বাংলা<\/span>/u);
   assert.doesNotMatch(index, /home-dictionary-mark/u);
   assert.match(index, /openDictionaryFromMenu\(\)/u);
   assert.match(index, /magic-dictionary\.js\?v=1\.4\.2-headlight/u);
@@ -170,7 +170,7 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(dictionaryCss, /\.magic-dictionary-settings button\s*\{[\s\S]*width:\s*auto;[\s\S]*justify-self:\s*end;[\s\S]*white-space:\s*nowrap;/u);
   assert.match(script, /state\.screen === "dictionary"/u);
   assert.match(script, /MagicDictionaryFeature\?\.onAuthenticated/u);
-  assert.match(worker, /magicbook-pwa-v231-login-clean/u);
+  assert.match(worker, /magicbook-pwa-v234-home-icons/u);
   assert.match(worker, /magic-dictionary\.js\?v=1\.4\.2-headlight/u);
   assert.match(worker, /magic-dictionary\.css\?v=1\.4\.1-dictionary-cleanup/u);
   assert.ok(vercel.rewrites.some(route => route.source === "/dizionario" && route.destination === "/"));

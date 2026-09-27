@@ -101,7 +101,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <link rel="stylesheet" href="loading-ui.css?v=4-context">
 <script src="loading-ui.js?v=2-context" defer></script>
 <link rel="stylesheet" href="style.css?v=74-compact-loading">
-<link rel="stylesheet" href="homebg.css?v=4-welcome">
+<link rel="stylesheet" href="homebg.css?v=5-home-offers">
 <link rel="stylesheet" href="magic-dictionary.css?v=1.4.1-dictionary-cleanup">
 <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
 <link rel="stylesheet" href="/offline-notice.css?v=1.0.0">
@@ -114,6 +114,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <link rel="stylesheet" href="/android-app-theme.css?v=14-welcome-split">
 <link rel="stylesheet" href="/android-study-shell.css?v=20-liquid">
 <link rel="stylesheet" href="/welcome-page.css?v=4-login-home">
+<link rel="stylesheet" href="/home-offers.css?v=2-clean">
 <link rel="stylesheet" href="/android-mode-screens.css?v=3-headlight">
 </head>
 <body>
@@ -540,6 +541,15 @@ gtag('config', 'G-C5JPY9HFHD', {
         <p>Accesso alla web app TMM Bangla Patente con libro, 786 quiz importanti, schede personali e simulazione esame.</p>
       </section>
 
+      <section class="join-offer" aria-labelledby="joinOfferTitle">
+        <div>
+          <h2 id="joinOfferTitle">Le offerte TMM</h2>
+          <p>Libri, lezioni e pacchetti. Tutte le proposte, in un solo posto.</p>
+          <a class="offer-source" href="https://www.canva.com/design/DAHLyZHWUYo/qHS9sfdQAw2ku5raxvnX6Q/view" target="_blank" rel="noopener noreferrer">Apri l’offerta su Canva ↗</a>
+        </div>
+        <div class="offer-embed" id="joinOfferHost"></div>
+      </section>
+
       <section class="join-packages" aria-label="Pacchetti MagicBook">
         <article class="join-package">
           <div class="join-package-head">
@@ -751,45 +761,61 @@ gtag('config', 'G-C5JPY9HFHD', {
   <button class="native-motion-toggle" type="button" aria-pressed="false">Animazioni: attive</button>
 </template>
 <div class="card hidden" id="home">
-  <div class="home-promo-shell" aria-label="Packages TMM Bangla Patente">
-    <div class="home-promo-embed" style="position: relative; width: 100%; height: 0; padding-top: 150.3704%; padding-bottom: 0; box-shadow: 0 2px 8px 0 rgba(63,69,81,0.16); margin-top: 0; margin-bottom: 0; overflow: hidden; border-radius: 8px; will-change: transform;">
-      <iframe loading="lazy" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; border: none; padding: 0; margin: 0;"
-        src="https://www.canva.com/design/DAHLyZHWUYo/qHS9sfdQAw2ku5raxvnX6Q/view?embed" allowfullscreen="allowfullscreen" allow="fullscreen" title="Packages" referrerpolicy="strict-origin-when-cross-origin">
-      </iframe>
+  <div class="member-home">
+    <header class="member-welcome">
+      <h1>Il tuo spazio studio</h1>
+      <a class="member-offers-link" href="/join" data-public-route="join">Offerte ↗</a>
+    </header>
+    <div class="member-layout">
+      <section class="member-library" aria-labelledby="memberBookTitle">
+        <div>
+          <h2 id="memberBookTitle">Magic Book</h2>
+          <p>Un capitolo alla volta, verso la tua patente.</p>
+          <button class="member-open" onclick="showChapters()" type="button">Apri il libro</button>
+        </div>
+        <img class="member-book" src="/icons/mg_book.svg" width="280" height="390" alt="La copertina di Magic Book" decoding="async">
+        <span class="member-book-fallback" hidden>Magic Book</span>
+      </section>
+      <nav class="member-links" aria-label="Strumenti di studio">
+        <button class="member-link" onclick="showMagicDictionary()" type="button">
+          <img src="/icons/dizionario.png?v=6d8000501111" alt="" width="48" height="48">
+          <span><strong>Dizionario</strong><small>Italiano · <span lang="bn">বাংলা</span></small></span>
+        </button>
+        <button class="member-link" onclick="showLearningStatistics()" type="button">
+          <img src="/icons/statistiche-patente.png?v=bf425fd51a49" alt="" width="48" height="48">
+          <span><strong>Statistiche</strong></span>
+        </button>
+        <button class="member-link" onclick="showLearningErrors()" type="button">
+          <img src="/icons/errori-patente.png?v=cfedf73692e7" alt="" width="48" height="48">
+          <span><strong>Errori</strong></span>
+        </button>
+      </nav>
     </div>
-    <a class="home-promo-credit" href="https://www.canva.com/design/DAHLyZHWUYo/qHS9sfdQAw2ku5raxvnX6Q/view?utm_content=DAHLyZHWUYo&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link" target="_blank" rel="noopener noreferrer">Ad</a>
-    <span class="home-promo-credit">by Miskat Mohammed</span>
+    <footer class="member-footer">
+      <a class="member-sponsor" data-nosnippet href="https://www.facebook.com/share/14aaeMyWJGw/" target="_blank" rel="noopener noreferrer" aria-label="MiskatDesigns su Facebook, si apre in una nuova scheda">
+        <img src="/icons/mdesignstextlogo.png" width="132" height="35" alt="MiskatDesigns">
+      </a>
+    </footer>
   </div>
-  <div class="home-actions">
-    <button class="home-start-btn" onclick="showChapters()" type="button" aria-label="Apri Magic Book">
-      <img src="assets/images/startbtn.gif" alt="">
-      <span class="home-start-open-label" aria-hidden="true">OPEN<span class="home-start-tap-cue"></span></span>
-    </button>
-    <button class="home-dictionary-entry" onclick="showMagicDictionary()" type="button" aria-label="Apri il dizionario italiano Bangla">
-      <span class="premium-new-badge home-dictionary-new-badge" aria-label="Novità"><span>NEW</span></span>
-      <span class="home-dictionary-copy">
-        <strong>Dizionario</strong>
-        <small>Italiano · বাংলা</small>
-      </span>
-    </button>
-    <div class="home-learning-entries" aria-label="Il tuo percorso di apprendimento">
-      <button class="home-learning-entry is-statistics" onclick="showLearningStatistics()" type="button">
-        <img class="home-learning-icon" src="icons/statistiche-patente.png" alt="">
-        <span class="home-learning-copy"><strong>Statistiche</strong><small>Leggi il tuo percorso</small></span>
-        <span class="home-learning-arrow" aria-hidden="true"></span>
-      </button>
-      <button class="home-learning-entry is-errors" onclick="showLearningErrors()" type="button">
-        <img class="home-learning-icon" src="icons/errori-patente.png" alt="">
-        <span class="home-learning-copy"><strong>Errori</strong><small>Recupera ciò che conta</small></span>
-        <span class="home-learning-arrow" aria-hidden="true"></span>
-      </button>
-    </div>
-  </div>
-  <a class="watermark-link" data-nosnippet href="https://www.facebook.com/share/14aaeMyWJGw/" target="_blank" rel="noopener noreferrer">
-    By MiskatDesigns
-    <span class="watermark-tip">Visit</span>
-  </a>
 </div>
+
+<template id="offerPopupTemplate">
+  <div class="offer-overlay" id="offerPopupOverlay">
+    <section class="offer-dialog" role="dialog" aria-modal="true" aria-labelledby="offerPopupTitle">
+      <header class="offer-dialog-header">
+        <h2 id="offerPopupTitle">Le offerte TMM</h2>
+        <button class="offer-close" type="button" aria-label="Chiudi l’offerta">×</button>
+      </header>
+      <div class="offer-dialog-body">
+        <div class="offer-embed"></div>
+      </div>
+      <footer class="offer-dialog-footer">
+        <a class="offer-source" href="https://www.canva.com/design/DAHLyZHWUYo/qHS9sfdQAw2ku5raxvnX6Q/view" target="_blank" rel="noopener noreferrer">Apri l’offerta su Canva ↗</a>
+        <a class="offer-join" href="/join" data-offer-join>Scopri i pacchetti</a>
+      </footer>
+    </section>
+  </div>
+</template>
 
 <!-- LEARNING INSIGHTS: STATISTICHE + ERRORI -->
 <section id="learningInsightsScreen" class="learning-insights-screen hidden" data-theme="magicbook" aria-labelledby="learningInsightsHeading">
@@ -1321,13 +1347,14 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script src="learning-sync.js?v=6-local-review"></script>
 <script src="app-popup.js?v=2"></script>
 <script type="module" src="figure-detail.js?v=2"></script>
-<script src="src/learning-insights.js?v=13-headlight&ui=9-intact-figures"></script>
+<script src="src/learning-insights.js?v=14-home-icons&ui=9-intact-figures"></script>
 <script src="android-mode-screens.js?v=2-thumb"></script>
 <script src="web-study-actions.js?v=1"></script>
 <script src="web-action-effects.js?v=3-system-motion"></script>
-<script src="script.js?v=80-welcome"></script>
+<script src="script.js?v=81-home-offers"></script>
 <script type="module" src="login-experience.js?v=3-clean"></script>
 <script type="module" src="welcome-page.js?v=2-clean"></script>
+<script type="module" src="home-offers.js?v=1"></script>
 <script type="module" src="android-study-shell.js?v=14-liquid"></script>
 </body>
 </html>

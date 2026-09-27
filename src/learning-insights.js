@@ -120,7 +120,7 @@
     if (document.documentElement.classList.contains("android-webview")) {
       return mode === "errors" ? "icons/errors.png" : "icons/Statistics.png";
     }
-    return mode === "errors" ? "icons/errori-patente.png" : "icons/statistiche-patente.png";
+    return mode === "errors" ? "icons/errori-patente.png?v=cfedf73692e7" : "icons/statistiche-patente.png?v=bf425fd51a49";
   }
 
   function figureUrl(figureId) {
