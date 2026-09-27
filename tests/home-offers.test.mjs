@@ -72,11 +72,11 @@ test('Home actions use clean labels without arrows or redundant result descripti
 });
 test('new owners are versioned and cached without caching Canva or account data', () => {
   const page = read('index.html'), worker = read('service-worker.js');
-  for (const asset of ['home-offers.css?v=5-magic', 'home-offers.js?v=5-motion']) {
+  for (const asset of ['home-offers.css?v=6-dock', 'home-offers.js?v=5-motion']) {
     assert.ok(page.includes(asset)); assert.ok(worker.includes(asset));
   }
   assert.ok(worker.includes('/offer-frequency.mjs?v=1'));
-  assert.ok(worker.includes('magicbook-pwa-v238-home-motion'));
+  assert.ok(worker.includes('magicbook-pwa-v239-home-dock'));
 });
 
 test('owner-replaced Home icons use source-hash URLs, intact slots and shared web artwork', () => {

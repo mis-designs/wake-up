@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v238-home-motion";
+const CACHE_NAME = "magicbook-pwa-v239-home-dock";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -26,7 +26,7 @@ const STATIC_ASSETS = [
   "/login-experience.js?v=3-clean",
   "/welcome-page.css?v=4-login-home",
   "/welcome-page.js?v=2-clean",
-  "/home-offers.css?v=5-magic",
+  "/home-offers.css?v=6-dock",
   "/home-offers.js?v=5-motion&art=17f11c77bde0",
   "/home-animation.js?v=3-loop&art=17f11c77bde0",
   "/home-utilities.js?v=2-admin",

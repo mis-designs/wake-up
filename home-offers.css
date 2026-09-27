@@ -1,11 +1,14 @@
 /* Signed-in browser Home. Installed Home retains its own rotary-shell owner. */
 html:not(.android-webview) body.app-mode #home:not(.hidden) {
-  display: block;
+  --member-header-height: 60px;
+  display: flex;
+  flex-direction: column;
   height: auto;
-  min-height: calc(100svh - 64px);
+  min-height: calc(100svh - var(--member-header-height));
   max-width: none;
   margin: 0;
-  padding: clamp(20px, 4vw, 54px) max(18px, env(safe-area-inset-right)) 24px max(18px, env(safe-area-inset-left));
+  padding: clamp(20px, 3svh, 40px) max(18px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  gap: 0;
   overflow: visible;
   background: var(--welcome-paper);
   color: var(--welcome-ink);
@@ -15,9 +18,12 @@ html:not(.android-webview) body.app-mode #home:not(.hidden) {
 }
 #home > .member-home {
   --member-utility-ink: #000;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   width: min(100%, 1240px);
   max-width: none;
-  margin: auto;
+  margin: 0 auto;
   color: var(--welcome-ink);
   font-family: 'Inter', Arial, sans-serif;
   text-align: left;
@@ -28,6 +34,7 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader { ba
 html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .chapter-status { color: var(--welcome-ink); }
 html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .status-icon { display: none; }
 .member-home *, .offer-dialog *, .join-offer * { box-sizing: border-box; }
+.member-study { margin-block: auto; }
 .member-welcome { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; }
 .member-welcome h1 { margin: 0; color: inherit; font: 700 clamp(25px, 3vw, 36px)/1.15 'Inter', sans-serif; letter-spacing: -.04em; }
 .member-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 24px; }
@@ -37,9 +44,9 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
 .member-animation { position: relative; width: min(100%, 156px); aspect-ratio: 1; }
 .member-animation img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
 .member-animation img[hidden] { display: none; }
-.member-book { display: block; width: 100%; height: clamp(220px, 29vw, 350px); object-fit: contain; }
+.member-book { display: block; width: 100%; height: clamp(260px, 39svh, 420px); object-fit: contain; }
 .member-book[hidden], .member-book-fallback[hidden] { display: none; }
-.member-book-fallback { display: grid; place-content: center; height: clamp(220px, 29vw, 350px); padding: 12px; border: 1px solid var(--welcome-line); border-radius: 10px; color: var(--welcome-muted); font: 14px/1.5 'Inter', sans-serif; text-align: center; }
+.member-book-fallback { display: grid; place-content: center; height: clamp(260px, 39svh, 420px); padding: 12px; border: 1px solid var(--welcome-line); border-radius: 10px; color: var(--welcome-muted); font: 14px/1.5 'Inter', sans-serif; text-align: center; }
 .member-home .member-open {
   --member-action-light: color-mix(in srgb, var(--welcome-accent) 88%, var(--welcome-on-accent));
   --member-action-fill: radial-gradient(65.28% 65.28% at 50% 100%, var(--member-action-light) 0%, transparent 100%), linear-gradient(0deg, var(--welcome-accent), var(--welcome-accent-strong));
@@ -87,25 +94,29 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
 .member-home :is(button, a):focus-visible, .offer-dialog :is(button, a, iframe):focus-visible, .join-offer :is(button, a, iframe):focus-visible { outline: 3px solid var(--welcome-accent); outline-offset: 4px; }
 .member-home button:active { transform: translateY(1px); }
 .member-home button:disabled { opacity: .55; cursor: default; transform: none; }
-.member-footer { display: grid; justify-items: center; gap: 22px; padding: 32px 0 0; }
-.member-utilities { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 16px; width: min(100%, 420px); }
-.member-profile-slot, .member-whatsapp-slot { min-height: 44px; }
-.member-profile-slot { display: flex; align-items: center; gap: 8px; }
-.member-whatsapp-slot { width: 44px; }
-.member-utilities:has(#adminEntryBtn:not(.hidden)) { grid-template-columns: 96px minmax(0, 1fr) 44px; width: min(100%, 468px); }
-.member-products { justify-self: center; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; max-width: 100%; padding: 8px 18px; border: 1.5px solid currentColor; border-radius: 999px; background: transparent; color: var(--member-utility-ink); font: 600 13px/1.25 'Inter', Arial, sans-serif; text-align: center; text-decoration: none; }
-.member-products:hover { background: var(--welcome-surface); }
-.member-products:active { background: var(--welcome-line); }
-.member-utilities #profileBtn, .member-utilities #whatsappBtn, .member-utilities #adminEntryBtn { position: static; inset: auto; display: grid; place-items: center; width: 44px; min-width: 44px; height: 44px; margin: 0; padding: 0; border-radius: 50%; box-shadow: none; transform: none; opacity: 1; z-index: auto; touch-action: manipulation; }
+.member-footer { display: grid; flex: 0 0 auto; justify-items: center; gap: 12px; padding: clamp(28px, 4svh, 56px) 0 0; }
+/* A single in-flow dock. No fixed overlay or transformed ancestor of the profile popover. */
+.member-utilities { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr) minmax(0, 1fr); align-items: center; gap: 6px; width: min(100%, 420px); padding: 8px; border: 1px solid var(--welcome-line); border-radius: 999px; background: var(--welcome-surface); box-shadow: 0 8px 24px -12px var(--welcome-shadow); }
+.member-profile-slot, .member-whatsapp-slot { display: contents; }
+.member-utilities:has(#adminEntryBtn:not(.hidden)) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.45fr) minmax(0, 1fr); width: min(100%, 500px); }
+.member-products { display: inline-flex; align-items: center; justify-content: center; min-height: 56px; min-width: 0; padding: 8px; border: 1px solid var(--welcome-line); border-radius: 999px; background: var(--welcome-paper); color: var(--member-utility-ink); font: 600 13px/1.25 'Inter', Arial, sans-serif; text-align: center; text-decoration: none; }
+.member-products:hover { background: var(--welcome-line); border-color: var(--welcome-muted); }
+.member-products:active { background: var(--welcome-surface); }
+.member-utility-label { display: none; }
+.member-utilities .member-utility-label { display: block; color: var(--welcome-ink); font: 600 11px/1.25 'Inter', Arial, sans-serif; }
+.member-utilities #profileBtn, .member-utilities #whatsappBtn, .member-utilities #adminEntryBtn { position: static; inset: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 100%; min-width: 44px; height: 56px; margin: 0; padding: 4px; border: 1px solid transparent; border-radius: 999px; background: transparent; box-shadow: none; transform: none; opacity: 1; z-index: auto; touch-action: manipulation; }
+.member-utilities :is(#profileBtn, #whatsappBtn, #adminEntryBtn) img { width: 24px; height: 24px; object-fit: contain; }
+.member-utilities #whatsappBtn img { width: 26px; height: 26px; }
+.member-utilities #adminEntryBtn img { width: 28px; height: 28px; }
+/* The floating contact's app-mode opacity must not dim this labelled dock item. */
+.member-home .member-utilities #whatsappBtn { opacity: 1; }
 .member-utilities :is(#profileBtn, #whatsappBtn, #adminEntryBtn).hidden { display: none; }
-.member-utilities #adminEntryBtn { background: var(--welcome-paper); border: 1px solid var(--welcome-line); }
-.member-utilities #adminEntryBtn:hover { border-color: var(--welcome-accent); background: var(--welcome-surface); }
+.member-utilities #adminEntryBtn:hover { border-color: var(--welcome-line); background: var(--welcome-paper); }
 .member-utilities #adminEntryBtn:active { opacity: .75; }
-.member-utilities #profileBtn { background: var(--welcome-paper); border: 1px solid var(--welcome-line); }
-.member-utilities #profileBtn:hover { background: var(--welcome-surface); border-color: var(--welcome-muted); }
+.member-utilities #profileBtn:hover, .member-utilities #profileBtn[aria-expanded="true"] { background: var(--welcome-paper); border-color: var(--welcome-line); }
 .member-utilities #profileBtn:active { background: var(--welcome-line); }
-.member-utilities #whatsappBtn:hover { opacity: .85; }
-.member-utilities #whatsappBtn:active { opacity: .7; }
+.member-utilities #whatsappBtn:hover { background: var(--welcome-paper); border-color: var(--welcome-line); }
+.member-home .member-utilities #whatsappBtn:active { opacity: .7; }
 .member-utilities #profilePanel { position: fixed; inset: auto; left: var(--member-panel-x, 12px); top: var(--member-panel-y, 12px); width: min(280px, var(--member-panel-max-width, calc(100vw - 36px))); max-height: var(--member-panel-max-height, calc(100dvh - 24px)); overflow-y: auto; padding: 16px; border: 1px solid var(--welcome-line); border-radius: 18px; background: var(--welcome-paper); box-shadow: 0 8px 28px var(--welcome-shadow); backdrop-filter: none; -webkit-backdrop-filter: none; animation: none; transform: none; }
 .member-utilities #profilePanel::before { display: none; }
 .member-utilities #profilePanel p { min-height: 0; margin: 0 0 16px; padding: 0; color: var(--welcome-ink); font: 500 14px/1.5 'Inter', Arial, sans-serif; }
@@ -152,15 +163,23 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
   .member-links { gap: 12px; }
   .member-home .member-link { min-height: 84px; padding: 16px; gap: 14px; }
   .member-link strong { font-size: 16px; margin-bottom: 3px; }
-  .member-footer { padding-top: 28px; gap: 20px; }
+  .member-footer { padding-top: 28px; }
   .join-offer { grid-template-columns: 1fr; gap: 16px; }
   .join-offer .offer-embed { max-width: 360px; margin: auto; }
 }
 @media (max-width: 350px) {
   .member-library { padding: 18px 12px; }
   .member-home .member-open { padding-inline: 10px; }
-  .member-utilities { gap: 12px; }
-  .member-products { padding-inline: 10px; }
+  .member-utilities { gap: 4px; padding: 6px; }
+  .member-products { padding-inline: 4px; font-size: 12px; }
+}
+@media (min-width: 741px) and (max-height: 800px) {
+  .member-library { padding: 24px; }
+  .member-book, .member-book-fallback { height: clamp(200px, 30svh, 260px); }
+  .member-home .member-link { min-height: 88px; padding: 16px 22px; }
+}
+@media (max-height: 620px) {
+  html:not(.android-webview) body.app-mode #home:not(.hidden) { --member-header-height: 54px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .member-home button, .member-home .member-open::after { transition: none; }
@@ -174,5 +193,7 @@ html[data-native-motion-paused] .member-home .member-open:active { transform: no
   .member-home .member-open { background: ButtonFace; color: ButtonText; box-shadow: none; }
   .member-library, .member-home button, .member-products, .offer-dialog, .offer-join { border: 1px solid ButtonText; }
   .member-products { color: LinkText; }
+  .member-utilities { background: Canvas; border-color: ButtonText; box-shadow: none; }
+  .member-utilities .member-utility-label { color: ButtonText; }
   .member-home :is(button, a):focus-visible, .offer-dialog :is(button, a, iframe):focus-visible, .join-offer :is(button, a, iframe):focus-visible { outline-color: Highlight; }
 }

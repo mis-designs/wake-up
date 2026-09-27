@@ -57,8 +57,28 @@ async function fixture(width, height, native = false, mode = '', role = 'user') 
   return { ctx, page, reads, errors, assets, frames: () => frames, release: () => held?.() };
 }
 const count = page => page.evaluate(() => JSON.parse(localStorage.getItem('magicbook.offerNotice.v1')).count);
+async function checkHomeLayout(page, width, height) {
+  const result = await page.evaluate(() => {
+    const box = selector => { const r = document.querySelector(selector).getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height, bottom: r.bottom }; };
+    return { heading: box('.member-welcome'), content: box('.member-layout'), dock: box('.member-utilities'), sponsor: box('.member-sponsor'), scrollHeight: document.documentElement.scrollHeight,
+      dockStyle: { background: getComputedStyle(document.querySelector('.member-utilities')).backgroundColor, radius: getComputedStyle(document.querySelector('.member-utilities')).borderRadius } };
+  });
+  assert.equal(result.dockStyle.background, 'rgb(241, 247, 243)');
+  assert.equal(result.dockStyle.radius, '999px');
+  assert.ok(result.dock.y >= result.content.bottom + 27, 'dock separated from study actions');
+  assert.ok(result.sponsor.y >= result.dock.bottom + 11, 'sponsor outside and below dock');
+  assert.ok(result.dock.x >= 0 && result.dock.x + result.dock.width <= width, 'capsule contained');
+  assert.ok(result.content.y - result.heading.bottom >= 17 && result.content.y - result.heading.bottom <= 25, 'heading stays attached to its study content, even on tall screens');
+  if (width >= 1024 && height >= 720) {
+    assert.ok(result.scrollHeight <= height + 1, `desktop fits one screen: ${JSON.stringify(result)}`);
+    assert.ok(result.sponsor.bottom <= height && result.sponsor.bottom >= height - 40, 'signature near bottom, no unused lower slab');
+    assert.ok(result.dock.y >= height * .72, 'utilities use the lower zone');
+    assert.ok(result.content.y > result.heading.bottom + 15, 'title has breathing room');
+  }
+  return result;
+}
 try {
-  for (const [width, height, native] of [[320,568,false], [375,812,false], [740,360,false], [768,1024,false], [1440,900,false], [1920,1080,false], [375,812,true]]) {
+  for (const [width, height, native] of [[320,568,false], [375,812,false], [740,360,false], [768,1024,false], [1280,720,false], [1440,900,false], [1920,1080,false], [2560,1440,false], [375,812,true]]) {
     if (process.env.QA_FAILURES_ONLY) continue;
     if (process.env.QA_WIDTH && Number(process.env.QA_WIDTH) !== width) continue;
     const f = await fixture(width, height, native), { page } = f;
@@ -124,7 +144,9 @@ try {
       assert.ok(Math.abs(profileBox.y - whatsappBox.y) < 1 && Math.abs(profileBox.y - productsBox.y) < 1);
       assert.ok(profileBox.y >= linksBox.y + linksBox.height + 20);
       assert.ok(sponsorBox.y >= profileBox.y + profileBox.height + 16);
-      assert.deepEqual(await page.locator('.member-products').evaluate(el => ({ color: getComputedStyle(el).color, background: getComputedStyle(el).backgroundColor })), { color: 'rgb(0, 0, 0)', background: 'rgba(0, 0, 0, 0)' });
+      assert.deepEqual(await page.locator('.member-products').evaluate(el => ({ color: getComputedStyle(el).color, background: getComputedStyle(el).backgroundColor })), { color: 'rgb(0, 0, 0)', background: 'rgb(255, 255, 255)' });
+      reports.push({ width, height, role: 'user', layout: await checkHomeLayout(page, width, height) });
+      assert.deepEqual(await page.locator('.member-utilities .member-utility-label:visible').allTextContents(), ['Profilo', 'WhatsApp']);
       await page.waitForFunction(() => document.querySelector('.member-animation img')?.naturalWidth > 0);
       const firstAsset = await page.locator('.member-animation').getAttribute('data-asset');
       const bookBox = await page.locator('.member-book').boundingBox();
@@ -162,6 +184,7 @@ try {
       await page.evaluate(() => { window.openExternalUrl = window.fixtureOriginalExternal; delete window.fixtureOriginalExternal; });
       await page.locator('.member-open').click();
       await page.waitForURL('**/magic-book');
+      assert.equal(await page.locator('.member-utility-label:visible').count(), 0, 'Home labels never leak into sibling chrome');
       assert.equal(await page.locator('.member-utilities #profileBtn, .member-utilities #whatsappBtn, .member-utilities #profilePanel').count(), 0, 'leaving Home restores original nodes');
       assert.equal(await page.evaluate(() => document.getElementById('profileBtn') === window.fixtureProfileNode && document.getElementById('whatsappBtn') === window.fixtureWhatsappNode), true, 'route transitions preserve node identity and attached handlers');
       await page.goBack();
@@ -244,6 +267,8 @@ try {
     assert.ok(boxes.every(box => box.width >= 44 && box.height >= 44 && box.x >= 0 && box.x + box.width <= width));
     assert.ok(boxes.slice(1).every((box, i) => box.x >= boxes[i].x + boxes[i].width), 'admin utilities do not overlap');
     assert.ok(boxes.every(box => Math.abs(box.y - boxes[0].y) < 1), 'one aligned footer row');
+    reports.push({ width, height, role: 'admin', layout: await checkHomeLayout(page, width, height) });
+    assert.deepEqual(await page.locator('.member-utilities .member-utility-label:visible').allTextContents(), ['Profilo', 'Admin', 'WhatsApp']);
     await page.locator('.member-open').scrollIntoViewIfNeeded();
     await page.waitForFunction(() => document.getElementById('home').dataset.homeMotion === 'running');
     assert.equal(await page.locator('.member-open-points i').first().evaluate(el => getComputedStyle(el).animationPlayState), 'running');

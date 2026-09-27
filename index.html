@@ -114,7 +114,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <link rel="stylesheet" href="/android-app-theme.css?v=14-welcome-split">
 <link rel="stylesheet" href="/android-study-shell.css?v=20-liquid">
 <link rel="stylesheet" href="/welcome-page.css?v=4-login-home">
-  <link rel="stylesheet" href="/home-offers.css?v=5-magic">
+  <link rel="stylesheet" href="/home-offers.css?v=6-dock">
 <link rel="stylesheet" href="/android-mode-screens.css?v=3-headlight">
 </head>
 <body>
@@ -122,6 +122,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <!-- WHATSAPP FLOATING BUTTON -->
 <button id="whatsappBtn" class="hidden" type="button" aria-label="Contattaci su WhatsApp">
   <img src="assets/images/whatsapp.png" alt="">
+  <span class="member-utility-label" aria-hidden="true">WhatsApp</span>
 </button>
 
 <!-- APP INSTALL PROMPT -->
@@ -140,10 +141,12 @@ gtag('config', 'G-C5JPY9HFHD', {
 <!-- PROFILE -->
 <button id="adminEntryBtn" class="admin-entry hidden" onclick="showAdminPanel()" type="button" aria-label="Apri pannello admin">
   <img class="admin-profile-logo" src="assets/admin/ADMIN_PROFILE_LOGO.jpg" alt="">
+  <span class="member-utility-label" aria-hidden="true">Admin</span>
 </button>
 
 <button id="profileBtn" class="profile-btn hidden" type="button" aria-label="Profilo" aria-expanded="false">
   <img src="icons/user.svg" alt="">
+  <span class="member-utility-label" aria-hidden="true">Profilo</span>
 </button>
 
 <div id="profilePanel" class="profile-panel hidden" aria-live="polite">
@@ -761,6 +764,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 </template>
 <div class="card hidden" id="home">
   <div class="member-home">
+    <div class="member-study">
     <header class="member-welcome">
       <h1>Il tuo spazio studio</h1>
     </header>
@@ -792,6 +796,7 @@ gtag('config', 'G-C5JPY9HFHD', {
           <span><strong>Errori</strong></span>
         </button>
       </nav>
+    </div>
     </div>
     <footer class="member-footer">
       <nav class="member-utilities" aria-label="Profilo, prodotti e contatti">

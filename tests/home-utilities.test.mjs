@@ -25,12 +25,25 @@ test('Home utility adapter reuses original nodes and leaves account/contact logi
   assert.ok(read('home-offers.js').includes("'./home-utilities.js?v=2-admin'"));
   assert.ok(read('service-worker.js').includes('"/home-utilities.js?v=2-admin"'));
 });
-test('footer keeps neutral outlined products, in-flow controls and inherited keyboard/high-contrast states', () => {
+test('footer groups original labelled controls in one responsive in-flow capsule', () => {
   const css = read('home-offers.css');
   assert.match(css, /--member-utility-ink: #000/);
-  assert.match(css, /\.member-products \{[^}]*border: 1.5px solid currentColor[^}]*background: transparent/);
+  assert.match(css, /\.member-utilities \{[^}]*border-radius: 999px[^}]*background: var\(--welcome-surface\)/);
+  assert.match(css, /\.member-profile-slot, \.member-whatsapp-slot \{ display: contents; \}/);
+  assert.match(css, /\.member-products \{[^}]*background: var\(--welcome-paper\)/);
+  assert.match(css, /\.member-utility-label \{ display: none; \}/);
+  for (const label of ['Profilo', 'Admin', 'WhatsApp']) assert.ok(read('index.html').includes(`class="member-utility-label" aria-hidden="true">${label}</span>`));
   assert.match(css, /\.member-utilities #profileBtn, \.member-utilities #whatsappBtn, \.member-utilities #adminEntryBtn \{ position: static/);
   assert.match(css, /touch-action: manipulation/);
   assert.match(css, /focus-visible/);
   assert.match(css, /\.member-products \{ color: LinkText; \}/);
+});
+test('Home distributes spare height without fixing or clipping the document', () => {
+  const css = read('home-offers.css');
+  assert.match(css, /min-height: calc\(100svh - var\(--member-header-height\)\)/);
+  assert.match(css, /#home > \.member-home \{[^}]*flex-direction: column;[^}]*flex: 1/);
+  assert.match(css, /\.member-study \{ margin-block: auto/);
+  assert.match(css, /height: auto/);
+  assert.match(css, /overflow: visible/);
+  assert.match(css, /min-width: 741px\) and \(max-height: 800px/);
 });
