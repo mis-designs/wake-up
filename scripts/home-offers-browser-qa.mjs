@@ -129,7 +129,7 @@ try {
       assert.ok(artBox.y + artBox.height < actionBox.y, 'icon above the button');
       assert.ok(Math.abs(artBox.x + artBox.width / 2 - actionBox.x - actionBox.width / 2) < 1);
       await page.emulateMedia({ reducedMotion: 'reduce' });
-      await page.waitForFunction(() => document.querySelectorAll('.member-animation img').length === 1);
+      await page.waitForFunction(() => document.querySelector('.member-animation img')?.src.includes('/assets/home-animations/'));
       assert.equal(await page.locator('.member-animation img').count(), 1, 'reduced motion uses only the still');
       await page.screenshot({ path: path.join(out, `web-${width}-home.png`), fullPage: true });
       await page.emulateMedia({ reducedMotion: 'no-preference' });

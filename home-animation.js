@@ -10,7 +10,7 @@ export function mountHomeAnimation(home) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const forced = matchMedia('(forced-colors: active)');
   let entered = false, stopped = false, generation = 0, selected = null;
-  let clip = null, timer = 0, played = false, previous = '';
+  let clip = null, still = null, timer = 0, played = false, previous = '';
   const visible = () => !stopped && !home.classList.contains('hidden') && !root.classList.contains('android-webview');
   const canAnimate = () => visible() && !document.hidden && !home.inert && !reduced.matches && !forced.matches && !root.hasAttribute('data-native-motion-paused');
   function stopClip() {
@@ -18,6 +18,7 @@ export function mountHomeAnimation(home) {
     if (clip) {
       clip.onload = clip.onerror = null;
       clip.removeAttribute('src'); clip.remove(); clip = null;
+      if (still && visible()) slot.replaceChildren(still);
     }
   }
   function syncMotion() {
@@ -32,11 +33,13 @@ export function mountHomeAnimation(home) {
       if (current !== generation || clip !== image || !canAnimate()) return;
       clearTimeout(timer);
       image.hidden = false;
+      // Transparent originals must replace the poster, never layer over it.
+      slot.replaceChildren(image);
       // A finite welcome accent, then its real still frame; no pause toggle.
       timer = setTimeout(stopClip, 4500);
     };
     image.onerror = stopClip;
-    slot.append(image);
+    // Load off-DOM so the still is the only artwork until the original is ready.
     timer = setTimeout(stopClip, 8000);
     image.src = selected.src;
   }
@@ -48,18 +51,21 @@ export function mountHomeAnimation(home) {
     previous = selected.id;
     try { localStorage.setItem(selectionKey, previous); } catch { /* No personal data or required persistence. */ }
     slot.dataset.asset = selected.id;
-    const still = new Image();
-    still.alt = ''; still.draggable = false;
-    still.onerror = () => { still.hidden = true; };
-    still.src = selected.poster;
-    slot.replaceChildren(still);
+    const poster = new Image();
+    still = poster;
+    poster.alt = ''; poster.draggable = false;
+    poster.onerror = () => { poster.hidden = true; };
+    poster.src = selected.poster;
+    slot.replaceChildren(poster);
     syncMotion();
   }
   function sync() {
     if (!visible()) {
       if (entered) {
         generation++; entered = false; selected = null;
-        stopClip(); slot.replaceChildren(); delete slot.dataset.asset;
+        stopClip();
+        if (still) { still.onerror = null; still.removeAttribute('src'); still = null; }
+        slot.replaceChildren(); delete slot.dataset.asset;
       }
       return;
     }

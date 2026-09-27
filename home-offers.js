@@ -1,5 +1,5 @@
 import { OFFER_KEY, reserveImpression } from './offer-frequency.mjs?v=1';
-import { mountHomeAnimation } from './home-animation.js?v=1&art=cc8fc71c2247';
+import { mountHomeAnimation } from './home-animation.js?v=2-single-layer&art=cc8fc71c2247';
 import { mountHomeUtilities } from './home-utilities.js?v=1';
 
 const doc = document;

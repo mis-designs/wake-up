@@ -40,12 +40,14 @@ canonical_ui:
 design_context:
   owner: Magic Book
   last_updated: 2026-09-27
-  revision_notes: "Owner Home footer: original Profile left, transparent black-outlined Our Products link centered, original WhatsApp right; linked MiskatDesigns below. Preserve book/Magic Here, native Home and canonical actions."
+  revision_notes: "Home artwork correction: show one image at a time, swapping the still with its transparent animation without overlapping layers. Preserve the approved Home footer, book/Magic Here, native Home and canonical actions."
 ---
 
 # Magic Book design context
 
 ## Signed-in Home and offers — owner annotations, 2026-09-27
+
+- Single artwork invariant: never attach the static fallback and its transparent GIF/SVG together. Load the original off-DOM, atomically replace the still when ready, and restore only the retained still on stop/failure. Hide failed posters and discard obsolete media on exit. Verify the active animation as well as its resting frame; no changes to layout, original artwork, timing, request budget or motion preferences.
 
 - Owner-replaced browser icons: use the original `icons/dizionario.png`, `icons/statistiche-patente.png` and `icons/errori-patente.png` without recoloring or cropping, contained in the existing48px Home slots. Statistics/Errori headers and tabs reuse the same revised artwork. Version each URL by its source hash and precache that exact URL; preserve the separate installed Android symbols and all labels/routes.
 

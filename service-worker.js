@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v236-home-footer";
+const CACHE_NAME = "magicbook-pwa-v237-home-animation";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -27,8 +27,8 @@ const STATIC_ASSETS = [
   "/welcome-page.css?v=4-login-home",
   "/welcome-page.js?v=2-clean",
   "/home-offers.css?v=4-home-footer",
-  "/home-offers.js?v=3-home-footer&art=cc8fc71c2247",
-  "/home-animation.js?v=1&art=cc8fc71c2247",
+  "/home-offers.js?v=4-single-layer&art=cc8fc71c2247",
+  "/home-animation.js?v=2-single-layer&art=cc8fc71c2247",
   "/home-utilities.js?v=1",
   // HOME_ANIMATION_ASSETS_START
   "/assets/home-animations/catalog.mjs?v=cc8fc71c2247",

@@ -24,8 +24,8 @@ test('Home collection matches every supplied image and cache revisions match the
   }
   const revision = hash(read('assets/home-animations/catalog.mjs'));
   assert.ok(read('home-animation.js').includes(`catalog.mjs?v=${revision}`));
-  assert.ok(read('home-offers.js').includes(`home-animation.js?v=1&art=${revision}`));
-  assert.ok(read('index.html').includes(`home-offers.js?v=3-home-footer&art=${revision}`));
+  assert.ok(read('home-offers.js').includes(`home-animation.js?v=2-single-layer&art=${revision}`));
+  assert.ok(read('index.html').includes(`home-offers.js?v=4-single-layer&art=${revision}`));
 });
 test('Home decoration is lazy, finite, preference-aware and scoped to the browser owner', () => {
   const js = read('home-animation.js');
@@ -39,5 +39,8 @@ test('Home decoration is lazy, finite, preference-aware and scoped to the browse
   assert.match(js, /observer.disconnect/);
   assert.match(js, /setTimeout\(stopClip, 4500\)/);
   assert.doesNotMatch(js, /setInterval|fetch\(|\/api\//);
+  assert.match(js, /slot\.replaceChildren\(image\)/, 'ready original replaces the poster');
+  assert.match(js, /if \(still && visible\(\)\) slot\.replaceChildren\(still\)/, 'stopping restores the one retained poster');
+  assert.doesNotMatch(js, /slot\.append\(/, 'transparent artwork must not be layered over its poster');
   assert.match(read('home-offers.js'), /retry.addEventListener\('click', \(\) => start\(true\), \{ once: true \}\)/);
 });

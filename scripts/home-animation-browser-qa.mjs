@@ -13,7 +13,7 @@ const reports = [];
 async function fixture(mode = '') {
   const context = await browser.newContext({ viewport: { width: 375, height: 812 } });
   const reads = [], errors = [];
-  let releaseCatalog;
+  let releaseCatalog, releaseAnimation;
   await context.route('**/*', async route => {
     const url = new URL(route.request().url());
     reads.push(url.pathname);
@@ -25,6 +25,11 @@ async function fixture(mode = '') {
       if (mode === 'catalog-error') return route.fulfill({ status: 503, body: '' });
     }
     if (mode === 'media-error' && (url.pathname.includes('Home%20Page%20Animation') || url.pathname.endsWith('.png'))) return route.fulfill({ status: 404, body: '' });
+    if (url.pathname.includes('Home%20Page%20Animation')) {
+      if (mode === 'animation-error') return route.fulfill({ status: 404, body: '' });
+      if (mode === 'slow-animation') await new Promise(resolve => { releaseAnimation = resolve; });
+    }
+    if (mode === 'poster-error' && url.pathname.endsWith('.png')) return route.fulfill({ status: 404, body: '' });
     const file = path.join(repo, decodeURIComponent(url.pathname).slice(1));
     const mime = { '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.gif': 'image/gif', '.svg': 'image/svg+xml' };
     if (!fs.existsSync(file) || !mime[path.extname(file)]) return route.fulfill({ status: 404, body: '' });
@@ -33,18 +38,24 @@ async function fixture(mode = '') {
   if (mode === 'storage') await context.addInitScript(() => {
     Storage.prototype.getItem = Storage.prototype.setItem = () => { throw Error('blocked storage fixture'); };
   });
+  await context.addInitScript(() => {
+    window.layerCounts = [];
+    new MutationObserver(() => window.layerCounts.push(document.querySelectorAll('.member-animation img').length)).observe(document, { childList: true, subtree: true });
+  });
   const page = await context.newPage();
   page.on('pageerror', error => errors.push(error.message));
   if (mode === 'reduced') await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('http://animation.local/fixture', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.mounted);
-  return { page, context, reads, errors, release: () => releaseCatalog?.() };
+  return { page, context, reads, errors, release: () => releaseCatalog?.(), releaseAnimation: () => releaseAnimation?.() };
 }
 const asset = page => page.locator('.member-animation').getAttribute('data-asset');
 const show = page => page.evaluate(() => document.getElementById('home').classList.remove('hidden'));
 const hide = page => page.evaluate(() => document.getElementById('home').classList.add('hidden'));
+const playing = page => page.waitForFunction(() => document.querySelector('.member-animation img')?.src.includes('/icons/') && document.querySelector('.member-animation img').naturalWidth > 0);
+const settled = page => page.waitForFunction(() => document.querySelector('.member-animation img')?.src.includes('/assets/home-animations/'), undefined, { timeout: 6500 });
 try {
-  for (const mode of ['normal', 'reduced', 'storage', 'late', 'empty', 'catalog-error', 'media-error']) {
+  for (const mode of ['normal', 'reduced', 'storage', 'late', 'empty', 'catalog-error', 'media-error', 'animation-error', 'poster-error', 'slow-animation']) {
     const f = await fixture(mode), { page } = f;
     if (mode === 'late') {
       await hide(page);
@@ -61,23 +72,33 @@ try {
     } else {
       await page.waitForFunction(() => !!document.querySelector('.member-animation').dataset.asset);
       if (mode === 'normal') {
-        await page.waitForFunction(() => document.querySelectorAll('.member-animation img').length === 2 && !document.querySelector('.member-animation img:last-child').hidden);
+        await playing(page);
+        await page.waitForTimeout(900);
+        await page.locator('.member-animation').screenshot({ path: path.join(out, 'hat-playing.png') });
+        assert.equal(await page.locator('.member-animation img:visible').count(), 1, 'transparent animation must never reveal a second image underneath');
         const before = await page.locator('.member-open').boundingBox();
-        await page.waitForFunction(() => document.querySelectorAll('.member-animation img').length === 1, undefined, { timeout: 6000 });
+        await settled(page);
+        await page.locator('.member-animation').screenshot({ path: path.join(out, 'hat-still.png') });
         assert.deepEqual(await page.locator('.member-open').boundingBox(), before, 'finite animation does not move the action');
         const first = await asset(page);
         await hide(page); await page.waitForFunction(() => !document.querySelector('.member-animation').dataset.asset);
         await show(page);
         await page.waitForFunction(first => document.querySelector('.member-animation').dataset.asset && document.querySelector('.member-animation').dataset.asset !== first, first);
-        await page.waitForFunction(() => document.querySelectorAll('.member-animation img').length === 2);
+        await playing(page);
+        await page.waitForTimeout(1800);
+        assert.equal(await page.locator('.member-animation img:visible').count(), 1, 'SVG has no poster underneath');
+        await page.locator('.member-animation').screenshot({ path: path.join(out, 'trophy-playing.png') });
         await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: true }); document.dispatchEvent(new Event('visibilitychange')); });
+        await settled(page);
+        await page.locator('.member-animation').screenshot({ path: path.join(out, 'trophy-still.png') });
         assert.equal(await page.locator('.member-animation img').count(), 1, 'background removes animated media');
         await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: false }); document.dispatchEvent(new Event('visibilitychange')); });
         assert.equal(await page.locator('.member-animation img').count(), 1, 'foreground does not restart a completed intro');
+        assert.ok(await page.evaluate(() => window.layerCounts.every(count => count <= 1)), 'both GIF and SVG always have one layer');
         await page.reload({ waitUntil: 'networkidle' });
         assert.equal(await asset(page), first, 'reload rotates from the stored last image');
         await page.evaluate(() => document.documentElement.setAttribute('data-native-motion-paused', ''));
-        await page.waitForFunction(() => document.querySelectorAll('.member-animation img').length === 1);
+        await settled(page);
       }
       if (mode === 'reduced') {
         await page.waitForLoadState('networkidle');
@@ -94,7 +115,31 @@ try {
         await page.waitForLoadState('networkidle');
         assert.equal(await page.locator('.member-animation img:not([hidden])').count(), 0, 'no broken-image symbol or retries');
       }
+      if (mode === 'animation-error') {
+        await page.waitForLoadState('networkidle');
+        await settled(page);
+        assert.equal(await page.locator('.member-animation img:visible').count(), 1, 'failed original retains only its valid still');
+        assert.ok(await page.locator('.member-animation img').evaluate(img => img.naturalWidth > 0));
+      }
+      if (mode === 'poster-error') {
+        await playing(page);
+        assert.equal(await page.locator('.member-animation img:visible').count(), 1, 'valid original still works if its poster fails');
+        await settled(page);
+        assert.equal(await page.locator('.member-animation img:visible').count(), 0, 'failed poster stays hidden when restored');
+      }
+      if (mode === 'slow-animation') {
+        await page.waitForFunction(() => document.querySelector('.member-animation img')?.naturalWidth > 0);
+        await settled(page);
+        assert.equal(await page.locator('.member-animation img:visible').count(), 1, 'while loading only the poster is attached');
+        f.releaseAnimation();
+        await playing(page);
+        assert.equal(await page.locator('.member-animation img').count(), 1, 'ready original atomically replaces the poster');
+        await page.evaluate(() => { document.getElementById('home').inert = true; });
+        await settled(page);
+        await page.evaluate(() => { document.getElementById('home').inert = false; });
+      }
     }
+    assert.ok(await page.evaluate(() => window.layerCounts.every(count => count <= 1)), 'every render state attaches at most one artwork');
     await page.locator('.member-open').click();
     assert.equal(await page.evaluate(() => window.opened), true, 'artwork never blocks the real action');
     assert.equal(f.reads.filter(url => url.endsWith('/catalog.mjs')).length, mode === 'normal' ? 2 : 1, 'at most one catalog per document');
