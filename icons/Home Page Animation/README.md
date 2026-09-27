@@ -16,6 +16,8 @@ del progetto (`PLAYWRIGHT_PATH` se Playwright è fornito dall'ambiente di svilup
 `tests/home-animation.test.mjs` verifica che cartella, immagini generate e cache coincidano.
 
 La Home web sceglie l'immagine successiva a ogni nuovo ingresso/refresh. L'animazione
-si ferma dopo una breve introduzione; con movimento ridotto mostra direttamente
-l'immagine ferma. Nessun pulsante pausa. Il libro e Magic Here restano utilizzabili
+continua in ciclo finché la Home è attiva; con movimento ridotto mostra direttamente
+l'immagine ferma. In background viene sospesa e al ritorno riprende senza un nuovo
+caricamento. Una sola immagine visibile, mai sovrapposta alla copia ferma.
+Nessun pulsante pausa. Il libro e Magic Here restano utilizzabili
 anche se un'immagine non si carica. La Home nativa Android mantiene il proprio layout.

@@ -11,9 +11,9 @@ fs.mkdirSync(out, { recursive: true });
 const mime = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.gif': 'image/gif', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf' };
 const browser = await chromium.launch({ headless: true, channel: 'msedge' });
 const phone = '393310000000';
-const token = 'test.' + Buffer.from(JSON.stringify({ phone, role: 'user', exp: 2208988800 })).toString('base64url') + '.fixture';
 const reports = [];
-async function fixture(width, height, native = false, mode = '') {
+async function fixture(width, height, native = false, mode = '', role = 'user') {
+  const token = 'test.' + Buffer.from(JSON.stringify({ phone, role, exp: 2208988800 })).toString('base64url') + '.fixture';
   const ctx = await browser.newContext({ viewport: { width, height }, serviceWorkers: 'block',
     ...(native ? { userAgent: 'Mozilla/5.0 (Linux; Android 14; wv) AppleWebKit/537.36 Chrome/130.0.0.0 Mobile Safari/537.36 MagicBookViewer/1.3' } : {}) });
   const reads = [], errors = [], assets = [];
@@ -29,7 +29,8 @@ async function fixture(width, height, native = false, mode = '') {
     if (u.pathname.includes('home-animations/') || u.pathname.includes('Home%20Page%20Animation/')) assets.push(u.pathname);
     if (u.pathname.startsWith('/api/')) {
       reads.push(u.pathname + u.search);
-      if (u.pathname === '/api/getPages') return route.fulfill({ json: { success: true, role: 'user', accessToken: token, accessTokenExpiresAt: Date.now() + 86400000, expiry: '2035-01-01', pages: [], totalPages: 0 } });
+      if (u.pathname === '/api/getPages') return route.fulfill({ json: { success: true, role, accessToken: token, accessTokenExpiresAt: Date.now() + 86400000, expiry: '2035-01-01', pages: [], totalPages: 0 } });
+      if (u.pathname === '/api/admin') return route.fulfill({ json: { success: true, list: [], total: 0 } });
       return route.fulfill({ json: { success: true, items: [], words: [], figures: [] } });
     }
     if (mode === 'book-error' && u.pathname === '/icons/mg_book.svg') return route.fulfill({ status: 404, body: '' });
@@ -39,18 +40,18 @@ async function fixture(width, height, native = false, mode = '') {
     if (name.includes('..') || !fs.existsSync(file) || !mime[path.extname(file)]) return route.fulfill({ status: 404, body: '' });
     return route.fulfill({ body: fs.readFileSync(file), contentType: mime[path.extname(file)] });
   });
-  await ctx.addInitScript(({ phone, token, mode }) => {
+  await ctx.addInitScript(({ phone, token, mode, role }) => {
     if (location.hostname !== 'home.local') return;
     window.__MAGICBOOK_DISABLE_SCREEN_PROTECTION__ = true;
     if (localStorage.getItem('fixtureSeeded')) return;
-    const session = { phone, deviceId: 'fixture-device-001', role: 'user', accessToken: token, accessTokenExpiresAt: Date.now() + 86400000, expiry: '2035-01-01', lastValid: Date.now() };
+    const session = { phone, deviceId: 'fixture-device-001', role, accessToken: token, accessTokenExpiresAt: Date.now() + 86400000, expiry: '2035-01-01', lastValid: Date.now() };
     for (const [k, v] of Object.entries({ fixtureSeeded: 'true', client_auth_reset_version: '2026-04-device-reset-1', user_session: JSON.stringify(session), session: JSON.stringify(session), loggedIn: 'true', phone, deviceId: session.deviceId, accessToken: token, accessTokenExpiresAt: session.accessTokenExpiresAt, whatsapp_group_joined_or_clicked: 'true', ['whats_new_popup_show_count:mobile-ui-2026-08:' + phone]: '3' })) localStorage.setItem(k, String(v));
     let hash = 2166136261;
     for (const c of phone) { hash ^= c.codePointAt(0); hash = Math.imul(hash, 16777619); }
     localStorage.setItem('magicbook.wordLearning.v1.' + (hash >>> 0).toString(36), JSON.stringify({ lastCompletedAt: Date.now() }));
     if (mode === 'blocked') localStorage.setItem('magicbook.offerNotice.v1', 'invalid');
     if (mode === 'priority') localStorage.removeItem('whatsapp_group_joined_or_clicked');
-  }, { phone, token, mode });
+  }, { phone, token, mode, role });
   const page = await ctx.newPage();
   page.on('pageerror', error => errors.push(error.message));
   return { ctx, page, reads, errors, assets, frames: () => frames, release: () => held?.() };
@@ -91,6 +92,10 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
     if (!native) {
       assert.ok(await page.locator('.member-open').isVisible());
+      assert.equal(await page.locator('#adminEntryBtn').isVisible(), false, 'learner cannot see the admin entry');
+      assert.equal(await page.locator('#statusIcon').isVisible(), false, 'Home header contains only Magic Book');
+      assert.equal(await page.locator('.member-open svg').count(), 0, 'supplied button has no arrow');
+      assert.equal(await page.locator('.member-open-points i').count(), 10);
       assert.equal(await page.locator('.member-link').count(), 3);
       assert.equal(await page.locator('.member-arrow').count(), 0);
       assert.deepEqual(await page.locator('.member-link small').allTextContents(), ['Italiano · বাংলা']);
@@ -224,6 +229,48 @@ try {
     assert.deepEqual(f.errors, []);
     reports.push({ width, height, native, providerDocuments: f.frames(), errors: f.errors, passed: true });
     console.log(`PASS ${width}x${height} native=${native}: Home/Join, modal, focus, history, requests`);
+    await f.ctx.close();
+  }
+  for (const [width, height] of [[320,568], [375,812], [740,360], [1440,900]]) {
+    const f = await fixture(width, height, false, 'blocked', 'admin'), { page } = f;
+    await page.goto('http://home.local/home', { waitUntil: 'networkidle' });
+    await page.locator('.member-utilities #adminEntryBtn:not(.hidden)').waitFor();
+    assert.equal(await page.locator('#adminEntryBtn').count(), 1);
+    assert.equal(await page.locator('#adminEntryBtn').evaluate(el => getComputedStyle(el).position), 'static');
+    assert.equal(await page.evaluate(() => document.documentElement.dataset.appUtilityCount), '0');
+    assert.equal(await page.locator('#statusIcon').isVisible(), false);
+    await page.evaluate(() => { window.fixtureAdminNode = document.getElementById('adminEntryBtn'); });
+    const boxes = await Promise.all(['#profileBtn', '#adminEntryBtn', '.member-products', '#whatsappBtn'].map(selector => page.locator(selector).boundingBox()));
+    assert.ok(boxes.every(box => box.width >= 44 && box.height >= 44 && box.x >= 0 && box.x + box.width <= width));
+    assert.ok(boxes.slice(1).every((box, i) => box.x >= boxes[i].x + boxes[i].width), 'admin utilities do not overlap');
+    assert.ok(boxes.every(box => Math.abs(box.y - boxes[0].y) < 1), 'one aligned footer row');
+    await page.locator('.member-open').scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => document.getElementById('home').dataset.homeMotion === 'running');
+    assert.equal(await page.locator('.member-open-points i').first().evaluate(el => getComputedStyle(el).animationPlayState), 'running');
+    await page.screenshot({ path: path.join(out, `admin-${width}-home.png`), fullPage: true });
+    await page.locator('#adminEntryBtn').focus(); await page.keyboard.press('Enter');
+    await page.waitForURL('**/admin');
+    assert.equal(await page.locator('#adminEntryBtn').isVisible(), false);
+    assert.equal(f.reads.filter(url => url.startsWith('/api/admin')).length, 1, 'only explicit admin entry reads its list');
+    await page.goBack(); await page.locator('.member-utilities #adminEntryBtn:not(.hidden)').waitFor();
+    await page.locator('.member-products').click(); await page.waitForURL('**/join');
+    await page.evaluate(() => { window.dispatchEvent(new Event('focus')); window.dispatchEvent(new Event('pageshow')); document.dispatchEvent(new Event('visibilitychange')); });
+    assert.equal(await page.locator('#adminEntryBtn').isVisible(), false, 'public offers never regain admin chrome on resume');
+    assert.equal(await page.locator('#profileBtn').isVisible(), false);
+    assert.equal(await page.locator('.member-utilities #adminEntryBtn').count(), 0);
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForURL('**/join');
+    assert.equal(await page.locator('#adminEntryBtn').isVisible(), false, 'Join reload remains public for an admin session');
+    await page.goBack(); await page.locator('.member-utilities #adminEntryBtn:not(.hidden)').waitFor();
+    await page.locator('.member-open').click(); await page.waitForURL('**/magic-book');
+    assert.ok(await page.locator('#adminEntryBtn').isVisible(), 'chapter admin access remains available');
+    await page.goBack(); await page.locator('.member-utilities #adminEntryBtn:not(.hidden)').waitFor();
+    await page.locator('#profileBtn').click(); await page.locator('#logoutBtn').click(); await page.waitForURL('http://home.local/');
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    assert.equal(await page.locator('#adminEntryBtn').isVisible(), false, 'logout clears privileged chrome');
+    assert.deepEqual(f.errors, []);
+    reports.push({ width, height, role: 'admin', passed: true });
+    console.log(`PASS admin ${width}x${height}: footer, real action, Join/reload/resume, logout`);
     await f.ctx.close();
   }
   for (const mode of ['slow', 'error', 'book-error', 'blocked', 'priority']) {

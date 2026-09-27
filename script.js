@@ -230,7 +230,7 @@ function openRouteState(state = getRouteStateFromLocation()) {
   // Browser Back/Forward always wins over a pending delayed tap.
   appActionGate.cancel();
   window.MagicBookModeScreens?.reset();
-  const publicScreens = ["welcome", "login", "join", "about"];
+  const publicScreens = ["welcome", "login", "about"];
   const requestedState = publicScreens.includes(state.screen)
     ? { screen: "home" }
     : state;
@@ -244,6 +244,8 @@ function openRouteState(state = getRouteStateFromLocation()) {
       startGuestTrial({ replace: true });
     } else if (nextState.screen === "trialBook") {
       startGuestTrial({ replace: true, openChapter: nextState.chapter });
+    } else if (nextState.screen === "join") {
+      showJoinScreen({ replace: true });
     } else if (nextState.screen === "admin") {
       showAdminPanel();
     } else if (nextState.screen === "chapters") {
@@ -2309,7 +2311,7 @@ function syncAppUtilityLayout() {
   const menu = header?.querySelector(".menu-btn");
   const isVisible = element => Boolean(element && !element.classList.contains("hidden"));
   const headerVisible = Boolean(header?.classList.contains("is-visible"));
-  const adminVisible = isVisible(adminEntry);
+  const adminVisible = isVisible(adminEntry) && !adminEntry.closest('.member-utilities');
   const profileVisible = isVisible(profile) && !profile.closest('.member-utilities');
   const menuVisible = Boolean(headerVisible && menu && !menu.classList.contains("menu-btn-hidden"));
   const utilityCount = Number(adminVisible) + Number(profileVisible) + Number(menuVisible);
@@ -2337,14 +2339,13 @@ function updateProfileUI(isLoggedIn = true) {
 function setProfileIconVisible(visible) {
   const profileBtn = document.getElementById("profileBtn");
   const profilePanel = document.getElementById("profilePanel");
-  const adminEntryBtn = document.getElementById("adminEntryBtn");
   if (!profileBtn) return;
 
   const hasPhone = Boolean(getCurrentSessionPhone());
   profileBtn.classList.toggle("hidden", !visible || !hasPhone);
   // L'accesso admin è indipendente dal pannello profilo: alcune schermate
   // nascondono il profilo, ma non devono far sparire l'ingresso admin.
-  adminEntryBtn?.classList.toggle("hidden", !hasPhone || !isCurrentSessionAdmin());
+  updateAdminEntryVisibility();
   if (!visible) {
     profilePanel?.classList.add("hidden");
     profileBtn.setAttribute("aria-expanded", "false");
@@ -2358,6 +2359,7 @@ function setWhatsAppVisible(visible) {
 
 function setLoggedOutChrome() {
   setWhatsAppVisible(false);
+  updateAdminEntryVisibility();
 }
 
 function setLoggedInChrome() {
@@ -4873,9 +4875,14 @@ function updateAdminEntryVisibility() {
   if (!btn) return;
   const adminPanel = document.getElementById("adminPanel");
   const adminPanelIsOpen = Boolean(adminPanel && !adminPanel.classList.contains("hidden"));
+  const publicScreenIsOpen = ["landing", "login", "join", "about"].some(id => {
+    const screen = document.getElementById(id);
+    return screen && !screen.classList.contains("hidden");
+  });
   const shouldShow = Boolean(getCurrentSessionPhone())
     && isCurrentSessionAdmin()
-    && !adminPanelIsOpen;
+    && !adminPanelIsOpen
+    && !publicScreenIsOpen;
   btn.classList.toggle("hidden", !shouldShow);
   syncAppUtilityLayout();
 }

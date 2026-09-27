@@ -24,10 +24,10 @@ test('Home collection matches every supplied image and cache revisions match the
   }
   const revision = hash(read('assets/home-animations/catalog.mjs'));
   assert.ok(read('home-animation.js').includes(`catalog.mjs?v=${revision}`));
-  assert.ok(read('home-offers.js').includes(`home-animation.js?v=2-single-layer&art=${revision}`));
-  assert.ok(read('index.html').includes(`home-offers.js?v=4-single-layer&art=${revision}`));
+  assert.ok(read('home-offers.js').includes(`home-animation.js?v=3-loop&art=${revision}`));
+  assert.ok(read('index.html').includes(`home-offers.js?v=5-motion&art=${revision}`));
 });
-test('Home decoration is lazy, finite, preference-aware and scoped to the browser owner', () => {
+test('Home decoration loops while active, stays preference-aware and scoped to the browser owner', () => {
   const js = read('home-animation.js');
   assert.match(js, /catalogPromise \|\|=/);
   assert.match(js, /generation/);
@@ -37,7 +37,9 @@ test('Home decoration is lazy, finite, preference-aware and scoped to the browse
   assert.match(js, /visibilitychange/);
   assert.match(js, /pagehide/);
   assert.match(js, /observer.disconnect/);
-  assert.match(js, /setTimeout\(stopClip, 4500\)/);
+  assert.doesNotMatch(js, /4500|played/);
+  assert.match(js, /setTimeout\(fail, 8000\)/, 'only loading has a deadline');
+  assert.match(js, /home\.dataset\.homeMotion/);
   assert.doesNotMatch(js, /setInterval|fetch\(|\/api\//);
   assert.match(js, /slot\.replaceChildren\(image\)/, 'ready original replaces the poster');
   assert.match(js, /if \(still && visible\(\)\) slot\.replaceChildren\(still\)/, 'stopping restores the one retained poster');

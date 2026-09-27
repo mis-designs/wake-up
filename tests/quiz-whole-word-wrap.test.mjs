@@ -36,5 +36,5 @@ test("changed question styles are versioned and included in the new worker cache
     assert.ok(read(page).includes(asset));
     assert.ok(worker.includes(asset));
   }
-  assert.match(worker, /magicbook-pwa-v237-home-animation/);
+  assert.match(worker, /magicbook-pwa-v238-home-motion/);
 });

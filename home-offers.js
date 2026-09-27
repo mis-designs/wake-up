@@ -1,6 +1,6 @@
 import { OFFER_KEY, reserveImpression } from './offer-frequency.mjs?v=1';
-import { mountHomeAnimation } from './home-animation.js?v=2-single-layer&art=cc8fc71c2247';
-import { mountHomeUtilities } from './home-utilities.js?v=1';
+import { mountHomeAnimation } from './home-animation.js?v=3-loop&art=17f11c77bde0';
+import { mountHomeUtilities } from './home-utilities.js?v=2-admin';
 
 const doc = document;
 const home = doc.getElementById('home');

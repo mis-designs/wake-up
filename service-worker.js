@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v237-home-animation";
+const CACHE_NAME = "magicbook-pwa-v238-home-motion";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -26,14 +26,14 @@ const STATIC_ASSETS = [
   "/login-experience.js?v=3-clean",
   "/welcome-page.css?v=4-login-home",
   "/welcome-page.js?v=2-clean",
-  "/home-offers.css?v=4-home-footer",
-  "/home-offers.js?v=4-single-layer&art=cc8fc71c2247",
-  "/home-animation.js?v=2-single-layer&art=cc8fc71c2247",
-  "/home-utilities.js?v=1",
+  "/home-offers.css?v=5-magic",
+  "/home-offers.js?v=5-motion&art=17f11c77bde0",
+  "/home-animation.js?v=3-loop&art=17f11c77bde0",
+  "/home-utilities.js?v=2-admin",
   // HOME_ANIMATION_ASSETS_START
-  "/assets/home-animations/catalog.mjs?v=cc8fc71c2247",
-  "/icons/Home%20Page%20Animation/Graduation_Hat.gif?v=40e3f7ab2f7d",
-  "/assets/home-animations/a5e1125ee69d.png?v=44b840ee3bab",
+  "/assets/home-animations/catalog.mjs?v=17f11c77bde0",
+  "/icons/Home%20Page%20Animation/Graduation_Hat.svg?v=bf38809e3e4c",
+  "/assets/home-animations/40f2b1238323.png?v=6406120541f0",
   "/icons/Home%20Page%20Animation/trophy.svg?v=6ba0f3152f23",
   "/assets/home-animations/d589cc07ff84.png?v=0d55bca881a2",
   // HOME_ANIMATION_ASSETS_END
@@ -102,7 +102,7 @@ const STATIC_ASSETS = [
   "/homebg.css?v=5-home-offers",
   "/mystyle.css?v=60-web-quiz-layout",
   "/audio-player-ui.css?v=10-web-quiz-slim",
-  "/script.js?v=82-home-footer",
+  "/script.js?v=83-home-admin",
   "/study-quiz.html",
   "/study-quiz.css?v=28-compact",
   "/study-quiz.js?v=38-resume&art=2e0d6787e201",

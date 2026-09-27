@@ -1,6 +1,6 @@
 // Browser Home decoration only. One cached catalog per document; no API or polling.
 let catalogPromise;
-const catalog = () => catalogPromise ||= import('./assets/home-animations/catalog.mjs?v=cc8fc71c2247').then(module => module.default).catch(() => []);
+const catalog = () => catalogPromise ||= import('./assets/home-animations/catalog.mjs?v=17f11c77bde0').then(module => module.default).catch(() => []);
 const selectionKey = 'magicbook.homeAnimation.v1';
 
 export function mountHomeAnimation(home) {
@@ -10,11 +10,12 @@ export function mountHomeAnimation(home) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const forced = matchMedia('(forced-colors: active)');
   let entered = false, stopped = false, generation = 0, selected = null;
-  let clip = null, still = null, timer = 0, played = false, previous = '';
+  let clip = null, still = null, timer = 0, ready = false, failed = false, previous = '';
   const visible = () => !stopped && !home.classList.contains('hidden') && !root.classList.contains('android-webview');
   const canAnimate = () => visible() && !document.hidden && !home.inert && !reduced.matches && !forced.matches && !root.hasAttribute('data-native-motion-paused');
   function stopClip() {
     clearTimeout(timer); timer = 0;
+    ready = false;
     if (clip) {
       clip.onload = clip.onerror = null;
       clip.removeAttribute('src'); clip.remove(); clip = null;
@@ -22,25 +23,35 @@ export function mountHomeAnimation(home) {
     }
   }
   function syncMotion() {
-    if (!canAnimate()) { stopClip(); return; }
-    if (!selected?.animated || played) return;
-    played = true;
+    const running = canAnimate();
+    home.dataset.homeMotion = running ? 'running' : 'paused';
+    if (!running) {
+      // Retain decoded media off-DOM: resuming must not request another image.
+      clip?.remove();
+      if (still && visible()) slot.replaceChildren(still);
+      return;
+    }
+    if (!selected?.animated || failed) return;
+    if (clip) { if (ready) slot.replaceChildren(clip); return; }
     const current = generation;
     const image = new Image();
     clip = image;
     image.alt = ''; image.draggable = false; image.hidden = true;
     image.onload = () => {
-      if (current !== generation || clip !== image || !canAnimate()) return;
-      clearTimeout(timer);
+      if (current !== generation || clip !== image) return;
+      clearTimeout(timer); timer = 0;
+      ready = true;
       image.hidden = false;
       // Transparent originals must replace the poster, never layer over it.
-      slot.replaceChildren(image);
-      // A finite welcome accent, then its real still frame; no pause toggle.
-      timer = setTimeout(stopClip, 4500);
+      if (canAnimate()) slot.replaceChildren(image);
     };
-    image.onerror = stopClip;
+    const fail = () => {
+      if (current !== generation || clip !== image) return;
+      failed = true; stopClip();
+    };
+    image.onerror = fail;
     // Load off-DOM so the still is the only artwork until the original is ready.
-    timer = setTimeout(stopClip, 8000);
+    timer = setTimeout(fail, 8000);
     image.src = selected.src;
   }
   async function enter(current) {
@@ -61,6 +72,7 @@ export function mountHomeAnimation(home) {
   }
   function sync() {
     if (!visible()) {
+      home.dataset.homeMotion = 'paused';
       if (entered) {
         generation++; entered = false; selected = null;
         stopClip();
@@ -70,7 +82,7 @@ export function mountHomeAnimation(home) {
       return;
     }
     if (!entered) {
-      entered = true; played = false;
+      entered = true; failed = false;
       void enter(++generation);
     }
     syncMotion();

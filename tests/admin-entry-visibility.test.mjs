@@ -19,6 +19,8 @@ test("the admin entry is hidden while the admin panel is already open", () => {
   assert.match(visibility, /adminPanelIsOpen/);
   assert.match(visibility, /!adminPanel\.classList\.contains\("hidden"\)/);
   assert.match(visibility, /isCurrentSessionAdmin\(\)[\s\S]*?!adminPanelIsOpen/);
+  assert.match(visibility, /!publicScreenIsOpen/);
+  assert.match(visibility, /\["landing", "login", "join", "about"\]/);
 
   const openPanel = functionSource("showAdminPanel", "adminLoadUsers");
   assert.match(openPanel, /currentScreen = "admin";[\s\S]*?updateAdminEntryVisibility\(\)/);
@@ -27,7 +29,7 @@ test("the admin entry is hidden while the admin panel is already open", () => {
 test("leaving the admin panel restores the entry and ships the new script version", () => {
   const hideAll = functionSource("hideAll", "showHome");
   assert.match(hideAll, /adminPanel[\s\S]*?classList\.add\("hidden"\)[\s\S]*?updateAdminEntryVisibility\(\)/);
-  assert.match(htmlSource, /script\.js\?v=82-home-footer/);
-  assert.match(workerSource, /script\.js\?v=82-home-footer/);
-  assert.match(workerSource, /CACHE_NAME = "magicbook-pwa-v237-home-animation"/);
+  assert.match(htmlSource, /script\.js\?v=83-home-admin/);
+  assert.match(workerSource, /script\.js\?v=83-home-admin/);
+  assert.match(workerSource, /CACHE_NAME = "magicbook-pwa-v238-home-motion"/);
 });

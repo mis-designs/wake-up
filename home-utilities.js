@@ -4,6 +4,7 @@ export function mountHomeUtilities(home) {
   const profile = document.getElementById('profileBtn');
   const panel = document.getElementById('profilePanel');
   const whatsapp = document.getElementById('whatsappBtn');
+  const admin = document.getElementById('adminEntryBtn');
   if (!row || !profile || !panel || !whatsapp) return;
   const root = document.documentElement;
   const anchors = new Map();
@@ -42,11 +43,12 @@ export function mountHomeUtilities(home) {
       return;
     }
     if (active) {
-      for (const node of [profile, panel, whatsapp]) {
+      for (const node of [profile, panel, whatsapp, admin].filter(Boolean)) {
         const anchor = document.createComment(`Home utility original ${node.id}`);
         node.before(anchor); anchors.set(node, anchor);
       }
       row.querySelector('.member-profile-slot').append(profile, panel);
+      if (admin) row.querySelector('.member-profile-slot').append(admin);
       row.querySelector('.member-whatsapp-slot').append(whatsapp);
       profile.setAttribute('aria-controls', 'profilePanel');
       mounted = true;

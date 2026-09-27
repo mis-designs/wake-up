@@ -26,7 +26,7 @@ html:not(.android-webview) body.app-mode #home:not(.hidden) {
 .member-home [lang="bn"] { font-family: 'Adorsho Lipi', sans-serif; }
 html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader { background: var(--welcome-paper); border-bottom: 1px solid var(--welcome-line); box-shadow: none; }
 html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .chapter-status { color: var(--welcome-ink); }
-html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .status-icon { filter: brightness(0); }
+html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .status-icon { display: none; }
 .member-home *, .offer-dialog *, .join-offer * { box-sizing: border-box; }
 .member-welcome { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; }
 .member-welcome h1 { margin: 0; color: inherit; font: 700 clamp(25px, 3vw, 36px)/1.15 'Inter', sans-serif; letter-spacing: -.04em; }
@@ -40,7 +40,36 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
 .member-book { display: block; width: 100%; height: clamp(220px, 29vw, 350px); object-fit: contain; }
 .member-book[hidden], .member-book-fallback[hidden] { display: none; }
 .member-book-fallback { display: grid; place-content: center; height: clamp(220px, 29vw, 350px); padding: 12px; border: 1px solid var(--welcome-line); border-radius: 10px; color: var(--welcome-muted); font: 14px/1.5 'Inter', sans-serif; text-align: center; }
-.member-home .member-open { display: inline-flex; align-items: center; justify-content: center; width: auto; min-height: 50px; margin: 0; padding: 13px 20px; border: 1px solid var(--welcome-accent); border-radius: 14px; background: var(--welcome-accent); color: var(--welcome-on-accent); font: 700 15px 'Inter', sans-serif; box-shadow: none; }
+.member-home .member-open {
+  --member-action-light: color-mix(in srgb, var(--welcome-accent) 88%, var(--welcome-on-accent));
+  --member-action-fill: radial-gradient(65.28% 65.28% at 50% 100%, var(--member-action-light) 0%, transparent 100%), linear-gradient(0deg, var(--welcome-accent), var(--welcome-accent-strong));
+  position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center;
+  width: auto; min-width: 102px; min-height: 50px; margin: 0; padding: 13px 20px;
+  overflow: hidden; border: 0; border-radius: 12px; background: var(--member-action-fill);
+  color: var(--welcome-on-accent); font: 700 15px/1.5 'Inter', sans-serif;
+  box-shadow: 0 5px 16px color-mix(in srgb, var(--welcome-accent) 18%, transparent);
+}
+.member-home .member-open::before, .member-home .member-open::after {
+  content: ''; position: absolute; z-index: 0; pointer-events: none; opacity: 1; transform: none;
+  width: auto; height: auto; border: 0; box-shadow: none; transition: opacity .25s ease;
+}
+.member-home .member-open::before { inset: 1px; border-radius: 11px; background: linear-gradient(177.95deg, color-mix(in srgb, var(--welcome-on-accent) 30%, transparent), transparent); }
+.member-home .member-open::after { inset: 2px; border-radius: 10px; background: var(--member-action-fill); }
+.member-open-label { position: relative; z-index: 2; }
+.member-open-points { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+.member-open-points i { position: absolute; bottom: -10px; width: 2px; height: 2px; border-radius: 50%; background: var(--welcome-on-accent); animation: member-floating-point 2.35s infinite ease-in-out; animation-play-state: paused; }
+#home[data-home-motion="running"] .member-open-points i { animation-play-state: running; }
+.member-open-points i:nth-child(1) { left: 10%; animation-delay: .2s; }
+.member-open-points i:nth-child(2) { left: 30%; opacity: .7; animation-duration: 2.5s; animation-delay: .5s; }
+.member-open-points i:nth-child(3) { left: 25%; opacity: .8; animation-duration: 2.2s; animation-delay: .1s; }
+.member-open-points i:nth-child(4) { left: 44%; opacity: .6; animation-duration: 2.05s; }
+.member-open-points i:nth-child(5) { left: 50%; animation-duration: 1.9s; }
+.member-open-points i:nth-child(6) { left: 75%; opacity: .5; animation-duration: 1.5s; animation-delay: 1.5s; }
+.member-open-points i:nth-child(7) { left: 88%; opacity: .9; animation-duration: 2.2s; animation-delay: .2s; }
+.member-open-points i:nth-child(8) { left: 58%; opacity: .8; animation-duration: 2.25s; animation-delay: .2s; }
+.member-open-points i:nth-child(9) { left: 98%; opacity: .6; animation-duration: 2.6s; animation-delay: .1s; }
+.member-open-points i:nth-child(10) { left: 65%; animation-duration: 2.5s; animation-delay: .2s; }
+@keyframes member-floating-point { 0% { transform: translateY(0); } 85% { opacity: 0; } 100% { transform: translateY(-65px); opacity: 0; } }
 .member-links { display: grid; gap: 14px; }
 .member-home .member-link { display: grid; grid-template-columns: 48px minmax(0, 1fr); align-items: center; gap: 18px; width: 100%; min-height: 104px; margin: 0; padding: 22px; border: 1px solid var(--welcome-line); border-radius: 20px; background: var(--welcome-paper); color: var(--welcome-ink); box-shadow: none; text-align: left; }
 .member-link img { width: 48px; height: 48px; object-fit: contain; }
@@ -51,17 +80,27 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
 .member-home :is(button, a), .offer-dialog :is(button, a), .join-offer :is(button, a) { cursor: pointer; }
 .member-home button { transition: background .18s ease, border-color .18s ease, transform .18s ease; }
 .member-home .member-link:hover { background: var(--welcome-surface); border-color: var(--welcome-accent); }
-.member-home .member-open:hover { background: var(--welcome-accent-strong); }
+.member-home .member-open:hover { box-shadow: 0 7px 20px color-mix(in srgb, var(--welcome-accent) 27%, transparent); }
+.member-home .member-open:hover::after { opacity: .85; }
+.member-home .member-open:active { transform: scale(.95); }
+.member-home .member-open:disabled .member-open-points { display: none; }
 .member-home :is(button, a):focus-visible, .offer-dialog :is(button, a, iframe):focus-visible, .join-offer :is(button, a, iframe):focus-visible { outline: 3px solid var(--welcome-accent); outline-offset: 4px; }
 .member-home button:active { transform: translateY(1px); }
 .member-home button:disabled { opacity: .55; cursor: default; transform: none; }
 .member-footer { display: grid; justify-items: center; gap: 22px; padding: 32px 0 0; }
 .member-utilities { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 16px; width: min(100%, 420px); }
-.member-profile-slot, .member-whatsapp-slot { width: 44px; min-height: 44px; }
+.member-profile-slot, .member-whatsapp-slot { min-height: 44px; }
+.member-profile-slot { display: flex; align-items: center; gap: 8px; }
+.member-whatsapp-slot { width: 44px; }
+.member-utilities:has(#adminEntryBtn:not(.hidden)) { grid-template-columns: 96px minmax(0, 1fr) 44px; width: min(100%, 468px); }
 .member-products { justify-self: center; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; max-width: 100%; padding: 8px 18px; border: 1.5px solid currentColor; border-radius: 999px; background: transparent; color: var(--member-utility-ink); font: 600 13px/1.25 'Inter', Arial, sans-serif; text-align: center; text-decoration: none; }
 .member-products:hover { background: var(--welcome-surface); }
 .member-products:active { background: var(--welcome-line); }
-.member-utilities #profileBtn, .member-utilities #whatsappBtn { position: static; inset: auto; display: grid; place-items: center; width: 44px; min-width: 44px; height: 44px; margin: 0; padding: 0; border-radius: 50%; box-shadow: none; transform: none; opacity: 1; z-index: auto; touch-action: manipulation; }
+.member-utilities #profileBtn, .member-utilities #whatsappBtn, .member-utilities #adminEntryBtn { position: static; inset: auto; display: grid; place-items: center; width: 44px; min-width: 44px; height: 44px; margin: 0; padding: 0; border-radius: 50%; box-shadow: none; transform: none; opacity: 1; z-index: auto; touch-action: manipulation; }
+.member-utilities :is(#profileBtn, #whatsappBtn, #adminEntryBtn).hidden { display: none; }
+.member-utilities #adminEntryBtn { background: var(--welcome-paper); border: 1px solid var(--welcome-line); }
+.member-utilities #adminEntryBtn:hover { border-color: var(--welcome-accent); background: var(--welcome-surface); }
+.member-utilities #adminEntryBtn:active { opacity: .75; }
 .member-utilities #profileBtn { background: var(--welcome-paper); border: 1px solid var(--welcome-line); }
 .member-utilities #profileBtn:hover { background: var(--welcome-surface); border-color: var(--welcome-muted); }
 .member-utilities #profileBtn:active { background: var(--welcome-line); }
@@ -120,9 +159,19 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
 @media (max-width: 350px) {
   .member-library { padding: 18px 12px; }
   .member-home .member-open { padding-inline: 10px; }
+  .member-utilities { gap: 12px; }
+  .member-products { padding-inline: 10px; }
 }
-@media (prefers-reduced-motion: reduce) { .member-home button { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .member-home button, .member-home .member-open::after { transition: none; }
+  .member-open-points { display: none; }
+  .member-home .member-open:active { transform: none; }
+}
+html[data-native-motion-paused] .member-open-points { display: none; }
+html[data-native-motion-paused] .member-home .member-open:active { transform: none; }
 @media (forced-colors: active) {
+  .member-open-points, .member-home .member-open::before, .member-home .member-open::after { display: none; }
+  .member-home .member-open { background: ButtonFace; color: ButtonText; box-shadow: none; }
   .member-library, .member-home button, .member-products, .offer-dialog, .offer-join { border: 1px solid ButtonText; }
   .member-products { color: LinkText; }
   .member-home :is(button, a):focus-visible, .offer-dialog :is(button, a, iframe):focus-visible, .join-offer :is(button, a, iframe):focus-visible { outline-color: Highlight; }

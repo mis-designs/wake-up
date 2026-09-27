@@ -77,9 +77,17 @@ try {
         await page.locator('.member-animation').screenshot({ path: path.join(out, 'hat-playing.png') });
         assert.equal(await page.locator('.member-animation img:visible').count(), 1, 'transparent animation must never reveal a second image underneath');
         const before = await page.locator('.member-open').boundingBox();
+        await page.waitForTimeout(6500);
+        await playing(page);
+        await page.locator('.member-animation').screenshot({ path: path.join(out, 'hat-looping.png') });
+        await page.emulateMedia({ reducedMotion: 'reduce' });
         await settled(page);
         await page.locator('.member-animation').screenshot({ path: path.join(out, 'hat-still.png') });
-        assert.deepEqual(await page.locator('.member-open').boundingBox(), before, 'finite animation does not move the action');
+        assert.deepEqual(await page.locator('.member-open').boundingBox(), before, 'continuous animation does not move the action');
+        const readsBeforeResume = f.reads.length;
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        await playing(page);
+        assert.equal(f.reads.length, readsBeforeResume, 'resuming reuses the same decoded image');
         const first = await asset(page);
         await hide(page); await page.waitForFunction(() => !document.querySelector('.member-animation').dataset.asset);
         await show(page);
@@ -88,12 +96,16 @@ try {
         await page.waitForTimeout(1800);
         assert.equal(await page.locator('.member-animation img:visible').count(), 1, 'SVG has no poster underneath');
         await page.locator('.member-animation').screenshot({ path: path.join(out, 'trophy-playing.png') });
+        await page.waitForTimeout(6500);
+        await playing(page);
+        await page.locator('.member-animation').screenshot({ path: path.join(out, 'trophy-looping.png') });
         await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: true }); document.dispatchEvent(new Event('visibilitychange')); });
         await settled(page);
         await page.locator('.member-animation').screenshot({ path: path.join(out, 'trophy-still.png') });
         assert.equal(await page.locator('.member-animation img').count(), 1, 'background removes animated media');
         await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: false }); document.dispatchEvent(new Event('visibilitychange')); });
-        assert.equal(await page.locator('.member-animation img').count(), 1, 'foreground does not restart a completed intro');
+        await playing(page);
+        assert.equal(await page.locator('.member-animation img').count(), 1, 'foreground resumes the single animation');
         assert.ok(await page.evaluate(() => window.layerCounts.every(count => count <= 1)), 'both GIF and SVG always have one layer');
         await page.reload({ waitUntil: 'networkidle' });
         assert.equal(await asset(page), first, 'reload rotates from the stored last image');
@@ -124,6 +136,7 @@ try {
       if (mode === 'poster-error') {
         await playing(page);
         assert.equal(await page.locator('.member-animation img:visible').count(), 1, 'valid original still works if its poster fails');
+        await page.emulateMedia({ reducedMotion: 'reduce' });
         await settled(page);
         assert.equal(await page.locator('.member-animation img:visible').count(), 0, 'failed poster stays hidden when restored');
       }
@@ -137,6 +150,7 @@ try {
         await page.evaluate(() => { document.getElementById('home').inert = true; });
         await settled(page);
         await page.evaluate(() => { document.getElementById('home').inert = false; });
+        await playing(page);
       }
     }
     assert.ok(await page.evaluate(() => window.layerCounts.every(count => count <= 1)), 'every render state attaches at most one artwork');
@@ -148,6 +162,11 @@ try {
     console.log(`PASS Home decoration: ${mode}`);
     await f.context.close();
   }
+} catch (error) {
+  for (const context of browser.contexts()) for (const page of context.pages()) {
+    console.log(await page.evaluate(() => ({ home: document.getElementById('home')?.outerHTML, hidden: document.hidden, layers: window.layerCounts })));
+  }
+  throw error;
 } finally {
   fs.writeFileSync(path.join(out, 'animation-report.json'), JSON.stringify(reports, null, 2));
   await browser.close();
