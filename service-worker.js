@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v241-video-session";
+const CACHE_NAME = "magicbook-pwa-v242-desktop-help";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -111,8 +111,9 @@ const STATIC_ASSETS = [
   "/figure-study-notes.mjs?v=1",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
   "/quiz.js?v=88-headlight",
-  "/quiz-help.css?v=20260920-web-layout-2",
-  "/quiz-help.js?v=20260920-web-inline",
+  "/quiz-help.css?v=20260928-desktop",
+  "/quiz-help.js?v=20260928-desktop",
+  "/quiz-help-desktop.js?v=1-allbooks",
   "/patenteGlossaryResolver.js?v=1.0.0",
   "/patenteContextResolverV3.js?v=4.0.0-glossary-display",
   "/quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity",

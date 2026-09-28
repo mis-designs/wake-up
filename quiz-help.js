@@ -53,7 +53,7 @@
   const quizSurface = document.querySelector(".quiz-container");
   const questionScroller = document.querySelector(".quiz-question-content");
   const figureWrap = document.getElementById("figure-wrap");
-  // Only the installed shell takes over the phone screen. Browser help stays
+  // Only the installed shell takes over the phone screen. Browser phone help stays
   // in its original reading flow, including on small/landscape phones.
   const isNativeQuiz = document.documentElement.classList.contains("android-webview");
   const phoneHelpQuery = window.matchMedia("(max-width: 600px), (max-width: 950px) and (max-height: 500px) and (pointer: coarse)");
@@ -72,6 +72,12 @@
   let wordAudioRequestId = 0;
   const wordAudioCache = new Map();
   const questionHelpCache = new Map();
+  // Named PC-only presentation; the existing data/audio and phone owners stay here.
+  const desktopHelp = !isNativeQuiz ? window.MagicQuizDesktopHelp?.create({
+    workspace, home: workspaceHome, content: helpContent, words: wordsList,
+    detail: wordDetail, context, translation: translationText, status: translationStatus,
+    onChange: syncHelpPresentation, onPageChange: stopWordAudio
+  }) : null;
 
   // Make the existing click-to-open help discoverable on the first question,
   // including the free-trial route, without covering or replacing the question.
@@ -477,6 +483,7 @@
       const italian = document.createElement("strong");
       italian.textContent = window.MagicItalianDisplay.initialUppercase(word.italian);
       button.append(italian);
+      desktopHelp?.registerWord(button, word);
       button.addEventListener("click", () => showWordDetail(word, button));
       wordsList.appendChild(button);
     });
@@ -537,8 +544,10 @@
   function syncHelpPresentation() {
     if (workspace.classList.contains("hidden") || hasBlockingQuizLayer()) return;
     const hadFocus = workspace.contains(document.activeElement);
+    desktopHelp?.sync();
     setHelpFullscreen(isNativeQuiz && phoneHelpQuery.matches);
-    if (!fullscreenHelp && hadFocus) {
+    questionArea.classList.toggle("has-web-help", !isNativeQuiz && !desktopHelp?.active);
+    if (!fullscreenHelp && !desktopHelp?.active && hadFocus) {
       workspace.querySelector("[data-help-close]").focus({ preventScroll: true });
       workspace.scrollIntoView({ block: "nearest", behavior: "instant" });
     }
@@ -587,8 +596,9 @@
     if (hasBlockingQuizLayer()) return;
     workspace.classList.remove("hidden");
     workspace.setAttribute("aria-hidden", "false");
+    desktopHelp?.sync();
     setHelpFullscreen(isNativeQuiz && phoneHelpQuery.matches);
-    if (!isNativeQuiz) {
+    if (!isNativeQuiz && !desktopHelp?.active) {
       questionArea.classList.add("has-web-help");
       workspace.querySelector("[data-help-close]")?.focus({ preventScroll: true });
       revealWebHelp();
@@ -608,6 +618,7 @@
   }
 
   function revealWebHelp() {
+    if (desktopHelp?.active) return;
     // One existing scroller, not a second page or nested mobile scroll area.
     if (window.matchMedia("(min-width: 768px) and (min-height: 501px), (min-width: 951px)").matches) questionScroller.scrollTop = 0;
     else {
@@ -624,6 +635,7 @@
     workspace.setAttribute("aria-hidden", "true");
     workspace.setAttribute("aria-busy", "false");
     questionText?.setAttribute("aria-expanded", "false");
+    desktopHelp?.close();
     setHelpFullscreen(false);
     questionArea.classList.remove("has-web-help");
     stopWordAudio();
@@ -672,7 +684,7 @@
     syncHelpPresentation();
   });
   new MutationObserver(() => {
-    if (fullscreenHelp && (document.body.classList.contains("modal-open") || document.body.classList.contains("loading-open"))) close();
+    if ((fullscreenHelp || desktopHelp?.active) && (document.body.classList.contains("modal-open") || document.body.classList.contains("loading-open"))) close();
   }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
   new MutationObserver(() => {
     if (!workspace.classList.contains("hidden")) close();

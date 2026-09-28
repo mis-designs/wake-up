@@ -383,3 +383,139 @@ html.android-webview .quiz-help-workspace.is-fullscreen .quiz-help-thumb-actions
   .quiz-help-workspace *, .quiz-help-word-audio { color: CanvasText; }
   .quiz-help-word-audio:focus-visible, .quiz-help-context summary:focus-visible { outline-color: Highlight; }
 }
+
+/* PC web only: All Books' two-page floating reader, not a blocking modal.
+   quiz-help-desktop.js alone applies this variant; phone/native rules above
+   and their exact DOM are retained on closing or shrinking the browser. */
+html:not(.android-webview) .quiz-page .quiz-help-workspace.is-desktop-help {
+  --help-paper: #18181b;
+  --help-chrome: #050505;
+  --help-ink: #ffffff;
+  --help-muted: #c7c7cc;
+  --help-accent: #9eff00;
+  --help-line: color-mix(in srgb, var(--help-accent) 24%, transparent);
+  --help-height: min(350px, 52dvh);
+  --help-width: min(500px, calc(100vw - 48px));
+  --magic-glass-ink: var(--help-ink);
+  --magic-glass-muted: var(--help-muted);
+  --magic-glass-line: var(--help-line);
+  --magic-glass-focus: var(--help-accent);
+  position: fixed;
+  z-index: var(--quiz-layer-help);
+  left: var(--help-left, calc((100vw - var(--help-width)) / 2));
+  top: var(--help-top, calc(100dvh - var(--help-height) - clamp(24px, 5dvh, 56px)));
+  width: var(--help-width);
+  height: var(--help-height);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) 44px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid color-mix(in srgb, var(--help-accent) 55%, transparent);
+  border-radius: 18px;
+  background: var(--help-paper);
+  color: var(--help-ink);
+  box-shadow: 0 24px 65px rgb(0 0 0 / .4);
+  animation: quizWebHelpEnter 160ms ease-out;
+}
+html:not(.android-webview) .quiz-page .is-desktop-help.hidden { display: none; }
+.quiz-page .is-desktop-help .quiz-help-heading {
+  min-height: 62px;
+  padding: 8px 12px 8px 16px;
+  background: var(--help-chrome);
+  border-bottom: 1px solid var(--help-line);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.quiz-page .is-desktop-help.is-dragging .quiz-help-heading { cursor: grabbing; }
+html:not(.android-webview) .quiz-page .is-desktop-help #quiz-help-title { color: var(--help-ink); font-size: 1rem; }
+.quiz-page .is-desktop-help .quiz-help-close.magic-glass-chip {
+  color: var(--help-ink);
+  background: var(--help-paper);
+  border: 1px solid var(--help-line);
+  border-radius: 11px;
+  cursor: pointer;
+}
+.quiz-page .is-desktop-help .quiz-help-close:hover { background: var(--help-accent); color: var(--help-chrome); }
+.quiz-page .is-desktop-help .quiz-help-close:active { opacity: .8; }
+html:not(.android-webview) .quiz-page .is-desktop-help .quiz-help-content { min-height: 0; overflow: hidden; }
+.quiz-help-desktop-track {
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  transform: translateX(calc(var(--help-page, 0) * -100%));
+  transition: transform 220ms ease;
+}
+.quiz-help-desktop-page {
+  flex: 0 0 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 16px 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #74747a var(--help-paper);
+  scrollbar-gutter: stable;
+  scroll-padding-block: 16px;
+}
+.quiz-help-desktop-page::-webkit-scrollbar { width: 6px; }
+.quiz-help-desktop-page::-webkit-scrollbar-track { background: var(--help-paper); }
+.quiz-help-desktop-page::-webkit-scrollbar-thumb { background: #74747a; border-radius: 8px; }
+.quiz-help-desktop-page::-webkit-scrollbar-thumb:hover { background: var(--help-muted); }
+.quiz-help-desktop-page::-webkit-scrollbar-thumb:active { background: var(--help-accent); }
+.quiz-page .is-desktop-help .quiz-help-translation-text { color: var(--help-ink); line-height: 1.75; }
+.quiz-page .is-desktop-help .quiz-help-words { margin: 0; gap: 8px; }
+html:not(.android-webview) .quiz-page .is-desktop-help .quiz-help-word {
+  display: inline-flex;
+  align-items: stretch;
+  padding: 0;
+  border: 1px solid var(--help-line);
+  border-radius: 10px;
+  background: var(--help-chrome);
+  color: var(--help-ink);
+  box-shadow: none;
+  overflow: hidden;
+  cursor: pointer;
+}
+.quiz-page .is-desktop-help .quiz-help-word > * { align-content: center; padding: 8px 10px; }
+.quiz-page .is-desktop-help .quiz-help-word-bn {
+  border-left: 1px solid var(--help-line);
+  background: color-mix(in srgb, var(--help-accent) 10%, var(--help-paper));
+  color: var(--help-accent);
+  font-size: 1rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+html:not(.android-webview) .quiz-page .is-desktop-help .quiz-help-word:hover,
+html:not(.android-webview) .quiz-page .is-desktop-help .quiz-help-word[aria-expanded="true"] { border-color: var(--help-accent); }
+html:not(.android-webview) .quiz-page .is-desktop-help .quiz-help-word:active { background: var(--help-paper); }
+.quiz-page .is-desktop-help .quiz-help-word-detail { margin-top: 16px; }
+.quiz-page .is-desktop-help .quiz-help-word-audio { color: var(--help-ink); background: var(--help-chrome); border-color: var(--help-line); box-shadow: none; }
+html:not(.android-webview) .quiz-page .is-desktop-help .quiz-help-context { background: var(--help-chrome); border-color: var(--help-line); }
+html:not(.android-webview) .quiz-page .is-desktop-help .quiz-help-context[open] summary { border-color: var(--help-line); }
+html:not(.android-webview) .quiz-page .is-desktop-help .quiz-help-context summary:hover { background: var(--help-paper); }
+.quiz-help-desktop-loading { display: none; color: var(--help-muted); margin: 0; font-size: .8rem; }
+.is-desktop-help[aria-busy="true"] .quiz-help-desktop-loading { display: flex; }
+.quiz-help-desktop-pager { display: flex; align-items: center; justify-content: center; gap: 4px; background: var(--help-chrome); border-top: 1px solid var(--help-line); }
+.quiz-help-desktop-pager button { display: grid; place-items: center; width: 50px; height: 44px; padding: 0; border: 0; border-radius: 6px; background: transparent; cursor: pointer; }
+.quiz-help-desktop-pager button::after { content: ""; width: 28px; height: 5px; border-radius: 99px; background: #737373; transition: width 180ms ease, background 180ms ease; }
+.quiz-help-desktop-pager button[aria-selected="true"]::after { width: 42px; background: var(--help-accent); }
+.quiz-help-desktop-pager button:hover::after { background: var(--help-ink); }
+.quiz-help-desktop-pager button:active::after { opacity: .7; }
+html:not(.android-webview) .quiz-page .is-desktop-help :focus-visible { outline: 2px solid var(--help-accent); outline-offset: -3px; }
+@media (prefers-reduced-motion: reduce) {
+  html:not(.android-webview) .quiz-page .quiz-help-workspace.is-desktop-help { animation: none; }
+  .quiz-help-desktop-track, .quiz-help-desktop-pager button::after { transition: none; }
+}
+@media (forced-colors: active) {
+  html:not(.android-webview) .quiz-page .quiz-help-workspace.is-desktop-help {
+    --help-paper: Canvas; --help-chrome: Canvas; --help-ink: CanvasText;
+    --help-muted: CanvasText; --help-accent: Highlight; --help-line: CanvasText;
+    border-color: CanvasText; box-shadow: none;
+  }
+  .quiz-help-desktop-page { scrollbar-color: auto; }
+  .quiz-help-desktop-pager button::after { forced-color-adjust: none; background: CanvasText; }
+  .quiz-help-desktop-pager button[aria-selected="true"]::after { background: Highlight; }
+}

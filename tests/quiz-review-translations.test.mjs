@@ -216,7 +216,7 @@ test("review translation asset versions match between the page and service worke
   const expected = new Map([
     ["mystyle.css", "60-web-quiz-layout"],
     ["quiz.js", "88-headlight"],
-    ["quiz-help.js", "20260920-web-inline"]
+    ["quiz-help.js", "20260928-desktop"]
   ]);
 
   for (const [asset, version] of expected) {

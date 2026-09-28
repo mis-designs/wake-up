@@ -37,7 +37,7 @@ function renderer() {
   nodes.workspace.querySelector = () => ({ focus() {} });
   const context = vm.createContext({
     ...nodes, context: {}, document: { activeElement: null },
-    isNativeQuiz: false, phoneHelpQuery: { matches: true },
+    isNativeQuiz: false, phoneHelpQuery: { matches: true }, desktopHelp: null,
     window: { matchMedia: () => ({ matches: false }) },
     currentQuestion: () => question,
     getQuestionHelp: row => new Promise((resolve, reject) => pending.set(row.id, { resolve, reject })),
@@ -143,7 +143,7 @@ test("installed Android phone keeps its fullscreen owner and no browser layout",
 test("real keyword text opens and closes its meaning in the same panel", () => {
   const wordsList = element(), wordDetail = element();
   const context = vm.createContext({
-    wordsList, wordDetail, stopWordAudio() {}, playBanglaWord() {},
+    wordsList, wordDetail, desktopHelp: null, stopWordAudio() {}, playBanglaWord() {},
     document: { createElement: element },
     window: { MagicItalianDisplay: { initialUppercase: text => text || "" } }
   });

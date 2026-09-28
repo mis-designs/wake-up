@@ -94,7 +94,7 @@ test("study explanation players reuse the supplied artwork with stable responsiv
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.study-explanation-artwork\s*\{\s*animation:\s*none/u);
   assert.match(page, /study-quiz\.css\?v=28-compact/u);
   assert.match(page, /study-quiz\.js\?v=39-session/u);
-  assert.match(worker, /magicbook-pwa-v241-video-session/u);
+  assert.match(worker, /magicbook-pwa-v242-desktop-help/u);
   assert.match(worker, /\/icons\/explain_quiz\.svg/u);
 });
 

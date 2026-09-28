@@ -8,6 +8,7 @@ canonical_ui:
     - style.css
     - mystyle.css
     - quiz-help.css
+    - quiz-help-desktop.js
     - mobile-experience.css
     - api/quiz-figure-image.mjs
     - android-webview-mode.js
@@ -39,8 +40,8 @@ canonical_ui:
   notes: Existing application tokens remain canonical. Locally compiled, d-prefixed daisyUI controls provide interaction primitives; the scoped learning stylesheet owns layout and visual hierarchy.
 design_context:
   owner: Magic Book
-  last_updated: 2026-09-27
-  revision_notes: "Home: the graduation cap dresses Magic Here, with the existing El Messiri ornamental face and a brief periodic book-only shake; balanced layout and utility dock remain."
+  last_updated: 2026-09-28
+  revision_notes: "PC web quiz translation adopts the owner's All Books floating two-page reader; phone, tablet-touch and installed Android help remain unchanged."
 ---
 
 # Magic Book design context
@@ -291,12 +292,23 @@ September 20 Android preview refinement supersedes the earlier density: the visi
 
 ### Web Quiz compact help (2026-09-20)
 
+The PC-only floating reader below supersedes the desktop inline presentation when its pointer/viewport gate matches. The compact phone/touch and installed variants remain unchanged.
+
 - Approved browser-only variant, scoped with `html:not(.android-webview) .quiz-page`. Preserve the open white canvas, fonts, semantic answer colors/icons and original artwork. `mystyle.css` owns a centered640px maximum command area:92px language column, two flexible answer columns and a64–80px navigation column (`--quiz-web-nav-width: clamp(64px, 18vw, 80px)`);44px audio row,52px answer row,6px gaps. Previous is above Next. The player ends at the right edge of Falso. Both language buttons remain44px targets on one row.
 - `audio-player-ui.css` keeps sole ownership of playback states and emerald color. The new `--audio-player-emerald` alias preserves #10b981; the browser Quiz player is44px high with30px artwork and44px play/speed/seek targets. This named density variant does not reach Study/Admin or installed Android.
 - `quiz-help.js` keeps one disclosure/data/cache owner. Web phones show the same translation below the question; at768px width/501px height, or widths951px and above, it occupies the right half of the question-text row only while explicitly open. The figure spans both columns above that row, keeping its original centered position and size. Short landscape phones remain stacked. One existing question scroller contains question, translation, expanded word detail and keywords. No modal, navigation, copied figure, background inertness or second mobile scrollbar. X/Escape restore question focus; question changes close help. After async resolution, reveal the panel only if the same request is current and the reader has not scrolled.
 - `quiz-help.css` gives this panel a16px radius,8% emerald transparent fill and26% emerald border; no blur/shadow. The existing Bangla font/reader scale and44px keyword/close targets remain. The small original hand is45% opaque beside readable dark-green copy. It makes two1s taps inside an8s reminder on first visits to questions1,6,11; after help is used it never returns during that quiz. CSS-only finite motion, no interval, polling or new API request; hiding/navigation removes the cue, reduced motion uses static feedback, forced colors preserves boundaries.
 - The web `Capitolo e argomento` disclosure keeps semantic details/summary and native keyboard toggling. Its full-width44px-minimum summary uses a quiet white/emerald bordered12px surface with a right-aligned CSS chevron; opening rotates the chevron and reveals padded bilingual content. Hover/press/focus, reduced motion and forced colors are explicit. No extra click handler or request.
 - Verification: local mocked browser matrix320–1920px, portrait/short landscape, tablet two-column, enlarged text, late data/close, keywords, keyboard, audio states and request-count assertions. Native geometry and fullscreen behavior compared against the existing baseline. Real Safari/device testing remains a release smoke check.
+
+### PC web bilingual reader — All Books reference, 2026-09-28
+
+- Source: the owner's annotated translation screenshot and `digi_books/all_books_acceess/quiz.html`, `quiz.js`, `mystyle.css` translation-carousel. Reproduce its single floating dark reader with two bottom page indicators, not two dialogs. The marked বাংলা eyebrow is omitted. This is a named PC quiz-help variant, not a rebrand of Quiz or mobile.
+- `quiz-help.js` remains the sole disclosure/data/audio owner. `quiz-help-desktop.js` is its presentation adapter, enabled only outside `html.android-webview`, at951px+ with primary fine pointer and hover. Browser phones, coarse-pointer tablets and every installed Android size retain their prior exact nodes, order, fonts and appearance. Small desktop windows/zoom reflow to the existing inline variant.
+- Runtime ownership is model B in `quiz-help.css` under `.is-desktop-help`: `--help-paper:#18181b`, `--help-chrome:#050505`, `--help-ink:#fff`, `--help-muted:#c7c7cc`, `--help-accent:#9eff00`, `--help-line`24% accent. These values deliberately match All Books, not the Android palette. White Italian UI and the existing `--font-bengali`/reader presets remain; translations keep1.75 line-height. No text is translated/re-authored by this UI task.
+- 500px maximum width, height min(350px,52dvh),18px corners,1px55%-accent border and restrained black floating shadow. Bottom-center default with24–56px lower space, adjustable using the header;12px viewport bounds during drag/keyboard movement/resize.62px header contains only the page title and44px X.44px bottom rail holds50×44px semantic tabs with28px inactive/42px active,5px-high rounded marks. Keep header/footer stable through pending, empty, failure and long content.
+- The first page is Traduzione del quiz; the second is Parole chiave with actual Italian/Bangla pairs, the existing expandable explanation/audio and optional context. Use original live content nodes, not cloned data or duplicate fetch logic. Only the active page scrolls/is accessible;220ms horizontal transition and160ms entry are finite and removed with reduced motion. Forced colors supplies Canvas/CanvasText/Highlight boundaries, focus and selected-page marks. Scrollbar roles are local to this explicitly dark reader.
+- This is All Books' non-modal floating utility: no scrim, quiz inertness, history entry or focus trap. Focus enters its X, Escape/X restore the question when focus was inside, and background quiz actions remain usable. Header drag also has Alt+Arrow keyboard movement; tabs support Left/Right/Home/End. Question changes and blocking dialogs close it; offline isolation stays with the existing global owner. Cache/request/audio contracts are unchanged. See UX-CONTRACT.md and `scripts/quiz-help-desktop-browser-qa.mjs` for desktop, unchanged-mobile, loading/stale/error, keyboard, resize and overlay evidence.
 
 ### Focused live Quiz (installed Android only)
 
