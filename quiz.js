@@ -1320,9 +1320,16 @@ function updateSharedAudioAvailability(question) {
 }
 
 async function playSharedAudio() {
-  if (!sharedAudioQuestion || sharedAudioPlayer?.dataset.audioState === "inactive" || sharedAudioPlayer?.dataset.audioState === "error") {
+  if (!sharedAudioQuestion || sharedAudioPlayer?.dataset.audioState === "inactive") {
     await reportSharedAudioFailure();
     return;
+  }
+  // A playback failure leaves the explanation available. The error toast asks
+  // the learner to try again, so a fresh explicit tap must be allowed to load
+  // the same authenticated blob request again.
+  if (sharedAudioPlayer?.dataset.audioState === "error") {
+    sharedAudioFailure = null;
+    setSharedAudioVisualState("active");
   }
   if (sharedAudioPlayPending) {
     cancelPendingQuizExplanationAudio();
