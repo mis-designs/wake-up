@@ -1352,8 +1352,8 @@ async function playSharedAudio() {
       setSharedAudioVisualState("active");
     }
     if (sharedAudio.paused) {
-      await waitForSharedAudioReady();
-      if (requestId !== sharedAudioRequestId || playRequestId !== sharedAudioPlayRequestId) return;
+      // Call play directly on a repeat tap: awaiting metadata first loses
+      // Safari's user activation. play() already waits for usable media.
       await sharedAudio.play();
       if (playRequestId !== sharedAudioPlayRequestId) return;
       setSharedAudioVisualState("active");
@@ -1366,6 +1366,15 @@ async function playSharedAudio() {
     sharedAudioPlay?.classList.remove("is-loading");
     sharedAudioPlay?.removeAttribute("aria-busy");
     sharedAudioLoading = null;
+    if (error?.name === "NotAllowedError" && sharedAudio.src) {
+      // The asynchronous download can outlive iOS user activation. Keep the
+      // authenticated blob so the next explicit tap plays without a fetch.
+      sharedAudioFailure = null;
+      setSharedAudioVisualState("active");
+      setSharedAudioPlaying(false);
+      showAudioUnavailableToast("Audio pronto. Tocca di nuovo Play per ascoltare.");
+      return;
+    }
     sharedAudio.pause();
     revokeSharedAudioObjectUrl();
     sharedAudio.removeAttribute("src");
