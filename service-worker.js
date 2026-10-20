@@ -3,6 +3,8 @@ const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
+  "/quizbank.html",
+  "/quizbank.css?v=1-coming-soon",
   "/libreria-font.html",
   "/libreria-font.css?v=3-glass-specimen",
   "/magic-styles.css?v=3-liquid-glass",
@@ -221,7 +223,9 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  const fallbackPage = url.pathname.startsWith("/privacypolicy")
+  const fallbackPage = url.pathname === "/quizbank" || url.pathname === "/quizbank.html"
+    ? "/quizbank.html"
+    : url.pathname.startsWith("/privacypolicy")
     ? "/privacypolicy.html"
     : url.pathname.startsWith("/libreria-font")
       ? "/libreria-font.html"

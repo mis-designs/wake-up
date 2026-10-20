@@ -22,6 +22,14 @@
   Cache-Control: no-cache, no-store, must-revalidate
   X-Robots-Tag: noindex, nofollow, noimageindex
 
+/quizbank
+  Cache-Control: no-cache, no-store, must-revalidate
+  X-Robots-Tag: noindex, nofollow, noimageindex
+
+/quizbank.html
+  Cache-Control: no-cache, no-store, must-revalidate
+  X-Robots-Tag: noindex, nofollow, noimageindex
+
 /privacypolicy
   Cache-Control: no-cache, no-store, must-revalidate
 

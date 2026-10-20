@@ -116,6 +116,32 @@
       ]
     },
     {
+      "source": "/quizbank",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noimageindex"
+        }
+      ]
+    },
+    {
+      "source": "/quizbank.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noimageindex"
+        }
+      ]
+    },
+    {
       "source": "/privacypolicy",
       "headers": [
         {
@@ -299,6 +325,10 @@
     {
       "source": "/libreria-font",
       "destination": "/libreria-font.html"
+    },
+    {
+      "source": "/quizbank",
+      "destination": "/quizbank.html"
     },
     {
       "source": "/privacypolicy",
