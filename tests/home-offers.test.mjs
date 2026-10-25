@@ -75,7 +75,7 @@ test('Home actions use clean labels without arrows or redundant result descripti
 });
 test('new owners are versioned and cached without caching Canva or account data', () => {
   const page = read('index.html'), worker = read('service-worker.js');
-  for (const asset of ['home-offers.css?v=8-book-label', 'home-offers.js?v=6-hat']) {
+  for (const asset of ['home-offers.css?v=9-book-tap', 'home-offers.js?v=6-hat']) {
     assert.ok(page.includes(asset)); assert.ok(worker.includes(asset));
   }
   assert.ok(worker.includes('/offer-frequency.mjs?v=1'));

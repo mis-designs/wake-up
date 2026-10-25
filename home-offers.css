@@ -40,7 +40,7 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
 .member-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 24px; }
 .member-library { position: relative; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: center; gap: 16px; padding: clamp(20px, 3vw, 36px); background: var(--welcome-surface); border: 1px solid var(--welcome-line); border-radius: 28px; }
 .member-cover, .member-entry { min-width: 0; }
-.member-entry { display: grid; justify-self: center; justify-items: center; align-content: center; width: min(100%, 160px); gap: 0; }
+.member-entry { position: relative; display: grid; justify-self: center; justify-items: center; align-content: center; width: min(100%, 160px); gap: 0; }
 /* The original cap has transparent margins: its brim overlaps the button, not the label.
    Extra side room keeps the hanging tassel to the left of the text at phone sizes. */
 .member-animation { position: relative; z-index: 3; width: calc(100% + 32px); aspect-ratio: 1; margin-bottom: calc(-38% - 12px); transform: translateX(-12%); pointer-events: none; }
@@ -64,8 +64,8 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
 .member-home .member-open {
   --member-action-light: color-mix(in srgb, var(--welcome-accent) 88%, var(--welcome-on-accent));
   --member-action-fill: radial-gradient(65.28% 65.28% at 50% 100%, var(--member-action-light) 0%, transparent 100%), linear-gradient(0deg, var(--welcome-accent), var(--welcome-accent-strong));
-  position: relative; isolation: isolate; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-  width: 100%; min-width: 0; min-height: 60px; margin: 0; padding: 20px 8px 10px;
+  position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center;
+  width: 100%; min-width: 0; min-height: 60px; margin: 0; padding: 20px 8px 8px;
   overflow: hidden; border: 0; border-radius: 12px; background: var(--member-action-fill);
   color: var(--welcome-on-accent); font: 700 15px/1.5 'Inter', sans-serif;
   box-shadow: 0 5px 16px color-mix(in srgb, var(--welcome-accent) 18%, transparent);
@@ -76,17 +76,17 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
 }
 .member-home .member-open::before { inset: 1px; border-radius: 11px; background: linear-gradient(177.95deg, color-mix(in srgb, var(--welcome-on-accent) 30%, transparent), transparent); }
 .member-home .member-open::after { inset: 2px; border-radius: 10px; background: var(--member-action-fill); }
-.member-home .member-open-label { position: relative; z-index: 2; display: grid; align-items: center; min-height: 1.65em; font: 700 24px/1.65 'El Messiri', Georgia, serif; white-space: nowrap; }
+.member-home .member-open-label { position: relative; z-index: 2; display: grid; align-items: center; min-height: 1.3em; font: 700 24px/1.3 'El Messiri', Georgia, serif; white-space: nowrap; }
 /* Both names reserve the same cell, so language changes never move the target. */
 .member-home .member-open-copy { grid-area: 1 / 1; font: inherit; }
 .member-home .member-open-copy--bangla { opacity: 0; font-family: var(--font-bn-title); font-weight: 400; }
-.member-open-hand { position: relative; z-index: 2; display: block; flex: 0 0 24px; width: 24px; height: 24px; object-fit: contain; filter: brightness(0) invert(1); pointer-events: none; }
+.member-open-hand { --tap-cue-rest-y: 22px; --tap-cue-approach-y: 4px; --tap-cue-contact-y: -30px; position: absolute; z-index: 4; bottom: -24px; left: calc(50% - 18px); width: 36px; height: 36px; object-fit: contain; opacity: 0; filter: brightness(0); pointer-events: none; }
 #home[data-home-motion="running"] .member-open:not(:disabled) .member-open-copy--latin { animation: member-label-latin 10s linear infinite; }
 #home[data-home-motion="running"] .member-open:not(:disabled) .member-open-copy--bangla { animation: member-label-bangla 10s linear infinite; }
-#home[data-home-motion="running"] .member-open:not(:disabled) .member-open-hand { animation: member-hand-tap 5s ease-in-out infinite; }
+/* Reuse the app's approach → tap → disappear gesture outside the button's layout. */
+#home[data-home-motion="running"] .member-open:not(:disabled):not([aria-busy="true"]):not(:focus-visible) + .member-open-hand { animation: native-book-tap 5s ease-in-out infinite; }
 @keyframes member-label-latin { 0%, 44%, 100% { opacity: 1; } 47%, 98% { opacity: 0; } }
 @keyframes member-label-bangla { 0%, 49%, 97%, 100% { opacity: 0; } 52%, 94% { opacity: 1; } }
-@keyframes member-hand-tap { 0%, 36%, 60%, 100% { transform: translateY(0) scale(1); } 44%, 53% { transform: translateY(-3px) scale(.86); } 49% { transform: translateY(-1px) scale(1); } }
 .member-open-points { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
 .member-open-points i { position: absolute; bottom: -10px; width: 2px; height: 2px; border-radius: 50%; background: var(--welcome-on-accent); animation: member-floating-point 2.35s infinite ease-in-out; animation-play-state: paused; }
 #home[data-home-motion="running"] .member-open-points i { animation-play-state: running; }

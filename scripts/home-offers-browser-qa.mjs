@@ -80,7 +80,8 @@ async function checkHomeLayout(page, width, height) {
 try {
   for (const [width, height, native] of [[320,568,false], [375,812,false], [740,360,false], [768,1024,false], [1280,720,false], [1440,900,false], [1920,1080,false], [2560,1440,false], [375,812,true]]) {
     if (process.env.QA_FAILURES_ONLY) continue;
-    if (process.env.QA_WIDTH && Number(process.env.QA_WIDTH) !== width) continue;
+    if (process.env.QA_WIDTH && !process.env.QA_WIDTH.split(',').map(Number).includes(width)) continue;
+    if (process.env.QA_ENTRY_ONLY && native) continue;
     const f = await fixture(width, height, native), { page } = f;
     await page.goto('http://home.local/home', { waitUntil: 'networkidle' });
     await page.locator('#offerPopupOverlay').waitFor({ timeout: 6000 }).catch(async error => {
@@ -163,6 +164,33 @@ try {
       assert.ok(labelBox.x >= actionBox.x + 5 && labelBox.x + labelBox.width <= actionBox.x + actionBox.width - 5, 'ornamental label stays inside its button');
       assert.ok(await page.locator('.member-open-copy--bangla').evaluate(el => getComputedStyle(el).fontFamily.includes('Hadi Rounded') && document.fonts.check('400 24px "Hadi Rounded"')));
       assert.ok(await page.locator('.member-open-hand').evaluate(el => el.complete && el.naturalWidth > 0));
+      assert.ok(actionBox.height >= 60 && actionBox.height <= 61, 'entry keeps its original compact 60px button');
+      await page.locator('.member-open').evaluate(el => el.blur());
+      await page.mouse.move(0, 0);
+      const cue = page.locator('.member-open-hand');
+      const tapPhases = [];
+      for (const [time, opacity] of [[0, 0], [1000, .8], [1600, .9], [1950, .9], [2800, 0], [6000, .8]]) {
+        const frame = await cue.evaluate(async (el, time) => {
+          const animation = el.getAnimations()[0];
+          if (animation?.animationName !== 'native-book-tap') throw Error('Missing shared app tap gesture');
+          animation.pause(); animation.currentTime = time;
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          const style = getComputedStyle(el), rect = el.getBoundingClientRect();
+          return { opacity: Number(style.opacity), transform: style.transform, duration: style.animationDuration,
+            pointer: style.pointerEvents, target: document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)?.closest('button')?.className };
+        }, time);
+        assert.ok(Math.abs(frame.opacity - opacity) < .02, `gesture phase ${time}: ${JSON.stringify(frame)}`);
+        assert.equal(frame.duration, '5s');
+        assert.equal(frame.pointer, 'none');
+        assert.deepEqual(await page.locator('.member-open').boundingBox(), actionBox, 'hand never enlarges or moves the button');
+        if (time === 1600) {
+          assert.equal(frame.target, 'member-open', 'hand clicks on the button without intercepting it');
+          await page.locator('.member-library').screenshot({ path: path.join(out, `web-${width}-tap-contact.png`) });
+        }
+        tapPhases.push(frame);
+      }
+      assert.notEqual(tapPhases[2].transform, tapPhases[3].transform, 'contact compresses like a real tap');
+      await cue.evaluate(el => { el.getAnimations()[0].currentTime = 2800; });
       const labelPhases = [];
       for (const time of [1000, 6000, 11000]) {
         labelPhases.push(await page.evaluate(async time => {
@@ -183,8 +211,20 @@ try {
       await page.waitForFunction(() => document.querySelector('.member-animation img')?.src.includes('/assets/home-animations/'));
       assert.equal(await page.locator('.member-animation img').count(), 1, 'reduced motion uses only the still');
       assert.deepEqual(await page.locator('.member-open-copy').evaluateAll(els => els.map(el => getComputedStyle(el).opacity)), ['0', '1'], 'reduced motion keeps Bangla visible');
+      assert.equal(await cue.evaluate(el => Number(getComputedStyle(el).opacity)), 0, 'reduced motion hides the hand');
       await page.screenshot({ path: path.join(out, `web-${width}-home.png`), fullPage: true });
       await page.emulateMedia({ reducedMotion: 'no-preference' });
+      if (process.env.QA_ENTRY_ONLY) {
+        await page.locator('.member-open').focus();
+        assert.equal(await cue.evaluate(el => getComputedStyle(el).animationName), 'none', 'keyboard focus hides the decorative gesture');
+        await page.keyboard.press('Enter');
+        await page.waitForURL('**/magic-book');
+        assert.deepEqual(f.errors, []);
+        reports.push({ width, height, tapPhases, passed: true });
+        console.log(`PASS compact bilingual entry ${width}x${height}: gesture, stable bounds, fonts, reduced motion, keyboard navigation`);
+        await f.ctx.close();
+        continue;
+      }
       await page.locator('#profileBtn').click();
       await page.locator('#profilePanel:not(.hidden)').waitFor();
       await page.waitForFunction(() => document.getElementById('profilePanel').style.getPropertyValue('--member-panel-y'));
@@ -281,6 +321,7 @@ try {
     await f.ctx.close();
   }
   for (const [width, height] of [[320,568], [375,812], [740,360], [1440,900]]) {
+    if (process.env.QA_ENTRY_ONLY) continue;
     const f = await fixture(width, height, false, 'blocked', 'admin'), { page } = f;
     await page.goto('http://home.local/home', { waitUntil: 'networkidle' });
     await page.locator('.member-utilities #adminEntryBtn:not(.hidden)').waitFor();
@@ -325,6 +366,7 @@ try {
     await f.ctx.close();
   }
   for (const mode of ['slow', 'error', 'book-error', 'blocked', 'priority']) {
+    if (process.env.QA_ENTRY_ONLY) continue;
     const f = await fixture(375, 812, false, mode), { page } = f;
     await page.goto('http://home.local/home', { waitUntil: 'domcontentloaded' });
     await page.locator('#home:not(.hidden)').waitFor();
