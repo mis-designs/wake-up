@@ -127,7 +127,8 @@ try {
       })));
       assert.deepEqual(icons.map(icon => icon.path), ['/icons/dizionario.png', '/icons/statistiche-patente.png', '/icons/errori-patente.png']);
       assert.ok(icons.every(icon => icon.decoded && icon.version && icon.width === 48 && icon.height === 48 && icon.fit === 'contain'));
-      assert.equal(await page.locator('.member-open').innerText(), 'Magic Here');
+      assert.equal(await page.locator('.member-open').getAttribute('aria-label'), 'Magic Book · ম্যাজিক বুক: apri il libro');
+      assert.deepEqual(await page.locator('.member-open-copy').allTextContents(), ['Magic Book', 'ম্যাজিক বুক']);
       assert.ok(await page.locator('.member-open').evaluate(el => el === document.activeElement));
       assert.ok(await page.locator('.member-open, .member-link, .member-products, .member-sponsor, .member-utilities button').evaluateAll(els => els.every(el => !el.getClientRects().length || el.getBoundingClientRect().height >= 44)));
       assert.equal(await page.locator('.member-welcome a').count(), 0);
@@ -160,10 +161,28 @@ try {
       assert.ok(await page.locator('.member-open-label').evaluate(el => getComputedStyle(el).fontFamily.includes('El Messiri') && document.fonts.check('700 24px "El Messiri"')));
       const labelBox = await page.locator('.member-open-label').boundingBox();
       assert.ok(labelBox.x >= actionBox.x + 5 && labelBox.x + labelBox.width <= actionBox.x + actionBox.width - 5, 'ornamental label stays inside its button');
+      assert.ok(await page.locator('.member-open-copy--bangla').evaluate(el => getComputedStyle(el).fontFamily.includes('Hadi Rounded') && document.fonts.check('400 24px "Hadi Rounded"')));
+      assert.ok(await page.locator('.member-open-hand').evaluate(el => el.complete && el.naturalWidth > 0));
+      const labelPhases = [];
+      for (const time of [1000, 6000, 11000]) {
+        labelPhases.push(await page.evaluate(async time => {
+          const button = document.querySelector('.member-open');
+          for (const animation of button.getAnimations({ subtree: true }).filter(a => a.animationName.startsWith('member-label-'))) {
+            animation.pause(); animation.currentTime = time;
+          }
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          return { box: button.getBoundingClientRect().toJSON(), opacity: [...button.querySelectorAll('.member-open-copy')].map(el => getComputedStyle(el).opacity) };
+        }, time));
+        if ([320, 375, 1440].includes(width) && time < 10000) await page.locator('.member-library').screenshot({ path: path.join(out, `web-${width}-${time === 1000 ? 'latin' : 'bangla'}-entry.png`) });
+      }
+      assert.deepEqual(labelPhases.map(phase => phase.opacity), [['1', '0'], ['0', '1'], ['1', '0']], 'labels alternate and repeat');
+      assert.deepEqual(labelPhases[0].box, labelPhases[1].box, 'language change cannot move or resize the button');
+      await page.evaluate(() => document.querySelector('.member-open').getAnimations({ subtree: true }).forEach(a => a.play()));
       assert.equal(firstAsset, 'Graduation_Hat.svg');
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.waitForFunction(() => document.querySelector('.member-animation img')?.src.includes('/assets/home-animations/'));
       assert.equal(await page.locator('.member-animation img').count(), 1, 'reduced motion uses only the still');
+      assert.deepEqual(await page.locator('.member-open-copy').evaluateAll(els => els.map(el => getComputedStyle(el).opacity)), ['0', '1'], 'reduced motion keeps Bangla visible');
       await page.screenshot({ path: path.join(out, `web-${width}-home.png`), fullPage: true });
       await page.emulateMedia({ reducedMotion: 'no-preference' });
       await page.locator('#profileBtn').click();

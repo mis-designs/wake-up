@@ -64,7 +64,7 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
 .member-home .member-open {
   --member-action-light: color-mix(in srgb, var(--welcome-accent) 88%, var(--welcome-on-accent));
   --member-action-fill: radial-gradient(65.28% 65.28% at 50% 100%, var(--member-action-light) 0%, transparent 100%), linear-gradient(0deg, var(--welcome-accent), var(--welcome-accent-strong));
-  position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center;
+  position: relative; isolation: isolate; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   width: 100%; min-width: 0; min-height: 60px; margin: 0; padding: 20px 8px 10px;
   overflow: hidden; border: 0; border-radius: 12px; background: var(--member-action-fill);
   color: var(--welcome-on-accent); font: 700 15px/1.5 'Inter', sans-serif;
@@ -76,7 +76,17 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
 }
 .member-home .member-open::before { inset: 1px; border-radius: 11px; background: linear-gradient(177.95deg, color-mix(in srgb, var(--welcome-on-accent) 30%, transparent), transparent); }
 .member-home .member-open::after { inset: 2px; border-radius: 10px; background: var(--member-action-fill); }
-.member-home .member-open-label { position: relative; z-index: 2; font: 700 24px/1.15 'El Messiri', Georgia, serif; white-space: nowrap; }
+.member-home .member-open-label { position: relative; z-index: 2; display: grid; align-items: center; min-height: 1.65em; font: 700 24px/1.65 'El Messiri', Georgia, serif; white-space: nowrap; }
+/* Both names reserve the same cell, so language changes never move the target. */
+.member-home .member-open-copy { grid-area: 1 / 1; font: inherit; }
+.member-home .member-open-copy--bangla { opacity: 0; font-family: var(--font-bn-title); font-weight: 400; }
+.member-open-hand { position: relative; z-index: 2; display: block; flex: 0 0 24px; width: 24px; height: 24px; object-fit: contain; filter: brightness(0) invert(1); pointer-events: none; }
+#home[data-home-motion="running"] .member-open:not(:disabled) .member-open-copy--latin { animation: member-label-latin 10s linear infinite; }
+#home[data-home-motion="running"] .member-open:not(:disabled) .member-open-copy--bangla { animation: member-label-bangla 10s linear infinite; }
+#home[data-home-motion="running"] .member-open:not(:disabled) .member-open-hand { animation: member-hand-tap 5s ease-in-out infinite; }
+@keyframes member-label-latin { 0%, 44%, 100% { opacity: 1; } 47%, 98% { opacity: 0; } }
+@keyframes member-label-bangla { 0%, 49%, 97%, 100% { opacity: 0; } 52%, 94% { opacity: 1; } }
+@keyframes member-hand-tap { 0%, 36%, 60%, 100% { transform: translateY(0) scale(1); } 44%, 53% { transform: translateY(-3px) scale(.86); } 49% { transform: translateY(-1px) scale(1); } }
 .member-open-points { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
 .member-open-points i { position: absolute; bottom: -10px; width: 2px; height: 2px; border-radius: 50%; background: var(--welcome-on-accent); animation: member-floating-point 2.35s infinite ease-in-out; animation-play-state: paused; }
 #home[data-home-motion="running"] .member-open-points i { animation-play-state: running; }
@@ -203,8 +213,18 @@ html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .sta
 html[data-native-motion-paused] .member-open-points { display: none; }
 html[data-native-motion-paused] .member-book { animation: none; transform: none; }
 html[data-native-motion-paused] .member-home .member-open:active { transform: none; }
+/* Keep the Bangla name legible and stationary when decorative motion is disabled. */
+html[data-native-motion-paused] #home .member-open-copy, html[data-native-motion-paused] #home .member-open-hand { animation: none; }
+html[data-native-motion-paused] #home .member-open-copy--latin { opacity: 0; }
+html[data-native-motion-paused] #home .member-open-copy--bangla { opacity: 1; }
+@media (prefers-reduced-motion: reduce), (forced-colors: active) {
+  #home .member-open-copy, #home .member-open-hand { animation: none; }
+  #home .member-open-copy--latin { opacity: 0; }
+  #home .member-open-copy--bangla { opacity: 1; }
+}
 @media (forced-colors: active) {
   .member-book { animation: none; transform: none; }
+  .member-open-hand { visibility: hidden; }
   .member-open-points, .member-home .member-open::before, .member-home .member-open::after { display: none; }
   .member-home .member-open { background: ButtonFace; color: ButtonText; box-shadow: none; }
   .member-library, .member-home button, .member-products, .offer-dialog, .offer-join { border: 1px solid ButtonText; }

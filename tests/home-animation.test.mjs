@@ -50,7 +50,7 @@ test('Home decoration loops while active, stays preference-aware and scoped to t
   assert.doesNotMatch(js, /slot\.append\(/, 'transparent artwork must not be layered over its poster');
   assert.match(read('home-offers.js'), /retry.addEventListener\('click', \(\) => start\(true\), \{ once: true \}\)/);
 });
-test('Magic Here wears the original cap, uses the existing ornamental font and only the book shakes', () => {
+test('Magic Book wears the original cap, uses the existing ornamental font and limits the shake to the book', () => {
   const css = read('home-offers.css');
   assert.match(css, /\.member-animation \{[^}]*margin-bottom: calc\(-38% - 12px\)[^}]*pointer-events: none/);
   assert.match(css, /\.member-home \.member-open-label \{[^}]*'El Messiri', Georgia, serif/);

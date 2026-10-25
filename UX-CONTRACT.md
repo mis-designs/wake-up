@@ -1,5 +1,9 @@
 # Magic Book learning insights UX contract
 
+## Home entry clarity (2026-10-25)
+
+- The owner replaces Magic Here with Magic Book / ম্যাজিক বুক and the existing decorative clicking-hand asset. `index.html` retains the real `showChapters()` button and one stable bilingual accessible name. `home-offers.css` alternates the two names about every5s in the same reserved cell and animates the small hand below them; `home-animation.js` remains the sole active/background/inert/motion-preference owner. No new timer, storage or API call. Reduced motion, Profile motion-off and forced colors show a stationary Bangla label. Keep the existing graduation cap and browser-only Home ownership. Verify narrow/wide geometry, both visible language phases, font fallback, keyboard/click, and preference/background recovery.
+
 ## Shared login cleanup (2026-09-26)
 
 - Owner's annotated login screenshot removes the device-association note and page-level animation toggle. Keep the original clickable Facebook sponsor and all phone/Admin authentication, validation, field values and recovery behavior. No security policy or device binding changes.

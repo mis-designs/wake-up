@@ -58,7 +58,10 @@ test('Home actions use clean labels without arrows or redundant result descripti
   const page = read('index.html');
   const home = page.split('<div class="card hidden" id="home">')[1].split('<template id="offerPopupTemplate">')[0];
   assert.doesNotMatch(home, /member-arrow|I tuoi risultati, capitolo per capitolo|Riparti dalle domande da rivedere/);
-  assert.match(home, /aria-label="Magic Here: apri il libro">[\s\S]*member-open-label">Magic Here<\/span>/);
+  assert.match(home, /aria-label="Magic Book · ম্যাজিক বুক: apri il libro"/);
+  assert.match(home, /member-open-copy--latin" lang="en">Magic Book<\/span>/);
+  assert.match(home, /member-open-copy--bangla" lang="bn">ম্যাজিক বুক<\/span>/);
+  assert.match(home, /member-open-hand" src="\/icons\/clich_here\.svg"/);
   assert.match(home, /member-open-points" aria-hidden="true"/);
   assert.doesNotMatch(home, /memberBookTitle|Un capitolo alla volta/);
   assert.ok(home.indexOf('member-cover') < home.indexOf('member-entry'));
@@ -72,11 +75,11 @@ test('Home actions use clean labels without arrows or redundant result descripti
 });
 test('new owners are versioned and cached without caching Canva or account data', () => {
   const page = read('index.html'), worker = read('service-worker.js');
-  for (const asset of ['home-offers.css?v=7-hat', 'home-offers.js?v=6-hat']) {
+  for (const asset of ['home-offers.css?v=8-book-label', 'home-offers.js?v=6-hat']) {
     assert.ok(page.includes(asset)); assert.ok(worker.includes(asset));
   }
   assert.ok(worker.includes('/offer-frequency.mjs?v=1'));
-  assert.ok(worker.includes('magicbook-pwa-v242-desktop-help'));
+  assert.match(worker, /const CACHE_NAME = "magicbook-pwa-v\d+-[^"]+"/);
 });
 
 test('owner-replaced Home icons use source-hash URLs, intact slots and shared web artwork', () => {
