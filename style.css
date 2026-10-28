@@ -8023,59 +8023,7 @@ body.admin-user-popup-open { overflow: hidden; }
     min-height: 18px;
 }
 
-.admin-bulk-fields {
-    display: grid;
-    gap: 12px;
-}
-
-.admin-bulk-fields.hidden {
-    display: none !important;
-}
-
-.admin-bulk-head {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 10px;
-    color: #7c8aa0;
-    font-size: 0.76rem;
-    font-weight: 900;
-}
-
-.admin-bulk-head .admin-secondary-btn {
-    min-height: 36px;
-    padding: 8px 11px;
-    font-size: 0.76rem;
-}
-
-.admin-bulk-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 72px 44px;
-    gap: 10px;
-}
-
-.admin-bulk-row > label { min-width: 0; }
-.admin-bulk-row input { min-width: 0; width: 100%; box-sizing: border-box; }
-.admin-form .admin-bulk-qb { justify-items: center; cursor: pointer; }
-.admin-form .admin-bulk-quizbank,
-#adminModalQuizBank {
-    appearance: auto;
-    width: 22px;
-    height: 22px;
-    min-height: 22px;
-    padding: 0;
-    align-self: center;
-    accent-color: var(--color-primary);
-    cursor: pointer;
-}
-#adminQuizBankField { min-height: 44px; cursor: pointer; }
-.admin-form label > span,
-.admin-qb-help { color: var(--color-dark); }
-.admin-qb-help { margin: 0; font-size: 0.78rem; line-height: 1.5; }
-.admin-form input[type="checkbox"]:focus-visible {
-    outline: 3px solid var(--color-primary);
-    outline-offset: 3px;
-}
+/* User-editor layout and permission controls are owned by admin-user-editor.css. */
 
 .admin-duplicate-note {
     grid-column: 1 / -1;
@@ -8209,10 +8157,6 @@ body.admin-user-popup-open { overflow: hidden; }
         font-size: 0.68rem;
     }
 
-    .admin-bulk-row {
-        grid-template-columns: minmax(0, 1fr) 60px 44px;
-        gap: 6px;
-    }
 
     .admin-entry {
         right: 62px;

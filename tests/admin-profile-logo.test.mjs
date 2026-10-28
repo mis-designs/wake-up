@@ -26,8 +26,8 @@ test("the Admin and Profile buttons have opaque non-glass surfaces", () => {
 });
 
 test("the Admin profile image ships in the current PWA cache", () => {
-  assert.match(page, /style\.css\?v=76-admin-quizbank/u);
+  assert.match(page, /style\.css\?v=77-admin-editor/u);
   assert.match(worker, /CACHE_NAME = "magicbook-pwa-v242-desktop-help"/u);
-  assert.match(worker, /style\.css\?v=76-admin-quizbank/u);
+  assert.match(worker, /style\.css\?v=77-admin-editor/u);
   assert.match(worker, /assets\/admin\/ADMIN_PROFILE_LOGO\.jpg/u);
 });

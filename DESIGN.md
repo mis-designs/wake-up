@@ -6,6 +6,7 @@ canonical_ui:
   paths:
     - loading-ui.css
     - style.css
+    - admin-user-editor.css
     - mystyle.css
     - quiz-help.css
     - quiz-help-desktop.js
@@ -42,7 +43,7 @@ canonical_ui:
 design_context:
   owner: Magic Book
   last_updated: 2026-10-28
-  revision_notes: "Admin user creation and edit now manage Quiz_bank through existing forms and authenticated saves; existing recording and Home navigation remain unchanged."
+  revision_notes: "Admin user editor redesigned as a desktop access worksheet with responsive mobile rows, explicit QuizBank states and persistent actions; authenticated saves remain unchanged."
 ---
 
 # Magic Book design context
@@ -60,7 +61,9 @@ design_context:
 
 ## Signed-in Home and offers — owner annotations, 2026-09-27
 
-Admin entitlement refinement (2026-10-28): reuse the existing user modal, phone/day fields, native checkbox, shared loading controls and error roles. Add a third44px QB label/target per bulk row, and one44px Accesso QuizBank line in Edit; no replacement screen or new palette. Runtime style.css remains canonical (model B), using --color-primary for selection/focus and --color-dark for readable checkbox/help text. Keep natural modal scrolling at320px and the native date picker unchanged. New rows/clipboard imports reset QB off; Edit restores the server value. Explicit Aggiungi/Salva confirms the permission decision. While saving, freeze controls and prevent duplicate submits; inline failures retain unresolved phone/day/QB values. User cards show text status from server data. No QuizBank Home button.
+Admin user editor (owner redesign, 2026-10-28): the existing create/edit/renew dialog is an access worksheet, not a narrow translucent phone form. `admin-user-editor.css` is the canonical named variant, scoped to `#adminUserModal`; `style.css` retains the shared dialog foundations. Desktop create width920px, single icon-labelled column header, six aligned phone/duration/QuizBank rows; edit/renew width680px with two-column fields. Under560px each phone spans a row above duration and QuizBank. White surface, restrained outline icons, Inter with system fallback, readable status pills and shared green primary action. No new imagery/font dependency or decorative dashboard. Native Android inherits its existing blue palette.
+
+Runtime token mapping (model B): `--editor-paper`/`--editor-ink` alias app-palette-paper/text with color-white/dark fallbacks; `--editor-accent` uses app-palette-primary or the existing Admin emerald action endpoint. Muted, line, soft surface, tint and focus roles are derived once in that stylesheet. No duplicated JS color constants. The native checkbox still owns checked state, keyboard Space and its accessible label; visual pills say Incluso/Non incluso independently of color. Explicit Aggiungi utenti/Salva modifiche commits the decision, not the toggle. New/clipboard rows reset off; Edit restores the server value. Native date picker and canonical app-popup.js focus trapping, Escape, inert background and focus restoration are unchanged. One scrolling body keeps header/actions reachable on short screens and phones; controls target44px or more. Invalid phones are identified and focused; live local summary reports entered rows, not saved users. Pending saves freeze controls, use shared loading, and preserve unresolved rows on partial errors. No new network calls, permission changes or QuizBank Home entry. No density preference for a fixed six-row form. Forced colors retains native checkboxes; reduced motion removes transitions. Verify real markup/styles/handlers through scripts/admin-quizbank-browser-qa.mjs using local-only fixtures, 320–1920px, short viewports, keyboard, errors, pending, renewal and saved flag round trips. Publication and physical-device verification are separate.
 
 - Entry-label correction (2026-10-25): replace Magic Here with Magic Book, alternating with ম্যাজিক বুক on a10s cycle (about5s per language). `home-offers.css` keeps both labels in one reserved grid cell: El Messiri for Latin, the canonical `--font-bn-title`/Hadi Rounded for Bangla. Owner's follow-up rejects the taller two-row button and permanently visible hand: retain the original compact60px target and160px/140px maximum widths, with1.3 label line-height and20px/8px top/bottom padding. Reuse `icons/clich_here.svg` as an absolute36px overlay outside button layout, using the app's existing `native-book-tap`5s animation: approach from below, touch/compress, disappear, then repeat. The cue is hidden between gestures, under reduced/Profile motion, forced colors, keyboard focus and busy/disabled states. Keep the cover/cap, colors, routes and footer. The existing Home motion owner governs label/hand motion; reduced/Profile motion and forced colors show a static Bangla label without a new toggle. The button has one stable bilingual accessible name, with decorative copies hidden from assistive technology. No new API request, timer or external font.
 

@@ -5016,6 +5016,10 @@ function setAdminMessage(message = "", type = "") {
     modalMessage.classList.toggle("hidden", !message);
     modalMessage.classList.toggle("is-error", type === "error");
     modalMessage.classList.toggle("is-success", type === "success");
+    if (message && type === "error") {
+      const body = modalMessage.closest(".admin-editor-body");
+      if (body) body.scrollTop = 0;
+    }
   }
   const el = document.getElementById("adminMessage");
   if (!el) return;
@@ -5185,6 +5189,8 @@ function setupAdminUI() {
   });
 
   document.getElementById("adminClipboardBtn")?.addEventListener("click", adminFillBulkFromClipboard);
+  document.getElementById("adminUserForm")?.addEventListener("input", adminUpdateUserFormSummary);
+  document.getElementById("adminUserForm")?.addEventListener("change", adminUpdateUserFormSummary);
 }
 
 async function showAdminPanel() {
@@ -5627,6 +5633,39 @@ function setAdminUserFormBusy(busy) {
   });
 }
 
+function adminUpdateUserFormSummary(event) {
+  const edited = event?.target;
+  if (edited?.getAttribute("aria-invalid") === "true") {
+    edited.removeAttribute("aria-invalid");
+    const description = (edited.getAttribute("aria-describedby") || "").split(" ").filter(id => id && id !== "adminUserFormMessage");
+    if (description.length) edited.setAttribute("aria-describedby", description.join(" "));
+    else edited.removeAttribute("aria-describedby");
+  }
+  const summary = document.getElementById("adminUserFormSummary");
+  if (!summary) return;
+  if (document.getElementById("adminModalMode")?.value !== "create") {
+    summary.textContent = "Le modifiche si applicano al salvataggio.";
+    return;
+  }
+  const entries = getAdminBulkEntries();
+  const withQuizBank = entries.filter(entry => entry.Quiz_bank === 1).length;
+  const text = entries.length
+    ? `${entries.length} ${entries.length === 1 ? "numero inserito" : "numeri inseriti"} · ${withQuizBank} con QuizBank`
+    : "Nessun utente inserito";
+  if (summary.textContent !== text) summary.textContent = text;
+}
+
+function adminMarkInvalidPhones(inputs) {
+  inputs.forEach(input => {
+    if (!input) return;
+    input.setAttribute("aria-invalid", "true");
+    const ids = new Set((input.getAttribute("aria-describedby") || "").split(" ").filter(Boolean));
+    ids.add("adminUserFormMessage");
+    input.setAttribute("aria-describedby", [...ids].join(" "));
+  });
+  inputs[0]?.focus();
+}
+
 function adminOpenUserModal(mode, user = null) {
   if (!isCurrentSessionAdmin()) return;
   if (adminUserFormBusy) return;
@@ -5650,6 +5689,8 @@ function adminOpenUserModal(mode, user = null) {
   if (!modal || !modeInput || !phone || !expiry || !days) return;
 
   modeInput.value = mode;
+  modal.dataset.mode = mode;
+  modal.querySelectorAll('[aria-invalid="true"]').forEach(input => adminUpdateUserFormSummary({ target: input }));
   originalPhone.value = user?.phone || "";
   phone.value = user?.phone || "";
   phone.readOnly = mode === "renew";
@@ -5676,11 +5717,19 @@ function adminOpenUserModal(mode, user = null) {
 
   if (mode === "create") resetAdminBulkFields();
 
-  if (title) title.textContent = mode === "create" ? "+ Utenti Nuovi" : mode === "renew" ? "Rinnova utente" : "Modifica utente";
-  if (save) save.textContent = mode === "create" ? "Aggiungi" : mode === "renew" ? "Rinnova" : "Salva";
+  if (title) title.textContent = mode === "create" ? "Aggiungi utenti" : mode === "renew" ? "Rinnova accesso" : "Modifica utente";
+  if (save) save.textContent = mode === "create" ? "Aggiungi utenti" : mode === "renew" ? "Rinnova accesso" : "Salva modifiche";
+  const description = document.getElementById("adminModalDescription");
+  if (description) description.textContent = mode === "create"
+    ? "Imposta la durata di Magic Book e scegli a chi abilitare QuizBank."
+    : mode === "renew" ? "Prolunga Magic Book senza modificare gli altri accessi."
+      : "Aggiorna i dati e gestisci l'accesso separato a QuizBank.";
+  adminUpdateUserFormSummary();
 
   modal.classList.remove("hidden");
   setAdminMessage();
+  const editorBody = modal.querySelector(".admin-editor-body");
+  if (editorBody) editorBody.scrollTop = 0;
   const firstBulkPhone = document.querySelector(".admin-bulk-phone");
   if (!adminUserModalCleanup && window.MagicBookPopup) {
     const parent = modal.parentNode, next = modal.nextSibling;
@@ -5798,6 +5847,7 @@ async function adminSubmitUserModal() {
       return;
     }
     setAdminMessage("Inserisci un numero valido.", "error");
+    adminMarkInvalidPhones([document.getElementById("adminModalPhone")]);
     return;
   }
 
@@ -5848,12 +5898,14 @@ async function adminSubmitBulkCreate(save) {
   const entries = getAdminBulkEntries();
   if (!entries.length) {
     setAdminMessage("Inserisci almeno un numero.", "error");
+    adminMarkInvalidPhones([document.querySelector(".admin-bulk-phone")]);
     return;
   }
 
   const invalidEntries = entries.filter(entry => !isValidPhoneNumber(entry.phone));
   if (invalidEntries.length) {
-    setAdminMessage("Uno o piu numeri non sono validi.", "error");
+    setAdminMessage("Controlla i numeri evidenziati: inserisci un numero di telefono valido, con prefisso.", "error");
+    adminMarkInvalidPhones(Array.from(document.querySelectorAll(".admin-bulk-phone")).filter(input => input.value.trim() && !isValidPhoneNumber(normalizePhone(input.value))));
     return;
   }
 
@@ -5924,6 +5976,7 @@ async function adminSubmitBulkCreate(save) {
     if (failed.length) parts.push(`${failed.length} da verificare. ${getAdminErrorMessage(failed[0].error)}`);
 
     setAdminMessage(parts.join(", ") || "Nessun utente aggiunto.", failed.length ? "error" : "success");
+    adminUpdateUserFormSummary();
     if (allDuplicates.length) showAdminDuplicateUsers(allDuplicates);
   } finally {
     setAdminUserFormBusy(false);
@@ -5988,6 +6041,7 @@ async function adminFillBulkFromClipboard() {
     });
 
     setAdminMessage(`${entries.length} numeri caricati dalla clipboard.`, "success");
+    adminUpdateUserFormSummary();
   } catch {
     setAdminMessage("Permesso clipboard negato o non disponibile.", "error");
   }

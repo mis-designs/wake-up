@@ -100,7 +100,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <link rel="stylesheet" href="assets/daisyui.css?v=2-learning-shell">
 <link rel="stylesheet" href="loading-ui.css?v=4-context">
 <script src="loading-ui.js?v=2-context" defer></script>
-<link rel="stylesheet" href="style.css?v=76-admin-quizbank">
+<link rel="stylesheet" href="style.css?v=77-admin-editor">
 <link rel="stylesheet" href="homebg.css?v=5-home-offers">
 <link rel="stylesheet" href="magic-dictionary.css?v=1.4.1-dictionary-cleanup">
 <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
@@ -111,6 +111,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <link rel="stylesheet" href="/login-experience.css?v=5-clean">
 <link rel="stylesheet" href="figure-detail.css?v=2">
 <link rel="stylesheet" href="web-study-actions.css?v=3-spacing">
+<link rel="stylesheet" href="/admin-user-editor.css?v=1">
 <link rel="stylesheet" href="/android-app-theme.css?v=14-welcome-split">
 <link rel="stylesheet" href="/android-study-shell.css?v=20-liquid">
 <link rel="stylesheet" href="/welcome-page.css?v=4-login-home">
@@ -947,131 +948,143 @@ gtag('config', 'G-C5JPY9HFHD', {
   </main>
 </div>
 
-<div id="adminUserModal" class="admin-modal hidden" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
+<div id="adminUserModal" class="admin-modal hidden" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle" aria-describedby="adminModalDescription" data-mode="create">
   <div class="admin-modal-card">
-    <div class="admin-modal-head">
-      <h2 id="adminModalTitle">Nuovo utente</h2>
-      <button class="admin-modal-close" type="button" onclick="adminCloseUserModal()" aria-label="Chiudi">&times;</button>
-    </div>
+    <header class="admin-modal-head">
+      <div class="admin-editor-heading">
+        <span class="admin-editor-emblem"><svg class="admin-editor-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6m-3-3h6"/></svg></span>
+        <div><h2 id="adminModalTitle">Aggiungi utenti</h2><p id="adminModalDescription">Imposta la durata di Magic Book e scegli a chi abilitare QuizBank.</p></div>
+      </div>
+      <button class="admin-modal-close" type="button" onclick="adminCloseUserModal()" aria-label="Chiudi"><svg class="admin-editor-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
+    </header>
     <form id="adminUserForm" class="admin-form" novalidate>
       <input id="adminModalMode" type="hidden" value="create">
       <input id="adminOriginalPhone" type="hidden" value="">
-      <p id="adminUserFormMessage" class="admin-message hidden" role="alert"></p>
-      <div id="adminBulkFields" class="admin-bulk-fields">
-        <div class="admin-bulk-head">
-          <span></span>
-          <button id="adminClipboardBtn" class="admin-secondary-btn" type="button">Incolla clipboard</button>
+      <div class="admin-editor-body">
+        <p id="adminUserFormMessage" class="admin-message hidden" role="alert"></p>
+        <div id="adminBulkFields" class="admin-bulk-fields">
+          <div class="admin-bulk-head">
+            <p id="adminPhoneHelp">Fino a <strong>6 utenti</strong> alla volta. Lascia vuote le righe che non servono.</p>
+            <button id="adminClipboardBtn" class="admin-secondary-btn" type="button"><svg class="admin-editor-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3M8 12h8m-8 5h5"/></svg><span>Incolla numeri</span></button>
+          </div>
+          <div class="admin-editor-columns" aria-hidden="true">
+            <span><svg class="admin-editor-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg>Numero di telefono</span>
+            <span><svg class="admin-editor-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18m-13 4h2m4 0h2"/></svg>Magic Book</span>
+            <span><svg class="admin-editor-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v16m0-16C8 2 4 3 2 4v15c3-1 6-1 10 2 4-3 7-3 10-2V4c-2-1-6-2-10 1Z"/></svg>QuizBank</span>
+          </div>
+          <div class="admin-bulk-row">
+            <label class="admin-editor-phone">
+              <span class="admin-field-label">Telefono 1</span>
+              <input class="admin-bulk-phone" type="tel" inputmode="tel" autocomplete="off" placeholder="Numero con prefisso" aria-describedby="adminPhoneHelp">
+            </label>
+            <label class="admin-editor-duration">
+              <span class="admin-field-label">Magic Book<span class="sr-only">, durata per telefono 1</span></span>
+              <span class="admin-days-control"><input class="admin-bulk-days" type="number" min="1" max="3650" value="90"><span aria-hidden="true">giorni</span></span>
+            </label>
+            <label class="admin-bulk-qb">
+              <span class="admin-field-label">QuizBank</span>
+              <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 1" aria-describedby="adminQuizBankHelp">
+              <span class="admin-qb-control" aria-hidden="true"><span class="admin-qb-track"></span><span class="admin-qb-off">Non incluso</span><span class="admin-qb-on">Incluso</span></span>
+            </label>
+          </div>
+          <div class="admin-bulk-row">
+            <label class="admin-editor-phone">
+              <span class="admin-field-label">Telefono 2</span>
+              <input class="admin-bulk-phone" type="tel" inputmode="tel" autocomplete="off" placeholder="Numero con prefisso" aria-describedby="adminPhoneHelp">
+            </label>
+            <label class="admin-editor-duration">
+              <span class="admin-field-label">Magic Book<span class="sr-only">, durata per telefono 2</span></span>
+              <span class="admin-days-control"><input class="admin-bulk-days" type="number" min="1" max="3650" value="90"><span aria-hidden="true">giorni</span></span>
+            </label>
+            <label class="admin-bulk-qb">
+              <span class="admin-field-label">QuizBank</span>
+              <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 2" aria-describedby="adminQuizBankHelp">
+              <span class="admin-qb-control" aria-hidden="true"><span class="admin-qb-track"></span><span class="admin-qb-off">Non incluso</span><span class="admin-qb-on">Incluso</span></span>
+            </label>
+          </div>
+          <div class="admin-bulk-row">
+            <label class="admin-editor-phone">
+              <span class="admin-field-label">Telefono 3</span>
+              <input class="admin-bulk-phone" type="tel" inputmode="tel" autocomplete="off" placeholder="Numero con prefisso" aria-describedby="adminPhoneHelp">
+            </label>
+            <label class="admin-editor-duration">
+              <span class="admin-field-label">Magic Book<span class="sr-only">, durata per telefono 3</span></span>
+              <span class="admin-days-control"><input class="admin-bulk-days" type="number" min="1" max="3650" value="90"><span aria-hidden="true">giorni</span></span>
+            </label>
+            <label class="admin-bulk-qb">
+              <span class="admin-field-label">QuizBank</span>
+              <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 3" aria-describedby="adminQuizBankHelp">
+              <span class="admin-qb-control" aria-hidden="true"><span class="admin-qb-track"></span><span class="admin-qb-off">Non incluso</span><span class="admin-qb-on">Incluso</span></span>
+            </label>
+          </div>
+          <div class="admin-bulk-row">
+            <label class="admin-editor-phone">
+              <span class="admin-field-label">Telefono 4</span>
+              <input class="admin-bulk-phone" type="tel" inputmode="tel" autocomplete="off" placeholder="Numero con prefisso" aria-describedby="adminPhoneHelp">
+            </label>
+            <label class="admin-editor-duration">
+              <span class="admin-field-label">Magic Book<span class="sr-only">, durata per telefono 4</span></span>
+              <span class="admin-days-control"><input class="admin-bulk-days" type="number" min="1" max="3650" value="90"><span aria-hidden="true">giorni</span></span>
+            </label>
+            <label class="admin-bulk-qb">
+              <span class="admin-field-label">QuizBank</span>
+              <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 4" aria-describedby="adminQuizBankHelp">
+              <span class="admin-qb-control" aria-hidden="true"><span class="admin-qb-track"></span><span class="admin-qb-off">Non incluso</span><span class="admin-qb-on">Incluso</span></span>
+            </label>
+          </div>
+          <div class="admin-bulk-row">
+            <label class="admin-editor-phone">
+              <span class="admin-field-label">Telefono 5</span>
+              <input class="admin-bulk-phone" type="tel" inputmode="tel" autocomplete="off" placeholder="Numero con prefisso" aria-describedby="adminPhoneHelp">
+            </label>
+            <label class="admin-editor-duration">
+              <span class="admin-field-label">Magic Book<span class="sr-only">, durata per telefono 5</span></span>
+              <span class="admin-days-control"><input class="admin-bulk-days" type="number" min="1" max="3650" value="90"><span aria-hidden="true">giorni</span></span>
+            </label>
+            <label class="admin-bulk-qb">
+              <span class="admin-field-label">QuizBank</span>
+              <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 5" aria-describedby="adminQuizBankHelp">
+              <span class="admin-qb-control" aria-hidden="true"><span class="admin-qb-track"></span><span class="admin-qb-off">Non incluso</span><span class="admin-qb-on">Incluso</span></span>
+            </label>
+          </div>
+          <div class="admin-bulk-row">
+            <label class="admin-editor-phone">
+              <span class="admin-field-label">Telefono 6</span>
+              <input class="admin-bulk-phone" type="tel" inputmode="tel" autocomplete="off" placeholder="Numero con prefisso" aria-describedby="adminPhoneHelp">
+            </label>
+            <label class="admin-editor-duration">
+              <span class="admin-field-label">Magic Book<span class="sr-only">, durata per telefono 6</span></span>
+              <span class="admin-days-control"><input class="admin-bulk-days" type="number" min="1" max="3650" value="90"><span aria-hidden="true">giorni</span></span>
+            </label>
+            <label class="admin-bulk-qb">
+              <span class="admin-field-label">QuizBank</span>
+              <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 6" aria-describedby="adminQuizBankHelp">
+              <span class="admin-qb-control" aria-hidden="true"><span class="admin-qb-track"></span><span class="admin-qb-off">Non incluso</span><span class="admin-qb-on">Incluso</span></span>
+            </label>
+          </div>
         </div>
-        <div class="admin-bulk-row">
-          <label>
-            <span>Telefono 1</span>
-            <input class="admin-bulk-phone" type="tel" inputmode="tel" autocomplete="off">
+        <div class="admin-editor-single">
+          <label id="adminPhoneField"><span>Numero di telefono</span><input id="adminModalPhone" type="tel" inputmode="tel" autocomplete="off"></label>
+          <label id="adminExpiryField"><span>Scadenza</span><input id="adminModalExpiry" type="date"></label>
+          <label id="adminDaysField"><span>Durata Magic Book (giorni)</span><input id="adminModalDays" type="number" min="1" max="3650" value="90"></label>
+          <label id="adminQuizBankField" class="admin-check-line hidden">
+            <span class="admin-editor-access-copy"><svg class="admin-editor-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v16m0-16C8 2 4 3 2 4v15c3-1 6-1 10 2 4-3 7-3 10-2V4c-2-1-6-2-10 1Z"/></svg><span><strong>Accesso QuizBank</strong><small>Indipendente da Magic Book</small></span></span>
+            <input id="adminModalQuizBank" type="checkbox" aria-label="Accesso QuizBank" aria-describedby="adminQuizBankHelp">
+            <span class="admin-qb-control" aria-hidden="true"><span class="admin-qb-track"></span><span class="admin-qb-off">Non incluso</span><span class="admin-qb-on">Incluso</span></span>
           </label>
-          <label>
-            <span>Giorni</span>
-            <input class="admin-bulk-days" type="number" min="1" max="3650" value="90">
-          </label>
-          <label class="admin-bulk-qb">
-            <span>QB</span>
-            <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 1" aria-describedby="adminQuizBankHelp">
-          </label>
-        </div>
-        <div class="admin-bulk-row">
-          <label>
-            <span>Telefono 2</span>
-            <input class="admin-bulk-phone" type="tel" inputmode="tel" autocomplete="off">
-          </label>
-          <label>
-            <span>Giorni</span>
-            <input class="admin-bulk-days" type="number" min="1" max="3650" value="90">
-          </label>
-          <label class="admin-bulk-qb">
-            <span>QB</span>
-            <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 2" aria-describedby="adminQuizBankHelp">
+          <label id="adminRenewModeField" class="admin-check-line hidden">
+            <input id="adminRenewAddMode" type="checkbox" checked><span>Aggiungi giorni alla scadenza attuale</span>
           </label>
         </div>
-        <div class="admin-bulk-row">
-          <label>
-            <span>Telefono 3</span>
-            <input class="admin-bulk-phone" type="tel" inputmode="tel" autocomplete="off">
-          </label>
-          <label>
-            <span>Giorni</span>
-            <input class="admin-bulk-days" type="number" min="1" max="3650" value="90">
-          </label>
-          <label class="admin-bulk-qb">
-            <span>QB</span>
-            <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 3" aria-describedby="adminQuizBankHelp">
-          </label>
-        </div>
-        <div class="admin-bulk-row">
-          <label>
-            <span>Telefono 4</span>
-            <input class="admin-bulk-phone" type="tel" inputmode="tel" autocomplete="off">
-          </label>
-          <label>
-            <span>Giorni</span>
-            <input class="admin-bulk-days" type="number" min="1" max="3650" value="90">
-          </label>
-          <label class="admin-bulk-qb">
-            <span>QB</span>
-            <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 4" aria-describedby="adminQuizBankHelp">
-          </label>
-        </div>
-        <div class="admin-bulk-row">
-          <label>
-            <span>Telefono 5</span>
-            <input class="admin-bulk-phone" type="tel" inputmode="tel" autocomplete="off">
-          </label>
-          <label>
-            <span>Giorni</span>
-            <input class="admin-bulk-days" type="number" min="1" max="3650" value="90">
-          </label>
-          <label class="admin-bulk-qb">
-            <span>QB</span>
-            <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 5" aria-describedby="adminQuizBankHelp">
-          </label>
-        </div>
-        <div class="admin-bulk-row">
-          <label>
-            <span>Telefono 6</span>
-            <input class="admin-bulk-phone" type="tel" inputmode="tel" autocomplete="off">
-          </label>
-          <label>
-            <span>Giorni</span>
-            <input class="admin-bulk-days" type="number" min="1" max="3650" value="90">
-          </label>
-          <label class="admin-bulk-qb">
-            <span>QB</span>
-            <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 6" aria-describedby="adminQuizBankHelp">
-          </label>
-        </div>
+        <p id="adminQuizBankHelp" class="admin-qb-help"><svg class="admin-editor-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></svg><span>QuizBank è un accesso separato. Si attiva solo per gli utenti selezionati, dopo il salvataggio.</span></p>
       </div>
-      <p id="adminQuizBankHelp" class="admin-qb-help">QB = QuizBank. Seleziona per abilitare l'accesso; lascia vuoto per non abilitarlo.</p>
-      <label id="adminPhoneField">
-        <span>Telefono</span>
-        <input id="adminModalPhone" type="tel" inputmode="tel" autocomplete="off">
-      </label>
-      <label id="adminExpiryField">
-        <span>Scadenza</span>
-        <input id="adminModalExpiry" type="date">
-      </label>
-      <label id="adminDaysField">
-        <span>Giorni abbonamento</span>
-        <input id="adminModalDays" type="number" min="1" max="3650" value="90">
-      </label>
-      <label id="adminQuizBankField" class="admin-check-line hidden">
-        <input id="adminModalQuizBank" type="checkbox" aria-describedby="adminQuizBankHelp">
-        <span>Accesso QuizBank</span>
-      </label>
-      <label id="adminRenewModeField" class="admin-check-line hidden">
-        <input id="adminRenewAddMode" type="checkbox" checked>
-        <span>Aggiungi giorni alla scadenza attuale</span>
-      </label>
-      <div class="admin-modal-actions">
-        <button class="admin-secondary-btn" type="button" onclick="adminCloseUserModal()">Annulla</button>
-        <button id="adminModalSave" class="admin-primary-btn magic-loading-control" type="submit">Salva</button>
-      </div>
+      <footer class="admin-modal-actions">
+        <p id="adminUserFormSummary" role="status" aria-live="polite" aria-atomic="true">Nessun utente inserito</p>
+        <div class="admin-editor-buttons">
+          <button class="admin-secondary-btn" type="button" onclick="adminCloseUserModal()">Annulla</button>
+          <button id="adminModalSave" class="admin-primary-btn magic-loading-control" type="submit">Aggiungi utenti</button>
+        </div>
+      </footer>
     </form>
   </div>
 </div>
@@ -1396,7 +1409,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script src="android-mode-screens.js?v=2-thumb"></script>
 <script src="web-study-actions.js?v=1"></script>
 <script src="web-action-effects.js?v=3-system-motion"></script>
-<script src="script.js?v=84-admin-quizbank"></script>
+<script src="script.js?v=85-admin-editor"></script>
 <script type="module" src="login-experience.js?v=3-clean"></script>
 <script type="module" src="welcome-page.js?v=2-clean"></script>
   <script type="module" src="home-offers.js?v=6-hat&art=fbda23c8df0e"></script>
