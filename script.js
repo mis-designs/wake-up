@@ -3300,6 +3300,7 @@ function showWhatsAppGroupPopup() {
  ***********************/
 function hideAll() {
   dismissLoginPendingPopup?.({ restoreFocus: false });
+  if (document.getElementById("adminUserModal")?.classList.contains("hidden") === false) adminCloseUserModal(true);
   window.MagicBookWebStudyActions?.reset();
   window.MagicBookModeScreens?.reset();
   window.MagicBookAndroidStudy?.hide();
@@ -5009,6 +5010,13 @@ function escapeHtml(value) {
 }
 
 function setAdminMessage(message = "", type = "") {
+  const modalMessage = document.getElementById("adminUserFormMessage");
+  if (modalMessage && !document.getElementById("adminUserModal")?.classList.contains("hidden")) {
+    modalMessage.textContent = message;
+    modalMessage.classList.toggle("hidden", !message);
+    modalMessage.classList.toggle("is-error", type === "error");
+    modalMessage.classList.toggle("is-success", type === "success");
+  }
   const el = document.getElementById("adminMessage");
   if (!el) return;
   el.textContent = message;
@@ -5018,6 +5026,10 @@ function setAdminMessage(message = "", type = "") {
 }
 
 function getAdminErrorMessage(error) {
+  if (error === "bad_quizbank") return "Valore QuizBank non valido. Seleziona o deseleziona il flag.";
+  if (error === "quizbank_column_missing") return "Nel foglio utenti manca la colonna Quiz_bank, oppure è duplicata. Correggi l'intestazione prima di salvare.";
+  if (error === "quizbank_not_confirmed") return "Il server non ha confermato il flag QuizBank. Aggiorna lo script Google e verifica il numero nell'elenco: potrebbe essere già stato salvato.";
+  if (error === "save_unconfirmed") return "Salvataggio non confermato. I dati restano qui: controlla il numero nell'elenco prima di riprovare.";
   if (error === "admin_required") return "Accesso admin richiesto.";
   if (error === "token_expired" || error === "unauthorized") return "Sessione scaduta. Effettua nuovamente il login.";
   if (error === "duplicate") return "Questo numero esiste gia.";
@@ -5053,10 +5065,14 @@ async function adminRequest(action, fields = {}, retryToken = true, transientAtt
 
   const readOnlyAction = action === "recent" || action === "list" || action === "search" || action === "promo_users";
   const maxTransientAttempts = action === "promo_users" ? 1 : 2;
+  const controller = readOnlyAction ? null : new AbortController();
+  const deadline = controller ? setTimeout(() => controller.abort(), 30_000) : null;
   let response;
+  let data;
   try {
     response = await fetch(ADMIN_API, {
       method: "POST",
+      ...(controller ? { signal: controller.signal } : {}),
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action,
@@ -5066,22 +5082,24 @@ async function adminRequest(action, fields = {}, retryToken = true, transientAtt
         ...fields
       })
     });
+    data = await response.json().catch(() => null);
   } catch {
     if (readOnlyAction && transientAttempt < maxTransientAttempts) {
       await waitForAdminRetry(transientAttempt === 0 ? 700 : 1400);
       return adminRequest(action, fields, retryToken, transientAttempt + 1);
     }
-    throw new Error("service_unavailable");
+    throw new Error(readOnlyAction ? "service_unavailable" : "save_unconfirmed");
+  } finally {
+    if (deadline) clearTimeout(deadline);
   }
 
-  const data = await response.json().catch(() => null);
   if ((response.status === 401 || response.status === 403) && retryToken && data?.error === "token_expired") {
     await ensureAccessToken({ force: true });
     return adminRequest(action, fields, false, transientAttempt);
   }
 
   if (!response.ok || !data?.success) {
-    const errorCode = String(data?.error || "admin_backend_error").trim();
+    const errorCode = String(data?.error || (readOnlyAction ? "admin_backend_error" : "save_unconfirmed")).trim();
     if (readOnlyAction && transientAttempt < maxTransientAttempts && ADMIN_READ_RETRYABLE_ERRORS.has(errorCode)) {
       await waitForAdminRetry(transientAttempt === 0 ? 700 : 1400);
       return adminRequest(action, fields, retryToken, transientAttempt + 1);
@@ -5489,6 +5507,7 @@ function renderAdminUserCard(user, duplicatePhones = getAdminDuplicatePhones()) 
         </div>
       </div>
       <div class="admin-meta">
+        <span>QuizBank: ${hasAdminQuizBank(user) ? "attivo" : "non attivo"}</span>
         ${isPromo ? '<span class="admin-promo-badge">Promo 5 giorni</span>' : ''}
         <span>Scadenza: ${escapeHtml(formatAdminDate(user.expiry))}</span>
         <span>${escapeHtml(daysText)}</span>
@@ -5588,8 +5607,29 @@ function renderAdminUsers() {
   list.innerHTML = users.map(user => renderAdminUserCard(user, duplicatePhones)).join("");
 }
 
+function hasAdminQuizBank(user) {
+  return user?.Quiz_bank === 1 || (typeof user?.Quiz_bank === "string" && user.Quiz_bank.trim() === "1");
+}
+
+let adminUserFormBusy = false;
+let adminUserModalCleanup = null;
+function setAdminUserFormBusy(busy) {
+  adminUserFormBusy = busy;
+  document.getElementById("adminUserForm")?.setAttribute("aria-busy", String(busy));
+  document.querySelectorAll("#adminUserModal input, #adminUserModal button").forEach(control => {
+    if (busy) {
+      control.dataset.adminWasDisabled = String(control.disabled);
+      control.disabled = true;
+    } else if (control.dataset.adminWasDisabled !== undefined) {
+      control.disabled = control.dataset.adminWasDisabled === "true";
+      delete control.dataset.adminWasDisabled;
+    }
+  });
+}
+
 function adminOpenUserModal(mode, user = null) {
   if (!isCurrentSessionAdmin()) return;
+  if (adminUserFormBusy) return;
 
   const modal = document.getElementById("adminUserModal");
   const title = document.getElementById("adminModalTitle");
@@ -5615,6 +5655,13 @@ function adminOpenUserModal(mode, user = null) {
   phone.readOnly = mode === "renew";
   expiry.value = mode === "renew" ? "" : formatDateInput(user?.expiry);
   days.value = "90";
+  const quizBank = document.getElementById("adminModalQuizBank");
+  if (quizBank) {
+    quizBank.checked = hasAdminQuizBank(user);
+    quizBank.disabled = mode !== "edit";
+  }
+  document.getElementById("adminQuizBankField")?.classList.toggle("hidden", mode !== "edit");
+  document.getElementById("adminQuizBankHelp")?.classList.toggle("hidden", mode === "renew");
 
   bulkFields?.classList.toggle("hidden", mode !== "create");
   phoneField?.classList.toggle("hidden", mode === "create");
@@ -5633,12 +5680,34 @@ function adminOpenUserModal(mode, user = null) {
   if (save) save.textContent = mode === "create" ? "Aggiungi" : mode === "renew" ? "Rinnova" : "Salva";
 
   modal.classList.remove("hidden");
+  setAdminMessage();
   const firstBulkPhone = document.querySelector(".admin-bulk-phone");
-  setTimeout(() => (mode === "create" ? firstBulkPhone : phone)?.focus(), 40);
+  if (!adminUserModalCleanup && window.MagicBookPopup) {
+    const parent = modal.parentNode, next = modal.nextSibling;
+    modal.tabIndex = -1;
+    const release = window.MagicBookPopup.mount(modal, {
+      focusable: () => modal.querySelectorAll("input, button"),
+      returnFocus: document.activeElement,
+      initialFocus: mode === "create" ? firstBulkPhone : phone,
+      bodyClass: "admin-user-popup-open",
+      onDismiss: () => adminCloseUserModal()
+    });
+    adminUserModalCleanup = () => {
+      release();
+      // The canonical popup owner removes dynamic overlays; retain this static form.
+      parent.insertBefore(modal, next?.parentNode === parent ? next : null);
+    };
+  } else (mode === "create" ? firstBulkPhone : phone)?.focus();
 }
 
-function adminCloseUserModal() {
+function adminCloseUserModal(force = false) {
+  if (adminUserFormBusy && force !== true) return;
   document.getElementById("adminUserModal")?.classList.add("hidden");
+  if (adminUserModalCleanup) {
+    const cleanup = adminUserModalCleanup;
+    adminUserModalCleanup = null;
+    cleanup();
+  }
 }
 
 function resetAdminBulkFields() {
@@ -5647,6 +5716,8 @@ function resetAdminBulkFields() {
     const days = row.querySelector(".admin-bulk-days");
     if (phone) phone.value = "";
     if (days) days.value = "90";
+    const quizBank = row.querySelector(".admin-bulk-quizbank");
+    if (quizBank) quizBank.checked = false;
   });
 }
 
@@ -5659,6 +5730,7 @@ function getAdminBulkEntries() {
     return {
       rawPhone,
       phone,
+      Quiz_bank: row.querySelector(".admin-bulk-quizbank")?.checked ? 1 : 0,
       days: Number.isFinite(daysValue) && daysValue > 0 ? Math.min(Math.floor(daysValue), 3650) : 90
     };
   }).filter(entry => String(entry.rawPhone || "").trim());
@@ -5709,6 +5781,7 @@ function showAdminDuplicateUsers(phones) {
 }
 
 async function adminSubmitUserModal() {
+  if (adminUserFormBusy) return;
   const mode = document.getElementById("adminModalMode")?.value || "create";
   const originalPhone = normalizePhone(document.getElementById("adminOriginalPhone")?.value || "");
   const phone = normalizePhone(document.getElementById("adminModalPhone")?.value || "");
@@ -5716,6 +5789,8 @@ async function adminSubmitUserModal() {
   const days = Number(document.getElementById("adminModalDays")?.value || 0);
   const addMode = document.getElementById("adminRenewAddMode")?.checked;
   const save = document.getElementById("adminModalSave");
+  const Quiz_bank = document.getElementById("adminModalQuizBank")?.checked ? 1 : 0;
+  setAdminMessage();
 
   if (!phone) {
     if (mode === "create") {
@@ -5727,6 +5802,7 @@ async function adminSubmitUserModal() {
   }
 
   const originalText = save?.textContent || "Salva";
+  setAdminUserFormBusy(true);
   if (save) {
     save.disabled = true;
     save.classList.add("is-loading");
@@ -5736,10 +5812,10 @@ async function adminSubmitUserModal() {
 
   try {
     if (mode === "create") {
-      await adminRequest("create", { phone, days: days || 90, expiry });
+      await adminRequest("create", { phone, days: days || 90, expiry, Quiz_bank });
       setAdminMessage("Utente creato.", "success");
     } else if (mode === "edit") {
-      await adminRequest("update", { phone: originalPhone, newPhone: phone, expiry });
+      await adminRequest("update", { phone: originalPhone, newPhone: phone, expiry, Quiz_bank });
       setAdminMessage("Utente aggiornato.", "success");
     } else {
       await adminRequest("renew", {
@@ -5752,11 +5828,12 @@ async function adminSubmitUserModal() {
       setAdminMessage("Rinnovo completato.", "success");
     }
 
-    adminCloseUserModal();
+    adminCloseUserModal(true);
     await adminLoadUsers(true);
   } catch (err) {
     setAdminMessage(getAdminErrorMessage(err.message), "error");
   } finally {
+    setAdminUserFormBusy(false);
     if (save) {
       save.disabled = false;
       save.classList.remove("is-loading");
@@ -5767,6 +5844,7 @@ async function adminSubmitUserModal() {
 }
 
 async function adminSubmitBulkCreate(save) {
+  if (adminUserFormBusy) return;
   const entries = getAdminBulkEntries();
   if (!entries.length) {
     setAdminMessage("Inserisci almeno un numero.", "error");
@@ -5800,6 +5878,7 @@ async function adminSubmitBulkCreate(save) {
   });
 
   const originalText = save?.textContent || "Aggiungi";
+  setAdminUserFormBusy(true);
   if (save) {
     save.disabled = true;
     save.classList.add("is-loading");
@@ -5814,7 +5893,7 @@ async function adminSubmitBulkCreate(save) {
   try {
     for (const entry of toCreate) {
       try {
-        await adminRequest("create", { phone: entry.phone, days: entry.days });
+        await adminRequest("create", { phone: entry.phone, days: entry.days, Quiz_bank: entry.Quiz_bank });
         created.push(entry.phone);
       } catch (err) {
         if (err.message === "duplicate") backendDuplicates.push(entry.phone);
@@ -5823,17 +5902,31 @@ async function adminSubmitBulkCreate(save) {
     }
 
     await adminLoadUsers(true);
-    adminCloseUserModal();
+    if (!failed.length) adminCloseUserModal(true);
+    else {
+      // Keep only unresolved rows, including each row's original QB selection.
+      const failedPhones = new Set(failed.map(entry => entry.phone));
+      document.querySelectorAll(".admin-bulk-row").forEach(row => {
+        const input = row.querySelector(".admin-bulk-phone");
+        if (failedPhones.has(normalizePhone(input?.value || ""))) return;
+        if (input) input.value = "";
+        const daysInput = row.querySelector(".admin-bulk-days");
+        if (daysInput) daysInput.value = "90";
+        const checkbox = row.querySelector(".admin-bulk-quizbank");
+        if (checkbox) checkbox.checked = false;
+      });
+    }
 
     const allDuplicates = [...existing, ...duplicatedInBatch, ...backendDuplicates];
     const parts = [];
     if (created.length) parts.push(`${created.length} utenti aggiunti`);
     if (allDuplicates.length) parts.push(`${allDuplicates.length} gia esistenti`);
-    if (failed.length) parts.push(`${failed.length} non aggiunti`);
+    if (failed.length) parts.push(`${failed.length} da verificare. ${getAdminErrorMessage(failed[0].error)}`);
 
     setAdminMessage(parts.join(", ") || "Nessun utente aggiunto.", failed.length ? "error" : "success");
     if (allDuplicates.length) showAdminDuplicateUsers(allDuplicates);
   } finally {
+    setAdminUserFormBusy(false);
     if (save) {
       save.disabled = false;
       save.classList.remove("is-loading");

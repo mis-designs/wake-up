@@ -132,6 +132,10 @@ function sanitizeAdminFields(action, body) {
   const isValidExpiry = value => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
 
   if (!isValidExpiry(expiry)) return { error: "bad_expiry" };
+  if ((action === "create" || action === "update") && Object.hasOwn(body, "Quiz_bank")) {
+    if (body.Quiz_bank !== 0 && body.Quiz_bank !== 1) return { error: "bad_quizbank" };
+    fields.Quiz_bank = body.Quiz_bank;
+  }
 
   if (action === "recent") {
     fields.limit = ADMIN_RECENT_LIMIT;
@@ -246,6 +250,11 @@ export default async function handler(req, res) {
     let data = await callGasAdmin(getGasAction(action), sanitized.fields, timeoutMs);
     if (data?.success !== true) {
       return res.status(200).json({ success: false, error: readAdminError(data) });
+    }
+    if (Object.hasOwn(sanitized.fields, "Quiz_bank") && data.Quiz_bank !== sanitized.fields.Quiz_bank) {
+      // Older GAS deployments can save the phone while ignoring the new flag.
+      // Never present that partial/uncertain result as a confirmed grant.
+      return res.status(200).json({ success: false, error: "quizbank_not_confirmed" });
     }
 
     if (action === "recent") {

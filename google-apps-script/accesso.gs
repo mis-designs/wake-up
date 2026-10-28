@@ -12,7 +12,8 @@ const userAccessActions = ["login", "validate", "login_check", "confirm_device_r
 //  col 3 / index 2  ->  device2
 //  col 4 / index 3  ->  expiry
 //  col 5 / index 4  ->  registration_date
-//  Quiz_bank is read-only here: one exact trimmed header after the original five columns.
+//  Quiz_bank: one exact trimmed header after the original five columns.
+//  Only authenticated admin_add/admin_update can write the numeric 0/1 flag.
 
 function isAuthorized(e, body) {
   const params = (e && e.parameter) ? e.parameter : {};
@@ -122,26 +123,7 @@ function doGet(e) {
     if (!sheet) return jsonOrJsonp({ success: false, error: "sheet_missing" }, callback);
 
     if (action === "admin_add") {
-      const phone = normalizePhone(p.phone);
-      if (!phone) return jsonOrJsonp({ success: false, error: "bad_phone" }, callback);
-
-      if (phoneExists(sheet, phone)) {
-        return jsonOrJsonp({ success: false, error: "duplicate" }, callback);
-      }
-
-      const days   = parseInt(p.days) > 0 ? parseInt(p.days) : 90;
-      const explicitExpiry = parseExpiryDate(p.expiry);
-      if (String(p.expiry || "").trim() && !explicitExpiry) {
-        return jsonOrJsonp({ success: false, error: "bad_expiry" }, callback);
-      }
-      const expiry = explicitExpiry || addDays(now, days);
-      insertPhone(sheet, phone, expiry, now);
-
-      return jsonOrJsonp({
-        success: true, error: null, phone,
-        expiry: expiry.toISOString(),
-        registration_date: now.toISOString()
-      }, callback);
+      return jsonOrJsonp(writeAdminUser_(sheet, action, p, now), callback);
     }
 
     if (action === "admin_remove") {
@@ -174,7 +156,7 @@ function doGet(e) {
     if (action === "admin_update") {
       const phone = normalizePhone(p.phone);
       if (!phone) return jsonOrJsonp({ success: false, error: "bad_phone" }, callback);
-      const result = updateUser(sheet, phone, p, now);
+      const result = writeAdminUser_(sheet, action, p, now);
       return jsonOrJsonp(result, callback);
     }
 
@@ -504,8 +486,48 @@ function phoneExists(sheet, phone) {
   return false;
 }
 
-function insertPhone(sheet, phone, expiryDate, regDate) {
-  sheet.appendRow([phone, "", "", expiryDate, regDate]);
+function insertPhone(sheet, phone, expiryDate, regDate, quizBankColumn, quizBank) {
+  const row = [phone, "", "", expiryDate, regDate];
+  if (quizBankColumn >= 5) {
+    while (row.length <= quizBankColumn) row.push("");
+    row[quizBankColumn] = quizBank === 1 ? 1 : 0;
+  }
+  sheet.appendRow(row);
+}
+
+function adminQuizBankInput_(data, rows) {
+  const column = getQuizBankColumn_(rows);
+  const provided = Object.prototype.hasOwnProperty.call(data, "Quiz_bank");
+  const raw = data.Quiz_bank;
+  if (provided && raw !== 0 && raw !== 1 && raw !== "0" && raw !== "1") {
+    return { error: "bad_quizbank" };
+  }
+  if (provided && column < 0) return { error: "quizbank_column_missing" };
+  return { column: column, provided: provided, value: raw === 1 || raw === "1" ? 1 : 0 };
+}
+
+function writeAdminUser_(sheet, action, data, now) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return { success: false, error: "busy" };
+  try {
+    const phone = normalizePhone(data.phone);
+    if (!phone) return { success: false, error: "bad_phone" };
+    if (action === "admin_update") return updateUser(sheet, phone, data, now);
+    const values = sheet.getDataRange().getValues();
+    const qb = adminQuizBankInput_(data, values);
+    if (qb.error) return { success: false, error: qb.error };
+    if (values.slice(1).some(function (row) { return normalizePhone(row[0]) === phone; })) {
+      return { success: false, error: "duplicate" };
+    }
+    const explicitExpiry = parseExpiryDate(data.expiry);
+    if (String(data.expiry || "").trim() && !explicitExpiry) return { success: false, error: "bad_expiry" };
+    const expiry = explicitExpiry || addDays(now, parseInt(data.days) > 0 ? parseInt(data.days) : 90);
+    insertPhone(sheet, phone, expiry, now, qb.column, qb.value);
+    return { success: true, error: null, phone: phone, expiry: expiry.toISOString(),
+      registration_date: now.toISOString(), Quiz_bank: qb.value };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function updateExpiry(sheet, phone, newExpiry, regDate) {
@@ -522,6 +544,8 @@ function updateExpiry(sheet, phone, newExpiry, regDate) {
 
 function updateUser(sheet, phone, data, now) {
   const values = sheet.getDataRange().getValues();
+  const qb = adminQuizBankInput_(data, values);
+  if (qb.error) return { success: false, error: qb.error };
   const newPhone = normalizePhone(data.newPhone || phone);
   const expiryDate = parseExpiryDate(data.expiry);
   const hasExpiryInput = String(data.expiry || "").trim() !== "";
@@ -529,7 +553,7 @@ function updateUser(sheet, phone, data, now) {
   if (!newPhone) return { success: false, error: "bad_phone" };
   if (hasExpiryInput && !expiryDate) return { success: false, error: "bad_expiry" };
 
-  if (newPhone !== phone && phoneExists(sheet, newPhone)) {
+  if (newPhone !== phone && values.slice(1).some(function (row) { return normalizePhone(row[0]) === newPhone; })) {
     return { success: false, error: "duplicate" };
   }
 
@@ -539,11 +563,13 @@ function updateUser(sheet, phone, data, now) {
     const row = i + 1;
     if (newPhone !== phone) sheet.getRange(row, 1).setValue(newPhone);
     if (expiryDate) sheet.getRange(row, 4).setValue(expiryDate);
+    if (qb.provided) sheet.getRange(row, qb.column + 1).setValue(qb.value);
 
     return {
       success: true,
       error: null,
       phone: newPhone,
+      Quiz_bank: qb.provided ? qb.value : readQuizBankFlag_(values[i], qb.column),
       expiry: expiryDate ? expiryDate.toISOString() : null
     };
   }
@@ -608,6 +634,7 @@ function removePhone(sheet, phone) {
 
 function searchPhone(sheet, phone, now) {
   const values = sheet.getDataRange().getValues();
+  const quizBankColumn = getQuizBankColumn_(values);
   for (let i = 1; i < values.length; i++) {
     if (normalizePhone(values[i][0]) !== phone) continue;
     const [p, d1, d2, expiry, regDate] = values[i];
@@ -630,13 +657,15 @@ function searchPhone(sheet, phone, now) {
       if (!isNaN(rd.getTime())) regDateIso = rd.toISOString();
     }
 
-    return { phone, expiry: expiryIso, registration_date: regDateIso, remaining_days: remainingDays, status };
+    return { phone, expiry: expiryIso, registration_date: regDateIso, remaining_days: remainingDays, status,
+      Quiz_bank: readQuizBankFlag_(values[i], quizBankColumn) };
   }
   return null;
 }
 
 function listPhones(sheet, now) {
   const values = sheet.getDataRange().getValues();
+  const quizBankColumn = getQuizBankColumn_(values);
   const out = [];
   for (let i = 1; i < values.length; i++) {
     const [p, d1, d2, expiry, regDate] = values[i];
@@ -660,7 +689,8 @@ function listPhones(sheet, now) {
       if (!isNaN(rd.getTime())) regDateIso = rd.toISOString();
     }
 
-    out.push({ phone, device1: d1 || "", device2: d2 || "", expiry: expIso, registration_date: regDateIso, status });
+    out.push({ phone, device1: d1 || "", device2: d2 || "", expiry: expIso, registration_date: regDateIso, status,
+      Quiz_bank: readQuizBankFlag_(values[i], quizBankColumn) });
   }
   return out;
 }
@@ -685,27 +715,13 @@ function handleAdminPostAction(sheet, action, data, now) {
   }
 
   if (action === "admin_add") {
-    const phone = normalizePhone(data.phone);
-    if (!phone) return { success: false, error: "bad_phone" };
-    if (phoneExists(sheet, phone)) return { success: false, error: "duplicate" };
-
-    const explicitExpiry = parseExpiryDate(data.expiry);
-    if (String(data.expiry || "").trim() && !explicitExpiry) return { success: false, error: "bad_expiry" };
-    const expiry = explicitExpiry || addDays(now, parseInt(data.days) > 0 ? parseInt(data.days) : 90);
-    insertPhone(sheet, phone, expiry, now);
-    return {
-      success: true,
-      error: null,
-      phone,
-      expiry: expiry.toISOString(),
-      registration_date: now.toISOString()
-    };
+    return writeAdminUser_(sheet, action, data, now);
   }
 
   if (action === "admin_update") {
     const phone = normalizePhone(data.phone);
     if (!phone) return { success: false, error: "bad_phone" };
-    return updateUser(sheet, phone, data, now);
+    return writeAdminUser_(sheet, action, data, now);
   }
 
   if (action === "admin_renew") {

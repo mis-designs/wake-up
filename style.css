@@ -7997,6 +7997,8 @@ body.qms-open { overflow: hidden; }
     gap: 12px;
 }
 
+body.admin-user-popup-open { overflow: hidden; }
+
 .admin-form label {
     display: grid;
     gap: 5px;
@@ -8048,8 +8050,31 @@ body.qms-open { overflow: hidden; }
 
 .admin-bulk-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 96px;
+    grid-template-columns: minmax(0, 1fr) 72px 44px;
     gap: 10px;
+}
+
+.admin-bulk-row > label { min-width: 0; }
+.admin-bulk-row input { min-width: 0; width: 100%; box-sizing: border-box; }
+.admin-form .admin-bulk-qb { justify-items: center; cursor: pointer; }
+.admin-form .admin-bulk-quizbank,
+#adminModalQuizBank {
+    appearance: auto;
+    width: 22px;
+    height: 22px;
+    min-height: 22px;
+    padding: 0;
+    align-self: center;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}
+#adminQuizBankField { min-height: 44px; cursor: pointer; }
+.admin-form label > span,
+.admin-qb-help { color: var(--color-dark); }
+.admin-qb-help { margin: 0; font-size: 0.78rem; line-height: 1.5; }
+.admin-form input[type="checkbox"]:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 3px;
 }
 
 .admin-duplicate-note {
@@ -8185,7 +8210,8 @@ body.qms-open { overflow: hidden; }
     }
 
     .admin-bulk-row {
-        grid-template-columns: minmax(0, 1fr) 82px;
+        grid-template-columns: minmax(0, 1fr) 60px 44px;
+        gap: 6px;
     }
 
     .admin-entry {

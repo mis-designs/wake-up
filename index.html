@@ -100,7 +100,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <link rel="stylesheet" href="assets/daisyui.css?v=2-learning-shell">
 <link rel="stylesheet" href="loading-ui.css?v=4-context">
 <script src="loading-ui.js?v=2-context" defer></script>
-<link rel="stylesheet" href="style.css?v=75-home-footer">
+<link rel="stylesheet" href="style.css?v=76-admin-quizbank">
 <link rel="stylesheet" href="homebg.css?v=5-home-offers">
 <link rel="stylesheet" href="magic-dictionary.css?v=1.4.1-dictionary-cleanup">
 <link rel="stylesheet" href="screen-protection.css?v=1.1.0">
@@ -953,9 +953,10 @@ gtag('config', 'G-C5JPY9HFHD', {
       <h2 id="adminModalTitle">Nuovo utente</h2>
       <button class="admin-modal-close" type="button" onclick="adminCloseUserModal()" aria-label="Chiudi">&times;</button>
     </div>
-    <form id="adminUserForm" class="admin-form">
+    <form id="adminUserForm" class="admin-form" novalidate>
       <input id="adminModalMode" type="hidden" value="create">
       <input id="adminOriginalPhone" type="hidden" value="">
+      <p id="adminUserFormMessage" class="admin-message hidden" role="alert"></p>
       <div id="adminBulkFields" class="admin-bulk-fields">
         <div class="admin-bulk-head">
           <span></span>
@@ -970,6 +971,10 @@ gtag('config', 'G-C5JPY9HFHD', {
             <span>Giorni</span>
             <input class="admin-bulk-days" type="number" min="1" max="3650" value="90">
           </label>
+          <label class="admin-bulk-qb">
+            <span>QB</span>
+            <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 1" aria-describedby="adminQuizBankHelp">
+          </label>
         </div>
         <div class="admin-bulk-row">
           <label>
@@ -979,6 +984,10 @@ gtag('config', 'G-C5JPY9HFHD', {
           <label>
             <span>Giorni</span>
             <input class="admin-bulk-days" type="number" min="1" max="3650" value="90">
+          </label>
+          <label class="admin-bulk-qb">
+            <span>QB</span>
+            <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 2" aria-describedby="adminQuizBankHelp">
           </label>
         </div>
         <div class="admin-bulk-row">
@@ -990,6 +999,10 @@ gtag('config', 'G-C5JPY9HFHD', {
             <span>Giorni</span>
             <input class="admin-bulk-days" type="number" min="1" max="3650" value="90">
           </label>
+          <label class="admin-bulk-qb">
+            <span>QB</span>
+            <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 3" aria-describedby="adminQuizBankHelp">
+          </label>
         </div>
         <div class="admin-bulk-row">
           <label>
@@ -999,6 +1012,10 @@ gtag('config', 'G-C5JPY9HFHD', {
           <label>
             <span>Giorni</span>
             <input class="admin-bulk-days" type="number" min="1" max="3650" value="90">
+          </label>
+          <label class="admin-bulk-qb">
+            <span>QB</span>
+            <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 4" aria-describedby="adminQuizBankHelp">
           </label>
         </div>
         <div class="admin-bulk-row">
@@ -1010,6 +1027,10 @@ gtag('config', 'G-C5JPY9HFHD', {
             <span>Giorni</span>
             <input class="admin-bulk-days" type="number" min="1" max="3650" value="90">
           </label>
+          <label class="admin-bulk-qb">
+            <span>QB</span>
+            <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 5" aria-describedby="adminQuizBankHelp">
+          </label>
         </div>
         <div class="admin-bulk-row">
           <label>
@@ -1020,8 +1041,13 @@ gtag('config', 'G-C5JPY9HFHD', {
             <span>Giorni</span>
             <input class="admin-bulk-days" type="number" min="1" max="3650" value="90">
           </label>
+          <label class="admin-bulk-qb">
+            <span>QB</span>
+            <input class="admin-bulk-quizbank" type="checkbox" aria-label="QuizBank per Telefono 6" aria-describedby="adminQuizBankHelp">
+          </label>
         </div>
       </div>
+      <p id="adminQuizBankHelp" class="admin-qb-help">QB = QuizBank. Seleziona per abilitare l'accesso; lascia vuoto per non abilitarlo.</p>
       <label id="adminPhoneField">
         <span>Telefono</span>
         <input id="adminModalPhone" type="tel" inputmode="tel" autocomplete="off">
@@ -1033,6 +1059,10 @@ gtag('config', 'G-C5JPY9HFHD', {
       <label id="adminDaysField">
         <span>Giorni abbonamento</span>
         <input id="adminModalDays" type="number" min="1" max="3650" value="90">
+      </label>
+      <label id="adminQuizBankField" class="admin-check-line hidden">
+        <input id="adminModalQuizBank" type="checkbox" aria-describedby="adminQuizBankHelp">
+        <span>Accesso QuizBank</span>
       </label>
       <label id="adminRenewModeField" class="admin-check-line hidden">
         <input id="adminRenewAddMode" type="checkbox" checked>
@@ -1366,7 +1396,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script src="android-mode-screens.js?v=2-thumb"></script>
 <script src="web-study-actions.js?v=1"></script>
 <script src="web-action-effects.js?v=3-system-motion"></script>
-<script src="script.js?v=83-home-admin"></script>
+<script src="script.js?v=84-admin-quizbank"></script>
 <script type="module" src="login-experience.js?v=3-clean"></script>
 <script type="module" src="welcome-page.js?v=2-clean"></script>
   <script type="module" src="home-offers.js?v=6-hat&art=fbda23c8df0e"></script>

@@ -15,7 +15,7 @@ test("Android WebView is detected before the responsive stylesheet paints", () =
   }
 
   assert.match(marker, /classList\.add\("android-webview"\)/u);
-  assert.ok(index.indexOf("android-webview-mode.js") < index.indexOf("style.css?v=75-home-footer"));
+  assert.ok(index.indexOf("android-webview-mode.js") < index.indexOf("style.css?v=76-admin-quizbank"));
   assert.ok(quiz.indexOf("android-webview-mode.js") < quiz.indexOf("mystyle.css?v=61-shared-recorder"));
 });
 
@@ -64,5 +64,5 @@ test("chapter drag work is frame-batched and native navigation is shorter", () =
   assert.match(script, /const appActionGate = \(\(\) =>/u);
   assert.match(script, /function scheduleExclusiveAppNavigation/u);
   assert.match(worker, /mobile-experience\.css\?v=4-admin-scroll/u);
-  assert.match(worker, /script\.js\?v=83-home-admin/u);
+  assert.match(worker, /script\.js\?v=84-admin-quizbank/u);
 });

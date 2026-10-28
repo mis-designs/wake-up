@@ -320,20 +320,20 @@ test("existing non-blocking user-token behavior remains unchanged; privileged ac
   }
 });
 
-test("admin updates and renewals cannot write Quiz_bank or create a missing header", async t => {
+test("legacy updates and renewals preserve Quiz_bank and never create a missing header", async t => {
   for (const method of ["GET", "POST"]) {
     for (const present of [true, false]) {
       for (const action of ["admin_update", "admin_renew"]) await t.test(`${method} ${action}, header=${present}`, () => {
         const rows = dataRows(0); if (!present) { rows[0].pop(); rows[1].pop(); }
         const h = fixture({ rows });
-        const result = h.request(method, { action, adminKey: ADMIN_KEY, Quiz_bank: 1, quiz_bank: true, expiry: FUTURE }).body;
-        assert.equal(result.success, true); assert.equal(result.Quiz_bank, undefined); assertOneRead(h);
+        const result = h.request(method, { action, adminKey: ADMIN_KEY, ...(action === "admin_renew" ? { Quiz_bank: 1 } : {}), quiz_bank: true, expiry: FUTURE }).body;
+        assert.equal(result.success, true); assertOneRead(h);
         assert.deepEqual(h.stats.writes.map(write => [write.row, write.column]), [[2, 4]]);
         assert.deepEqual(h.data[0], rows[0]); assert.deepEqual(h.data[1].slice(5), rows[1].slice(5));
       });
     }
     const noChange = fixture();
-    assert.equal(noChange.request(method, { action: "admin_update", adminKey: ADMIN_KEY, Quiz_bank: 0 }).body.success, true);
+    assert.equal(noChange.request(method, { action: "admin_update", adminKey: ADMIN_KEY }).body.success, true);
     assertOneRead(noChange); assertNoWrites(noChange); assert.equal(noChange.data[1][5], 1);
     const unknown = fixture();
     assert.deepEqual(unknown.request(method, { action: "admin_set_quiz_bank", adminKey: ADMIN_KEY, Quiz_bank: 1 }).body,
@@ -351,7 +351,7 @@ test("admin add, reset, search, list and remove retain their existing write boun
       assert.deepEqual(h.data[0], [...HEADERS, "Quiz_bank"]);
       if (action === "admin_add") {
         assert.equal(h.stats.writes.length, 1); assert.equal(h.stats.writes[0].type, "append");
-        assert.equal(h.data.at(-1).length, 5, "No client-controlled permission is appended");
+        assert.equal(h.data.at(-1)[5], 1, "Authenticated creation saves the requested flag");
         assert.equal(h.data[1][5], 0);
       } else if (action === "admin_reset_devices") {
         assert.deepEqual(h.stats.writes, [{ type: "clear", row: 2, column: 2, height: 1, width: 2 }]);
@@ -360,6 +360,67 @@ test("admin add, reset, search, list and remove retain their existing write boun
       else assertNoWrites(h);
     });
   }
+});
+
+test("admin create/update persist integer grants and revocations through both routes", async t => {
+  for (const method of ["GET", "POST"]) for (const action of ["admin_add", "admin_update"]) {
+    for (const flag of [0, 1, "0", "1"]) await t.test(`${method} ${action} ${JSON.stringify(flag)}`, () => {
+      const h = fixture();
+      const phone = action === "admin_add" ? "39999999999" : PHONE;
+      const result = h.request(method, { action, phone, adminKey: ADMIN_KEY, Quiz_bank: flag }).body;
+      assertFlag(result, Number(flag)); assertOneRead(h);
+      assert.equal(h.data.find(row => row[0] === phone)[5], Number(flag));
+      assert.deepEqual(h.data[0], [...HEADERS, "Quiz_bank"]);
+      assert.deepEqual(h.data[1].slice(0, 5), dataRows()[1].slice(0, 5));
+      assert.deepEqual(h.stats.locks, [["try", 5000], ["release"]]);
+    });
+  }
+});
+
+test("invalid or ambiguous entitlement writes fail before changing any cell", async t => {
+  for (const method of ["GET", "POST"]) for (const action of ["admin_add", "admin_update"]) {
+    for (const value of [true, false, null, 2, "true", "", "01", [1], {}]) {
+      await t.test(`${method} ${action} invalid ${JSON.stringify(value)}`, () => {
+        const h = fixture();
+        const result = h.request(method, { action, phone: action === "admin_add" ? "39999999999" : PHONE,
+          adminKey: ADMIN_KEY, newPhone: "39888888888", expiry: FUTURE, Quiz_bank: value }).body;
+        assert.equal(result.error, "bad_quizbank"); assertNoWrites(h);
+      });
+    }
+    for (const headers of [HEADERS, [...HEADERS, "Quiz_bank", " Quiz_bank "], [...HEADERS, "quiz_bank"]]) {
+      const h = fixture({ rows: [headers, dataRows()[1]] });
+      const result = h.request(method, { action, phone: action === "admin_add" ? "39999999999" : PHONE,
+        adminKey: ADMIN_KEY, newPhone: "39888888888", expiry: FUTURE, Quiz_bank: 1 }).body;
+      assert.equal(result.error, "quizbank_column_missing"); assertNoWrites(h);
+    }
+  }
+});
+
+test("admin reads reflect saved flags and editing preserves unrelated extra columns", () => {
+  const rows = [[...HEADERS, "notes", "Quiz_bank", "extra"],
+    [PHONE, "old-device", "second-device", FUTURE, PAST, "keep", 0, "untouched"]];
+  const h = fixture({ rows });
+  const saved = h.request("POST", { action: "admin_update", adminKey: ADMIN_KEY, Quiz_bank: 1 }).body;
+  assertFlag(saved, 1); assert.deepEqual(h.stats.writes.map(w => [w.row, w.column, w.value]), [[2, 7, 1]]);
+  assert.equal(h.data[1][5], "keep"); assert.equal(h.data[1][7], "untouched");
+  const list = h.request("POST", { action: "admin_list", adminKey: ADMIN_KEY }).body;
+  const search = h.request("POST", { action: "admin_search", adminKey: ADMIN_KEY }).body;
+  assert.equal(list.list[0].Quiz_bank, 1); assert.equal(search.user.Quiz_bank, 1);
+  assertFlag(h.request("GET").body, 1);
+  h.request("POST", { action: "admin_update", adminKey: ADMIN_KEY, Quiz_bank: 0 });
+  assertFlag(h.request("GET").body, 0);
+});
+
+test("legacy creation defaults off; duplicate and busy attempts do not write", () => {
+  const h = fixture();
+  assertFlag(h.request("POST", { action: "admin_add", phone: "39999999999", adminKey: ADMIN_KEY }).body, 0);
+  assert.equal(h.data.at(-1)[5], 0);
+  const duplicate = fixture();
+  assert.equal(duplicate.request("POST", { action: "admin_add", adminKey: ADMIN_KEY, Quiz_bank: 0 }).body.error, "duplicate");
+  assertNoWrites(duplicate);
+  const busy = fixture({ lockAvailable: false });
+  assert.equal(busy.request("POST", { action: "admin_update", adminKey: ADMIN_KEY, Quiz_bank: 0 }).body.error, "busy");
+  assertNoWrites(busy); assert.equal(busy.stats.reads, 0);
 });
 
 test("JSONP and promo dispatch keep their original response ownership", () => {

@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v246-quizbank-access";
+const CACHE_NAME = "magicbook-pwa-v247-admin-quizbank";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -20,7 +20,7 @@ const STATIC_ASSETS = [
   "/assets/daisyui.css?v=2-learning-shell",
   "/loading-ui.css?v=4-context",
   "/loading-ui.js?v=2-context",
-  "/style.css?v=75-home-footer",
+  "/style.css?v=76-admin-quizbank",
   "/web-study-actions.css?v=3-spacing",
   "/web-study-actions.js?v=1",
   "/web-action-effects.js?v=3-system-motion",
@@ -106,7 +106,7 @@ const STATIC_ASSETS = [
   "/homebg.css?v=5-home-offers",
   "/mystyle.css?v=61-shared-recorder",
   "/audio-player-ui.css?v=10-web-quiz-slim",
-  "/script.js?v=83-home-admin",
+  "/script.js?v=84-admin-quizbank",
   "/study-quiz.html",
   "/study-quiz.css?v=28-compact",
   "/study-quiz.js?v=39-session&art=2e0d6787e201",
