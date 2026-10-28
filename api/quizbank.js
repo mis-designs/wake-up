@@ -1,9 +1,10 @@
-import { authorizeQuizBankPreview, quizBankSession, serveQuizBankMedia } from "./quiz.js";
-import { loadQuizBank, quizBankAudioIdentity } from "./quizbank-catalog.mjs";
+import { authorizeQuizBankPreview, quizBankSession, serveQuizBankMedia, saveQuizBankAudio } from "./quiz.js";
+import { loadQuizBank, quizBankStorageIdentity } from "./quizbank-catalog.mjs";
+import { decodeQuizAudioUpload } from "../lib/quiz-audio-upload.mjs";
 
 const actions = {
   GET: new Set(["catalog", "getStudyQuiz", "getItalianAudio", "getBengaliAudio", "getTTS"]),
-  POST: new Set(["refreshQuizSession", "getQuizAudioStatus", "getQuizAudioBlob", "getQuizAudioPlayback"])
+  POST: new Set(["refreshQuizSession", "getQuizAudioStatus", "getQuizAudioBlob", "getQuizAudioPlayback", "saveQuizAudio"])
 };
 
 export default async function handler(req, res) {
@@ -23,6 +24,7 @@ export default async function handler(req, res) {
     }
     if (data.action === "refreshQuizSession") return res.status(200).json({ ok: true, ...quizBankSession(data), ...renewed });
     if (data.action === "getTTS") return await serveQuizBankMedia({ action: data.action, text: data.text }, res);
+    const upload = data.action === "saveQuizAudio" ? decodeQuizAudioUpload(data) : null;
     const sheet = Number(data.chapters);
     if (data.action === "getStudyQuiz" && (!Number.isInteger(sheet) || sheet < 1 || sheet > 50)) {
       return res.status(400).json({ error: "quizbank_invalid_sheet" });
@@ -33,12 +35,15 @@ export default async function handler(req, res) {
         sheets: bank.sheets.map((rows, index) => ({ number: index + 1, count: rows.length })), ...renewed });
     }
     if (data.action === "getStudyQuiz") {
-      return res.status(200).json({ ok: true, sheet, quiz: bank.sheets[sheet - 1], ...quizBankSession(data), ...renewed });
+      return res.status(200).json({ ok: true, sheet, canUploadAudio: true,
+        quiz: bank.sheets[sheet - 1], ...quizBankSession(data), ...renewed });
     }
     const row = bank.byId.get(String(data.questionId || ""));
     if (!row) return res.status(404).json({ error: "quizbank_question_not_found" });
+    const identity = quizBankStorageIdentity(row);
+    if (upload) return await saveQuizBankAudio({ data, identity, upload, req }, res);
     // Ignore submitted text/figure/answer when choosing the explanation or IT/BN source.
-    return await serveQuizBankMedia({ action: data.action, row, identity: quizBankAudioIdentity(row) }, res);
+    return await serveQuizBankMedia({ action: data.action, row, identity }, res);
   } catch (error) {
     const status = Number(error.statusCode) || 503;
     const known = new Set(["quizbank_not_configured", "quizbank_archive_unavailable", "quizbank_invalid_archive"]);

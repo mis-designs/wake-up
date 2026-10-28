@@ -87,6 +87,7 @@
   let loadRequestId = 0;
   let sheetRequest = null;
   let quizBankReady = false;
+  let quizBankCanUploadAudio = false;
   let figureStudy = null;
   let figureStudyModule = null;
   let figureView = false;
@@ -588,6 +589,7 @@
       quizSessionToken = String((TRIAL_MODE ? data.trialToken : data.quizSessionToken) || "");
       quizSessionTokenExpiresAt = Number((TRIAL_MODE ? data.trialTokenExpiresAt : data.quizSessionTokenExpiresAt) || 0);
       questions = Array.isArray(data.quiz) ? data.quiz : [];
+      if (QUIZBANK_MODE) quizBankCanUploadAudio = data.canUploadAudio === true;
       renderQuestions();
       rememberStudyChapter(chapter);
       elements.loading.classList.add("hidden");
@@ -813,10 +815,58 @@
     help.setAttribute("aria-expanded", "false");
     help.addEventListener("click", () => toggleHelp(question, card, help));
     actions.append(italian, bangla, lockedExplanation || explanation.surface, help);
+    if (QUIZBANK_MODE && quizBankCanUploadAudio) {
+      const upload = document.createElement("button");
+      upload.type = "button";
+      upload.className = "study-action quizbank-upload";
+      upload.textContent = "Carica audio";
+      upload.hidden = true;
+      upload.setAttribute("aria-label", `Carica audio per la domanda ${index + 1}`);
+      upload.setAttribute("aria-haspopup", "dialog");
+      explanation.surface._uploadButton = upload;
+      upload.addEventListener("click", () => openQuizBankAudioUpload(question, explanation, upload));
+      actions.insertBefore(upload, help);
+    }
     main.appendChild(actions);
     card.appendChild(main);
-    if (!TRIAL_MODE && (!QUIZBANK_MODE || question.explanationMapped)) observeAudioAvailability(card, question, explanation.surface);
+    if (!TRIAL_MODE) observeAudioAvailability(card, question, explanation.surface);
     return card;
+  }
+
+  function openQuizBankAudioUpload(question, controls, trigger) {
+    if (!QUIZBANK_MODE || !quizBankCanUploadAudio || !studyVideoIdentity()) return;
+    const generation = loadRequestId;
+    const isCurrent = () => generation === loadRequestId && Boolean(studyVideoIdentity()) && trigger.isConnected;
+    stopPlayback();
+    window.MagicQuizAudioUpload?.open({
+      trigger, label: `Scheda ${currentChapter} · Domanda ${question.number}`,
+      question: question.question, isCurrent,
+      returnFocus: () => trigger.hidden ? controls.play : trigger,
+      save: (payload, signal) => audioApi("saveQuizAudio", question, { payload, signal, timeoutMs: 30000 }),
+      onSaved() {
+        if (!isCurrent()) return;
+        // Invalidate previous misses, including exact duplicates on this sheet.
+        audioStatusCache.clear();
+        questions.forEach((row, index) => {
+          if (row.question !== question.question || row.figure !== question.figure || row.correct !== question.correct) return;
+          const key = audioStatusKey(row);
+          audioStatusRequests.get(key)?.controller.abort();
+          audioStatusRequests.delete(key);
+          cacheAudioAvailability(row, true);
+          const surface = elements.list.children[index]?.querySelector(".study-explanation-media");
+          if (surface) paintAudioAvailability(surface, true);
+        });
+        showToast("Spiegazione audio caricata.");
+        controls.play.focus({ preventScroll: true });
+      },
+      onConflict() {
+        if (!isCurrent()) return;
+        audioStatusRequests.get(audioStatusKey(question))?.controller.abort();
+        audioStatusRequests.delete(audioStatusKey(question));
+        cacheAudioAvailability(question, true);
+        paintAudioAvailability(controls.surface, true);
+      }
+    });
   }
 
   function renderQuestions() {
@@ -1591,12 +1641,12 @@
     }
   }
 
-  function createTimedAudioRequest(parentSignal) {
+  function createTimedAudioRequest(parentSignal, timeoutMs = STUDY_AUDIO_REQUEST_TIMEOUT_MS) {
     const controller = new AbortController();
     const abortFromParent = () => controller.abort();
     if (parentSignal?.aborted) abortFromParent();
     else parentSignal?.addEventListener("abort", abortFromParent, { once: true });
-    const timeoutId = window.setTimeout(() => controller.abort(new DOMException("Audio request timed out", "TimeoutError")), STUDY_AUDIO_REQUEST_TIMEOUT_MS);
+    const timeoutId = window.setTimeout(() => controller.abort(new DOMException("Audio request timed out", "TimeoutError")), timeoutMs);
     return {
       signal: controller.signal,
       cleanup() {
@@ -1606,16 +1656,17 @@
     };
   }
 
-  async function audioApi(action, question, { blob = false, signal } = {}) {
+  async function audioApi(action, question, { blob = false, signal, payload = {}, timeoutMs } = {}) {
     if (TRIAL_MODE) throw new Error("trial_premium_audio");
     if (QUIZBANK_MODE && !studyVideoIdentity()) { showQuizBankError(new Error("unauthorized")); throw new Error("unauthorized"); }
-    const request = createTimedAudioRequest(signal);
+    const request = createTimedAudioRequest(signal, timeoutMs);
     try {
       const response = await fetch(API, {
         method: "POST",
         signal: request.signal,
         headers: authHeaders({ json: true }),
         body: JSON.stringify({
+          ...payload,
           action,
           phone: session.phone,
           deviceId: session.deviceId,
@@ -1627,6 +1678,11 @@
         })
       });
       if (QUIZBANK_MODE) saveAccessToken(response.headers.get("X-Access-Token"), Number(response.headers.get("X-Access-Token-Expires")));
+      if (QUIZBANK_MODE && (response.status === 401 || response.status === 403)) {
+        const data = await response.json().catch(() => ({}));
+        showQuizBankError(new Error(data.error || "unauthorized"));
+        throw new Error(data.error || "unauthorized");
+      }
       if (blob) {
         if (response.status === 401 || response.status === 403) clearSessionAndExit();
         if (!response.ok) {
@@ -1675,6 +1731,7 @@
     button.dataset.audioState = available === true ? "ready" : available === false ? "unavailable" : "retry";
     button.title = available == null ? "Prova a caricare la spiegazione audio" : "";
     if (available === true) button.classList.remove("is-error");
+    if (button._uploadButton) button._uploadButton.hidden = available !== false;
   }
 
   function cancelPendingAudioStatus(card) {
@@ -1685,6 +1742,7 @@
   }
 
   function resetAudioObservation() {
+    if (QUIZBANK_MODE) window.MagicQuizAudioUpload?.close();
     audioObserver?.disconnect();
     pendingAudioStatusChecks.forEach(timer => window.clearTimeout(timer));
     pendingAudioStatusChecks.clear();
@@ -1738,6 +1796,12 @@
       }
       try {
         const data = await requestAudioAvailability(question);
+        // A confirmed upload may win after this request's finally removed its
+        // abort handle. Never let that pre-upload response overwrite the save.
+        if (cachedAudioAvailability(question) === true) {
+          paintAudioAvailability(button, true);
+          return;
+        }
         if (data.temporaryUnavailable === true || typeof data.available !== "boolean") {
           paintAudioAvailability(button, null);
           return;
@@ -1747,7 +1811,7 @@
         paintAudioAvailability(button, available);
       } catch (error) {
         if (error?.name === "AbortError") return;
-        paintAudioAvailability(button, null);
+        paintAudioAvailability(button, cachedAudioAvailability(question) === true ? true : null);
       }
     };
     card._checkStudyAudio = check;
@@ -2091,6 +2155,7 @@
   });
 
   function showQuizBankError(error) {
+    quizBankCanUploadAudio = false;
     loadRequestId += 1;
     sheetRequest?.abort();
     resetAudioObservation(); stopPlayback();

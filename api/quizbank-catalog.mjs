@@ -41,6 +41,16 @@ export function quizBankAudioIdentity(row) {
   return { ...identity, previousQuizKeys: [], legacySafe: false };
 }
 
+// Preserve proven shared associations. New content must never inherit a
+// normalized/text-only key, even when it resembles an existing question.
+export function quizBankStorageIdentity(row) {
+  const shared = quizBankAudioIdentity(row);
+  if (shared) return shared;
+  const quizKey = `qb1_${crypto.createHash("sha256")
+    .update(`quizbank-audio-v1\u001f${audioContentSignature(row)}`).digest("hex")}`;
+  return { version: 1, quizKey, previousQuizKeys: [], legacySafe: false };
+}
+
 export function parseQuizBank(source) {
   if (!Array.isArray(source) || source.length !== 1500) throw invalid();
   const byId = new Map();

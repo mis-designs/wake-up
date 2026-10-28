@@ -8,7 +8,7 @@ test("QuizBank function tracing includes the exact-audio proofs and shared media
   const root = fileURLToPath(new URL("../", import.meta.url));
   const { fileList } = await nodeFileTrace(["api/quizbank.js"], { base: root, processCwd: root });
   const files = new Set([...fileList].map(file => file.replaceAll("\\", "/")));
-  for (const file of ["api/quiz.js", "api/quizbank-catalog.mjs", "api/quizbank-audio-references.json", "api/_quiz-bank.json", "lib/bounded-work-cache.mjs"]) assert.ok(files.has(file), file);
+  for (const file of ["api/quiz.js", "api/quizbank-catalog.mjs", "api/quizbank-audio-references.json", "api/_quiz-bank.json", "lib/bounded-work-cache.mjs", "lib/quiz-audio-upload.mjs", "api/audio-mime.mjs"]) assert.ok(files.has(file), file);
   assert.ok(![...files].some(file => /50_schede|figure_pdf|outputs\//.test(file)));
 });
 

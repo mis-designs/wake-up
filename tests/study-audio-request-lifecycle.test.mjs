@@ -12,6 +12,7 @@ function fixture() {
   let id = 0, now = 1000;
   const context = vm.createContext({
     AbortController, DOMException,
+    QUIZBANK_MODE: false,
     Date: { now: () => now }, STUDY_AUDIO_STATUS_TTL_MS: 300000, STUDY_AUDIO_STATUS_MAX_ENTRIES: 128,
     audioStatusRequests: new Map(), audioStatusCache: new Map(), pendingAudioStatusChecks: new Map(),
     audioObserver: null, STUDY_AUDIO_STATUS_DELAY_MS: 400,

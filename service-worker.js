@@ -1,11 +1,13 @@
-const CACHE_NAME = "magicbook-pwa-v244-quizbank-preview";
+const CACHE_NAME = "magicbook-pwa-v245-quizbank-upload";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
   "/quizbank.html",
-  "/quizbank.css?v=2-study-preview",
-  "/study-quiz.js?v=40-quizbank",
+  "/quizbank.css?v=3-audio-upload",
+  "/study-quiz.js?v=41-quizbank-upload&art=2e0d6787e201",
+  "/quiz-audio-upload.js?v=1",
+  "/quiz-audio-upload.css?v=1",
   "/quizHelpRuntimeV3Loader.js?v=3.0.3-cancellable",
   "/libreria-font.html",
   "/libreria-font.css?v=3-glass-specimen",

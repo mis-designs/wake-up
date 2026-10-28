@@ -37,7 +37,7 @@ try {
         if (data.action === "getStudyQuiz") {
           counts.sheets++;
           if (mode === "hold") await new Promise(resolve => { held = resolve; });
-          return route.fulfill({ json: { quiz: bank.sheets[Number(data.chapters) - 1], quizSessionToken: "fixture", quizSessionTokenExpiresAt: Date.now() + 1800000 } }).catch(() => {});
+          return route.fulfill({ json: { quiz: bank.sheets[Number(data.chapters) - 1], canUploadAudio: true, quizSessionToken: "fixture", quizSessionTokenExpiresAt: Date.now() + 1800000 } }).catch(() => {});
         }
         if (data.action === "getQuizAudioStatus") { counts.status++; return route.fulfill({ json: { available: false } }); }
         return route.fulfill({ status: 503, json: { error: "fixture_audio_unavailable" } });

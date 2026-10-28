@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { audioLookupKeys, selectAudioRow } from "../lib/quiz-audio-lookup.mjs";
+import { saveMissingQuizAudio } from "../lib/quiz-audio-upload.mjs";
 import { createWorkCache } from "../lib/bounded-work-cache.mjs";
 import { createRequire } from "module";
 import {
@@ -96,6 +97,7 @@ let quizAudioDatabase = null;
 // settled audio or account data is retained; each caller still passes its access checks.
 const quizMediaRequests = createWorkCache({ ttlMs: 0, maxPending: 64 });
 let quizAudioStorage = null;
+let quizAudioUploadStorage = null;
 let explanationStorage = null;
 const quizAudioObjectAvailabilityCache = new Map();
 const QUIZ_AUDIO_OBJECT_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -148,24 +150,28 @@ function getQuizAudioDatabase() {
   return quizAudioDatabase;
 }
 
-function getQuizAudioStorage() {
+function getQuizAudioStorage({ singleAttempt = false } = {}) {
   if (!isQuizAudioStorageConfigured()) {
     const error = new Error("quiz_audio_not_configured");
     error.statusCode = 503;
     throw error;
   }
-  if (!quizAudioStorage) {
-    quizAudioStorage = new S3Client({
+  let client = singleAttempt ? quizAudioUploadStorage : quizAudioStorage;
+  if (!client) {
+    client = new S3Client({
       region: "auto",
       forcePathStyle: true,
+      ...(singleAttempt ? { maxAttempts: 1 } : {}),
       endpoint: `https://${QUIZ_AUDIO_R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
       credentials: {
         accessKeyId: QUIZ_AUDIO_R2_ACCESS_KEY_ID,
         secretAccessKey: QUIZ_AUDIO_R2_SECRET_ACCESS_KEY
       }
     });
+    if (singleAttempt) quizAudioUploadStorage = client;
+    else quizAudioStorage = client;
   }
-  return quizAudioStorage;
+  return client;
 }
 
 function getExplanationStorage() {
@@ -962,6 +968,28 @@ export async function authorizeQuizBankPreview(req) {
 export function quizBankSession({ phone, deviceId }) {
   const session = createSignedToken({ phone, deviceId, purpose: "quiz", role: "admin", ttlMs: QUIZ_SESSION_TOKEN_TTL_MS });
   return { quizSessionToken: session.token, quizSessionTokenExpiresAt: session.expiresAt };
+}
+
+// Only the QuizBank handler calls this, after authorization, file validation,
+// and resolving the trusted archive row. Never route through the replacement
+// save/migration actions below: missing-only uploads do not modify aliases.
+export async function saveQuizBankAudio({ data, identity, upload, req }, res) {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  req.once?.("aborted", abort);
+  res.once?.("close", abort);
+  req.signal?.addEventListener("abort", abort, { once: true });
+  if (req.aborted || req.signal?.aborted) abort();
+  try {
+    const result = await saveMissingQuizAudio({ identity, upload, createdBy: normalizePhoneNumber(data.phone),
+      signal: controller.signal }, { sql: getQuizAudioDatabase(), storage: getQuizAudioStorage({ singleAttempt: true }), bucket: QUIZ_AUDIO_R2_BUCKET,
+      isLegacyAmbiguous: isLegacyQuizAudioAmbiguous, invalidate: key => quizAudioObjectAvailabilityCache.delete(key) });
+    return res.status(result.created ? 201 : 200).json(result);
+  } finally {
+    req.removeListener?.("aborted", abort);
+    res.removeListener?.("close", abort);
+    req.signal?.removeEventListener("abort", abort);
+  }
 }
 
 // Use the SAME storage, MIME sniffing, cache, lookup order and TTS service as

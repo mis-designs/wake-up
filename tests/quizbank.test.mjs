@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { Readable } from "node:stream";
 import { S3Client } from "@aws-sdk/client-s3";
-import { parseQuizBank, quizBankConfig, loadQuizBank, quizBankAudioIdentity } from "../api/quizbank-catalog.mjs";
+import { parseQuizBank, quizBankConfig, loadQuizBank, quizBankAudioIdentity, quizBankStorageIdentity } from "../api/quizbank-catalog.mjs";
 import { quizAudioCatalog } from "../api/quiz-audio-catalog.mjs";
 import { neonConfig } from "@neondatabase/serverless";
 
@@ -41,6 +41,22 @@ test("exact Magic Book reuse preserves identity; altered figure, punctuation or 
   assert.deepEqual(quizBankAudioIdentity(row), quizAudioCatalog.identityFor(row));
   assert.equal(quizBankAudioIdentity({ ...row, correct: !row.correct, question: row.question + " !!!" }), null);
   assert.equal(quizBankAudioIdentity({ ...row, figure: "9999" }), null);
+  assert.deepEqual(quizBankStorageIdentity(row), quizBankAudioIdentity(row));
+});
+
+test("isolated storage identities include exact content, figure and answer, never position or legacy keys", () => {
+  const row = { id: "qb_s01_q01", question: "Domanda isolata.", figure: "25", correct: true };
+  const identity = quizBankStorageIdentity(row);
+  assert.equal(quizBankAudioIdentity(row), null);
+  assert.match(identity.quizKey, /^qb1_[a-f0-9]{64}$/);
+  assert.equal(identity.legacySafe, false);
+  assert.equal(identity.legacyQuizKey, undefined);
+  assert.deepEqual(identity.previousQuizKeys, []);
+  assert.deepEqual(quizBankStorageIdentity({ ...row, id: "qb_s50_q30" }), identity);
+  assert.deepEqual(quizBankStorageIdentity({ ...row, figure: "fig025.png" }), identity);
+  for (const change of [{ question: "Domanda isolata?" }, { question: "DOMANDA isolata." }, { correct: false }, { figure: "26" }, { figure: "" }]) {
+    assert.notEqual(quizBankStorageIdentity({ ...row, ...change }).quizKey, identity.quizKey);
+  }
 });
 
 test("R2 loads single-flight, caches validated data, retries failed work only on a new request", async t => {
@@ -85,11 +101,13 @@ test("private API: no role spoofing, no user access, no R2 before authorization,
   t.after(() => { neonConfig.fetchFunction = previousFetch; });
   neonConfig.fetchFunction = async (_url, options) => {
     queries++;
-    assert.match(JSON.parse(options.body).query, /ANY/);
+    const statement = JSON.parse(options.body);
+    assert.match(statement.query, /ANY/);
     const identity = quizAudioCatalog.identityFor(canonical);
+    const matches = statement.params[0].includes(identity.quizKey);
     return Response.json({ command: "SELECT", rowCount: 1,
       fields: ["quiz_key", "audio_key", "audio_mime_type", "audio_duration_ms"].map(name => ({ name, dataTypeID: name === "audio_duration_ms" ? 23 : 25 })),
-      rows: [[identity.quizKey, "fixture.mp3", "audio/mpeg", 1200]] });
+      rows: matches ? [[identity.quizKey, "fixture.mp3", "audio/mpeg", 1200]] : [] });
   };
   t.mock.method(globalThis, "fetch", async url => {
     if (String(url).startsWith("https://tts.invalid/")) {
@@ -120,15 +138,17 @@ test("private API: no role spoofing, no user access, no R2 before authorization,
   assert.equal(catalog.body.quiz, undefined); assert.equal(reads, 1);
   const sheet = await request({ action: "getStudyQuiz", chapters: "2" });
   assert.equal(sheet.statusCode, 200); assert.equal(sheet.body.quiz.length, 30);
+  assert.equal(sheet.body.canUploadAudio, true);
+  assert.equal(sheet.body.quiz[0].explanationMapped, false);
   assert.equal(sheet.body.quiz[0].id, "qb_s02_q01"); assert.ok(sheet.body.quizSessionToken);
   assert.match(sheet.headers["Cache-Control"], /private, no-store/);
   assert.equal(sheet.headers["CDN-Cache-Control"], "no-store");
   assert.equal((await request({ action: "getStudyQuiz", chapters: "51" })).statusCode, 400);
   assert.equal((await request({ action: "saveQuizAudio" }, token("admin"), "POST")).statusCode, 400);
   assert.equal((await request({ action: "getQuizAudioStatus", questionId: "qb_s01_q02", question: "spoof", figure: "25" }, token("admin"), "POST")).body.available, false);
-  assert.equal(queries, 0, "unmapped content never probes another recording");
+  assert.equal(queries, 1, "unmapped content probes only its isolated identity");
   assert.equal((await request({ action: "getQuizAudioStatus", questionId: "qb_s01_q01", question: "spoof", figure: "9999" }, token("admin"), "POST")).body.available, true);
-  assert.equal(queries, 1);
+  assert.equal(queries, 2);
   assert.equal((await request({ action: "getItalianAudio", questionId: "qb_s01_q01", text: "untrusted" })).statusCode, 200);
   assert.equal(ttsText, canonical.question, "TTS must use the server's question, not arbitrary client text");
   assert.equal((await request({ action: "getQuizAudioBlob", questionId: "qb_s99_q01" }, token("admin"), "POST")).statusCode, 404);

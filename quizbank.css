@@ -1,5 +1,12 @@
 /* QuizBank variant of the canonical study reader. */
-body.quizbank-page { background: #fff; --quizbank-accent: #d91c37; }
+body.quizbank-page { background: #fff; --quizbank-accent: #d91c37; --z-dialog: 1000; --quizbank-scroll-thumb: var(--muted); --quizbank-scroll-track: var(--surface); }
+.quizbank-page, .quizbank-page * { scrollbar-color: var(--quizbank-scroll-thumb) var(--quizbank-scroll-track); scrollbar-width: thin; }
+.quizbank-page ::-webkit-scrollbar { width: 8px; height: 8px; }
+.quizbank-page ::-webkit-scrollbar-track { background: var(--quizbank-scroll-track); }
+.quizbank-page ::-webkit-scrollbar-thumb { border-radius: 8px; background: var(--quizbank-scroll-thumb); }
+.quizbank-page ::-webkit-scrollbar-thumb:hover { background: var(--purple-dark); }
+.quizbank-page ::-webkit-scrollbar-thumb:active { background: var(--forest); }
+@media (forced-colors: active) { .quizbank-page, .quizbank-page * { scrollbar-color: auto; } }
 .quizbank-page [hidden] { display: none !important; }
 .quizbank-page .study-header { background: #fff; box-shadow: none; border-bottom-color: var(--line); }
 .quizbank-page .study-heading small { color: var(--quizbank-accent); }
