@@ -15,14 +15,15 @@ export default async function handler(req, res) {
   if (!actions[req.method]) return res.status(405).json({ error: "method_not_allowed" });
   try {
     // Authorize every call BEFORE touching R2 or the shared process cache.
-    const { data, access } = await authorizeQuizBankPreview(req);
+    const { data, access, role, canUploadAudio } = await authorizeQuizBankPreview(req);
     if (!actions[req.method].has(data.action)) return res.status(400).json({ error: "invalid_action" });
     const renewed = access.accessToken ? { accessToken: access.accessToken, accessTokenExpiresAt: access.accessTokenExpiresAt } : {};
     if (access.accessToken) {
       res.setHeader("X-Access-Token", access.accessToken);
       res.setHeader("X-Access-Token-Expires", String(access.accessTokenExpiresAt));
     }
-    if (data.action === "refreshQuizSession") return res.status(200).json({ ok: true, ...quizBankSession(data), ...renewed });
+    if (data.action === "refreshQuizSession") return res.status(200).json({ ok: true, role, canUploadAudio,
+      ...quizBankSession(data, { role }), ...renewed });
     if (data.action === "getTTS") return await serveQuizBankMedia({ action: data.action, text: data.text }, res);
     const upload = data.action === "saveQuizAudio" ? decodeQuizAudioUpload(data) : null;
     const sheet = Number(data.chapters);
@@ -31,12 +32,12 @@ export default async function handler(req, res) {
     }
     const bank = await loadQuizBank();
     if (data.action === "catalog") {
-      return res.status(200).json({ ok: true, preview: true, questionCount: 1500,
+      return res.status(200).json({ ok: true, preview: canUploadAudio, role, canUploadAudio, questionCount: 1500,
         sheets: bank.sheets.map((rows, index) => ({ number: index + 1, count: rows.length })), ...renewed });
     }
     if (data.action === "getStudyQuiz") {
-      return res.status(200).json({ ok: true, sheet, canUploadAudio: true,
-        quiz: bank.sheets[sheet - 1], ...quizBankSession(data), ...renewed });
+      return res.status(200).json({ ok: true, sheet, role, canUploadAudio,
+        quiz: bank.sheets[sheet - 1], ...quizBankSession(data, { role }), ...renewed });
     }
     const row = bank.byId.get(String(data.questionId || ""));
     if (!row) return res.status(404).json({ error: "quizbank_question_not_found" });

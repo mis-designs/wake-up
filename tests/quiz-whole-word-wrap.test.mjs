@@ -32,7 +32,7 @@ test("translation reader and study questions preserve the same whole-word rule",
 
 test("changed question styles are versioned and included in the new worker cache", () => {
   const worker = read("service-worker.js");
-  for (const [page, asset] of [["quiz.html", "mystyle.css?v=60-web-quiz-layout"], ["quiz.html", "quiz-help.css?v=20260928-desktop"], ["study-quiz.html", "study-quiz.css?v=28-compact"]]) {
+  for (const [page, asset] of [["quiz.html", "mystyle.css?v=61-shared-recorder"], ["quiz.html", "quiz-help.css?v=20260928-desktop"], ["study-quiz.html", "study-quiz.css?v=28-compact"]]) {
     assert.ok(read(page).includes(asset));
     assert.ok(worker.includes(asset));
   }

@@ -96,6 +96,13 @@ let quizAudioDatabase = null;
 // Identical simultaneous TTS requests share only the in-flight result. No
 // settled audio or account data is retained; each caller still passes its access checks.
 const quizMediaRequests = createWorkCache({ ttlMs: 0, maxPending: 64 });
+// QuizBank stores only positive entitlement expiry times, never GAS/account
+// responses. Keys include the verified access session and its phone/device.
+const quizBankAllowedSessions = new Map();
+const quizBankAccessPending = new Map();
+const QUIZ_BANK_ALLOW_TTL_MS = 60_000;
+const QUIZ_BANK_ALLOW_MAX_ENTRIES = 256;
+const QUIZ_BANK_ACCESS_MAX_PENDING = 64;
 let quizAudioStorage = null;
 let quizAudioUploadStorage = null;
 let explanationStorage = null;
@@ -713,20 +720,24 @@ function verifySignedToken(token, { phone, deviceId, purpose }) {
   return { ok: true, payload };
 }
 
-async function ensureAccess({ phone, deviceId, accessToken, forceValidate = false }) {
+function withPrivateAuthData(access, authData) {
+  return Object.defineProperty(access, "authData", { value: authData });
+}
+
+async function ensureAccess({ phone, deviceId, accessToken, forceValidate = false, quizBankValidation = false, quizBankSignal }) {
   const tokenStatus = verifySignedToken(accessToken, { phone, deviceId, purpose: "access" });
   if (tokenStatus.ok && !forceValidate) {
     return { ok: true, usedAccessToken: true, role: tokenStatus.payload.role || "user" };
   }
 
-  const authData = await validateAccess(phone, deviceId);
+  const authData = await validateAccess(phone, deviceId, { bounded: quizBankValidation, signal: quizBankSignal });
   if (!isAuthSuccess(authData)) {
     const error = getAuthError(authData);
     return { ok: false, error, statusCode: getAuthStatusCode(error) };
   }
 
   if (tokenStatus.ok) {
-    return { ok: true, usedAccessToken: true, role: tokenStatus.payload.role || "user" };
+    return withPrivateAuthData({ ok: true, usedAccessToken: true, role: tokenStatus.payload.role || "user" }, authData);
   }
 
   // An expired token with a valid signature can preserve the admin role only
@@ -745,19 +756,19 @@ async function ensureAccess({ phone, deviceId, accessToken, forceValidate = fals
     role: renewedRole
   });
 
-  return {
+  return withPrivateAuthData({
     ok: true,
     usedAccessToken: false,
     role: renewedRole,
     accessToken: access.token,
     accessTokenExpiresAt: access.expiresAt
-  };
+  }, authData);
 }
 
-async function validateAccess(phone, deviceId) {
+async function validateAccess(phone, deviceId, { bounded = false, signal } = {}) {
   if (!phone || !deviceId) return { success: false, error: "unauthorized" };
 
-  const response = await fetchUpstream(ACCESS_GAS_URL, {
+  const request = {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -767,7 +778,38 @@ async function validateAccess(phone, deviceId) {
       deviceId,
       registerDevice: false
     })
-  }, { service: "access_service", timeoutMs: 10_000 });
+  };
+  const config = { service: "access_service", timeoutMs: 10_000 };
+  // Only QuizBank opts in: its pending entitlement work must have a deadline
+  // through JSON consumption as well as headers. Existing Magic Book behavior
+  // and account/device validation semantics remain unchanged.
+  if (bounded) {
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    signal?.addEventListener("abort", abort, { once: true });
+    if (signal?.aborted) abort();
+    try {
+      return await withOperationalTimeout((async () => {
+        controller.signal.throwIfAborted();
+        const response = await fetch(ACCESS_GAS_URL, { ...request, signal: controller.signal });
+        if (response.status >= 500 || response.status === 429) {
+          await response.body?.cancel();
+          throw new Error("access_service_unavailable");
+        }
+        if (!response.ok) {
+          await response.body?.cancel();
+          return { success: false, error: "unauthorized" };
+        }
+        return await response.json();
+      })(), config);
+    } catch {
+      throw Object.assign(new Error("access_service_unavailable"), { statusCode: 503 });
+    } finally {
+      abort();
+      signal?.removeEventListener("abort", abort);
+    }
+  }
+  const response = await fetchUpstream(ACCESS_GAS_URL, request, config);
 
   let data = null;
   try {
@@ -951,22 +993,126 @@ async function addAdminCorrectAnswers(quiz) {
   return addLocalAdminAnswers(quiz);
 }
 
-// QuizBank is a separate, server-gated preview. These functions are internal
-// imports, never actions of /api/quiz; normal Magic Book access is unchanged.
+// These are internal QuizBank imports, never actions of /api/quiz. Ordinary
+// accounts retain common account/device/expiry checks and additionally need
+// the exact GAS-owned Quiz_bank field. Signed, allow-listed admins bypass it.
+const quizBankAccessError = (error, statusCode) => Object.assign(new Error(error), { statusCode });
+
+function requireSuccessfulQuizBankAccess(access) {
+  if (!access.ok) throw quizBankAccessError(access.error || "unauthorized", access.statusCode || 401);
+  return access;
+}
+
+function quizBankSessionCacheKey(proof, token) {
+  return crypto.createHash("sha256").update(JSON.stringify([
+    proof.payload.phone, proof.payload.deviceId, token
+  ])).digest("hex");
+}
+
+function waitForQuizBankAccess(req, entry) {
+  entry.waiters++;
+  return new Promise((resolve, reject) => {
+    let finished = false;
+    const finish = (settle, value) => {
+      if (finished) return;
+      finished = true;
+      req.removeListener?.("aborted", cancel);
+      req.signal?.removeEventListener("abort", cancel);
+      if (--entry.waiters === 0 && !entry.settled) entry.controller.abort();
+      settle(value);
+    };
+    const cancel = () => finish(reject, quizBankAccessError("quizbank_request_cancelled", 503));
+    req.once?.("aborted", cancel);
+    req.signal?.addEventListener("abort", cancel, { once: true });
+    entry.promise.then(value => finish(resolve, value), error => finish(reject, error));
+    if (req.aborted || req.signal?.aborted) cancel();
+  });
+}
+
 export async function authorizeQuizBankPreview(req) {
+  const requestStartedAt = Date.now();
   if (!isConfigured()) throw Object.assign(new Error("missing_server_config"), { statusCode: 503 });
   const data = getRequestData(req);
   if (!hasValidRequestShape(data)) throw Object.assign(new Error("invalid_request"), { statusCode: 400 });
-  const access = await ensureAccess(data);
-  if (!access.ok) throw Object.assign(new Error(access.error || "unauthorized"), { statusCode: access.statusCode || 401 });
-  if (access.role !== "admin" || !isAdminPhone(data.phone)) {
-    throw Object.assign(new Error("quizbank_preview_forbidden"), { statusCode: 403 });
+  const proof = verifySignedToken(data.accessToken, { phone: data.phone, deviceId: data.deviceId, purpose: "access" });
+  if (!proof.ok && !(proof.signatureValid && proof.error === "token_expired")) {
+    throw quizBankAccessError(proof.error || "unauthorized", 401);
   }
-  return { data, access };
+  if (req.aborted || req.signal?.aborted) throw quizBankAccessError("quizbank_request_cancelled", 503);
+  const isQuizBankAdmin = access => access.role === "admin" && isAdminPhone(proof.payload.phone);
+  const validateSession = async signal => requireSuccessfulQuizBankAccess(await ensureAccess({
+    phone: proof.payload.phone, deviceId: proof.payload.deviceId, accessToken: data.accessToken,
+    quizBankValidation: true, quizBankSignal: signal || req.signal
+  }));
+  const authorized = access => {
+    // A disconnected waiter must not continue to catalog/media/storage. It
+    // does not cancel shared entitlement work needed by other callers.
+    if (req.aborted || req.signal?.aborted) throw quizBankAccessError("quizbank_request_cancelled", 503);
+    const canUploadAudio = isQuizBankAdmin(access);
+    return { data, access, role: canUploadAudio ? "admin" : "user", canUploadAudio };
+  };
+  // Upload denial happens before entitlement reads, file decoding or archive
+  // access. The allow-list alone cannot elevate a signed ordinary user.
+  if (data.action === "saveQuizAudio") {
+    const access = await validateSession();
+    if (!isQuizBankAdmin(access)) throw quizBankAccessError("quizbank_admin_required", 403);
+    return authorized(access);
+  }
+  if (proof.ok && isQuizBankAdmin({ role: proof.payload.role })) return authorized(await validateSession());
+
+  const now = Date.now();
+  for (const [key, expiry] of quizBankAllowedSessions) if (expiry <= now) quizBankAllowedSessions.delete(key);
+  const key = quizBankSessionCacheKey(proof, data.accessToken);
+  if (proof.ok && quizBankAllowedSessions.has(key)) {
+    const expiry = quizBankAllowedSessions.get(key);
+    quizBankAllowedSessions.delete(key); quizBankAllowedSessions.set(key, expiry);
+    // The current proof already authenticated this request. Do not renew in
+    // this shortcut: every renewal must recheck entitlement using its GAS result.
+    return authorized({ ok: true, usedAccessToken: true, role: proof.payload.role || "user" });
+  }
+  if (quizBankAccessPending.has(key)) return authorized(await waitForQuizBankAccess(req, quizBankAccessPending.get(key)));
+  if (quizBankAccessPending.size >= QUIZ_BANK_ACCESS_MAX_PENDING) throw quizBankAccessError("quizbank_access_busy", 503);
+  const entry = { controller: new AbortController(), waiters: 0, settled: false, promise: null };
+  entry.promise = Promise.resolve().then(async () => {
+    const signal = entry.controller.signal;
+    signal.throwIfAborted();
+    const access = await validateSession(signal);
+    if (isQuizBankAdmin(access)) return access;
+    // Renewal already performed the common GAS validation: reuse that exact
+    // private response instead of spending a second request on entitlement.
+    const authData = access.authData ?? await validateAccess(proof.payload.phone, proof.payload.deviceId, { bounded: true, signal });
+    signal.throwIfAborted();
+    if (!isAuthSuccess(authData)) {
+      const error = getAuthError(authData);
+      throw quizBankAccessError(error, getAuthStatusCode(error));
+    }
+    const flag = authData.Quiz_bank;
+    if (flag !== 1 && !(typeof flag === "string" && flag.trim() === "1")) {
+      throw quizBankAccessError("quizbank_access_denied", 403);
+    }
+    const token = access.accessToken || data.accessToken;
+    const current = verifySignedToken(token, { phone: proof.payload.phone, deviceId: proof.payload.deviceId, purpose: "access" });
+    if (!current.ok) throw quizBankAccessError(current.error || "unauthorized", 401);
+    const currentKey = quizBankSessionCacheKey(current, token);
+    // Start the revocation window BEFORE GAS, not when its response arrives.
+    // Cache hits never extend it; it also cannot outlive the signed session.
+    const expiry = Math.min(requestStartedAt + QUIZ_BANK_ALLOW_TTL_MS, Number(current.payload.exp));
+    if (expiry > Date.now()) {
+      quizBankAllowedSessions.delete(currentKey);
+      while (quizBankAllowedSessions.size >= QUIZ_BANK_ALLOW_MAX_ENTRIES) quizBankAllowedSessions.delete(quizBankAllowedSessions.keys().next().value);
+      quizBankAllowedSessions.set(currentKey, expiry);
+    }
+    return access;
+  }).finally(() => {
+    entry.settled = true;
+    if (quizBankAccessPending.get(key) === entry) quizBankAccessPending.delete(key);
+  });
+  quizBankAccessPending.set(key, entry);
+  return authorized(await waitForQuizBankAccess(req, entry));
 }
 
-export function quizBankSession({ phone, deviceId }) {
-  const session = createSignedToken({ phone, deviceId, purpose: "quiz", role: "admin", ttlMs: QUIZ_SESSION_TOKEN_TTL_MS });
+export function quizBankSession({ phone, deviceId }, { role = "user" } = {}) {
+  const session = createSignedToken({ phone, deviceId, purpose: "quizbank", role, claims: { aud: "quizbank" }, ttlMs: QUIZ_SESSION_TOKEN_TTL_MS });
   return { quizSessionToken: session.token, quizSessionTokenExpiresAt: session.expiresAt };
 }
 

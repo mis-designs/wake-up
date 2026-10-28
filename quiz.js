@@ -711,14 +711,7 @@ const quizAudioEditMenu = document.getElementById("quiz-audio-edit-menu");
 const quizAudioRerecord = document.getElementById("quiz-audio-rerecord");
 const quizAudioDelete = document.getElementById("quiz-audio-delete");
 const quizAudioRecorder = document.getElementById("quiz-audio-recorder");
-const quizAudioRecordClose = document.getElementById("quiz-audio-record-close");
-const quizAudioRecordStart = document.getElementById("quiz-audio-record-start");
-const quizAudioRecordStartLabel = document.getElementById("quiz-audio-record-start-label");
-const quizAudioRecordPause = document.getElementById("quiz-audio-record-pause");
-const quizAudioRecordSave = document.getElementById("quiz-audio-record-save");
-const quizAudioRecordStatus = document.getElementById("quiz-audio-record-status");
-const quizAudioRecordTime = document.getElementById("quiz-audio-record-time");
-const quizAudioRecordPreview = document.getElementById("quiz-audio-record-preview");
+
 const sharedAudio = new Audio();
 sharedAudio.preload = "metadata";
 const reviewAudio = new Audio();
@@ -1432,150 +1425,60 @@ sharedAudio.addEventListener("ended", () => { audioFocus?.clearResumable(sharedA
   "seeked"
 ].forEach(eventName => sharedAudio.addEventListener(eventName, paintSharedAudioProgress));
 
-let inlineAudioRecording = null;
-
-function inlineAudioElapsed() {
-  if (!inlineAudioRecording) return 0;
-  return inlineAudioRecording.elapsed
-    + (inlineAudioRecording.phase === "recording" ? Date.now() - inlineAudioRecording.startedAt : 0);
-}
-
-function paintInlineAudioTimer() {
-  if (!quizAudioRecordTime) return;
-  const seconds = Math.floor(inlineAudioElapsed() / 1000);
-  quizAudioRecordTime.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
-}
-
-function setInlineAudioStatus(message) {
-  if (quizAudioRecordStatus) quizAudioRecordStatus.textContent = message;
-}
-
-function setInlineAudioStartState(_icon, label, disabled) {
-  if (quizAudioRecordStartLabel) quizAudioRecordStartLabel.textContent = label;
-  if (quizAudioRecordStart) {
-    quizAudioRecordStart.disabled = disabled;
-    quizAudioRecordStart.classList.toggle("is-recording", label === "Registrazione");
-  }
-}
-
-function buildInlineAudioBlob() {
-  if (!inlineAudioRecording?.chunks.length) return null;
-  if (inlineAudioRecording.url) URL.revokeObjectURL(inlineAudioRecording.url);
-  inlineAudioRecording.blob = new Blob(inlineAudioRecording.chunks, {
-    type: inlineAudioRecording.mimeType || "audio/webm"
-  });
-  inlineAudioRecording.url = URL.createObjectURL(inlineAudioRecording.blob);
-  if (quizAudioRecordPreview) {
-    quizAudioRecordPreview.src = inlineAudioRecording.url;
-    quizAudioRecordPreview.classList.remove("hidden");
-  }
-  quizAudioRecordSave.disabled = false;
-  return inlineAudioRecording.blob;
-}
+let inlineAudioRecorder = null;
+let inlineAudioQuestion = null;
 
 function closeInlineAudioRecorder() {
-  const item = inlineAudioRecording;
-  if (item?.timer) clearInterval(item.timer);
-  if (item?.recorder && item.recorder.state !== "inactive") item.recorder.stop();
-  item?.stream?.getTracks().forEach(track => track.stop());
-  if (item?.url) URL.revokeObjectURL(item.url);
-  inlineAudioRecording = null;
-  quizAudioRecordPreview?.pause();
-  quizAudioRecordPreview?.removeAttribute("src");
-  quizAudioRecordPreview?.classList.add("hidden");
-  quizAudioRecorder?.classList.add("hidden");
+  inlineAudioRecorder?.close();
+  inlineAudioQuestion = null;
 }
 
 function openInlineAudioRecorder(event) {
   event?.stopPropagation();
-  if (!isAdmin || TRIAL_MODE) return;
-  closeInlineAudioRecorder();
-  inlineAudioRecording = {
-    questionIndex: current,
-    stream: null,
-    recorder: null,
-    chunks: [],
-    mimeType: "audio/webm",
-    phase: "ready",
-    startedAt: 0,
-    elapsed: 0,
-    timer: 0,
-    blob: null,
-    url: "",
-    saving: false
-  };
-  quizAudioRecorder?.classList.remove("hidden");
-  setInlineAudioStartState("mic", "Registra", false);
-  quizAudioRecordPause.disabled = true;
-  quizAudioRecordSave.disabled = true;
-  quizAudioRecordSave.classList.remove("is-saving");
-  setInlineAudioStatus("Premi il microfono per iniziare.");
-  paintInlineAudioTimer();
-}
-
-async function startInlineAudioRecording(event) {
-  event?.stopPropagation();
-  const item = inlineAudioRecording;
-  if (!item || item.saving) return;
-  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
-    setInlineAudioStatus("Microfono non disponibile: apri il sito con HTTPS.");
-    return;
+  if (!isAdmin || TRIAL_MODE || !quiz[current] || !window.MagicQuizAudioRecorder) return;
+  if (!inlineAudioRecorder) {
+    inlineAudioRecorder = window.MagicQuizAudioRecorder.create({
+      root: quizAudioRecorder,
+      save: saveInlineAudioRecording,
+      isCurrent: question => isAdmin && !TRIAL_MODE && question === quiz[current],
+      returnFocus: () => quizAudioAdd,
+      onSaved: (_result, { question }) => {
+        inlineAudioQuestion = null;
+        invalidateSharedAudioAvailability(question);
+        updateSharedAudioAvailability(question);
+        showAudioUnavailableToast("Spiegazione audio salvata");
+        quizAudioAdd?.focus({ preventScroll: true });
+      }
+    });
   }
-  try {
-    if (!item.stream?.active) item.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    if (item.recorder?.state === "paused") {
-      item.recorder.resume();
-    } else {
-      item.mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : "audio/webm";
-      item.chunks = [];
-      item.recorder = new MediaRecorder(item.stream, { mimeType: item.mimeType, audioBitsPerSecond: 64000 });
-      item.recorder.ondataavailable = chunk => { if (chunk.data?.size) item.chunks.push(chunk.data); };
-      item.recorder.start();
-    }
-    item.phase = "recording";
-    item.startedAt = Date.now();
-    item.timer = setInterval(paintInlineAudioTimer, 250);
-    setInlineAudioStartState("graphic_eq", "Registrazione", true);
-    quizAudioRecordPause.disabled = false;
-    setInlineAudioStatus("Registrazione in corso…");
-  } catch (error) {
-    setInlineAudioStatus(error?.name === "NotAllowedError"
-      ? "Microfono bloccato. Consenti l'accesso dal lucchetto del browser."
-      : "Impossibile accedere al microfono.");
-  }
+  sharedAudio.pause();
+  audioFocus?.cancelAll();
+  inlineAudioQuestion = quiz[current];
+  inlineAudioRecorder.open({ trigger: quizAudioAdd, question: inlineAudioQuestion });
 }
 
-async function pauseInlineAudioRecording(event) {
-  event?.stopPropagation();
-  const item = inlineAudioRecording;
-  if (!item || item.recorder?.state !== "recording") return;
-  item.elapsed += Date.now() - item.startedAt;
-  item.recorder.requestData();
-  item.recorder.pause();
-  item.phase = "paused";
-  clearInterval(item.timer);
-  paintInlineAudioTimer();
-  await new Promise(resolve => setTimeout(resolve, 100));
-  buildInlineAudioBlob();
-  setInlineAudioStartState("play_arrow", "Riprendi", false);
-  quizAudioRecordPause.disabled = true;
-  setInlineAudioStatus("In pausa. Puoi ascoltare o salvare.");
-}
-
-function blobAsAudioDataUrl(blob) {
+function blobAsAudioDataUrl(blob, signal) {
   return new Promise((resolve, reject) => {
+    signal?.throwIfAborted();
     const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(reader.error || new Error("audio_read_failed"));
+    const cleanup = () => signal?.removeEventListener("abort", abort);
+    const abort = () => {
+      cleanup();
+      reader.abort();
+      reject(signal.reason || new DOMException("Cancelled", "AbortError"));
+    };
+    reader.onload = () => { cleanup(); resolve(String(reader.result || "")); };
+    reader.onerror = () => { cleanup(); reject(reader.error || new Error("audio_read_failed")); };
+    signal?.addEventListener("abort", abort, { once: true });
     reader.readAsDataURL(blob);
   });
 }
 
-async function quizAudioAdminApi(action, question, extra = {}) {
+async function quizAudioAdminApi(action, question, extra = {}, { signal } = {}) {
+  signal?.throwIfAborted();
   const response = await fetch(QUIZ_API, {
     method: "POST",
+    signal,
     headers: {
       "Content-Type": "application/json",
       ...(getQuizAccessToken() ? { Authorization: `Bearer ${getQuizAccessToken()}` } : {})
@@ -1592,47 +1495,40 @@ async function quizAudioAdminApi(action, question, extra = {}) {
     })
   });
   const data = await response.json().catch(() => ({}));
+  signal?.throwIfAborted();
   if (!response.ok) throw new Error(data?.error || `quiz_audio_${response.status}`);
   return data;
 }
 
-async function saveInlineAudioRecording(event) {
-  event?.stopPropagation();
-  const item = inlineAudioRecording;
-  if (!item || item.saving) return;
-  if (item.phase === "recording") await pauseInlineAudioRecording();
-  if (!item.blob) return;
-  const question = quiz[item.questionIndex];
-  item.saving = true;
-  quizAudioRecordSave.disabled = true;
-  quizAudioRecordSave.classList.add("is-saving");
-  setInlineAudioStatus("Salvataggio in corso…");
+async function saveInlineAudioRecording({ blob, mimeType, durationMs }, signal) {
+  signal.throwIfAborted();
+  const question = inlineAudioQuestion;
+  if (!isAdmin || TRIAL_MODE || !question || question !== quiz[current]) {
+    throw Object.assign(new Error("Registrazione non più disponibile."), { retryable: false });
+  }
+  const created = await quizAudioAdminApi("createQuizAudioUpload", question,
+    { audioMimeType: mimeType }, { signal });
+  signal.throwIfAborted();
   try {
-    const created = await quizAudioAdminApi("createQuizAudioUpload", question);
-    try {
-      const upload = await fetch(created.uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": String(created.uploadContentType || "audio/webm") },
-        body: item.blob
-      });
-      if (!upload.ok) throw new Error(`r2_upload_${upload.status}`);
-      await quizAudioAdminApi("confirmQuizAudioUpload", question, { audioDurationMs: inlineAudioElapsed() });
-    } catch (_) {
-      await quizAudioAdminApi("saveQuizAudio", question, {
-        audioBase64: await blobAsAudioDataUrl(item.blob),
-        audioMimeType: "audio/webm",
-        audioDurationMs: inlineAudioElapsed()
-      });
-    }
-    closeInlineAudioRecorder();
-    invalidateSharedAudioAvailability(question);
-    updateSharedAudioAvailability(question);
-    showAudioUnavailableToast("Spiegazione audio salvata");
+    const upload = await fetch(created.uploadUrl, {
+      method: "PUT",
+      signal,
+      headers: { "Content-Type": String(created.uploadContentType || mimeType) },
+      body: blob
+    });
+    signal.throwIfAborted();
+    if (!upload.ok) throw new Error(`r2_upload_${upload.status}`);
+    return await quizAudioAdminApi("confirmQuizAudioUpload", question,
+      { audioDurationMs: durationMs }, { signal });
   } catch (error) {
-    item.saving = false;
-    quizAudioRecordSave.disabled = false;
-    quizAudioRecordSave.classList.remove("is-saving");
-    setInlineAudioStatus(`Salvataggio non riuscito: ${error.message || "riprova"}`);
+    // Preserve the existing single fallback, but never continue an obsolete save.
+    signal.throwIfAborted();
+    if (error?.name === "AbortError") throw error;
+    const audioBase64 = await blobAsAudioDataUrl(blob, signal);
+    signal.throwIfAborted();
+    return quizAudioAdminApi("saveQuizAudio", question, {
+      audioBase64, audioMimeType: mimeType, audioDurationMs: durationMs
+    }, { signal });
   }
 }
 
@@ -1675,11 +1571,7 @@ quizAudioDelete?.addEventListener("click", async event => {
     await showMessage("Eliminazione non riuscita", error.message || "Riprova.");
   }
 });
-quizAudioRecordClose?.addEventListener("click", event => { event.stopPropagation(); closeInlineAudioRecorder(); });
-quizAudioRecordStart?.addEventListener("click", startInlineAudioRecording);
-quizAudioRecordPause?.addEventListener("click", pauseInlineAudioRecording);
-quizAudioRecordSave?.addEventListener("click", saveInlineAudioRecording);
-quizAudioRecorder?.addEventListener("click", event => event.stopPropagation());
+
 document.addEventListener("click", event => {
   if (!quizAudioAdminTools?.contains(event.target)) {
     quizAudioEditMenu?.classList.add("hidden");
@@ -3505,7 +3397,7 @@ function showQuestion() {
   const q = quiz[current];
   window.dispatchEvent(new Event("magicbook:quiz-question-change"));
   markLearningQuestionVisible();
-  if (inlineAudioRecording && inlineAudioRecording.questionIndex !== current) closeInlineAudioRecorder();
+  if (inlineAudioQuestion && inlineAudioQuestion !== q) closeInlineAudioRecorder();
   quizAudioAdminTools?.classList.toggle("hidden", !isAdmin || TRIAL_MODE);
   updateQuizAudioAdminTool(false);
   const veroBtn = document.getElementById("vero");

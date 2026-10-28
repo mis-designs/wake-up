@@ -88,6 +88,7 @@
   let sheetRequest = null;
   let quizBankReady = false;
   let quizBankCanUploadAudio = false;
+  let quizBankRecorder = null;
   let figureStudy = null;
   let figureStudyModule = null;
   let figureView = false;
@@ -325,7 +326,8 @@
     if (allowSessionRefresh && !TRIAL_MODE && isQuizSessionProtectedAction(action)) {
       const freshSession = await ensureFreshQuizSession();
       if (!freshSession.ok && [401, 403].includes(Number(freshSession.error?.status))) {
-        clearSessionAndExit();
+        if (QUIZBANK_MODE) showQuizBankError(freshSession.error);
+        else clearSessionAndExit();
         throw freshSession.error;
       }
     }
@@ -361,11 +363,19 @@
     ) {
       const refreshed = await refreshQuizSession();
       if (refreshed.ok) return fetchStudyJson(url, { ...fetchOptions, allowSessionRefresh: false });
-      if ([401, 403].includes(Number(refreshed.error?.status))) clearSessionAndExit();
+      if ([401, 403].includes(Number(refreshed.error?.status))) {
+        if (QUIZBANK_MODE) { showQuizBankError(refreshed.error); throw refreshed.error; }
+        clearSessionAndExit();
+      }
       throw new Error("quiz_session_refresh_unavailable");
     }
     if (!response.ok) {
       if ([401, 403].includes(response.status)) {
+        if (QUIZBANK_MODE) {
+          const accessError = new Error(error || "unauthorized");
+          showQuizBankError(accessError);
+          throw accessError;
+        }
         if (["expired", "not_found", "device_replaced", "device_mismatch", "unauthorized", "invalid_guest_key", "trial_session_expired"].includes(error)) {
           clearSessionAndExit();
         }
@@ -589,7 +599,7 @@
       quizSessionToken = String((TRIAL_MODE ? data.trialToken : data.quizSessionToken) || "");
       quizSessionTokenExpiresAt = Number((TRIAL_MODE ? data.trialTokenExpiresAt : data.quizSessionTokenExpiresAt) || 0);
       questions = Array.isArray(data.quiz) ? data.quiz : [];
-      if (QUIZBANK_MODE) quizBankCanUploadAudio = data.canUploadAudio === true;
+      if (QUIZBANK_MODE) setQuizBankCapabilities(data);
       renderQuestions();
       rememberStudyChapter(chapter);
       elements.loading.classList.add("hidden");
@@ -818,13 +828,14 @@
     if (QUIZBANK_MODE && quizBankCanUploadAudio) {
       const upload = document.createElement("button");
       upload.type = "button";
-      upload.className = "study-action quizbank-upload";
-      upload.textContent = "Carica audio";
+      upload.className = "quiz-audio-add quizbank-upload";
+      upload.textContent = "+";
       upload.hidden = true;
-      upload.setAttribute("aria-label", `Carica audio per la domanda ${index + 1}`);
-      upload.setAttribute("aria-haspopup", "dialog");
+      upload.setAttribute("aria-label", `Aggiungi spiegazione audio per la domanda ${index + 1}`);
+      upload.title = "Aggiungi spiegazione audio";
+      upload.setAttribute("aria-expanded", "false");
       explanation.surface._uploadButton = upload;
-      upload.addEventListener("click", () => openQuizBankAudioUpload(question, explanation, upload));
+      upload.addEventListener("click", () => openQuizBankAudioRecorder(question, explanation, upload));
       actions.insertBefore(upload, help);
     }
     main.appendChild(actions);
@@ -833,16 +844,55 @@
     return card;
   }
 
-  function openQuizBankAudioUpload(question, controls, trigger) {
-    if (!QUIZBANK_MODE || !quizBankCanUploadAudio || !studyVideoIdentity()) return;
+  function closeQuizBankAudioRecorder() {
+    quizBankRecorder?.destroy();
+    quizBankRecorder = null;
+  }
+
+  function openQuizBankAudioRecorder(question, controls, trigger) {
+    if (!QUIZBANK_MODE || !quizBankCanUploadAudio || !studyVideoIdentity() || !trigger.isConnected) return;
     const generation = loadRequestId;
-    const isCurrent = () => generation === loadRequestId && Boolean(studyVideoIdentity()) && trigger.isConnected;
+    const identity = studyVideoIdentity();
+    const isCurrent = () => generation === loadRequestId && identity === studyVideoIdentity()
+      && quizBankCanUploadAudio && trigger.isConnected;
+    closeQuizBankAudioRecorder();
     stopPlayback();
-    window.MagicQuizAudioUpload?.open({
-      trigger, label: `Scheda ${currentChapter} · Domanda ${question.number}`,
-      question: question.question, isCurrent,
+    const container = trigger.closest(".study-question-main");
+    if (!container || !window.MagicQuizAudioRecorder) return;
+    quizBankRecorder = window.MagicQuizAudioRecorder.create({
+      container, isCurrent, maxBytes: 3 * 1024 * 1024,
       returnFocus: () => trigger.hidden ? controls.play : trigger,
-      save: (payload, signal) => audioApi("saveQuizAudio", question, { payload, signal, timeoutMs: 30000 }),
+      async save({ blob, mimeType, durationMs }, signal) {
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        signal.throwIfAborted();
+        if (!isCurrent()) throw new DOMException("Cancelled", "AbortError");
+        let binary = "";
+        for (let offset = 0; offset < bytes.length; offset += 32768) {
+          binary += String.fromCharCode(...bytes.subarray(offset, offset + 32768));
+        }
+        try {
+          return await audioApi("saveQuizAudio", question, { signal, timeoutMs: 30000,
+            payload: { audioBase64: btoa(binary), audioMimeType: mimeType, audioDurationMs: durationMs } });
+        } catch (error) {
+          if (!isCurrent() || signal.aborted) throw error;
+          const code = error?.message || "";
+          if (code === "quiz_audio_already_exists") {
+            audioStatusRequests.get(audioStatusKey(question))?.controller.abort();
+            audioStatusRequests.delete(audioStatusKey(question));
+            cacheAudioAvailability(question, true);
+            paintAudioAvailability(controls.surface, true);
+          }
+          const terminal = /quiz_audio_(already_exists|requires_review|requires_repair|upload_conflict)|invalid_audio|audio_too_large/.test(code);
+          const message = code === "quiz_audio_already_exists"
+            ? "È già presente una spiegazione. Nessun audio è stato sostituito."
+            : /requires_review|requires_repair|upload_conflict/.test(code)
+              ? "Questa spiegazione richiede una verifica. Nessun audio è stato sostituito."
+              : /audio_too_large/.test(code) ? "La registrazione supera 3 MB. Registra una spiegazione più breve."
+                : /invalid_audio/.test(code) ? "Registrazione non valida. Chiudi e registra di nuovo."
+                  : "Salvataggio non riuscito. La registrazione è ancora qui: riprova con Salva.";
+          throw Object.assign(new Error(message), { retryable: !terminal });
+        }
+      },
       onSaved() {
         if (!isCurrent()) return;
         // Invalidate previous misses, including exact duplicates on this sheet.
@@ -856,17 +906,11 @@
           const surface = elements.list.children[index]?.querySelector(".study-explanation-media");
           if (surface) paintAudioAvailability(surface, true);
         });
-        showToast("Spiegazione audio caricata.");
+        showToast("Spiegazione audio salvata");
         controls.play.focus({ preventScroll: true });
-      },
-      onConflict() {
-        if (!isCurrent()) return;
-        audioStatusRequests.get(audioStatusKey(question))?.controller.abort();
-        audioStatusRequests.delete(audioStatusKey(question));
-        cacheAudioAvailability(question, true);
-        paintAudioAvailability(controls.surface, true);
       }
     });
+    quizBankRecorder.open({ trigger, question });
   }
 
   function renderQuestions() {
@@ -1742,7 +1786,7 @@
   }
 
   function resetAudioObservation() {
-    if (QUIZBANK_MODE) window.MagicQuizAudioUpload?.close();
+    if (QUIZBANK_MODE) closeQuizBankAudioRecorder();
     audioObserver?.disconnect();
     pendingAudioStatusChecks.forEach(timer => window.clearTimeout(timer));
     pendingAudioStatusChecks.clear();
@@ -2154,8 +2198,16 @@
     resetAudioObservation();
   });
 
+  function setQuizBankCapabilities(data = {}) {
+    quizBankCanUploadAudio = data.canUploadAudio === true;
+    const label = document.getElementById("quizbank-access-label");
+    const adminHelp = document.getElementById("quizbank-admin-help");
+    if (label) label.textContent = quizBankCanUploadAudio ? "Amministratore" : "Accesso riservato";
+    if (adminHelp) adminHelp.hidden = !quizBankCanUploadAudio;
+  }
+
   function showQuizBankError(error) {
-    quizBankCanUploadAudio = false;
+    setQuizBankCapabilities();
     loadRequestId += 1;
     sheetRequest?.abort();
     resetAudioObservation(); stopPlayback();
@@ -2165,11 +2217,16 @@
     elements.chapters.classList.add("hidden");
     elements.reader.classList.add("hidden");
     elements.error.classList.remove("hidden");
-    const denied = ["unauthorized", "expired", "not_found", "device_replaced", "device_mismatch", "quizbank_preview_forbidden"].includes(error.message);
+    const permissionDenied = ["quizbank_access_denied", "quizbank_admin_required", "quizbank_preview_forbidden"].includes(error.message);
+    const sessionDenied = ["unauthorized", "expired", "not_found", "device_replaced", "device_mismatch"].includes(error.message);
+    const denied = permissionDenied || sessionDenied;
     if (denied) { quizBankReady = false; ttsCache.clear(); helpCache.clear(); audioStatusCache.clear(); }
+    document.title = denied ? "Accesso riservato | QuizBank" : "QuizBank | Riprova";
     const messages = {
-      quizbank_preview_forbidden: "QuizBank è in anteprima riservata agli amministratori. L’accesso Magic Book resta invariato.",
-      unauthorized: "Accedi con il tuo account amministratore per aprire QuizBank.",
+      quizbank_access_denied: "QuizBank non è abilitato per il tuo account. L’accesso Magic Book non include QuizBank. Contatta l’amministratore per l’attivazione.",
+      quizbank_admin_required: "Solo gli amministratori possono caricare spiegazioni audio. Puoi continuare a studiare se QuizBank è abilitato per il tuo account.",
+      quizbank_preview_forbidden: "QuizBank non è abilitato per il tuo account. Contatta l’amministratore per l’attivazione.",
+      unauthorized: "Accedi con il tuo account per aprire QuizBank.",
       quizbank_not_configured: "Il collegamento a QuizBank non è ancora configurato su questo ambiente.",
       quizbank_archive_unavailable: "Non riesco a leggere l’archivio QuizBank. Controlla bucket, nome del file e permessi di lettura.",
       quizbank_invalid_archive: "Il file deve contenere le 50 schede complete, con 30 domande ciascuna.",
@@ -2178,8 +2235,8 @@
     elements.errorMessage.textContent = messages[error.message] || (denied
       ? "La sessione non è più valida. Accedi nuovamente per continuare."
       : "QuizBank non è disponibile al momento. Controlla la connessione e riprova.");
-    elements.retry.hidden = denied || error.message === "quizbank_invalid_sheet";
-    document.getElementById("quizbank-error-login").hidden = !denied;
+    elements.retry.hidden = sessionDenied || error.message === "quizbank_invalid_sheet";
+    document.getElementById("quizbank-error-login").hidden = !sessionDenied;
     elements.error.focus({ preventScroll: true });
   }
 
@@ -2196,6 +2253,7 @@
       if (data.sheets?.length !== 50 || data.questionCount !== 1500) throw new Error("quizbank_invalid_archive");
       if (!studyVideoIdentity()) { showQuizBankError(new Error("unauthorized")); return; }
       saveAccessToken(data.accessToken, data.accessTokenExpiresAt);
+      setQuizBankCapabilities(data);
       quizBankReady = true;
       showPicker();
     } catch (error) { if (ownRequest === loadRequestId) showQuizBankError(error); }

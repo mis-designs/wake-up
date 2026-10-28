@@ -75,7 +75,7 @@ test("R2 loads single-flight, caches validated data, retries failed work only on
   await loadQuizBank({ ...config, key: "failure" }); assert.equal(reads, 3);
 });
 
-test("private API: no role spoofing, no user access, no R2 before authorization, one sheet per read", async t => {
+test("private API: no role spoofing or unentitled user access, no R2 before authorization, one sheet per read", async t => {
   const env = { SESSION_SECRET: "qb-test-secret", GAS_ACCESS_URL: "https://access.invalid/", GAS_SECRET: "fixture",
     QUIZ_GAS_URL: "https://tts.invalid/", QUIZ_PROXY_SECRET: "fixture",
     DATABASE_URL: "postgresql://test:test@unit-test.neon.tech/test",
@@ -88,7 +88,7 @@ test("private API: no role spoofing, no user access, no R2 before authorization,
     t.after(() => previous === undefined ? delete process.env[key] : process.env[key] = previous);
   }
   const { default: handler } = await import("../api/quizbank.js");
-  let reads = 0, queries = 0, ttsText = "";
+  let reads = 0, queries = 0, ttsText = "", accountValid = true;
   const rows = fixtureRows(), canonical = quizAudioCatalog.rows.find(row => row.id === "cap1_q17");
   Object.assign(rows[0], { domanda: canonical.question, risposta_corretta: Boolean(canonical.correct),
     risposta: canonical.correct ? "V" : "F", ha_figura: Boolean(canonical.figure),
@@ -114,7 +114,7 @@ test("private API: no role spoofing, no user access, no R2 before authorization,
       ttsText = new URL(url).searchParams.get("text");
       return Response.json({ audio: Buffer.from("ID3fixture").toString("base64") });
     }
-    return Response.json({ success: false, error: "unauthorized" });
+    return Response.json(accountValid ? { success: true, Quiz_bank: 0 } : { success: false, error: "unauthorized" });
   });
   const phone = "39123456789", deviceId = "quizbank_test_device";
   const token = (role, who = phone, exp = Date.now() + 60_000) => {
@@ -131,7 +131,9 @@ test("private API: no role spoofing, no user access, no R2 before authorization,
   assert.equal((await request({ role: "admin" }, token("user"))).statusCode, 403);
   assert.equal((await request({}, "forged")).statusCode, 401);
   assert.equal((await request({ phone: "39987654321" }, token("admin", "39987654321"))).statusCode, 403);
+  accountValid = false;
   assert.equal((await request({}, token("admin", phone, 1))).statusCode, 401);
+  accountValid = true;
   assert.equal(reads, 0);
   const catalog = await request();
   assert.equal(catalog.statusCode, 200); assert.equal(catalog.body.sheets.length, 50);

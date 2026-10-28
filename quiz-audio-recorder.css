@@ -1,0 +1,151 @@
+/* Canonical MagicBook inline recorder and add button, shared with QuizBank. */
+.quiz-audio-add {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #ffd1b7;
+  border-radius: 50%;
+  background: #fff2e9;
+  color: #f05c0b;
+  font-size: 1.65rem;
+  line-height: 1;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(37, 41, 67, .14);
+}
+
+.quiz-audio-add img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.quiz-audio-add.has-audio {
+  display: grid;
+  place-items: center;
+  border-color: #cfc5ff;
+  background: #eeeaff;
+}
+
+.quiz-audio-recorder {
+  position: relative;
+  inset: auto;
+  z-index: 1;
+  width: 100%;
+  flex: 0 0 auto;
+  scroll-margin-block: 12px;
+  padding: 14px;
+  border: 1px solid #ffd1b7;
+  border-radius: 17px;
+  background: rgba(255, 255, 255, .98);
+  box-shadow: 0 18px 42px rgba(37, 41, 67, .22);
+  cursor: default;
+}
+
+.quiz-audio-recorder-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 44px;
+  align-items: center;
+  gap: 10px;
+}
+
+.quiz-audio-recorder-head #quiz-audio-record-time,
+.quiz-audio-recorder-head [data-recorder="time"] {
+  color: #087e72;
+  font-weight: 900;
+}
+
+.quiz-audio-recorder-head button {
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #eef1f7;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.quiz-audio-recorder-head button svg,
+.quiz-recorder-icon svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.quiz-recorder-icon {
+  display: inline-grid;
+  place-items: center;
+}
+
+.quiz-audio-record-actions button.is-recording .quiz-recorder-icon {
+  animation: recorderMicPulse .9s ease-in-out infinite alternate;
+}
+
+.quiz-audio-record-actions button.is-saving .quiz-recorder-icon {
+  animation: recorderSavingPulse .8s ease-in-out infinite;
+}
+
+@keyframes recorderMicPulse {
+  to {
+    transform: scale(1.15);
+    color: #ee2f4b;
+  }
+}
+
+.quiz-audio-recorder > p {
+  margin: 10px 0;
+  color: #55657b;
+  font-size: .82rem;
+  line-height: 1.35;
+}
+
+.quiz-audio-recorder > audio {
+  width: 100%;
+  height: 38px;
+  margin-bottom: 10px;
+}
+
+.quiz-audio-record-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quiz-audio-record-actions button {
+  min-height: 44px;
+  padding: 8px 11px;
+  border: 0;
+  border-radius: 11px;
+  background: #eef1f7;
+  color: var(--color-dark, #29405e);
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.quiz-audio-record-actions button:last-child {
+  background: #e4f5ed;
+  color: #087e52;
+}
+
+.quiz-audio-record-actions button:disabled {
+  cursor: not-allowed;
+  opacity: .42;
+}
+
+
+.quiz-audio-recorder, .quiz-audio-recorder * { box-sizing: border-box; }
+.quiz-audio-recorder.hidden, .quiz-audio-recorder .hidden { display: none !important; }
+.quiz-audio-add:focus-visible, .quiz-audio-recorder button:focus-visible, .quiz-audio-recorder audio:focus-visible { outline: 3px solid #3a4efb; outline-offset: 3px; }
+.quiz-audio-add:hover:not(:disabled), .quiz-audio-recorder button:hover:not(:disabled) { filter: brightness(.97); }
+.quiz-audio-add:active:not(:disabled), .quiz-audio-recorder button:active:not(:disabled) { filter: brightness(.92); }
+@keyframes recorderSavingPulse {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.90); }
+}
+@media (prefers-reduced-motion: reduce) { .quiz-audio-recorder .quiz-recorder-icon { animation: none !important; } }

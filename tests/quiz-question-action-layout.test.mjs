@@ -4,6 +4,7 @@ import test from "node:test";
 
 const page = readFileSync(new URL("../quiz.html", import.meta.url), "utf8");
 const quizStyles = readFileSync(new URL("../mystyle.css", import.meta.url), "utf8");
+const recorderStyles = readFileSync(new URL("../quiz-audio-recorder.css", import.meta.url), "utf8");
 const helpStyles = readFileSync(new URL("../quiz-help.css", import.meta.url), "utf8");
 
 function cssBlock(source, selector) {
@@ -39,7 +40,7 @@ test("question actions and hint stay in flow instead of covering long text", () 
   const area = cssBlock(quizStyles, ".question-area");
   const content = cssBlock(quizStyles, ".quiz-question-content");
   const actions = cssBlock(quizStyles, ".quiz-question-actions");
-  const recorder = cssBlock(quizStyles, ".quiz-audio-recorder");
+  const recorder = cssBlock(recorderStyles, ".quiz-audio-recorder");
   const hint = cssBlock(helpStyles, ".quiz-click-hint");
 
   assert.match(area, /display:\s*grid;/u);

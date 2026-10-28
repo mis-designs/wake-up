@@ -32,6 +32,7 @@ canonical_ui:
     - src/learning-insights.css
     - assets/fonts/magicbook-bangla-fonts.css
     - study-quiz.css
+    - quiz-audio-recorder.css
     - video-class.css
     - car-indicator.css
     - figure-study.css
@@ -41,18 +42,19 @@ canonical_ui:
 design_context:
   owner: Magic Book
   last_updated: 2026-10-28
-  revision_notes: "QuizBank replaces Coming Soon with an admin-only, manually addressed study archive; existing Magic Book screens and entitlements remain unchanged."
+  revision_notes: "QuizBank uses the separate Quiz_bank Sheet flag and the same inline microphone recorder as Magic Book, replacing the rejected file-picker."
 ---
 
 # Magic Book design context
 
 ## QuizBank study preview — 2026-10-28
 
-- Owner scope: manual `/quizbank`, no Home or chapter-menu entry. Initial server-enforced admin preview; the future separate Google Sheet QuizBank entitlement and admin checkbox are deferred. A normal Magic Book subscription must not unlock it.
+- Owner scope: manual `/quizbank`, no Home or chapter-menu entry. The owner's follow-up enables ordinary valid accounts only through the exact Google Sheet `Quiz_bank` flag (`1`); Magic Book alone must not unlock it. Signed, server-allow-listed admins retain management access. Existing account expiry/device rules remain; the QB checkbox in the admin user form is still deferred. See `docs/QUIZBANK.md` for the authorization/cache contract.
+- Reuse the existing Study loading/error and login surfaces. Signed-in accounts without the flag get a clear QuizBank-specific denial, Home and explicit Retry after activation, not an unnecessary login loop. Guest/expired sessions get the existing login action. The header says Accesso riservato for learners; only server-confirmed upload capability shows Amministratore and upload guidance. No new palette, layout, checkbox or navigation entry.
 - Reuse `study-quiz.js`, `study-quiz.css`, the shared help runtime, TTS/audio focus/player and loading owners. `body[data-study-source="quizbank"]` selects a named variant, not a second quiz engine. Keep existing chapter/video/native routes unchanged.
 - White canvas and existing ink/green study controls; retain the requested crimson `#d91c37` for QuizBank identity and sheet numerals. Norwester display, existing body and Adorsho Lipi Bangla. Five columns on wide desktop, four on tablets, two on phones, natural vertical scroll. No decorative hero image, animation controls, invented progress or unrequested exam mode.
 - Fifty numbered sheets lead to thirty original-order questions, correct answers, figures, Italian/Bangla listening and expandable translations/keywords. Show recorded explanations only when verified and available. Keep search local to the sheet, clearable and reflected in the URL; previous/next and Back retain ordinary browser history. Loading reserves the shared page indicator's dimensions; errors have explicit recovery and never display an empty bank as success.
-- Admin audio addition (owner approval): only the server's `canUploadAudio` capability enables Carica audio, and only after a confirmed missing recording. `quiz-audio-upload.js/css` is the reusable file-picker variant of `app-popup.js`, reusing its focus trap, inert background and dismissal owner. A compact560px white dialog shows the exact question, one labelled native file picker, local native audio preview, inline validation and an explicit Carica audio action. Retain Study ink/muted/line/surface/forest-green tokens; use the existing crimson focus/error role,16px container/8px controls and44px-plus targets. Footer geometry is stable during upload; the compact circular loading owner is used, never Headlight. QuizBank's Study colors also own its global document/descendant scrollbar baseline; forced colors stays system-operable. No recorder, microphone prompt, delete or replacement command is added.
+- Admin audio addition (owner correction): use the same + action and inline microphone recorder as Magic Book, not a file-picker dialog. `quiz-audio-recorder.js/css` owns both consumers: Spiegazione audio, timer, Registra, Pausa/Riprendi, native local preview and Salva. Extract the existing Magic Book controls and visual rules without redesigning them; keep one active recorder per page. Only server-confirmed `canUploadAudio` plus confirmed absence exposes the QuizBank action. No microphone request before Registra, no network write before Salva. Preserve recordings after recoverable errors, release microphone/preview/pending work on close or navigation, and reject stale completions. QuizBank does not silently replace existing recordings. Its document scrollbar remains owned by the Study tokens; forced colors remains operable.
 - Source: private R2 via `/api/quizbank`, per-request authorization ahead of the five-minute single-flight server cache. No private question archive in the public bundle or persistent browser storage. GitHub numbered images first, own asset endpoint on error; preserve PDF orientation for two figure546 occurrences. Do not guess an audio association from the question text alone.
 - Verification: `tests/quizbank.test.mjs`, `tests/quizbank-deployment.test.mjs`, `scripts/quizbank-browser-qa.mjs` (local fixtures only, 320/375/1440px). Required states: unauthenticated/forbidden, loading, 50×30 archive, invalid archive, offline/read failure, retry, stale response, search empty/clear, media failure, figure fallback, account change and keyboard focus. Physical iPhone audio and actual deployed R2 credentials require live acceptance separately.
 

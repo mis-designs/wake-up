@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="/loading-ui.css?v=4-context">
   <link rel="stylesheet" href="/audio-player-ui.css?v=10-web-quiz-slim">
   <link rel="stylesheet" href="/quizbank.css?v=3-audio-upload">
-  <link rel="stylesheet" href="/quiz-audio-upload.css?v=1">
+  <link rel="stylesheet" href="/quiz-audio-recorder.css?v=1">
   <link rel="stylesheet" href="/offline-notice.css?v=1.0.0">
   <script src="/loading-ui.js?v=2-context" defer></script>
   <script src="/offline-notice.js?v=1.1.0" defer></script>
@@ -23,7 +23,7 @@
   <header class="study-header">
     <button id="study-back" class="study-icon-button" type="button" aria-label="Torna indietro"><img src="/icons/go-back.png" alt="" width="22" height="22"></button>
     <div class="study-heading"><small>QUIZBANK</small><h1 id="study-title">Studia QuizBank</h1><p id="study-subtitle">50 schede · 1.500 domande</p></div>
-    <span class="quizbank-preview">Anteprima admin</span>
+    <span id="quizbank-access-label" class="quizbank-preview">Accesso riservato</span>
   </header>
   <main id="quizbank-main" class="study-main">
     <section id="study-chapters" class="hidden" aria-labelledby="study-chapters-title">
@@ -41,7 +41,7 @@
         <div><span id="study-reader-kicker">STUDIA QUIZBANK</span><h2 id="study-reader-title" tabindex="-1">Domande</h2><p id="study-question-count" aria-live="polite"></p></div>
         <div class="study-search"><label class="sr-only" for="study-search-input">Cerca nella scheda</label><input id="study-search-input" type="search" placeholder="Cerca nella scheda…" autocomplete="off"><button id="quizbank-clear-search" type="button" aria-label="Cancella ricerca" hidden>×</button></div>
       </div>
-      <p class="quizbank-help-note">Apri la traduzione e le parole chiave per capire meglio. Se manca la spiegazione audio, gli admin possono aggiungerla con Carica audio.</p>
+      <p class="quizbank-help-note">Apri la traduzione e le parole chiave per capire meglio.<span id="quizbank-admin-help" hidden> Se manca la spiegazione audio, premi + per registrarla, come in Magic Book.</span></p>
       <div id="study-question-list" class="study-question-list"></div>
       <p id="study-empty-search" class="study-empty hidden">Nessuna domanda trovata. Prova un’altra parola oppure cancella la ricerca.</p>
       <nav class="quizbank-sheet-nav" aria-label="Navigazione schede"><button id="quizbank-previous" type="button">Scheda precedente</button><button id="quizbank-next" type="button">Scheda successiva</button></nav>
@@ -49,7 +49,7 @@
     <section id="study-loading" class="study-loading" role="status" aria-live="polite" aria-busy="true">
       <div class="magic-loading-indicator magic-loading-indicator--page"><span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="/icons/loading_headlight.gif" alt=""></span><strong class="magic-loading-indicator__label">Apro QuizBank…</strong></div>
     </section>
-    <section id="quizbank-login" class="study-error hidden"><h2>Accedi a QuizBank</h2><p>Questa anteprima è riservata agli amministratori. Accedi con il tuo account, poi torna a questo indirizzo.</p><a class="quizbank-button" href="/login">Accedi</a></section>
+    <section id="quizbank-login" class="study-error hidden"><h2>Accedi a QuizBank</h2><p>Accedi con il tuo account, poi torna a questo indirizzo. QuizBank richiede un’abilitazione separata da Magic Book.</p><a class="quizbank-button" href="/login">Accedi</a></section>
     <section id="study-error" class="study-error hidden" role="alert" tabindex="-1"><h2>QuizBank</h2><p id="study-error-message"></p><button id="study-retry" type="button">Riprova</button><a id="quizbank-error-login" class="quizbank-button" href="/login" hidden>Accedi</a><a class="quizbank-home" href="/home">Torna alla Home</a></section>
     <noscript><section class="study-error"><h2>Attiva JavaScript</h2><p>È necessario per verificare l’accesso e aprire le schede di QuizBank.</p></section></noscript>
     <!-- Optional shared study surfaces remain inactive in QuizBank. -->
@@ -66,7 +66,7 @@
   <script src="/quiz-audio-identity.js?v=2"></script>
   <script src="/italian-display.js?v=1"></script>
   <script src="/app-popup.js?v=2"></script>
-  <script src="/quiz-audio-upload.js?v=1"></script>
-  <script src="/study-quiz.js?v=41-quizbank-upload&art=2e0d6787e201"></script>
+  <script src="/quiz-audio-recorder.js?v=1"></script>
+  <script src="/study-quiz.js?v=42-quizbank-access&art=2e0d6787e201"></script>
 </body>
 </html>

@@ -19,7 +19,7 @@ try {
     const context = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: "block", reducedMotion: "reduce" });
     const counts = { catalog: 0, sheets: 0, status: 0, primary: 0, fallback: 0, help: 0 };
     const errors = [];
-    let mode = "ok", held = null;
+    let mode = "ok", held = null, canUploadAudio = true;
     await context.route("**/*", async route => {
       const request = route.request(), url = new URL(request.url());
       if (url.hostname === "raw.githubusercontent.com") { counts.primary++; return route.fulfill({ status: 503, body: "" }); }
@@ -31,13 +31,13 @@ try {
       }
       if (url.pathname === "/api/quizbank") {
         const data = request.method() === "POST" ? request.postDataJSON() : Object.fromEntries(url.searchParams);
-        if (mode === "denied") return route.fulfill({ status: 403, json: { error: "quizbank_preview_forbidden" } });
+        if (mode === "denied" || (mode === "revoked" && ["getQuizAudioStatus", "getItalianAudio"].includes(data.action))) return route.fulfill({ status: 403, json: { error: "quizbank_access_denied" } });
         if (mode === "error") return route.fulfill({ status: 503, json: { error: "quizbank_archive_unavailable" } });
-        if (data.action === "catalog") { counts.catalog++; return route.fulfill({ json: { sheets: bank.sheets.map((rows, index) => ({ number: index + 1, count: rows.length })), questionCount: 1500 } }); }
+        if (data.action === "catalog") { counts.catalog++; return route.fulfill({ json: { canUploadAudio, sheets: bank.sheets.map((rows, index) => ({ number: index + 1, count: rows.length })), questionCount: 1500 } }); }
         if (data.action === "getStudyQuiz") {
           counts.sheets++;
           if (mode === "hold") await new Promise(resolve => { held = resolve; });
-          return route.fulfill({ json: { quiz: bank.sheets[Number(data.chapters) - 1], canUploadAudio: true, quizSessionToken: "fixture", quizSessionTokenExpiresAt: Date.now() + 1800000 } }).catch(() => {});
+          return route.fulfill({ json: { quiz: bank.sheets[Number(data.chapters) - 1], canUploadAudio, quizSessionToken: "fixture", quizSessionTokenExpiresAt: Date.now() + 1800000 } }).catch(() => {});
         }
         if (data.action === "getQuizAudioStatus") { counts.status++; return route.fulfill({ json: { available: false } }); }
         return route.fulfill({ status: 503, json: { error: "fixture_audio_unavailable" } });
@@ -54,6 +54,7 @@ try {
     await page.locator("#study-chapters:not(.hidden)").waitFor();
     assert.equal(await page.locator(".study-chapter").count(), 50);
     assert.equal(counts.catalog, 1); assert.equal(counts.sheets, 0); assert.equal(counts.help, 0);
+    assert.equal(await page.locator("#quizbank-access-label").textContent(), "Amministratore");
     await page.screenshot({ path: path.join(out, `picker-${width}.png`), fullPage: true });
     await page.locator('.study-chapter[data-chapter="1"]').click();
     await page.locator("#study-reader:not(.hidden)").waitFor();
@@ -105,10 +106,30 @@ try {
     assert.equal(await page.locator(".study-question-card").count(), 0);
     mode = "denied"; await page.reload();
     await page.locator("#study-error:not(.hidden)").waitFor();
-    assert.match(await page.locator("#study-error-message").textContent(), /amministratori/);
-    assert.equal(await page.locator("#study-retry").isVisible(), false);
+    assert.match(await page.locator("#study-error-message").textContent(), /non è abilitato/);
+    assert.equal(await page.locator("#study-retry").isVisible(), true);
+    assert.equal(await page.locator("#quizbank-error-login").isVisible(), false);
+    assert.equal(await page.locator(".study-question-card").count(), 0);
+    assert.ok(await page.evaluate(() => localStorage.getItem("user_session")), "QB denial preserves MagicBook login");
+    await page.screenshot({ path: path.join(out, `access-denied-${width}.png`) });
+    mode = "ok"; canUploadAudio = false;
+    await page.locator("#study-retry").click();
+    await page.locator("#study-reader:not(.hidden)").waitFor();
+    assert.equal(await page.locator(".study-question-card").count(), 30);
+    assert.equal(await page.locator(".quizbank-upload").count(), 0, "QB learners never receive upload controls");
+    assert.equal(await page.locator("#quizbank-admin-help").isVisible(), false);
+    assert.equal(await page.locator("#quizbank-access-label").textContent(), "Accesso riservato");
+    await page.screenshot({ path: path.join(out, `learner-${width}.png`) });
+    await page.evaluate(() => { const session = JSON.parse(localStorage.getItem("user_session")); session.role = "admin"; session.Quiz_bank = 1; localStorage.setItem("user_session", JSON.stringify(session)); });
+    await page.reload(); await page.locator("#study-reader:not(.hidden)").waitFor();
+    assert.equal(await page.locator(".quizbank-upload").count(), 0, "Forged local role never enables uploads");
+    mode = "revoked";
+    await page.locator(".study-action-italian").first().click();
+    await page.locator("#study-error:not(.hidden)").waitFor();
+    assert.equal(await page.locator(".study-question-card").count(), 0, "A media permission denial clears the private reader");
+    assert.ok(await page.evaluate(() => localStorage.getItem("user_session")));
     assert.deepEqual(errors, []);
-    report.push({ width, counts, checks: "picker, reader, narrow, search, help, media failure, back, stale request, retry, account change, forbidden", errors });
+    report.push({ width, counts, checks: "picker, reader, narrow, search, help, media failure, back, stale request, retry, account change, forbidden, learner access, admin-only controls, forged local role, media revocation", errors });
     await context.close();
   }
   const guest = await browser.newPage();
