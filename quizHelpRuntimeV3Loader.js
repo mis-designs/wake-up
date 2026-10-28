@@ -79,20 +79,20 @@
     }
   }
 
-  async function load() {
+  async function load({ signal } = {}) {
     if (!enabled()) throw new Error("quiz_help_runtime_v3_disabled");
     if (!root.PatenteContextResolverV3) throw new Error("context_resolver_v3_missing");
     if (loadPromise) return loadPromise;
     loadPromise = (async () => {
       const source = manifestUrl();
-      const manifestResponse = await fetch(source, { cache: "no-cache" });
+      const manifestResponse = await fetch(source, { cache: "no-cache", signal });
       if (!manifestResponse.ok) throw new Error(`quiz_help_manifest_${manifestResponse.status}`);
       const manifest = await manifestResponse.json();
       if (manifest.schema_version !== "3.0.0" || manifest.quiz_count !== 7139 || !manifest.sha256) {
         throw new Error("quiz_help_manifest_invalid");
       }
       const runtimeUrl = absoluteRuntimeUrl(manifest, source);
-      const runtimeResponse = await fetch(runtimeUrl, { cache: "force-cache" });
+      const runtimeResponse = await fetch(runtimeUrl, { cache: "force-cache", signal });
       if (!runtimeResponse.ok) throw new Error(`quiz_help_runtime_${runtimeResponse.status}`);
       const runtimeText = await runtimeResponse.text();
       const digest = await digestHex(runtimeText);

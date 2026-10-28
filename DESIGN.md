@@ -40,11 +40,20 @@ canonical_ui:
   notes: Existing application tokens remain canonical. Locally compiled, d-prefixed daisyUI controls provide interaction primitives; the scoped learning stylesheet owns layout and visual hierarchy.
 design_context:
   owner: Magic Book
-  last_updated: 2026-09-28
-  revision_notes: "PC web quiz translation adopts the owner's All Books floating two-page reader; phone, tablet-touch and installed Android help remain unchanged."
+  last_updated: 2026-10-28
+  revision_notes: "QuizBank replaces Coming Soon with an admin-only, manually addressed study archive; existing Magic Book screens and entitlements remain unchanged."
 ---
 
 # Magic Book design context
+
+## QuizBank study preview — 2026-10-28
+
+- Owner scope: manual `/quizbank`, no Home or chapter-menu entry. Initial server-enforced admin preview; the future separate Google Sheet QuizBank entitlement and admin checkbox are deferred. A normal Magic Book subscription must not unlock it.
+- Reuse `study-quiz.js`, `study-quiz.css`, the shared help runtime, TTS/audio focus/player and loading owners. `body[data-study-source="quizbank"]` selects a named variant, not a second quiz engine. Keep existing chapter/video/native routes unchanged.
+- White canvas and existing ink/green study controls; retain the requested crimson `#d91c37` for QuizBank identity and sheet numerals. Norwester display, existing body and Adorsho Lipi Bangla. Five columns on wide desktop, four on tablets, two on phones, natural vertical scroll. No decorative hero image, animation controls, invented progress or unrequested exam mode.
+- Fifty numbered sheets lead to thirty original-order questions, correct answers, figures, Italian/Bangla listening and expandable translations/keywords. Show recorded explanations only when verified and available. Keep search local to the sheet, clearable and reflected in the URL; previous/next and Back retain ordinary browser history. Loading reserves the shared page indicator's dimensions; errors have explicit recovery and never display an empty bank as success.
+- Source: private R2 via `/api/quizbank`, per-request authorization ahead of the five-minute single-flight server cache. No private question archive in the public bundle or persistent browser storage. GitHub numbered images first, own asset endpoint on error; preserve PDF orientation for two figure546 occurrences. Do not guess an audio association from the question text alone.
+- Verification: `tests/quizbank.test.mjs`, `tests/quizbank-deployment.test.mjs`, `scripts/quizbank-browser-qa.mjs` (local fixtures only, 320/375/1440px). Required states: unauthenticated/forbidden, loading, 50×30 archive, invalid archive, offline/read failure, retry, stale response, search empty/clear, media failure, figure fallback, account change and keyboard focus. Physical iPhone audio and actual deployed R2 credentials require live acceptance separately.
 
 ## Signed-in Home and offers — owner annotations, 2026-09-27
 

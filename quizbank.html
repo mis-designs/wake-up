@@ -1,54 +1,69 @@
 <!DOCTYPE html>
 <html lang="it" translate="no" class="notranslate">
 <head>
-  <meta charset="UTF-8">
-  <meta name="google" content="notranslate">
-  <base href="/">
+  <meta charset="utf-8"><base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#ffffff">
-  <meta name="description" content="Quiz Bank di MagicBook: una nuova sezione di quiz è in arrivo.">
-  <meta name="robots" content="noindex,nofollow,noimageindex">
+  <meta name="robots" content="noindex,nofollow,noarchive"><meta name="google" content="notranslate">
+  <meta name="theme-color" content="#ffffff"><title>QuizBank | Studia</title>
   <link rel="canonical" href="https://tmmmagic.eu/quizbank">
-  <link rel="icon" type="image/png" href="/icons/mg_logo.png">
-  <link rel="apple-touch-icon" href="/icons/mg_logo.png">
+  <link rel="icon" href="/icons/study_quiz.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/fonts/magicbook-bangla-fonts.css?v=1-adorsho">
   <link rel="stylesheet" href="/assets/fonts/magicbook-latin-fonts.css?v=1">
-  <link rel="stylesheet" href="/quizbank.css?v=1-coming-soon">
-  <title>Quiz Bank | Coming Soon — MagicBook</title>
+  <link rel="stylesheet" href="/study-quiz.css?v=28-compact">
+  <link rel="stylesheet" href="/loading-ui.css?v=4-context">
+  <link rel="stylesheet" href="/audio-player-ui.css?v=10-web-quiz-slim">
+  <link rel="stylesheet" href="/quizbank.css?v=2-study-preview">
+  <link rel="stylesheet" href="/offline-notice.css?v=1.0.0">
+  <script src="/loading-ui.js?v=2-context" defer></script>
+  <script src="/offline-notice.js?v=1.1.0" defer></script>
 </head>
-<body class="quizbank-page">
-  <div class="quizbank-shell">
-    <header class="quizbank-header">
-      <a class="quizbank-home" href="/" aria-label="Torna alla home di MagicBook">
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M3 10.7 12 3l9 7.7v9.1a1.2 1.2 0 0 1-1.2 1.2h-5.1v-6.2H9.3V21H4.2A1.2 1.2 0 0 1 3 19.8z" fill="currentColor"/>
-        </svg>
-        <span>MagicBook</span>
-      </a>
-    </header>
-
-    <main class="quizbank-main" aria-labelledby="quizbank-title">
-      <div class="quizbank-art" aria-hidden="true">
-        <span class="quizbank-orbit"></span>
-        <span class="quizbank-spark quizbank-spark--one"></span>
-        <span class="quizbank-spark quizbank-spark--two"></span>
-        <div class="quizbank-stack">
-          <span class="quizbank-card quizbank-card--back"></span>
-          <span class="quizbank-card quizbank-card--middle"></span>
-          <span class="quizbank-card quizbank-card--front">
-            <span class="quizbank-card-kicker">QUIZ</span>
-            <span class="quizbank-question">?</span>
-            <span class="quizbank-answer-lines"><i></i><i></i></span>
-            <span class="quizbank-check"><svg viewBox="0 0 20 20" focusable="false"><path d="m5 10.5 3.1 3.1L15.5 6"/></svg></span>
-          </span>
-        </div>
-        <span class="quizbank-shadow"></span>
+<body class="study-page quizbank-page" data-study-source="quizbank">
+  <a class="quizbank-skip" href="#quizbank-main">Vai al contenuto</a>
+  <header class="study-header">
+    <button id="study-back" class="study-icon-button" type="button" aria-label="Torna indietro"><img src="/icons/go-back.png" alt="" width="22" height="22"></button>
+    <div class="study-heading"><small>QUIZBANK</small><h1 id="study-title">Studia QuizBank</h1><p id="study-subtitle">50 schede · 1.500 domande</p></div>
+    <span class="quizbank-preview">Anteprima admin</span>
+  </header>
+  <main id="quizbank-main" class="study-main">
+    <section id="study-chapters" class="hidden" aria-labelledby="study-chapters-title">
+      <div class="quizbank-intro">
+        <div><p class="quizbank-eyebrow">IL TUO ARCHIVIO DI STUDIO</p><h2 id="study-chapters-title" tabindex="-1">Una scheda alla volta.</h2>
+          <p>Scegli una scheda. Leggi le domande, scopri le risposte e apri gli aiuti quando ti servono.</p>
+          <p lang="bn">একটি প্রশ্নপত্র বেছে নিন এবং পড়া শুরু করুন।</p><p id="study-last-chapter" class="hidden"></p></div>
+        <div class="quizbank-total"><strong>50</strong><span>schede d’esame<br>30 domande ciascuna</span></div>
       </div>
-
-      <p class="quizbank-kicker">QUIZ BANK</p>
-      <h1 id="quizbank-title">Coming Soon</h1>
-      <p class="quizbank-copy">La nuova raccolta di quiz sarà disponibile qui a breve.</p>
-      <a class="quizbank-return" href="/">Torna a MagicBook</a>
-    </main>
-  </div>
+      <div class="quizbank-section-heading"><h3>Scegli la scheda</h3><span>01 — 50</span></div>
+      <div id="study-chapter-grid" class="study-chapter-grid"></div>
+    </section>
+    <section id="study-reader" class="hidden" aria-labelledby="study-reader-title">
+      <div class="study-reader-toolbar">
+        <div><span id="study-reader-kicker">STUDIA QUIZBANK</span><h2 id="study-reader-title" tabindex="-1">Domande</h2><p id="study-question-count" aria-live="polite"></p></div>
+        <div class="study-search"><label class="sr-only" for="study-search-input">Cerca nella scheda</label><input id="study-search-input" type="search" placeholder="Cerca nella scheda…" autocomplete="off"><button id="quizbank-clear-search" type="button" aria-label="Cancella ricerca" hidden>×</button></div>
+      </div>
+      <p class="quizbank-help-note">Apri la traduzione e le parole chiave per capire meglio. La spiegazione audio compare quando è disponibile.</p>
+      <div id="study-question-list" class="study-question-list"></div>
+      <p id="study-empty-search" class="study-empty hidden">Nessuna domanda trovata. Prova un’altra parola oppure cancella la ricerca.</p>
+      <nav class="quizbank-sheet-nav" aria-label="Navigazione schede"><button id="quizbank-previous" type="button">Scheda precedente</button><button id="quizbank-next" type="button">Scheda successiva</button></nav>
+    </section>
+    <section id="study-loading" class="study-loading" role="status" aria-live="polite" aria-busy="true">
+      <div class="magic-loading-indicator magic-loading-indicator--page"><span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="/icons/loading_headlight.gif" alt=""></span><strong class="magic-loading-indicator__label">Apro QuizBank…</strong></div>
+    </section>
+    <section id="quizbank-login" class="study-error hidden"><h2>Accedi a QuizBank</h2><p>Questa anteprima è riservata agli amministratori. Accedi con il tuo account, poi torna a questo indirizzo.</p><a class="quizbank-button" href="/login">Accedi</a></section>
+    <section id="study-error" class="study-error hidden" role="alert" tabindex="-1"><h2>QuizBank</h2><p id="study-error-message"></p><button id="study-retry" type="button">Riprova</button><a id="quizbank-error-login" class="quizbank-button" href="/login" hidden>Accedi</a><a class="quizbank-home" href="/home">Torna alla Home</a></section>
+    <noscript><section class="study-error"><h2>Attiva JavaScript</h2><p>È necessario per verificare l’accesso e aprire le schede di QuizBank.</p></section></noscript>
+    <!-- Optional shared study surfaces remain inactive in QuizBank. -->
+    <section id="study-hub" hidden><h2 id="study-hub-title"></h2><a id="study-hub-figures" hidden></a></section>
+    <section id="study-videos" hidden></section><section id="study-figures" hidden></section>
+    <nav id="study-paths" hidden><a id="study-path-quiz" hidden></a><a id="study-path-figures" hidden></a></nav>
+  </main>
+  <div id="study-toast" class="study-toast" aria-live="polite"></div>
+  <script src="/patenteGlossaryResolver.js?v=1.0.0"></script>
+  <script src="/patenteContextResolverV3.js?v=4.0.0-glossary-display"></script>
+  <script>window.QUIZ_HELP_RUNTIME_V3_DEFAULT_ENABLED = true;</script>
+  <script src="/quizHelpRuntimeV3Loader.js?v=3.0.3-cancellable"></script>
+  <script src="/audio-focus.js?v=1-resumable-tts"></script>
+  <script src="/quiz-audio-identity.js?v=2"></script>
+  <script src="/italian-display.js?v=1"></script>
+  <script src="/study-quiz.js?v=40-quizbank"></script>
 </body>
 </html>

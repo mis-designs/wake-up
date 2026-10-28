@@ -97,7 +97,9 @@ test("study mode treats synchronized V3 translations as authoritative before aut
   assert.ok(resolverPosition >= 0 && resolverPosition < loaderPosition);
   assert.ok(loaderPosition < studyPosition);
   assert.match(page, /QUIZ_HELP_RUNTIME_V3_DEFAULT_ENABLED\s*=\s*true/);
-  assert.match(source, /data\.resolver\.resolve\(question\)/);
+  assert.match(source, /let helpQuestion = question/);
+  assert.match(source, /data\.resolver\.resolve\(helpQuestion\)/);
+  assert.match(source, /fingerprint\(row\) === fingerprint\(question\)/);
   assert.match(source, /resolved\.questionBnStandard \|\| resolved\.questionBnEasy \|\| resolved\.questionBn/);
   assert.match(source, /if \(!usableBanglaTranslation\(help\.translation\)\)[\s\S]*?loadAutomaticTranslation\(question\)/);
   assert.match(source, /TRADUZIONE BANGLA · BACKUP AUTOMATICO/);

@@ -945,6 +945,60 @@ async function addAdminCorrectAnswers(quiz) {
   return addLocalAdminAnswers(quiz);
 }
 
+// QuizBank is a separate, server-gated preview. These functions are internal
+// imports, never actions of /api/quiz; normal Magic Book access is unchanged.
+export async function authorizeQuizBankPreview(req) {
+  if (!isConfigured()) throw Object.assign(new Error("missing_server_config"), { statusCode: 503 });
+  const data = getRequestData(req);
+  if (!hasValidRequestShape(data)) throw Object.assign(new Error("invalid_request"), { statusCode: 400 });
+  const access = await ensureAccess(data);
+  if (!access.ok) throw Object.assign(new Error(access.error || "unauthorized"), { statusCode: access.statusCode || 401 });
+  if (access.role !== "admin" || !isAdminPhone(data.phone)) {
+    throw Object.assign(new Error("quizbank_preview_forbidden"), { statusCode: 403 });
+  }
+  return { data, access };
+}
+
+export function quizBankSession({ phone, deviceId }) {
+  const session = createSignedToken({ phone, deviceId, purpose: "quiz", role: "admin", ttlMs: QUIZ_SESSION_TOKEN_TTL_MS });
+  return { quizSessionToken: session.token, quizSessionTokenExpiresAt: session.expiresAt };
+}
+
+// Use the SAME storage, MIME sniffing, cache, lookup order and TTS service as
+// Magic Book. The caller supplies only a server-validated archive row/identity.
+export async function serveQuizBankMedia({ action, row, identity, text }, res) {
+  if (["getItalianAudio", "getBengaliAudio", "getTTS"].includes(action)) {
+    if (action === "getTTS" && (!BENGALI_TEXT_PATTERN.test(String(text || "")) || text.length > 500)) {
+      return res.status(400).json({ error: "invalid_bengali_text" });
+    }
+    const curated = action === "getBengaliAudio" ? getCuratedQuizTranslation({ question: row.question }) : "";
+    const result = await forwardGetAction({ action: curated ? "getTTS" : action,
+      text: action === "getTTS" ? text : curated || row.question });
+    return res.status(200).json(action === "getBengaliAudio" ? { ...result,
+      ...(curated ? { translation: curated } : {}), translationSource: curated ? "curated" : "automatic" } : result);
+  }
+  if (!identity) return action === "getQuizAudioStatus"
+    ? res.status(200).json({ ok: true, available: false })
+    : res.status(404).json({ error: "quiz_audio_not_found" });
+  const result = await withOperationalTimeout(findQuizAudioRow(identity), { service: "quizbank_audio", timeoutMs: 8_000 });
+  if (action === "getQuizAudioStatus") {
+    const available = Boolean(result.row) && !result.requiresReview && await withOperationalTimeout(
+      hasQuizAudioObject(result.row), { service: "quizbank_audio_object", timeoutMs: 4_000 });
+    return res.status(200).json({ ok: true, available, durationMs: result.row?.audio_duration_ms || null });
+  }
+  if (result.requiresReview || !result.row) return res.status(404).json({ error: "quiz_audio_not_found" });
+  if (action === "getQuizAudioPlayback") {
+    const audioUrl = await getSignedUrl(getQuizAudioStorage(),
+      new GetObjectCommand({ Bucket: QUIZ_AUDIO_R2_BUCKET, Key: result.row.audio_key }), { expiresIn: 10 * 60 });
+    return res.status(200).json({ ok: true, audioUrl, mimeType: result.row.audio_mime_type || "audio/webm", durationMs: result.row.audio_duration_ms || null });
+  }
+  const bytes = await readQuizAudioObject(result.row);
+  res.setHeader("Content-Type", detectQuizAudioMimeType(bytes, result.row.audio_mime_type));
+  res.setHeader("Content-Length", String(bytes.byteLength));
+  res.setHeader("X-Audio-Duration-Ms", String(result.row.audio_duration_ms || 0));
+  return res.status(200).end(Buffer.from(bytes));
+}
+
 export default async function handler(req, res) {
   if (req.method !== "GET" && req.method !== "POST") {
     return res.status(405).json({ error: "method_not_allowed" });

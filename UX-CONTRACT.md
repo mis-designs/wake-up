@@ -1,5 +1,19 @@
 # Magic Book learning insights UX contract
 
+## QuizBank preview contract (2026-10-28)
+
+| Capability | Canonical owner | Named QuizBank variant / state contract |
+| --- | --- | --- |
+| Study reader | `study-quiz.js`, `study-quiz.css` | `data-study-source="quizbank"`, `/quizbank?scheda=1`; 50 sheets, 30 questions each, original order; no Home entry or extra trial/video/figure navigation |
+| Access | `api/quiz.js` signed-session validation, `api/quizbank.js` | Signed admin role AND current server allow-list. No automatic Magic Book entitlement; reject before R2/cache/media reads. Expired or denied preview never clears the normal session. Future QB flag intentionally deferred. |
+| Archive | `api/quizbank-catalog.mjs` | Read one private object, strict 1500-row schema, unique sheet/question positions, boolean answer and figure consistency. Five-minute one-entry bounded process cache; single-flight; max4MiB/12s; no retained failures or retry loop. HTTP/API responses remain private/no-store. |
+| Help / speech | `quizHelpRuntimeV3Loader.js`, existing study help and `api/quiz.js` media services | Lazy exact text/figure help lookup, no numeric-id fallback; reused curated or explicitly automatic Bengali backup. One shared audio focus owner. Italian source and explanation identity selected server-side from trusted rows, never client text/figure. Exact text/figure/answer proof needed for shared recordings. |
+| Navigation / recovery | `study-quiz.js` | Local search with clear and URL state, previous/next bounds, title focus after navigation, no horizontal overflow. Cancel superseded reads/help; discard late results; empty search distinct from load failure. No hidden polling. Real account/device change clears visible content and in-memory media. |
+| Figures | Shared `/api/asset` fallback | Numbered GitHub primary, one fallback on failure; explicit unavailable message and Retry if both fail. Figure546 PDF occurrences rotate90°. Do not hide a missing figure or substitute a similar one. |
+| Visual / loading | `quizbank.css`, shared font/loading/player owners | White/ink/forest-green reading, crimson brand #d91c37, semantic controls and visible focus. Full page loader wrapper; compact audio controls keep circular backup. No animation pause/restart UI. |
+
+- Evidence: local browser fixture script covers 320/375/1440px, exact catalog/sheet request counts, search/no additional reads, canceled navigation, retry and access changes. Unit/API tests cover cold and warm-cache denial, payload spoofing, exact media identity, traced deployment assets and private response headers.
+
 ## Home entry clarity (2026-10-25)
 
 - The owner replaces Magic Here with Magic Book / ম্যাজিক বুক and the existing decorative clicking-hand asset. `index.html` retains the real `showChapters()` button and one stable bilingual accessible name. `home-offers.css` alternates the two names about every5s in the same reserved cell. The follow-up explicitly restores the compact60px button: the hand is an absolute pointer-transparent sibling, not a second content row, and reuses `native-book-tap` from the app's Home. Every5s it approaches, touches, compresses and disappears; it stays hidden at rest, when paused, under reduced motion, during keyboard focus and when disabled/busy. `home-animation.js` remains the sole active/background/inert/motion-preference owner. No new timer, storage or API call. Reduced motion, Profile motion-off and forced colors show a stationary Bangla label. Keep the existing graduation cap and browser-only Home ownership. Verify narrow/wide geometry, both language phases, sampled hand approach/contact/disappearance/repeat, font fallback, keyboard/click, and preference/background recovery.

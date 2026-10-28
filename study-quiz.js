@@ -1,26 +1,27 @@
 (() => {
   "use strict";
 
+  const QUIZBANK_MODE = document.body.dataset.studySource === "quizbank";
   const TRIAL_MODE = window.location.pathname.replace(/\/+$/, "") === "/studia-quiz/prova-gratis";
   // Presentation rollout only, not an access/role check. Web release requires
   // an explicit change to "all"; no query string or persisted opt-in enables it.
   const FIGURE_STUDY_ROLLOUT = "android-preview";
-  const FIGURE_STUDY_ENABLED = !TRIAL_MODE && (
+  const FIGURE_STUDY_ENABLED = !QUIZBANK_MODE && !TRIAL_MODE && (
     FIGURE_STUDY_ROLLOUT === "all"
     || (FIGURE_STUDY_ROLLOUT === "android-preview" && document.documentElement.classList.contains("android-webview"))
   );
-  const API = TRIAL_MODE ? "/api/trial" : "/api/quiz";
+  const API = QUIZBANK_MODE ? "/api/quizbank" : TRIAL_MODE ? "/api/trial" : "/api/quiz";
   const HOME = TRIAL_MODE ? "/prova-gratis" : "/magic-book";
   const TRIAL_ALLOWED_CHAPTERS = new Set([1, 3]);
   const TRIAL_POLICY_VERSION = "chapters-1-3-audio-preview-v2";
   const HELP_MANIFEST_SOURCE = "https://www.tmmbooks.eu/dist/patente/quiz-help-runtime-manifest.json";
   const LOCAL_HELP_SOURCE = "/data/patente/quiz-help-runtime-v2.json";
-  const STUDY_HISTORY_KEY = "magicph-study-history-v1";
+  const STUDY_HISTORY_KEY = QUIZBANK_MODE ? "magicph-quizbank-history-v1" : "magicph-study-history-v1";
   const STUDY_RETURN_DELAY_MS = 5 * 60 * 1000;
   const STUDY_INTRO_QUESTION = "আজকে কোন অধ্যায়টি পড়তে চাচ্ছেন ?";
   const BANGLA_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
   const AUDIO_ACTION_ICON = '<svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.80688 18.5304C5.82459 18.5005 5.84273 18.4709 5.8613 18.4413C7.2158 16.2881 7.99991 13.7418 7.99991 11C7.99991 8.79086 9.79077 7 11.9999 7C14.209 7 15.9999 8.79086 15.9999 11C15.9999 12.017 15.9307 13.0186 15.7966 14M13.6792 20.8436C14.2909 19.6226 14.7924 18.3369 15.1707 17M19.0097 18.132C19.6547 15.8657 20 13.4732 20 11C20 6.58172 16.4183 3 12 3C10.5429 3 9.17669 3.38958 8 4.07026M3 15.3641C3.64066 14.0454 4 12.5646 4 11C4 9.54285 4.38958 8.17669 5.07026 7M11.9999 11C11.9999 14.5172 10.9911 17.7988 9.24707 20.5712" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  const CHAPTERS = [
+  const CHAPTERS = QUIZBANK_MODE ? Array.from({ length: 50 }, () => "30 domande") : [
     "Doveri nell'uso della strada",
     "Segnali di pericolo",
     "Segnali di divieto",
@@ -76,6 +77,7 @@
   let quizSessionTokenExpiresAt = 0;
   let quizSessionRefreshPromise = null;
   let helpPromise = null;
+  let helpRequest = null;
   let helpIdIndex = null;
   let activePlayback = null;
   let activeTtsPlayback = null;
@@ -83,6 +85,8 @@
   let explanationRequestId = 0;
   let toastTimer = 0;
   let loadRequestId = 0;
+  let sheetRequest = null;
+  let quizBankReady = false;
   let figureStudy = null;
   let figureStudyModule = null;
   let figureView = false;
@@ -140,6 +144,7 @@
   }
 
   function getSession() {
+    try {
     const stored = [
       parseSession(localStorage.getItem("user_session")),
       parseSession(localStorage.getItem("session"))
@@ -152,6 +157,7 @@
       accessToken: String(localStorage.getItem("accessToken") || "")
     };
     return fallback.phone && fallback.deviceId ? fallback : null;
+    } catch (_) { return null; }
   }
 
   function getTrialSession() {
@@ -173,6 +179,12 @@
 
   const session = TRIAL_MODE ? getTrialSession() : getSession();
   if (!session) {
+    if (QUIZBANK_MODE) {
+      elements.loading.classList.add("hidden");
+      document.getElementById("quizbank-login").classList.remove("hidden");
+      elements.back.addEventListener("click", () => { location.href = "/home"; });
+      return;
+    }
     window.location.replace(TRIAL_MODE ? trialOfferUrl("Prova gratuita scaduta") : HOME);
     return;
   }
@@ -195,6 +207,7 @@
 
   function saveAccessToken(token, expiresAt) {
     if (TRIAL_MODE) return;
+    if (QUIZBANK_MODE && !studyVideoIdentity()) return;
     if (!token || !expiresAt) return;
     session.accessToken = token;
     try {
@@ -219,6 +232,10 @@
   }
 
   function clearSessionAndExit() {
+    if (QUIZBANK_MODE) {
+      showQuizBankError(new Error("unauthorized"));
+      return;
+    }
     if (TRIAL_MODE) {
       try {
         ["magicbook_trial_guest_key", "magicbook_trial_guest_expires", "magicbook_trial_guest_policy"]
@@ -301,6 +318,7 @@
   }
 
   async function fetchStudyJson(url, options = {}) {
+    if (QUIZBANK_MODE && !studyVideoIdentity()) { showQuizBankError(new Error("unauthorized")); throw new Error("unauthorized"); }
     const { allowSessionRefresh = true, ...fetchOptions } = options;
     const action = quizApiAction(url);
     if (allowSessionRefresh && !TRIAL_MODE && isQuizSessionProtectedAction(action)) {
@@ -326,8 +344,13 @@
       }
     }
 
-    const response = await fetch(url, { ...fetchOptions, headers: requestHeaders });
-    const data = await response.json().catch(() => ({}));
+    const timed = QUIZBANK_MODE ? createTimedAudioRequest(fetchOptions.signal) : null;
+    let response, data;
+    try {
+      response = await fetch(url, { ...fetchOptions, headers: requestHeaders, ...(timed ? { signal: timed.signal } : {}) });
+      data = await response.json().catch(() => ({}));
+    } finally { timed?.cleanup(); }
+    if (QUIZBANK_MODE) saveAccessToken(response.headers.get("X-Access-Token"), Number(response.headers.get("X-Access-Token-Expires")));
     const error = String(data?.error || "");
     if (
       allowSessionRefresh
@@ -353,6 +376,11 @@
   }
 
   function chapterFromLocation() {
+    if (QUIZBANK_MODE) {
+      const value = new URLSearchParams(location.search).get("scheda");
+      const sheet = Number(value);
+      return Number.isInteger(sheet) && sheet >= 1 && sheet <= 50 ? sheet : null;
+    }
     const match = window.location.pathname.replace(/\/+$/, "").match(/^\/studia-quiz\/capitolo-(\d{1,2})$/);
     const value = match?.[1] || new URLSearchParams(window.location.search).get("chapter") || "";
     const chapter = Number(value);
@@ -360,6 +388,7 @@
   }
 
   function chapterPath(chapter) {
+    if (QUIZBANK_MODE) return `/quizbank?scheda=${Number(chapter)}`;
     if (TRIAL_MODE) return `/studia-quiz/prova-gratis?chapter=${Number(chapter)}`;
     return `/studia-quiz/capitolo-${String(chapter).padStart(2, "0")}`;
   }
@@ -395,6 +424,7 @@
   }
 
   function renderStudyIntro(now = Date.now()) {
+    if (QUIZBANK_MODE) return;
     if (elements.introTitle) elements.introTitle.textContent = STUDY_INTRO_QUESTION;
     if (!elements.lastChapter) return;
     const history = readStudyHistory();
@@ -435,7 +465,7 @@
       const copy = document.createElement("span");
       copy.className = "study-chapter-copy";
       const label = document.createElement("small");
-      label.textContent = "CAPITOLO";
+      label.textContent = QUIZBANK_MODE ? "SCHEDA" : "CAPITOLO";
       const title = document.createElement("strong");
       title.textContent = name;
       copy.append(label, title);
@@ -462,6 +492,9 @@
   }
 
   function showPicker({ updateHistory = false, scroll = true } = {}) {
+    if (QUIZBANK_MODE && !quizBankReady) { void loadQuizBankCatalog(); return; }
+    sheetRequest?.abort();
+    if (QUIZBANK_MODE) { helpRequest?.abort(); elements.list.replaceChildren(); }
     hideVideoSurfaces();
     loadRequestId += 1;
     figureStudy?.suspend();
@@ -486,7 +519,13 @@
       : "Scegli un capitolo e studia tutte le domande.";
     renderStudyIntro();
     document.title = FIGURE_STUDY_ENABLED ? "MagicBook | Studia" : "MagicBook | Studia quiz";
-    if (updateHistory) history.pushState({ screen: "study" }, "", TRIAL_MODE ? "/studia-quiz/prova-gratis" : "/studia-quiz?view=chapters");
+    if (updateHistory) history.pushState({ screen: "study" }, "", QUIZBANK_MODE ? "/quizbank" : TRIAL_MODE ? "/studia-quiz/prova-gratis" : "/studia-quiz?view=chapters");
+    if (QUIZBANK_MODE) {
+      elements.title.textContent = "Studia QuizBank";
+      elements.subtitle.textContent = "50 schede · 1.500 domande";
+      document.title = "QuizBank | Studia";
+      elements.introTitle.focus({ preventScroll: true });
+    }
     if (scroll) window.scrollTo({ top: 0, behavior: "auto" });
   }
 
@@ -498,6 +537,12 @@
     }
     hideVideoSurfaces();
     const ownRequest = ++loadRequestId;
+    sheetRequest?.abort();
+    sheetRequest = new AbortController();
+    const controller = sheetRequest;
+    const deadline = window.setTimeout(() => controller.abort(), 15_000);
+    resetAudioObservation();
+    if (QUIZBANK_MODE) { helpRequest?.abort(); helpCache.clear(); elements.list.replaceChildren(); }
     figureStudy?.suspend();
     figureView = false;
     document.body.classList.remove('study-figures-active');
@@ -513,6 +558,11 @@
     elements.title.textContent = `Capitolo ${String(chapter).padStart(2, "0")}`;
     elements.subtitle.textContent = CHAPTERS[chapter - 1];
     document.title = `MagicBook | Studia quiz · Capitolo ${chapter}`;
+    if (QUIZBANK_MODE) {
+      elements.title.textContent = `Scheda ${String(chapter).padStart(2, "0")}`;
+      elements.subtitle.textContent = "QuizBank · Studia le domande";
+      document.title = `QuizBank | Scheda ${chapter}`;
+    }
     if (updateHistory) history.pushState({ screen: "studyChapter", chapter }, "", chapterPath(chapter));
 
     try {
@@ -529,9 +579,11 @@
       });
       const data = await fetchStudyJson(`${API}?${query}`, {
         headers: authHeaders(),
-        cache: "no-store"
+        cache: "no-store",
+        signal: controller.signal
       });
       if (ownRequest !== loadRequestId) return;
+      if (QUIZBANK_MODE && !studyVideoIdentity()) { showQuizBankError(new Error("unauthorized")); return; }
       saveAccessToken(data.accessToken, data.accessTokenExpiresAt);
       quizSessionToken = String((TRIAL_MODE ? data.trialToken : data.quizSessionToken) || "");
       quizSessionTokenExpiresAt = Number((TRIAL_MODE ? data.trialTokenExpiresAt : data.quizSessionTokenExpiresAt) || 0);
@@ -540,15 +592,23 @@
       rememberStudyChapter(chapter);
       elements.loading.classList.add("hidden");
       elements.reader.classList.remove("hidden");
+      if (QUIZBANK_MODE) {
+        quizBankReady = true;
+        elements.search.value = new URLSearchParams(location.search).get("q") || "";
+        filterQuestions();
+        elements.readerTitle.focus({ preventScroll: true });
+      }
       window.scrollTo({ top: 0, behavior: "auto" });
     } catch (error) {
-      if (ownRequest !== loadRequestId || error.message === "unauthorized") return;
+      if (ownRequest !== loadRequestId) return;
+      if (QUIZBANK_MODE) { showQuizBankError(error); return; }
+      if (error.message === "unauthorized") return;
       elements.loading.classList.add("hidden");
       elements.error.classList.remove("hidden");
       elements.errorMessage.textContent = error.message === "study_chapter_empty"
         ? "Questo capitolo non contiene ancora domande."
         : "Controlla la connessione e riprova.";
-    }
+    } finally { window.clearTimeout(deadline); }
   }
 
   function answerLabel(value) {
@@ -688,8 +748,25 @@
       image.className = "study-figure";
       image.loading = "lazy";
       image.alt = `Figura della domanda ${index + 1}`;
-      image.src = assetUrl(question.figure);
-      image.addEventListener("error", () => figure.remove(), { once: true });
+      image.src = QUIZBANK_MODE
+        ? `https://raw.githubusercontent.com/Ed0ardo/QuizPatenteB/main/img_sign/${encodeURIComponent(question.figure)}.png`
+        : assetUrl(question.figure);
+      if (QUIZBANK_MODE) {
+        if (question.figureRotation) image.classList.add("quizbank-figure-rotated");
+        image.referrerPolicy = "no-referrer";
+        let fallbackUsed = false;
+        image.addEventListener("error", () => {
+          if (!fallbackUsed) { fallbackUsed = true; image.src = assetUrl(question.figure); return; }
+          image.hidden = true;
+          const message = document.createElement("p");
+          message.textContent = "Figura non disponibile. Riprova prima di studiare questa domanda.";
+          const retry = document.createElement("button"); retry.type = "button"; retry.textContent = "Ricarica figura";
+          retry.addEventListener("click", () => {
+            message.remove(); retry.remove(); image.hidden = false; image.src = assetUrl(question.figure);
+          }, { once: true });
+          figure.append(message, retry);
+        });
+      } else image.addEventListener("error", () => figure.remove(), { once: true });
       figure.appendChild(image);
       main.appendChild(figure);
     }
@@ -738,7 +815,7 @@
     actions.append(italian, bangla, lockedExplanation || explanation.surface, help);
     main.appendChild(actions);
     card.appendChild(main);
-    if (!TRIAL_MODE) observeAudioAvailability(card, question, explanation.surface);
+    if (!TRIAL_MODE && (!QUIZBANK_MODE || question.explanationMapped)) observeAudioAvailability(card, question, explanation.surface);
     return card;
   }
 
@@ -749,6 +826,12 @@
     elements.list.replaceChildren(fragment);
     elements.readerKicker.textContent = `CAPITOLO ${String(currentChapter).padStart(2, "0")}`;
     elements.readerTitle.textContent = CHAPTERS[currentChapter - 1];
+    if (QUIZBANK_MODE) {
+      elements.readerKicker.textContent = "STUDIA QUIZBANK";
+      elements.readerTitle.textContent = `Scheda ${String(currentChapter).padStart(2, "0")}`;
+      document.getElementById("quizbank-previous").disabled = currentChapter === 1;
+      document.getElementById("quizbank-next").disabled = currentChapter === 50;
+    }
     elements.count.textContent = `${questions.length} domande da studiare`;
     elements.emptySearch.classList.add("hidden");
   }
@@ -780,13 +863,16 @@
 
   async function loadHelpLibrary() {
     if (!helpPromise) {
+      const controller = QUIZBANK_MODE ? new AbortController() : null;
+      helpRequest = controller;
+      const deadline = controller ? setTimeout(() => controller.abort(), 12_000) : null;
       window.QUIZ_HELP_RUNTIME_V3_MANIFEST_URL = HELP_MANIFEST_SOURCE;
       const remote = Promise.resolve().then(() => {
         if (!window.QuizHelpRuntimeV3?.load) throw new Error("study_help_runtime_v3_missing");
-        return window.QuizHelpRuntimeV3.load();
+        return window.QuizHelpRuntimeV3.load(controller ? { signal: controller.signal } : undefined);
       });
       helpPromise = remote
-        .catch(() => fetch(LOCAL_HELP_SOURCE, { cache: "force-cache" })
+        .catch(() => fetch(LOCAL_HELP_SOURCE, { cache: "force-cache", ...(controller ? { signal: controller.signal } : {}) })
           .then(response => {
             if (!response.ok) throw new Error(`study_help_local_${response.status}`);
             return response.json();
@@ -794,15 +880,15 @@
         .catch(error => {
           helpPromise = null;
           throw error;
-        });
+        }).finally(() => { if (deadline) clearTimeout(deadline); if (helpRequest === controller) helpRequest = null; });
     }
     return helpPromise;
   }
 
   const prewarmHelpLibrary = () => loadHelpLibrary().catch(() => {});
-  if (typeof window.requestIdleCallback === "function") {
+  if (!QUIZBANK_MODE && typeof window.requestIdleCallback === "function") {
     window.requestIdleCallback(prewarmHelpLibrary, { timeout: 1500 });
-  } else {
+  } else if (!QUIZBANK_MODE) {
     window.setTimeout(prewarmHelpLibrary, 500);
   }
 
@@ -836,7 +922,16 @@
 
   function decodeHelp(question, data) {
     if (data?.resolver) {
-      const resolved = data.resolver.resolve(question);
+      // QuizBank occurrence ids are NOT All Books ids. Only accept an exact
+      // text/figure match from the runtime; never derive ids from sheet digits.
+      let helpQuestion = question;
+      if (QUIZBANK_MODE) {
+        const candidates = Object.entries(data.runtime?.quizzes || {}).filter(([, row]) =>
+          normalize(row.question) === normalize(question.question) && fingerprint(row) === fingerprint(question));
+        if (candidates.length !== 1) return null;
+        helpQuestion = { ...question, id: candidates[0][0] };
+      }
+      const resolved = data.resolver.resolve(helpQuestion);
       if (!resolved) return null;
       const translation = usableBanglaTranslation(
         resolved.questionBnStandard || resolved.questionBnEasy || resolved.questionBn
@@ -861,8 +956,8 @@
     const sourceId = String(question?.id ?? "").trim().toLocaleLowerCase("it-IT");
     const digits = sourceId.match(/\d+/)?.[0];
     const row = data.quizzes?.[fingerprint(question)]
-      || helpIdIndex.get(sourceId)
-      || (digits ? helpIdIndex.get(String(Number(digits))) : null);
+      || (!QUIZBANK_MODE && helpIdIndex.get(sourceId))
+      || (!QUIZBANK_MODE && digits ? helpIdIndex.get(String(Number(digits))) : null);
     if (!Array.isArray(row)) return null;
     const [quizId, chapterId, topicId, wordIds = [], contextBn = ""] = row;
     const chapter = data.chapters?.[chapterId] || [];
@@ -925,6 +1020,7 @@
     if (cached) return cached;
     let data = null;
     try { data = await loadHelpLibrary(); } catch (_) {}
+    if (QUIZBANK_MODE && !questions.includes(question)) throw new DOMException("Study changed", "AbortError");
     const help = (data && decodeHelp(question, data)) || {
       translation: usableBanglaTranslation(question.question_bd || question.questionBD),
       translationSource: question.questionTranslationSource || "catalog",
@@ -1512,6 +1608,7 @@
 
   async function audioApi(action, question, { blob = false, signal } = {}) {
     if (TRIAL_MODE) throw new Error("trial_premium_audio");
+    if (QUIZBANK_MODE && !studyVideoIdentity()) { showQuizBankError(new Error("unauthorized")); throw new Error("unauthorized"); }
     const request = createTimedAudioRequest(signal);
     try {
       const response = await fetch(API, {
@@ -1529,6 +1626,7 @@
           audioIdentityToken: question.audioIdentityToken || ""
         })
       });
+      if (QUIZBANK_MODE) saveAccessToken(response.headers.get("X-Access-Token"), Number(response.headers.get("X-Access-Token-Expires")));
       if (blob) {
         if (response.status === 401 || response.status === 403) clearSessionAndExit();
         if (!response.ok) {
@@ -1766,6 +1864,14 @@
       ? `${visible} di ${questions.length} domande`
       : `${questions.length} domande da studiare`;
     elements.emptySearch.classList.toggle("hidden", visible !== 0);
+    if (QUIZBANK_MODE) {
+      const clear = document.getElementById("quizbank-clear-search");
+      clear.hidden = !elements.search.value;
+      const url = new URL(location.href);
+      if (elements.search.value) url.searchParams.set("q", elements.search.value);
+      else url.searchParams.delete("q");
+      history.replaceState(history.state, "", url.pathname + url.search);
+    }
   }
 
   function hideVideoSurfaces() {
@@ -1844,6 +1950,16 @@
   }
 
   function renderStudyRoute(options = {}) {
+    if (QUIZBANK_MODE) {
+      const chapter = chapterFromLocation();
+      if (new URLSearchParams(location.search).has("scheda") && !chapter) {
+        showQuizBankError(new Error("quizbank_invalid_sheet")); return;
+      }
+      if (chapter) void openChapter(chapter, { updateHistory: false });
+      else if (quizBankReady) showPicker();
+      else void loadQuizBankCatalog();
+      return;
+    }
     normalizeFigureStudyLocation();
     const chapter = chapterFromLocation();
     const view = new URLSearchParams(location.search).get('view');
@@ -1924,6 +2040,11 @@
   });
 
   elements.back.addEventListener("click", () => {
+    if (QUIZBANK_MODE) {
+      if (currentChapter || location.search) { history.pushState({}, "", "/quizbank"); currentChapter = null; showPicker(); }
+      else location.href = "/home";
+      return;
+    }
     if (videoView) {
       if (videoClass) videoClass.back(); else navigateStudy('/studia-quiz');
     } else if (figureView) {
@@ -1933,7 +2054,10 @@
     else if (!TRIAL_MODE && !hubView) navigateStudy('/studia-quiz');
     else window.location.href = HOME;
   });
-  elements.retry.addEventListener("click", () => currentChapter && openChapter(currentChapter, { updateHistory: false }));
+  elements.retry.addEventListener("click", () => {
+    if (QUIZBANK_MODE) renderStudyRoute();
+    else if (currentChapter) openChapter(currentChapter, { updateHistory: false });
+  });
   elements.search.addEventListener("input", filterQuestions);
   window.addEventListener("popstate", () => {
     normalizeFigureStudyLocation();
@@ -1956,6 +2080,7 @@
     if (document.visibilityState === "visible" && !currentChapter) renderStudyIntro();
   });
   window.addEventListener("pagehide", event => {
+    sheetRequest?.abort();
     if (event.persisted) videoClass?.pause();
     else videoClass?.destroy();
     if (event.persisted) figureStudy?.suspend();
@@ -1964,6 +2089,70 @@
     stopPlayback();
     resetAudioObservation();
   });
+
+  function showQuizBankError(error) {
+    loadRequestId += 1;
+    sheetRequest?.abort();
+    resetAudioObservation(); stopPlayback();
+    helpRequest?.abort();
+    questions = []; elements.list.replaceChildren();
+    elements.loading.classList.add("hidden");
+    elements.chapters.classList.add("hidden");
+    elements.reader.classList.add("hidden");
+    elements.error.classList.remove("hidden");
+    const denied = ["unauthorized", "expired", "not_found", "device_replaced", "device_mismatch", "quizbank_preview_forbidden"].includes(error.message);
+    if (denied) { quizBankReady = false; ttsCache.clear(); helpCache.clear(); audioStatusCache.clear(); }
+    const messages = {
+      quizbank_preview_forbidden: "QuizBank è in anteprima riservata agli amministratori. L’accesso Magic Book resta invariato.",
+      unauthorized: "Accedi con il tuo account amministratore per aprire QuizBank.",
+      quizbank_not_configured: "Il collegamento a QuizBank non è ancora configurato su questo ambiente.",
+      quizbank_archive_unavailable: "Non riesco a leggere l’archivio QuizBank. Controlla bucket, nome del file e permessi di lettura.",
+      quizbank_invalid_archive: "Il file deve contenere le 50 schede complete, con 30 domande ciascuna.",
+      quizbank_invalid_sheet: "Questa scheda non esiste. Torna all’elenco delle 50 schede."
+    };
+    elements.errorMessage.textContent = messages[error.message] || (denied
+      ? "La sessione non è più valida. Accedi nuovamente per continuare."
+      : "QuizBank non è disponibile al momento. Controlla la connessione e riprova.");
+    elements.retry.hidden = denied || error.message === "quizbank_invalid_sheet";
+    document.getElementById("quizbank-error-login").hidden = !denied;
+    elements.error.focus({ preventScroll: true });
+  }
+
+  async function loadQuizBankCatalog() {
+    const ownRequest = ++loadRequestId;
+    sheetRequest?.abort(); sheetRequest = new AbortController();
+    const controller = sheetRequest;
+    const deadline = window.setTimeout(() => controller.abort(), 15_000);
+    elements.error.classList.add("hidden"); elements.loading.classList.remove("hidden");
+    try {
+      const query = new URLSearchParams({ action: "catalog", phone: session.phone, deviceId: session.deviceId });
+      const data = await fetchStudyJson(`${API}?${query}`, { headers: authHeaders(), cache: "no-store", signal: controller.signal });
+      if (ownRequest !== loadRequestId) return;
+      if (data.sheets?.length !== 50 || data.questionCount !== 1500) throw new Error("quizbank_invalid_archive");
+      if (!studyVideoIdentity()) { showQuizBankError(new Error("unauthorized")); return; }
+      saveAccessToken(data.accessToken, data.accessTokenExpiresAt);
+      quizBankReady = true;
+      showPicker();
+    } catch (error) { if (ownRequest === loadRequestId) showQuizBankError(error); }
+    finally { window.clearTimeout(deadline); }
+  }
+
+  if (QUIZBANK_MODE) {
+    document.getElementById("quizbank-previous").addEventListener("click", () => void openChapter(currentChapter - 1));
+    document.getElementById("quizbank-next").addEventListener("click", () => void openChapter(currentChapter + 1));
+    document.getElementById("quizbank-clear-search").addEventListener("click", () => {
+      elements.search.value = ""; filterQuestions(); elements.search.focus();
+    });
+    window.addEventListener("storage", () => {
+      if (!studyVideoIdentity()) showQuizBankError(new Error("unauthorized"));
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden && !studyVideoIdentity()) showQuizBankError(new Error("unauthorized"));
+    });
+    window.addEventListener("pageshow", event => {
+      if (event.persisted) { quizBankReady = false; renderStudyRoute(); }
+    });
+  }
 
   buildChapterPicker();
   renderStudyRoute();

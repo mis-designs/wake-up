@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 
 const source = readFileSync(new URL('../study-quiz.js', import.meta.url), 'utf8');
-const gate = source.slice(source.indexOf('  const TRIAL_MODE'), source.indexOf('  const API'));
+const gate = source.slice(source.indexOf('  const QUIZBANK_MODE'), source.indexOf('  const API'));
 const page = readFileSync(new URL('../study-quiz.html', import.meta.url), 'utf8');
 
 for (const [label, native, pathname, expected] of [
@@ -17,7 +17,7 @@ for (const [label, native, pathname, expected] of [
   test(`figure preview rollout: ${label}`, () => {
     const enabled = vm.runInNewContext(gate + '\nFIGURE_STUDY_ENABLED;', {
       window: { location: { pathname, search: '?view=figures&enable=true' } },
-      document: { documentElement: { classList: { contains: name => native && name === 'android-webview' } } }
+      document: { body: { dataset: {} }, documentElement: { classList: { contains: name => native && name === 'android-webview' } } }
     });
     assert.equal(enabled, expected);
   });
