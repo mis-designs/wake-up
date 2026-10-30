@@ -18,9 +18,11 @@ const browser = await chromium.launch({ headless: true, channel: "msedge",
   args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] });
 const report = [];
 try {
-  for (const width of [1440, 375, 320]) {
-    const context = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: "block", reducedMotion: "reduce", permissions: ["microphone"] });
-    const counts = { sheets: 0, status: 0, saves: 0, blob: 0, external: 0, direct: 0, confirm: 0 };
+  for (const [width, native] of [[1440, false], [375, false], [320, false], [375, true]]) {
+    const label = `${width}${native ? "-native" : ""}`;
+    const context = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: "block", reducedMotion: "reduce", permissions: ["microphone"],
+      ...(native ? { userAgent: "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/130.0.0.0 Mobile Safari/537.36 MagicBookViewer/1.0" } : {}) });
+    const counts = { sheets: 0, status: 0, saves: 0, blob: 0, external: 0, direct: 0, confirm: 0, icon: 0 };
     const saved = new Map([[rows[1].id, { bytes: Buffer.alloc(0), type: "audio/webm" }]]);
     let mode = "ok", release = null, canUpload = true;
     const errors = [], payloads = [];
@@ -34,7 +36,7 @@ try {
         if (data.action === "getQuizAudioStatus") { counts.status++; return route.fulfill({ json: { available: saved.has(data.questionId) } }); }
         if (data.action === "getQuizAudioBlob") { counts.blob++; const audio = saved.get(data.questionId); return route.fulfill({ contentType: audio.type, body: audio.bytes }); }
         if (data.action === "createQuizAudioUpload") { counts.direct++; return route.fulfill({ json: { uploadUrl: "https://quizbank.local/mock-audio", uploadContentType: data.audioMimeType || "audio/webm" } }); }
-        if (data.action === "confirmQuizAudioUpload") { counts.confirm++; return route.fulfill({ json: { ok: true } }); }
+        if (data.action === "confirmQuizAudioUpload") { counts.confirm++; saved.set(rows[0].id, { bytes: Buffer.alloc(0), type: "audio/webm" }); return route.fulfill({ json: { ok: true } }); }
         if (data.action === "saveQuizAudio") {
           counts.saves++; payloads.push(data);
           const encoded = data.audioBase64.replace(/^data:[^,]+,/, "");
@@ -51,6 +53,7 @@ try {
         return route.fulfill({ json: { ok: true, available: false } });
       }
       if (url.pathname === "/mock-audio") return route.fulfill({ status: 200, body: "" });
+      if (url.pathname === "/icons/add_voice.png") counts.icon++;
       const file = path.resolve(repo, url.pathname === "/quizbank" ? "quizbank.html" : url.pathname.startsWith("/quiz/") ? "quiz.html" : decodeURIComponent(url.pathname).slice(1));
       if (!file.startsWith(repo) || !mime[path.extname(file)] || !fs.existsSync(file)) return route.fulfill({ status: 404, body: "" });
       return route.fulfill({ contentType: mime[path.extname(file)], body: fs.readFileSync(file) });
@@ -78,13 +81,41 @@ try {
     const pause = () => panel.getByRole("button", { name: "Pausa", exact: true });
     const record = async () => {
       await start().click(); await pause().waitFor();
-      await page.waitForTimeout(350); await pause().click();
-      await page.waitForFunction(() => !document.querySelector('.quiz-audio-recorder:not(.hidden) [data-recorder="save"], .quiz-audio-recorder:not(.hidden) #quiz-audio-record-save').disabled);
+      await page.waitForFunction(() => !document.querySelector('.quiz-audio-recorder:not(.hidden) [data-recorder="pause"], .quiz-audio-recorder:not(.hidden) #quiz-audio-record-pause').disabled);
+      // Give the synthetic device time to deliver its first encoded audio packet.
+      await page.waitForTimeout(1500); await pause().click();
+      try {
+        await page.waitForFunction(() => !document.querySelector('.quiz-audio-recorder:not(.hidden) [data-recorder="save"], .quiz-audio-recorder:not(.hidden) #quiz-audio-record-save').disabled);
+      } catch (error) {
+        await page.screenshot({ path: path.join(out, `recording-failure-${label}.png`) });
+        throw new Error(`Recording fixture at ${page.url()}: ${await panel.textContent()}`, { cause: error });
+      }
     };
     const noTracks = () => page.waitForFunction(() => window.fixtureStreams.every(stream => stream.getTracks().every(track => track.readyState === "ended")));
     await page.goto("https://quizbank.local/quizbank?scheda=1");
     await trigger.waitFor(); assert.equal(counts.saves, 0); assert.ok(counts.status < 15);
+    const checkAddIcon = async button => {
+      const icon = button.locator(".quiz-audio-add-icon");
+      assert.equal(await icon.isVisible(), true);
+      assert.equal(await icon.getAttribute("aria-hidden"), "true");
+      assert.match(await icon.evaluate(el => getComputedStyle(el).backgroundImage), /\/icons\/add_voice\.png/);
+      const [target, graphic] = await Promise.all([button.boundingBox(), icon.boundingBox()]);
+      assert.ok(target.width >= 44 && target.height >= 44);
+      assert.equal(graphic.width, 28); assert.equal(graphic.height, 28);
+      assert.ok(Math.abs(target.x + target.width / 2 - graphic.x - graphic.width / 2) < 1);
+      assert.ok(Math.abs(target.y + target.height / 2 - graphic.y - graphic.height / 2) < 1);
+      assert.doesNotMatch(await button.textContent(), /\+/);
+    };
+    await checkAddIcon(trigger);
+    assert.equal(counts.icon, 1, "One shared static icon request for the sheet, not one per question");
+    await trigger.focus(); await page.keyboard.press("Space"); await panel.waitFor();
+    assert.equal(await start().evaluate(el => el === document.activeElement), true);
+    await panel.getByRole("button", { name: "Chiudi registratore" }).click();
+    assert.equal(await trigger.evaluate(el => el === document.activeElement), true);
     await trigger.click(); await panel.waitFor();
+    const recorderGap = await panel.evaluate(el => el.getBoundingClientRect().top - el.previousElementSibling.getBoundingClientRect().bottom);
+    assert.equal(recorderGap, 18, "Recorder stays separate from all wrapped action rows");
+    await page.screenshot({ path: path.join(out, `recorder-open-${label}.png`) });
     assert.equal(await page.locator("input[type=file]").count(), 0);
     assert.equal(await page.getByRole("dialog").count(), 0);
     assert.equal(await page.evaluate(() => window.fixtureStreams.length), 0, "Opening never requests microphone");
@@ -96,7 +127,7 @@ try {
     assert.equal(counts.saves, 0, "Record/pause/resume/preview stay local");
     assert.equal(await page.evaluate(() => window.fixtureStreams.length), 1, "Resume reuses microphone");
     await panel.scrollIntoViewIfNeeded();
-    await page.screenshot({ path: path.join(out, `recorder-ready-${width}.png`) });
+    await page.screenshot({ path: path.join(out, `recorder-ready-${label}.png`) });
     const geometry = await panel.evaluate(el => ({ left: el.getBoundingClientRect().left, right: el.getBoundingClientRect().right,
       scroll: document.documentElement.scrollWidth, width: innerWidth }));
     assert.ok(geometry.left >= 0 && geometry.right <= width && geometry.scroll <= width, JSON.stringify(geometry));
@@ -107,7 +138,7 @@ try {
     assert.ok(release, `Save did not reach the API: ${await panel.textContent()} / ${errors.join(", ")}`);
     await save().dispatchEvent("click"); assert.equal(counts.saves, 1);
     const busy = await save().boundingBox(); assert.ok(Math.abs(dimensions.width - busy.width) < 1);
-    await page.screenshot({ path: path.join(out, `recorder-saving-${width}.png`) });
+    await page.screenshot({ path: path.join(out, `recorder-saving-${label}.png`) });
     mode = "fail"; release(); release = null;
     await page.getByText(/Salvataggio non riuscito/).waitFor(); assert.equal(await save().isEnabled(), true);
     mode = "ok"; await save().click(); await panel.waitFor({ state: "hidden" }); await noTracks();
@@ -132,14 +163,19 @@ try {
     // The real Magic Book consumer must still open and save through its adapter.
     saved.delete(rows[0].id);
     await page.goto("https://quizbank.local/quiz/capitolo-1");
-    await page.locator("#quiz-audio-add").waitFor(); await page.locator("#quiz-audio-add").click(); await panel.waitFor();
+    await page.locator("#quiz-audio-add").waitFor();
+    await checkAddIcon(page.locator("#quiz-audio-add"));
+    await page.locator("#quiz-audio-add").click(); await panel.waitFor();
     await record();
     assert.deepEqual(await panel.locator(".quiz-audio-record-actions button").allTextContents(), qbLabels);
-    await panel.scrollIntoViewIfNeeded(); await page.screenshot({ path: path.join(out, `magicbook-recorder-${width}.png`) });
+    await panel.scrollIntoViewIfNeeded(); await page.screenshot({ path: path.join(out, `magicbook-recorder-${label}.png`) });
     await save().click(); await panel.waitFor({ state: "hidden" }); await noTracks();
     assert.equal(counts.direct, 1); assert.equal(counts.confirm, 1);
+    await page.locator("#quiz-audio-add.has-audio").waitFor();
+    assert.equal(await page.locator("#quiz-audio-add .quiz-audio-add-icon").isVisible(), false);
+    assert.equal(await page.locator("#quiz-audio-add > img").isVisible(), true, "Existing audio keeps its edit icon");
     assert.deepEqual(errors, []);
-    report.push({ width, counts, errors, checks: ["shared-controls", "real-synthetic-microphone", "denied-microphone", "pause-resume-preview", "one-save", "retry-same-recording", "save-play-reload", "conflict", "navigation-cleanup", "permission-denied", "learner-hidden", "magicbook-direct-save"] });
+    report.push({ width, native, recorderGap, counts, errors, checks: ["shared-add-voice-icon", "one-static-icon-request", "keyboard-open-close", "recorder-spacing", "preserved-edit-icon", "shared-controls", "real-synthetic-microphone", "denied-microphone", "pause-resume-preview", "one-save", "retry-same-recording", "save-play-reload", "conflict", "navigation-cleanup", "permission-denied", "learner-hidden", "magicbook-direct-save"] });
     await context.close();
   }
   fs.writeFileSync(path.join(out, "report.json"), JSON.stringify(report, null, 2));

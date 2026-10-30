@@ -3,7 +3,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 const CLIENT_AUTH_RESET_VERSION = "2026-04-device-reset-1";
 const CLIENT_AUTH_RESET_KEY = "client_auth_reset_version";
-const HOME_ROUTE = "/magic-book";
+const QUIZBANK_MODE = window.location.pathname.replace(/\/+$/, "") === "/quiz" && new URLSearchParams(window.location.search).get("source") === "quizbank";
+const QUIZBANK_SHEET = new URLSearchParams(window.location.search).get("scheda") || "";
+const QUIZBANK_VALID_SHEET = /^\d{1,2}$/.test(QUIZBANK_SHEET) && Number(QUIZBANK_SHEET) >= 1 && Number(QUIZBANK_SHEET) <= 50;
+const HOME_ROUTE = QUIZBANK_MODE ? (QUIZBANK_VALID_SHEET ? `/quizbank?scheda=${Number(QUIZBANK_SHEET)}` : "/quizbank") : "/magic-book";
+if (QUIZBANK_MODE) document.querySelector(".exit-btn")?.setAttribute("aria-label", "Torna alla scheda");
 const TRIAL_MODE = window.location.pathname.replace(/\/+$/, "") === "/quiz/prova-gratis";
 const TRIAL_HOME_ROUTE = "/?trialOffer=1";
 const TRIAL_ALLOWED_CHAPTERS = new Set(["1", "3"]);
@@ -106,7 +110,50 @@ if (!TRIAL_MODE && !hasCurrentClientAuthResetVersion()) {
   throw new Error("client_auth_reset_required");
 }
 
-const QUIZ_API = "/api/quiz";
+const QUIZ_API = QUIZBANK_MODE ? "/api/quizbank" : "/api/quiz";
+let quizbankRevision = "";
+const quizbankRequests = new Set();
+function quizBankIdentityMatches() {
+  const session = getQuizSession();
+  return !!session && session.phone === getQuizPhone() && session.deviceId === getQuizDeviceId();
+}
+
+// Only the QuizBank variant adds deadlines and cancellation to shared transports.
+async function fetchQuizBankResource(url, options = {}) {
+  if (!QUIZBANK_MODE) return fetch(url, options);
+  if (!quizBankIdentityMatches()) { await handleQuizAccessError("unauthorized"); throw new Error("unauthorized"); }
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  options.signal?.addEventListener("abort", abort, { once: true });
+  if (options.signal?.aborted) controller.abort();
+  quizbankRequests.add(controller);
+  const timeout = setTimeout(abort, options.method === "POST" ? 30000 : 15000);
+  try {
+    const response = await fetch(url, { ...options, cache: "no-store", signal: controller.signal });
+    // Buffer the body under the deadline too; media retains its original type/headers.
+    const bytes = await response.arrayBuffer();
+    if (controller.signal.aborted) throw new DOMException("Cancelled", "AbortError");
+    if (!quizBankIdentityMatches()) { await handleQuizAccessError("unauthorized"); throw new Error("unauthorized"); }
+    const result = new Response(bytes, { status: response.status, statusText: response.statusText, headers: response.headers });
+    saveQuizAccessToken(result.headers.get("X-Access-Token"), Number(result.headers.get("X-Access-Token-Expires")));
+    if (result.status === 401 || result.status === 403) {
+      const data = await result.clone().json().catch(() => ({}));
+      await handleQuizAccessError(data.error || "quizbank_access_denied");
+      throw new Error(data.error || "quizbank_access_denied");
+    }
+    return result;
+  } finally {
+    clearTimeout(timeout); quizbankRequests.delete(controller);
+    options.signal?.removeEventListener("abort", abort);
+  }
+}
+window.addEventListener("pagehide", () => { for (const controller of quizbankRequests) controller.abort(); });
+window.addEventListener("storage", () => {
+  if (QUIZBANK_MODE && !quizBankIdentityMatches()) void handleQuizAccessError("unauthorized");
+});
+document.addEventListener("visibilitychange", () => {
+  if (QUIZBANK_MODE && !document.hidden && !quizBankIdentityMatches()) void handleQuizAccessError("unauthorized");
+});
 const ASSET_API = "/api/asset";
 const QUIZ_FIGURE_PRESENTATION = "numberless-v2";
 const EXPLANATION_EXTENSIONS = ["png", "webp", "jpg", "jpeg"];
@@ -136,6 +183,27 @@ function buildFigureImageUrl(figure) {
   });
 }
 
+function loadQuizBankFigure(img, question, onReady = () => {}, isCurrent = () => true) {
+  let fallbackUsed = false;
+  img.hidden = false;
+  img.alt = "Figura della domanda";
+  img.style.transform = question.figureRotation === 90 ? "rotate(90deg)" : "";
+  img.style.objectFit = "contain";
+  img.referrerPolicy = "no-referrer";
+  img.onload = () => { if (isCurrent()) onReady(); };
+  img.onerror = () => {
+    if (!isCurrent()) return;
+    if (!fallbackUsed) { fallbackUsed = true; img.src = buildFigureImageUrl(question.figure); return; }
+    img.hidden = true; onReady();
+    const note = document.createElement("p"); note.className = "quizbank-figure-note";
+    note.textContent = "Figura non disponibile. ";
+    const retry = document.createElement("button"); retry.type = "button"; retry.textContent = "Ricarica figura";
+    retry.addEventListener("click", () => { note.remove(); img.hidden = false; img.src = buildFigureImageUrl(question.figure); }, { once: true });
+    note.appendChild(retry); img.after(note);
+  };
+  img.src = `https://raw.githubusercontent.com/Ed0ardo/QuizPatenteB/main/img_sign/${encodeURIComponent(question.figure)}.png`;
+}
+
 function stopQuizLoadingFigures() {}
 
 function startQuizLoadingFigures() {
@@ -157,6 +225,7 @@ function getQuizRouteInfo() {
   const params = new URLSearchParams(window.location.search);
   const chapterMatch = path.match(/^\/quiz\/capitolo-(\d{1,2})$/);
   const examMatch = path.match(/^\/quiz\/esame-(80|30)$/);
+  if (QUIZBANK_MODE) return { chapters: QUIZBANK_VALID_SHEET ? String(Number(QUIZBANK_SHEET)) : "", mode: "default" };
   if (TRIAL_MODE) {
     const chapter = params.get("chapter") || "";
     return { chapters: TRIAL_ALLOWED_CHAPTERS.has(chapter) ? chapter : "", mode: "default" };
@@ -379,7 +448,7 @@ async function refreshQuizSession() {
 }
 
 async function ensureFreshQuizSession() {
-  if (TRIAL_MODE || !quizSessionToken || !quizSessionTokenExpiresAt) return { ok: true };
+  if (QUIZBANK_MODE || TRIAL_MODE || !quizSessionToken || !quizSessionTokenExpiresAt) return { ok: true };
   if (quizSessionTokenExpiresAt > Date.now() + QUIZ_SESSION_REFRESH_SKEW_MS) return { ok: true };
   return refreshQuizSession();
 }
@@ -444,6 +513,8 @@ function buildQuizApiUrl(action, params = {}) {
 }
 
 function getQuizAccessErrorMessage(error) {
+  if (QUIZBANK_MODE && ["quizbank_access_denied", "quizbank_access_required", "quizbank_preview_forbidden"].includes(error)) return "Il tuo account non è abilitato a QuizBank. Torna alla scheda dopo l’attivazione.";
+  if (QUIZBANK_MODE && error === "quizbank_admin_required") return "Solo gli amministratori possono aggiungere spiegazioni audio.";
   if (error === "expired") return "Accesso scaduto. Contatta il supporto per rinnovare.";
   if (error === "not_found") return "Numero non autorizzato.";
   if (error === "device_replaced") return "Questo dispositivo non è più autorizzato perché l’accesso è stato spostato su un altro dispositivo.";
@@ -494,6 +565,20 @@ function clearQuizSessionDataForLogout() {
 async function handleQuizAccessError(error) {
   if (quizAccessErrorHandled) return;
   quizAccessErrorHandled = true;
+  if (QUIZBANK_MODE) {
+    setQuizTitle("Accesso riservato | QuizBank");
+    for (const controller of quizbankRequests) controller.abort();
+    clearInterval(timerInterval); stopAllAudio(); closeInlineAudioRecorder();
+    resetSharedAudioPlayer(); resetReviewAudioPlayer();
+    italianAudioCache.clear(); bengaliAudioCache.clear(); sharedAudioAvailabilityCache.clear();
+    quiz = []; answers = []; lastQuizSet = null; quizbankRevision = "";
+    document.getElementById("question").textContent = "";
+    document.getElementById("figure")?.removeAttribute("src");
+    document.getElementById("quiz-help-question").textContent = "";
+    document.getElementById("progress").replaceChildren();
+    modalReviewList?.replaceChildren();
+    window.dispatchEvent(new Event("magicbook:quiz-help-close"));
+  }
 
   try {
     hideLoading();
@@ -523,7 +608,7 @@ async function fetchQuizJson(url, options = {}) {
     if (activeQuizToken) headers.set("X-Quiz-Session", activeQuizToken);
   }
 
-  const response = await fetch(url, { ...fetchOptions, headers });
+  const response = await fetchQuizBankResource(url, { ...fetchOptions, headers });
 
   let data = null;
   try {
@@ -536,6 +621,7 @@ async function fetchQuizJson(url, options = {}) {
   if (
     allowSessionRefresh
     && !TRIAL_MODE
+    && !QUIZBANK_MODE
     && isQuizSessionProtectedAction(action)
     && (error === "quiz_session_expired" || error === "token_expired")
   ) {
@@ -605,7 +691,7 @@ function getLearningQuizMode() {
 }
 
 function beginLearningQuizSession() {
-  if (TRIAL_MODE || !window.MagicBookLearningSync) {
+  if (QUIZBANK_MODE || TRIAL_MODE || !window.MagicBookLearningSync) {
     learningSessionId = "";
     return;
   }
@@ -621,7 +707,7 @@ function markLearningQuestionVisible() {
 }
 
 function queueLearningAnswer(userAnswer) {
-  if (TRIAL_MODE || !learningSessionId || !window.MagicBookLearningSync) return;
+  if (QUIZBANK_MODE || TRIAL_MODE || !learningSessionId || !window.MagicBookLearningSync) return;
   const question = quiz[current];
   const answerState = answers[current];
   if (!question?.id || !answerState) return;
@@ -943,7 +1029,7 @@ async function requestSharedAudio(action, question, { signal } = {}) {
     quizAudioIdentityVersion: QuizAudioIdentity.VERSION,
     audioIdentityToken: question?.audioIdentityToken || ""
   };
-  const response = await fetch(QUIZ_API, {
+  const response = await fetchQuizBankResource(QUIZ_API, {
     method: "POST",
     signal,
     headers: {
@@ -972,7 +1058,7 @@ async function requestSharedAudioBlob(question, { signal } = {}) {
     quizAudioIdentityVersion: QuizAudioIdentity.VERSION,
     audioIdentityToken: question?.audioIdentityToken || ""
   };
-  const response = await fetch(QUIZ_API, {
+  const response = await fetchQuizBankResource(QUIZ_API, {
     method: "POST",
     signal,
     headers: {
@@ -1230,6 +1316,7 @@ function updateQuizAudioAdminTool(hasAudio) {
   quizAudioAddPlus?.classList.toggle("hidden", hasAudio);
   quizAudioAddEditIcon?.classList.toggle("hidden", !hasAudio);
   quizAudioEditMenu?.classList.add("hidden");
+  if (QUIZBANK_MODE) quizAudioAdminTools?.classList.add("hidden");
 }
 
 function sharedAudioAvailabilityKey(question) {
@@ -1246,6 +1333,7 @@ function invalidateSharedAudioAvailability(question) {
 function applySharedAudioAvailability(data, question, requestId) {
   if (requestId !== sharedAudioRequestId) return;
   updateQuizAudioAdminTool(data.available === true);
+  if (QUIZBANK_MODE) quizAudioAdminTools?.classList.toggle("hidden", !isAdmin || data.available !== false || data.temporaryUnavailable === true);
   if (data.available) {
     setSharedAudioVisibility(true);
     sharedAudioQuestion = {
@@ -1436,9 +1524,11 @@ function closeInlineAudioRecorder() {
 function openInlineAudioRecorder(event) {
   event?.stopPropagation();
   if (!isAdmin || TRIAL_MODE || !quiz[current] || !window.MagicQuizAudioRecorder) return;
+  if (QUIZBANK_MODE && (quizAudioAdminTools?.classList.contains("hidden") || quizAudioAdd?.dataset.hasAudio === "true")) return;
   if (!inlineAudioRecorder) {
     inlineAudioRecorder = window.MagicQuizAudioRecorder.create({
       root: quizAudioRecorder,
+      ...(QUIZBANK_MODE ? { maxBytes: 3 * 1024 * 1024 } : {}),
       save: saveInlineAudioRecording,
       isCurrent: question => isAdmin && !TRIAL_MODE && question === quiz[current],
       returnFocus: () => quizAudioAdd,
@@ -1476,7 +1566,8 @@ function blobAsAudioDataUrl(blob, signal) {
 
 async function quizAudioAdminApi(action, question, extra = {}, { signal } = {}) {
   signal?.throwIfAborted();
-  const response = await fetch(QUIZ_API, {
+  if (QUIZBANK_MODE && action !== "saveQuizAudio") throw new Error("quizbank_audio_action_unavailable");
+  const response = await fetchQuizBankResource(QUIZ_API, {
     method: "POST",
     signal,
     headers: {
@@ -1496,7 +1587,15 @@ async function quizAudioAdminApi(action, question, extra = {}, { signal } = {}) 
   });
   const data = await response.json().catch(() => ({}));
   signal?.throwIfAborted();
-  if (!response.ok) throw new Error(data?.error || `quiz_audio_${response.status}`);
+  if (!response.ok) {
+    if (QUIZBANK_MODE && response.status === 409) {
+      if (data?.error === "quiz_audio_already_exists") {
+        invalidateSharedAudioAvailability(question); updateSharedAudioAvailability(question);
+      }
+      throw Object.assign(new Error("Esiste già una spiegazione o è necessaria una verifica. Nessun audio è stato sostituito."), { retryable: false });
+    }
+    throw new Error(data?.error || `quiz_audio_${response.status}`);
+  }
   return data;
 }
 
@@ -1505,6 +1604,13 @@ async function saveInlineAudioRecording({ blob, mimeType, durationMs }, signal) 
   const question = inlineAudioQuestion;
   if (!isAdmin || TRIAL_MODE || !question || question !== quiz[current]) {
     throw Object.assign(new Error("Registrazione non più disponibile."), { retryable: false });
+  }
+  if (QUIZBANK_MODE) {
+    if (blob.size > 3 * 1024 * 1024) throw Object.assign(new Error("Registrazione troppo grande. Registra un audio più breve."), { retryable: false });
+    const audioBase64 = await blobAsAudioDataUrl(blob, signal);
+    signal.throwIfAborted();
+    if (question !== quiz[current] || !isAdmin) throw Object.assign(new Error("Registrazione non più disponibile."), { retryable: false });
+    return quizAudioAdminApi("saveQuizAudio", question, { audioBase64, audioMimeType: mimeType, audioDurationMs: durationMs }, { signal });
   }
   const created = await quizAudioAdminApi("createQuizAudioUpload", question,
     { audioMimeType: mimeType }, { signal });
@@ -1538,6 +1644,7 @@ quizAudioAdd?.addEventListener("click", event => {
     openInlineAudioRecorder(event);
     return;
   }
+  if (QUIZBANK_MODE) return;
   const willOpen = quizAudioEditMenu?.classList.contains("hidden");
   quizAudioEditMenu?.classList.toggle("hidden", !willOpen);
   quizAudioAdd.setAttribute("aria-expanded", String(willOpen));
@@ -1996,7 +2103,7 @@ function readCachedExplanationFigures() {
 }
 
 async function refreshExplanationFigures() {
-  if (TRIAL_MODE || explanationChecksSuspended || explanationFiguresExpiresAt > Date.now()) return explanationFigures;
+  if (QUIZBANK_MODE || TRIAL_MODE || explanationChecksSuspended || explanationFiguresExpiresAt > Date.now()) return explanationFigures;
   if (explanationFiguresRequest) return explanationFiguresRequest;
   if (explanationFiguresRetryAt > Date.now()) return explanationFigures;
   const controller = new AbortController();
@@ -2102,6 +2209,7 @@ function getFigureKey(question) {
 }
 
 function updateExplanationButton(question) {
+  if (QUIZBANK_MODE) { explanationButton?.classList.add("hidden"); return; }
   if (!explanationButton) return;
   const available = getExplanationValue(question) !== null && Boolean(getFigureKey(question));
   explanationButton.classList.toggle("hidden", !available);
@@ -2161,6 +2269,9 @@ function loadQuizImage(q) {
   const figureWrap = document.getElementById("figure-wrap");
   const skeleton   = document.getElementById("img-skeleton");
   if (!img || !figureWrap) return;
+  figureWrap.querySelectorAll(".quizbank-figure-note").forEach(note => note.remove());
+  img.hidden = false;
+  if (QUIZBANK_MODE) img.style.transform = "";
 
   // Instantly hide any previous image and detach stale handlers.
   // A short cancellable dwell avoids hitting the image endpoint when the user
@@ -2179,6 +2290,14 @@ function loadQuizImage(q) {
 
   figureWrap.classList.remove("hidden");
   skeleton?.classList.remove("hidden");
+  if (QUIZBANK_MODE && !noFigure) {
+    quizImageRequestTimer = window.setTimeout(() => {
+      quizImageRequestTimer = 0;
+      if (requestId !== quizImageRequestId) return;
+      loadQuizBankFigure(img, q, () => { skeleton?.classList.add("hidden"); img.classList.add("img-ready"); }, () => requestId === quizImageRequestId);
+    }, QUIZ_IMAGE_REQUEST_DELAY_MS);
+    return;
+  }
 
   const requestedSource = noFigure ? "icons/wearetmm.svg" : buildFigureImageUrl(q.figure);
   let showingFallback = false;
@@ -2230,7 +2349,7 @@ function returnToBook() {
 }
 
 function rifaiScheda() {
-  if (quizMode === "exam80" || quizMode === "exam30") {
+  if (QUIZBANK_MODE || quizMode === "exam80" || quizMode === "exam30") {
     stopAllAudio();
     current = 0;
     isFinishing = false;
@@ -2263,6 +2382,7 @@ async function loadQuiz() {
   try {
     const routeInfo = getQuizRouteInfo();
     const chapters = routeInfo.chapters || "";
+    if (QUIZBANK_MODE && !QUIZBANK_VALID_SHEET) throw new Error("quizbank_invalid_sheet");
     if (TRIAL_MODE && !TRIAL_ALLOWED_CHAPTERS.has(chapters)) throw new Error("trial_chapter_forbidden");
     quizMode = getRequestedQuizMode();
     syncNativeQuizSection();
@@ -2273,7 +2393,7 @@ async function loadQuiz() {
       saveQuizAccessToken(data.accessToken, data.accessTokenExpiresAt);
     }
 
-    isAdmin = data.isAdmin === true;
+    isAdmin = QUIZBANK_MODE ? data.canUploadAudio === true : data.isAdmin === true;
     console.log("[quiz] admin mode", isAdmin ? "enabled" : "disabled");
     quizSessionToken = data.quizSessionToken || "";
     quizSessionTokenExpiresAt = data.quizSessionTokenExpiresAt || 0;
@@ -2285,12 +2405,16 @@ async function loadQuiz() {
     if (!Array.isArray(data.quiz)) {
       throw new Error("invalid_quiz_response");
     }
+    if (QUIZBANK_MODE) {
+      if (data.quiz.length !== 30 || !/^[a-f0-9]{64}$/.test(data.quizbankRevision || "") || data.quiz.some((q, i) => q.id !== `qb_s${String(Number(chapters)).padStart(2, "0")}_q${String(i + 1).padStart(2, "0")}`)) throw new Error("invalid_quiz_response");
+      quizbankRevision = data.quizbankRevision;
+    }
     quiz = data.quiz;
 
     const modeConfig = getQuizModeConfig(quizMode);
     const titleEl = document.querySelector(".top-bar h2");
-    if (titleEl) titleEl.innerText = data.title || modeConfig.title || "Quiz";
-    setQuizTitle(`MagicBook | ${data.title || modeConfig.title || "Quiz"}`);
+    if (titleEl) titleEl.innerText = QUIZBANK_MODE ? `Scheda ${String(Number(chapters)).padStart(2, "0")}` : data.title || modeConfig.title || "Quiz";
+    setQuizTitle(`${QUIZBANK_MODE ? "QuizBank" : "MagicBook"} | ${data.title || modeConfig.title || "Quiz"}`);
 
     // inizializza risposte
     answers = quiz.map(q => ({ id: q.id, answer: null }));
@@ -2303,11 +2427,15 @@ async function loadQuiz() {
     if (quizAccessErrorHandled) return;
     console.error("[quiz] loadQuiz failed:", err.message);
     hideLoading();
+    if (QUIZBANK_MODE && err.message === "quizbank_invalid_sheet") {
+      await showMessage("Scheda non valida", "Scegli una scheda da 1 a 50 in QuizBank.");
+      returnToBook(); return;
+    }
     recoveryAction = await showConfirm(
       isExamQuizMode() ? "Exam non disponibile" : "Quiz non disponibile",
       getQuizLoadErrorMessage(),
       "Riprova",
-      "Torna al menu"
+      QUIZBANK_MODE ? "Torna alla scheda" : "Torna al menu"
     );
   } finally {
     hideLoading();
@@ -2782,7 +2910,9 @@ function getServerReviewItems(result = {}) {
 
     // Derive what the correct answer must have been from isCorrect + userAnswer
     let correctAnswer;
-    if (isCorrect) {
+    if (QUIZBANK_MODE && (item.correctAnswer === 0 || item.correctAnswer === 1)) {
+      correctAnswer = item.correctAnswer;
+    } else if (isCorrect) {
       correctAnswer = userAnswer;
     } else if (userAnswer === 1) {
       correctAnswer = 0;
@@ -2797,6 +2927,7 @@ function getServerReviewItems(result = {}) {
       index:         qi + 1,
       question:      q?.question || `Domanda ${qi + 1}`,
       figure:        q?.figure ?? null,
+      figureRotation: q?.figureRotation || 0,
       audioQuestion: q?.audioQuestion || q?.question || `Domanda ${qi + 1}`,
       audioFigure:   q?.audioFigure ?? q?.figure ?? null,
       audioIdentityToken: q?.audioIdentityToken || "",
@@ -3233,8 +3364,8 @@ function renderAnswerReview(items = []) {
       const img = document.createElement("img");
       img.className = "modal-review-img";
       img.alt = "";
-      img.src = buildFigureImageUrl(item.figure);
-      img.onerror = function () { this.remove(); };
+      if (QUIZBANK_MODE) loadQuizBankFigure(img, item);
+      else { img.src = buildFigureImageUrl(item.figure); img.onerror = function () { this.remove(); }; }
       figureShell.appendChild(img);
       figureShell.appendChild(reviewAudioControl);
       row.appendChild(figureShell);
@@ -3590,7 +3721,7 @@ function allAnswered() {
 
 // FINE QUIZ
 async function finishQuiz(forceFinish = false) {
-  if (isFinishing) return;
+  if (isFinishing || (QUIZBANK_MODE && (quizAccessErrorHandled || quiz.length !== 30))) return;
 
   if (!forceFinish && !allAnswered()) {
     const confirmed = await showConfirm(
@@ -3631,11 +3762,12 @@ async function finishQuiz(forceFinish = false) {
   try {
     console.log("[quiz] submitting answers", payload.length);
 
-    const data = await fetchQuizJson(TRIAL_MODE ? "/api/trial" : "/api/quiz?action=checkQuiz", {
+    const data = await fetchQuizJson(TRIAL_MODE ? "/api/trial" : `${QUIZ_API}?action=checkQuiz`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        action: TRIAL_MODE ? "checkQuiz" : undefined,
+        action: TRIAL_MODE || QUIZBANK_MODE ? "checkQuiz" : undefined,
+        ...(QUIZBANK_MODE ? { chapters: getQuizRouteInfo().chapters, quizbankRevision } : {}),
         trialId: TRIAL_MODE ? getQuizDeviceId() : undefined,
         trialToken: TRIAL_MODE ? getQuizSessionToken() : undefined,
         phone: getQuizPhone(),
@@ -3647,7 +3779,7 @@ async function finishQuiz(forceFinish = false) {
     const result = normalizeQuizResult(data, payload.length);
     // Retain only explicitly server-graded, answered questions. This snapshot
     // cannot modify the outbox, grading, account state or server statistics.
-    if (!TRIAL_MODE) {
+    if (!TRIAL_MODE && !QUIZBANK_MODE) {
       window.MagicBookLearningSync?.saveLocalReview?.({
         ...localReviewOwner,
         items: (Array.isArray(data.results) ? data.results : []).flatMap(item => {
@@ -3673,6 +3805,13 @@ async function finishQuiz(forceFinish = false) {
   } catch (err) {
     if (quizAccessErrorHandled) return;
     hideLoading();
+    if (QUIZBANK_MODE && err.message === "quizbank_revision_changed") {
+      clearInterval(timerInterval); timerExpiryPending = false;
+      const restart = await showConfirm("Scheda aggiornata", "Questa scheda è stata corretta mentre la svolgevi. Per controllare il risultato occorre ricominciare con le domande aggiornate.", "Ricomincia scheda", "Mantieni le risposte");
+      if (restart) rifaiScheda();
+      return;
+    }
+    if (QUIZBANK_MODE) timerExpiryPending = false;
     await showMessage(
       "Risultato non disponibile",
       "Non siamo riusciti a controllare il risultato. Verifica la connessione e riprova."

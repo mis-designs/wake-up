@@ -1,0 +1,52 @@
+/* Owner correction: preserve the original Admin palette, pill/glass treatment,
+   typography, artwork and two-column cards. This file owns spacing only. */
+#adminPanel {
+  --admin-content-inset: 20px;
+  padding: calc(24px + env(safe-area-inset-top, 0px)) clamp(16px, 3vw, 40px) calc(48px + env(safe-area-inset-bottom, 0px));
+}
+#adminPanel .admin-topbar { margin-bottom: 20px; }
+#adminPanel .admin-shell { gap: 18px; }
+#adminPanel .admin-toolbar { padding: var(--admin-content-inset); gap: 18px; }
+#adminPanel .admin-tabs { gap: 10px; }
+#adminPanel .admin-tools-row { gap: 20px; }
+#adminPanel .admin-utility-actions { gap: 12px; }
+#adminPanel .admin-search-box,
+#adminPanel .admin-action-pill { padding: 7px 18px 7px 10px; }
+#adminPanel .admin-search-clear { right: 10px; }
+#adminPanel .admin-search-clear.hidden { display: none; }
+#adminPanel .admin-dataset-bar { padding: 16px var(--admin-content-inset); gap: 24px; }
+#adminPanel .admin-dataset-copy { gap: 5px; }
+#adminPanel .admin-stats { gap: 12px; }
+#adminPanel .admin-stat-card { padding: 16px var(--admin-content-inset); }
+#adminPanel .admin-user-list { gap: 16px; }
+#adminPanel .admin-user-card { padding: var(--admin-content-inset); gap: 14px; min-width: 0; }
+#adminPanel .admin-user-head { flex-wrap: wrap; gap: 8px 14px; }
+#adminPanel .admin-meta { gap: 8px 14px; line-height: 1.5; }
+#adminPanel .admin-card-actions { gap: 10px; }
+/* Keep the existing shared static/loading artwork in a single reserved cell. */
+#adminPanel .magic-loading-indicator__image,
+#adminPanel .magic-loading-indicator__media::after { grid-area: 1 / 1; }
+#adminPanel .admin-loading .magic-loading-indicator__media { border-radius: 0; }
+@media (max-width: 1040px) {
+  #adminPanel .admin-tools-row { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  #adminPanel .admin-utility-actions { justify-content: flex-start; }
+}
+@media (max-width: 760px) {
+  #adminPanel {
+    --admin-content-inset: 16px;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 14px calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+  #adminPanel .admin-shell { gap: 16px; }
+  #adminPanel .admin-duplicate-cards { grid-template-columns: 1fr; }
+  #adminPanel .admin-duplicate-cards .admin-user-card { padding: var(--admin-content-inset); }
+}
+@media (max-width: 640px) {
+  #adminPanel .admin-utility-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  #adminPanel .admin-action-pill { width: 100%; }
+  #adminPanel .admin-dataset-bar { display: grid; gap: 14px; }
+  #adminPanel .admin-load-all-btn { justify-self: start; max-width: 100%; }
+}
+@media (max-width: 520px) {
+  #adminPanel .admin-tabs { gap: 8px; }
+  #adminPanel .admin-tab { padding-inline: 6px; }
+}

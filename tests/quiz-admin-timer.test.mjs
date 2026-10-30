@@ -50,7 +50,7 @@ test("only a server-authorized Admin enters uninterrupted overtime", () => {
 
   assert.match(api, /const admin = access\.role === "admin";/u);
   assert.match(api, /isAdmin: admin/u);
-  assert.match(source, /isAdmin = data\.isAdmin === true;/u);
+  assert.match(source, /isAdmin = QUIZBANK_MODE \? data\.canUploadAudio === true : data\.isAdmin === true;/u);
   assert.match(timer, /time <= 0 && !isAdmin/u);
   assert.match(timer, /void handleUserTimerExpiry\(\)/u);
   assert.doesNotMatch(timer, /finishQuiz/u);

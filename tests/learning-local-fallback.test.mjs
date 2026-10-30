@@ -255,7 +255,7 @@ test("finishing a real quiz stores only server-graded answered items, never tria
   for (const trial of [false, true]) {
     const h = harness();
     const context = vm.createContext({
-      window: { MagicBookLearningSync: h.sync }, isFinishing: false, TRIAL_MODE: trial,
+      window: { MagicBookLearningSync: h.sync }, isFinishing: false, TRIAL_MODE: trial, QUIZBANK_MODE: false, QUIZ_API: "/api/quiz",
       learningSessionId: owner.sessionId, quiz: [1, 2, 3, 4].map(id => ({ id, question: `Question ${id}` })),
       answers: [{ answer: 1 }, { answer: 0 }, { answer: null }, { answer: 1 }],
       getQuizPhone: () => owner.userId, getQuizDeviceId: () => owner.deviceId, getQuizSessionToken: () => "trial-token",

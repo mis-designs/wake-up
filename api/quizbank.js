@@ -1,10 +1,11 @@
 import { authorizeQuizBankPreview, quizBankSession, serveQuizBankMedia, saveQuizBankAudio } from "./quiz.js";
 import { loadQuizBank, quizBankStorageIdentity } from "./quizbank-catalog.mjs";
 import { decodeQuizAudioUpload } from "../lib/quiz-audio-upload.mjs";
+import { buildQuizBankAttempt, gradeQuizBankAttempt, normalizeQuizBankSheet } from "../lib/quizbank-attempt.mjs";
 
 const actions = {
-  GET: new Set(["catalog", "getStudyQuiz", "getItalianAudio", "getBengaliAudio", "getTTS"]),
-  POST: new Set(["refreshQuizSession", "getQuizAudioStatus", "getQuizAudioBlob", "getQuizAudioPlayback", "saveQuizAudio"])
+  GET: new Set(["catalog", "getStudyQuiz", "getQuiz", "getItalianAudio", "getBengaliAudio", "getTTS"]),
+  POST: new Set(["refreshQuizSession", "checkQuiz", "getQuizAudioStatus", "getQuizAudioBlob", "getQuizAudioPlayback", "saveQuizAudio"])
 };
 
 export default async function handler(req, res) {
@@ -26,11 +27,26 @@ export default async function handler(req, res) {
       ...quizBankSession(data, { role }), ...renewed });
     if (data.action === "getTTS") return await serveQuizBankMedia({ action: data.action, text: data.text }, res);
     const upload = data.action === "saveQuizAudio" ? decodeQuizAudioUpload(data) : null;
-    const sheet = Number(data.chapters);
+    const isAttempt = data.action === "getQuiz" || data.action === "checkQuiz";
+    const sheet = isAttempt ? normalizeQuizBankSheet(data.chapters) : Number(data.chapters);
     if (data.action === "getStudyQuiz" && (!Number.isInteger(sheet) || sheet < 1 || sheet > 50)) {
       return res.status(400).json({ error: "quizbank_invalid_sheet" });
     }
     const bank = await loadQuizBank();
+    if (data.action === "getQuiz") {
+      return res.status(200).json({ ok: true, sheet, role, canUploadAudio, isAdmin: canUploadAudio,
+        source: "quizbank", mode: "default", title: `QuizBank · Scheda ${sheet}`, timerMinutes: 20,
+        ...buildQuizBankAttempt(bank.sheets[sheet - 1]), ...quizBankSession(data, { role }), ...renewed });
+    }
+    if (data.action === "checkQuiz") {
+      // Authorization already validated JSON/body shape. Keep this QuizBank-only
+      // field out of the Magic Book request/action surface.
+      const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+      const result = gradeQuizBankAttempt(bank.sheets[sheet - 1], {
+        quizbankRevision: body?.quizbankRevision, answers: data.answers
+      });
+      return res.status(200).json({ ok: true, sheet, ...result, ...renewed });
+    }
     if (data.action === "catalog") {
       return res.status(200).json({ ok: true, preview: canUploadAudio, role, canUploadAudio, questionCount: 1500,
         sheets: bank.sheets.map((rows, index) => ({ number: index + 1, count: rows.length })), ...renewed });

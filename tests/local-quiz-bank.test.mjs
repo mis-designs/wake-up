@@ -171,6 +171,6 @@ test("quiz load failures use a user-safe message without backend details", () =>
   const source = readFileSync(new URL("../quiz.js", import.meta.url), "utf8");
   assert.match(source, /Exam non disponibile/);
   assert.match(source, /Non è stato possibile avviare l’Exam\. Riprova tra qualche istante\./);
-  assert.match(source, /"Riprova",\s*"Torna al menu"/);
+  assert.match(source, /"Riprova",\s*QUIZBANK_MODE \? "Torna alla scheda" : "Torna al menu"/);
   assert.doesNotMatch(source, /Controlla che il backend|capitolo 0|Domande Exam insufficienti/);
 });

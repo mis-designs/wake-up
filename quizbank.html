@@ -12,8 +12,8 @@
   <link rel="stylesheet" href="/study-quiz.css?v=28-compact">
   <link rel="stylesheet" href="/loading-ui.css?v=4-context">
   <link rel="stylesheet" href="/audio-player-ui.css?v=10-web-quiz-slim">
-  <link rel="stylesheet" href="/quizbank.css?v=3-audio-upload">
-  <link rel="stylesheet" href="/quiz-audio-recorder.css?v=1">
+  <link rel="stylesheet" href="/quizbank.css?v=4-sheet">
+  <link rel="stylesheet" href="/quiz-audio-recorder.css?v=2-add-voice">
   <link rel="stylesheet" href="/offline-notice.css?v=1.0.0">
   <script src="/loading-ui.js?v=2-context" defer></script>
   <script src="/offline-notice.js?v=1.1.0" defer></script>
@@ -39,9 +39,10 @@
     <section id="study-reader" class="hidden" aria-labelledby="study-reader-title">
       <div class="study-reader-toolbar">
         <div><span id="study-reader-kicker">STUDIA QUIZBANK</span><h2 id="study-reader-title" tabindex="-1">Domande</h2><p id="study-question-count" aria-live="polite"></p></div>
-        <div class="study-search"><label class="sr-only" for="study-search-input">Cerca nella scheda</label><input id="study-search-input" type="search" placeholder="Cerca nella scheda…" autocomplete="off"><button id="quizbank-clear-search" type="button" aria-label="Cancella ricerca" hidden>×</button></div>
+        <a id="quizbank-start-quiz" class="quizbank-start-quiz" href="/quizbank"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="m8 9 2 2 4-4M8 16h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Fai il quiz su questa scheda</span></a>
       </div>
-      <p class="quizbank-help-note">Apri la traduzione e le parole chiave per capire meglio.<span id="quizbank-admin-help" hidden> Se manca la spiegazione audio, premi + per registrarla, come in Magic Book.</span></p>
+      <div class="study-search quizbank-sheet-search"><label class="sr-only" for="study-search-input">Cerca nella scheda</label><input id="study-search-input" type="search" placeholder="Cerca nella scheda…" autocomplete="off"><button id="quizbank-clear-search" type="button" aria-label="Cancella ricerca" hidden>×</button></div>
+      <p class="quizbank-help-note">Apri traduzioni e parole chiave quando ti servono.<span id="quizbank-admin-help" hidden> Usa il microfono per aggiungere le spiegazioni mancanti.</span></p>
       <div id="study-question-list" class="study-question-list"></div>
       <p id="study-empty-search" class="study-empty hidden">Nessuna domanda trovata. Prova un’altra parola oppure cancella la ricerca.</p>
       <nav class="quizbank-sheet-nav" aria-label="Navigazione schede"><button id="quizbank-previous" type="button">Scheda precedente</button><button id="quizbank-next" type="button">Scheda successiva</button></nav>
@@ -67,6 +68,7 @@
   <script src="/italian-display.js?v=1"></script>
   <script src="/app-popup.js?v=2"></script>
   <script src="/quiz-audio-recorder.js?v=1"></script>
-  <script src="/study-quiz.js?v=42-quizbank-access&art=2e0d6787e201"></script>
+  <script src="/quizbank-sheet.js?v=1"></script>
+  <script src="/study-quiz.js?v=44-quizbank-sheet&art=2e0d6787e201"></script>
 </body>
 </html>

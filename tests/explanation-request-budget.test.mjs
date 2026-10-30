@@ -21,7 +21,7 @@ function fixture(options = {}) {
     AbortController, Map, Set, Promise,
     Date: class extends Date { static now() { return now; } },
     EXPLANATION_FIGURES_CACHE_KEY: storageKey, EXPLANATION_AVAILABILITY_TTL_MS: 60_000,
-    EXPLANATION_EXTENSIONS: ["png", "webp", "jpg", "jpeg"], TRIAL_MODE: options.trial || false,
+    EXPLANATION_EXTENSIONS: ["png", "webp", "jpg", "jpeg"], TRIAL_MODE: options.trial || false, QUIZBANK_MODE: false,
     quizAccessErrorHandled: false, quiz: [{ figure: "fig1" }], current: 0,
     localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
     window: { addEventListener: (name, callback) => listeners.set(name, callback) },

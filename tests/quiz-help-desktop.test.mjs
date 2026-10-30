@@ -35,7 +35,7 @@ test('dark presentation stays scoped, with static motion and high contrast fallb
 });
 test('desktop presentation is shipped before the help controller and precached consistently', () => {
   const html = read('quiz.html'), worker = read('service-worker.js');
-  assert.ok(html.indexOf('quiz-help-desktop.js?v=1-allbooks') < html.indexOf('quiz-help.js?v=20260928-desktop'));
+  assert.ok(html.indexOf('quiz-help-desktop.js?v=1-allbooks') < html.indexOf('quiz-help.js?v=20261030-quizbank'));
   assert.match(worker, /"\/quiz-help-desktop.js\?v=1-allbooks"/);
   assert.match(worker, /magicbook-pwa-v242-desktop-help/);
 });

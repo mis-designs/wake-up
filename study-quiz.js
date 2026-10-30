@@ -745,7 +745,9 @@
     number.textContent = `DOMANDA ${index + 1}`;
     meta.appendChild(number);
     const answer = answerLabel(question.correct);
-    if (answer) {
+    if (answer && QUIZBANK_MODE && window.MagicQuizBankSheet) {
+      main.appendChild(window.MagicQuizBankSheet.answerMark(answer === "Vero"));
+    } else if (answer) {
       const badge = document.createElement("span");
       badge.className = `study-answer ${answer === "Vero" ? "is-true" : "is-false"}`;
       badge.textContent = `RISPOSTA: ${answer.toUpperCase()}`;
@@ -829,7 +831,10 @@
       const upload = document.createElement("button");
       upload.type = "button";
       upload.className = "quiz-audio-add quizbank-upload";
-      upload.textContent = "+";
+      const uploadIcon = document.createElement("span");
+      uploadIcon.className = "quiz-audio-add-icon";
+      uploadIcon.setAttribute("aria-hidden", "true");
+      upload.appendChild(uploadIcon);
       upload.hidden = true;
       upload.setAttribute("aria-label", `Aggiungi spiegazione audio per la domanda ${index + 1}`);
       upload.title = "Aggiungi spiegazione audio";
@@ -925,6 +930,9 @@
       elements.readerTitle.textContent = `Scheda ${String(currentChapter).padStart(2, "0")}`;
       document.getElementById("quizbank-previous").disabled = currentChapter === 1;
       document.getElementById("quizbank-next").disabled = currentChapter === 50;
+      const quizLink = document.getElementById("quizbank-start-quiz");
+      if (quizLink) quizLink.href = `/quiz?source=quizbank&scheda=${currentChapter}`;
+      disposeSheetMotion = window.MagicQuizBankSheet?.observeFigures(elements.list);
     }
     elements.count.textContent = `${questions.length} domande da studiare`;
     elements.emptySearch.classList.add("hidden");
@@ -1785,7 +1793,9 @@
     pendingAudioStatusChecks.delete(card);
   }
 
+  let disposeSheetMotion = null;
   function resetAudioObservation() {
+    disposeSheetMotion?.(); disposeSheetMotion = null;
     if (QUIZBANK_MODE) closeQuizBankAudioRecorder();
     audioObserver?.disconnect();
     pendingAudioStatusChecks.forEach(timer => window.clearTimeout(timer));

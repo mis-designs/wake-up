@@ -50,7 +50,15 @@ UI/browser verification: `node scripts/quizbank-recorder-browser-qa.mjs <output-
 
 Upload storage/database operations share an abortable 12s deadline and a dedicated single-attempt storage client; existing playback retries are unchanged. A new recording uses two Neon queries and one audio-bucket PUT; an existing association/same-file retry uses one query and one fresh HEAD. Race recovery is bounded to three queries, one PUT and two HEADs. These are separate from existing access validation and the private archive cache. A missing/empty object behind an existing association reports a repair case, not playable audio or permission to overwrite it. Review/repair conflicts remain blocked; nothing is deleted automatically.
 
-## Content integrity
+## Same-sheet practice (2026-10-30)
+
+Study shows the correct V/F mark immediately. Its CTA opens `/quiz?source=quizbank&scheda=N` in the existing quiz engine, with all30 questions in original order, including after study search filters the visible list. The existing20-minute timer, 27/30 pass threshold and result review are reused. This attempt does not write to Magic Book learning statistics, local mistake review or any new persistent storage. Back returns to the same study sheet.
+
+`GET /api/quizbank?action=getQuiz&chapters=N` returns copied rows without `correct`, `quizbankRevision`, existing quiz session fields, and server-confirmed audio capability. `POST checkQuiz` accepts `chapters`, `quizbankRevision`, and exactly30 ordered `{id,answer:0|1|null}` entries. The revision is a SHA-256 of trusted sheet content. The server checks the existing QuizBank entitlement before archive access, rejects forged/duplicate/reordered IDs and invalid values, and grades only the private canonical answers. A corrected archive yields409 `quizbank_revision_changed`; the UI offers an explicit restart instead of silently discarding work. Permission denial clears private attempt data; recoverable submission errors retain answers for manual retry.
+
+Budget: one start GET and one explicit finish/timer-end POST per attempt, no per-answer request or additional animation request. Auth and five-minute R2 cache limits remain as above; no public question cache. Media and missing-only admin recording use `/api/quizbank` with the same shared UI, identity and size limits. No direct upload, replacement or deletion is exposed by this variant.
+
+## Source identity
 
 The R2 JSON must be the complete verified 1500-row array (50×30), with `id`, `scheda`, `numero_domanda`, `domanda`, `risposta`, `risposta_corretta`, `ha_figura`, `numero_figura`. Extra local PDF crop/provenance fields are not exposed by the API. Boolean answer and V/F label must agree, and missing figures must be null.
 

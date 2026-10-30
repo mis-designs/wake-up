@@ -189,8 +189,17 @@
   }
 
   function decodeHelp(question, data) {
+    const quizBank = typeof QUIZBANK_MODE !== "undefined" && QUIZBANK_MODE;
     if (data?.resolver) {
-      const resolved = data.resolver.resolve(question);
+      let helpQuestion = question;
+      if (quizBank) {
+        // Occurrence IDs name a sheet position, not an All Books quiz.
+        const candidates = Object.entries(data.runtime?.quizzes || {}).filter(([, row]) =>
+          normalize(row.question) === normalize(question.question) && fingerprint(row) === fingerprint(question));
+        if (candidates.length !== 1) return null;
+        helpQuestion = { ...question, id: candidates[0][0] };
+      }
+      const resolved = data.resolver.resolve(helpQuestion);
       if (!resolved) return null;
       const questionBn = usableBanglaTranslation(
         resolved.questionBnStandard || resolved.questionBnEasy || resolved.questionBn
@@ -216,8 +225,8 @@
     const sourceId = String(question?.id ?? "").trim().toLocaleLowerCase("it-IT");
     const sourceDigits = sourceId.match(/\d+/)?.[0];
     const row = data.quizzes[fingerprint(question)]
-      || quizIdIndex.get(sourceId)
-      || (sourceDigits ? quizIdIndex.get(String(Number(sourceDigits))) : null);
+      || (!quizBank && quizIdIndex.get(sourceId))
+      || (!quizBank && sourceDigits ? quizIdIndex.get(String(Number(sourceDigits))) : null);
     if (!Array.isArray(row)) return null;
     const [quizId, chapterId, topicId, wordIds = [], contextBn = ""] = row;
     const chapter = data.chapters?.[chapterId] || [];

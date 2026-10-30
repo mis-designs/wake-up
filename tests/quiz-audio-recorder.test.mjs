@@ -102,7 +102,22 @@ test('shared template is exactly the authoritative static MagicBook controls wit
   assert.match(css, /min-height: 44px/);
   assert.match(css, /\.quiz-audio-recorder-head button \{[^}]*height: 44px/);
   assert.doesNotMatch(read('mystyle.css'), /^\.quiz-audio-(?:add|recorder|record-actions)[^{]*\{/m);
-  assert.match(read('quiz.html'), /quiz-audio-recorder\.js\?v=1[^]*quiz\.js\?v=90-shared-recorder/);
+  assert.match(read('quiz.html'), /quiz-audio-recorder\.js\?v=1[^]*quiz\.js\?v=91-quizbank-practice/);
+});
+
+test('add-voice icon and study recorder spacing belong to the shared stylesheet', () => {
+  const css = read('quiz-audio-recorder.css');
+  assert.match(css, /\.quiz-audio-add-icon\s*\{[^}]*width: 28px;[^}]*height: 28px;[^}]*url\("\/icons\/add_voice\.png"\)/);
+  assert.match(css, /\.study-actions \+ \.quiz-audio-recorder\s*\{\s*margin-block-start: 18px;/);
+  assert.match(read('quiz.html'), /<span class="quiz-audio-add-icon" aria-hidden="true"><\/span>/);
+  assert.match(read('study-quiz.js'), /uploadIcon\.className = "quiz-audio-add-icon"/);
+  assert.doesNotMatch(read('study-quiz.js'), /upload\.textContent = "\+"/);
+  assert.doesNotMatch(read('quizbank.html'), /premi \+/);
+  for (const consumer of ['quiz.html', 'quizbank.html', 'service-worker.js']) {
+    assert.ok(read(consumer).includes('quiz-audio-recorder.css?v=2-add-voice'), consumer);
+  }
+  assert.ok(read('service-worker.js').includes('"/icons/add_voice.png"'));
+  assert.deepEqual([...readFileSync(new URL('../icons/add_voice.png', import.meta.url)).subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
 });
 
 test('open is inline, focuses record, expands trigger, and does not acquire media or save', () => {
@@ -254,11 +269,12 @@ function transportFixture(responder) {
   const context = vm.createContext({ Blob, FileReader: Reader, DOMException, QUIZ_API: '/api/quiz',
     getQuizAccessToken: () => 'fixture', getQuizPhone: () => 'fixture', getQuizDeviceId: () => 'fixture',
     QuizAudioIdentity: { normalizeFigure: value => value, VERSION: 2 },
-    inlineAudioQuestion: question, quiz: [question], current: 0, isAdmin: true, TRIAL_MODE: false,
+    inlineAudioQuestion: question, quiz: [question], current: 0, isAdmin: true, TRIAL_MODE: false, QUIZBANK_MODE: false,
     async fetch(url, options) {
       const call = { url, ...options, payload: options.method === 'POST' ? JSON.parse(options.body) : null }; calls.push(call);
       return responder(call, calls.length, controller) || { ok: true, json: async () => ({ ok: true, uploadUrl: '/fixture-upload', uploadContentType: 'audio/mp4' }) };
     } });
+  context.fetchQuizBankResource = context.fetch;
   vm.runInContext(quizSource.slice(quizSource.indexOf('function blobAsAudioDataUrl('), quizSource.indexOf('quizAudioAdd?.addEventListener("click"')), context);
   const payload = { blob: new Blob(['audio'], { type: 'audio/mp4' }), mimeType: 'audio/mp4', durationMs: 1234 };
   return { calls, controller, context, run: () => context.saveInlineAudioRecording(payload, controller.signal) };
