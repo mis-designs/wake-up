@@ -11,6 +11,14 @@ Owner clarification: study always shows the correct answer; practice is a separa
 
 ## Verification
 
+### Catalog and explicit search release — 2026-10-30
+
+- Centered catalog identity with tracked lettering; sheet identity remains centered. Archive counts replace the role badge. Catalog descriptions precede their right-aligned numbers; the centered section heading groups the01–50 range. UI sans-serif invitation replaces repeated sheet/kicker text, and the help/admin instruction line is removed.
+- Same-sheet practice keeps its route and uses the existing mix_quiz.gif, loaded lazily with rounded corners, plus a finite three-cycle green gradient pulse. Reduced motion uses do_quiz.svg and disables the pulse. GIF remains excluded from global precaching.
+- Explicit local search accepts multiple words in any order. Browser test: typing 'sicurezza distanza' retains30 rows and input focus without changing the URL; Enter returns10 matching fixture rows and commits q. Clear restores30 and focus. Unmatched terms show the existing recovery message. Unit tests cover draft preservation, composition/IME, submit, Clear and multiword filtering.
+- Local browser verification at1440px and320px: centered header, no clipped sheet number, no horizontal overflow, all50 cards and right-side numerals, catalog↔sheet navigation, same-sheet quiz URL and search-button/Enter behavior. Artifacts in the chat workspace: `outputs/quizbank-sheet/catalog-refresh.jpg`, `catalog-mobile-final.jpg`, `study-refresh-final.jpg`.
+-35 focused tests pass; full suite1072 cases/1043 passes with the same29 baseline failures and no new failures. CSS build, strict premium audit and DESIGN lint pass. Only QuizBank UI/search and versioned assets change; authorization, grading and recording services remain unchanged. User explicitly requested production publication.
+
 ### Custom-arrow and header correction — 2026-10-30
 
 - Reused existing `icons/back.png`/`icons/next.png` assets from the quiz player, replacing the generic inline SVG arrows. Both loaded successfully in the local browser; decorative images retain Italian button names. The sticky header is now one72px row with QuizBank beside the current sheet number, and no repeated subtitle. Catalog reads QuizBank / Studia.

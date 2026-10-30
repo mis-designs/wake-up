@@ -12,37 +12,39 @@
   <link rel="stylesheet" href="/study-quiz.css?v=28-compact">
   <link rel="stylesheet" href="/loading-ui.css?v=4-context">
   <link rel="stylesheet" href="/audio-player-ui.css?v=10-web-quiz-slim">
-  <link rel="stylesheet" href="/quizbank.css?v=6-clean-header">
+  <link rel="stylesheet" href="/quizbank.css?v=7-catalog-search">
   <link rel="stylesheet" href="/quiz-audio-recorder.css?v=2-add-voice">
   <link rel="stylesheet" href="/offline-notice.css?v=1.0.0">
   <script src="/loading-ui.js?v=2-context" defer></script>
   <script src="/offline-notice.js?v=1.1.0" defer></script>
 </head>
-<body class="study-page quizbank-page" data-study-source="quizbank">
+<body class="study-page quizbank-page" data-study-source="quizbank" data-quizbank-view="catalog">
   <a class="quizbank-skip" href="#quizbank-main">Vai al contenuto</a>
   <header class="study-header">
     <button id="study-back" class="study-icon-button" type="button" aria-label="Torna indietro"><img src="/icons/go-back.png" alt="" width="22" height="22"></button>
-    <div class="study-heading"><small>QuizBank</small><h1 id="study-title">Studia</h1><p id="study-subtitle" hidden>50 schede · 1.500 domande</p></div>
-    <span id="quizbank-access-label" class="quizbank-preview">Accesso riservato</span>
+    <div class="study-heading"><small>QuizBank</small><h1 id="study-title">QuizBank</h1><p id="study-subtitle" hidden>50 schede · 1.500 domande</p></div>
+    <div class="quizbank-header-summary"><strong>50 schede · 1.500 domande</strong><span>Il formato dell’esame. Il tuo ritmo.</span></div>
   </header>
   <main id="quizbank-main" class="study-main">
     <section id="study-chapters" class="hidden" aria-labelledby="study-chapters-title">
       <div class="quizbank-intro">
-        <div><p class="quizbank-eyebrow">IL TUO ARCHIVIO DI STUDIO</p><h2 id="study-chapters-title" tabindex="-1">Una scheda alla volta.</h2>
-          <p>Scegli una scheda. Leggi le domande, scopri le risposte e apri gli aiuti quando ti servono.</p>
+        <div><h2 id="study-chapters-title" tabindex="-1">Il prossimo passo è l’esame.</h2>
+          <p>Scegli una scheda, studia le domande e mettiti alla prova. Una risposta alla volta.</p>
           <p lang="bn">একটি প্রশ্নপত্র বেছে নিন এবং পড়া শুরু করুন।</p><p id="study-last-chapter" class="hidden"></p></div>
-        <div class="quizbank-total"><strong>50</strong><span>schede d’esame<br>30 domande ciascuna</span></div>
       </div>
-      <div class="quizbank-section-heading"><h3>Scegli la scheda</h3><span>01 — 50</span></div>
+      <div class="quizbank-section-heading"><h3>Scegli la scheda <span>01 — 50</span></h3></div>
       <div id="study-chapter-grid" class="study-chapter-grid"></div>
     </section>
     <section id="study-reader" class="hidden" aria-labelledby="study-reader-title">
       <div class="study-reader-toolbar">
-        <div><span id="study-reader-kicker">STUDIA QUIZBANK</span><h2 id="study-reader-title" tabindex="-1">Domande</h2><p id="study-question-count" aria-live="polite"></p></div>
-        <a id="quizbank-start-quiz" class="quizbank-start-quiz" href="/quizbank"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="m8 9 2 2 4-4M8 16h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Fai il quiz su questa scheda</span></a>
+        <div><span id="study-reader-kicker" hidden></span><h2 id="study-reader-title" tabindex="-1">Preparati alla prossima prova.</h2><p id="study-question-count" aria-live="polite"></p></div>
+        <a id="quizbank-start-quiz" class="quizbank-start-quiz" href="/quizbank"><picture><source media="(prefers-reduced-motion: reduce)" srcset="/icons/do_quiz.svg"><img src="/icons/mix_quiz.gif" alt="" width="38" height="38" loading="lazy"></picture><span>Fai il quiz su questa scheda</span></a>
       </div>
-      <div class="study-search quizbank-sheet-search"><label class="sr-only" for="study-search-input">Cerca nella scheda</label><input id="study-search-input" type="search" placeholder="Cerca nella scheda…" autocomplete="off"><button id="quizbank-clear-search" type="button" aria-label="Cancella ricerca" hidden>×</button></div>
-      <p class="quizbank-help-note">Apri traduzioni e parole chiave quando ti servono.<span id="quizbank-admin-help" hidden> Usa il microfono per aggiungere le spiegazioni mancanti.</span></p>
+      <form id="quizbank-search-form" class="study-search quizbank-sheet-search" role="search" novalidate>
+        <svg class="quizbank-search-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="m16.25 16.25 4.75 4.75" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <label class="sr-only" for="study-search-input">Cerca nella scheda</label><input id="study-search-input" type="search" placeholder="Scrivi le parole da cercare…" autocomplete="off" enterkeyhint="search">
+        <button id="quizbank-clear-search" type="button" aria-label="Cancella ricerca" hidden>×</button><button class="quizbank-search-submit" type="submit">Cerca</button>
+      </form>
       <div id="study-question-list" class="study-question-list"></div>
       <p id="study-empty-search" class="study-empty hidden">Nessuna domanda trovata. Prova un’altra parola oppure cancella la ricerca.</p>
       <nav class="quizbank-sheet-nav" aria-label="Navigazione schede">
@@ -71,7 +73,7 @@
   <script src="/italian-display.js?v=1"></script>
   <script src="/app-popup.js?v=2"></script>
   <script src="/quiz-audio-recorder.js?v=1"></script>
-  <script src="/quizbank-sheet.js?v=2"></script>
-  <script src="/study-quiz.js?v=46-quizbank-header&art=2e0d6787e201"></script>
+  <script src="/quizbank-sheet.js?v=3-search"></script>
+  <script src="/study-quiz.js?v=47-quizbank-search&art=2e0d6787e201"></script>
 </body>
 </html>

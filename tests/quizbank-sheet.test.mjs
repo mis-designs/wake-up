@@ -3,6 +3,29 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 const source = fs.readFileSync(new URL('../quizbank-sheet.js', import.meta.url), 'utf8');
+test('Search preserves typing drafts and IME composition until explicit submit; Clear restores focus', () => {
+  const f = fixture(); let searches = 0, focused = false;
+  const target = () => ({ listeners: {}, addEventListener(name, callback) { this.listeners[name] = callback; }, fire(name, data = {}) { const event = { preventDefault() { this.prevented = true; }, ...data }; this.listeners[name]?.(event); return event; } });
+  const input = { ...target(), value: '', focus() { focused = true; } }, form = target(), clear = { ...target(), hidden: true };
+  f.helper.bindSearch(form, input, clear, () => { searches++; clear.hidden = !input.value; });
+  for (const draft of ['s', 'sicurezza', 'sicurezza distanza']) { input.value = draft; input.fire('input'); }
+  assert.equal(searches, 0); assert.equal(input.value, 'sicurezza distanza'); assert.equal(focused, false); assert.equal(clear.hidden, false);
+  input.fire('compositionstart'); assert.equal(input.fire('keydown', { key: 'Enter', isComposing: true }).prevented, true);
+  form.fire('submit'); assert.equal(searches, 0);
+  input.fire('compositionend'); assert.equal(form.fire('submit').prevented, true); assert.equal(searches, 1);
+  clear.fire('click'); assert.equal(searches, 2); assert.equal(input.value, ''); assert.equal(clear.hidden, true); assert.equal(focused, true);
+});
+
+test('QuizBank submitted search matches all words in any order and preserves original question order', () => {
+  const study = fs.readFileSync(new URL('../study-quiz.js', import.meta.url), 'utf8');
+  const filter = study.slice(study.indexOf('  function filterQuestions()'), study.indexOf('  function hideVideoSurfaces()'));
+  const rows = ['La distanza di sicurezza è importante', 'Il segnale di precedenza', 'La sicurezza dipende dalla distanza'].map(text => ({ dataset: { search: text }, classList: { toggle(name, value) { this.hidden = value; } } }));
+  const elements = { search: { value: 'sicurezza distanza' }, list: { querySelectorAll: () => rows }, count: {}, emptySearch: { classList: { toggle() {} } } };
+  const clear = {}; let url;
+  const run = vm.runInNewContext(filter + '; filterQuestions;', { elements, questions: rows, QUIZBANK_MODE: true, normalize: s => s.toLowerCase().trim(), document: { getElementById: () => clear }, URL, location: { href: 'https://example.test/quizbank?scheda=5' }, history: { state: {}, replaceState(a,b,path) { url = path; } } });
+  run(); assert.deepEqual(rows.map(r => !r.classList.hidden), [true, false, true]); assert.equal(elements.count.textContent, '2 di 3 domande'); assert.match(url, /q=sicurezza\+distanza/);
+  elements.search.value = ''; run(); assert.ok(rows.every(r => !r.classList.hidden)); assert.equal(url, '/quizbank?scheda=5');
+});
 function fixture() {
   let now = 100000, nextId = 0, intersection;
   const timers = new Map();

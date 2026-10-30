@@ -1,6 +1,22 @@
 (function (root) {
   "use strict";
 
+  // Keep drafts in the input; only an explicit submit changes results and URL.
+  function bindSearch(form, input, clear, search) {
+    let composing = false;
+    input.addEventListener("compositionstart", () => { composing = true; });
+    input.addEventListener("compositionend", () => { composing = false; });
+    input.addEventListener("keydown", event => {
+      if (event.key === "Enter" && (event.isComposing || event.keyCode === 229)) event.preventDefault();
+    });
+    input.addEventListener("input", () => { clear.hidden = !input.value; });
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      if (!composing) search();
+    });
+    clear.addEventListener("click", () => { input.value = ""; search(); input.focus(); });
+  }
+
   function answerMark(correct) {
     const group = document.createElement("div");
     group.className = "quizbank-solution";
@@ -79,5 +95,5 @@
       root.removeEventListener("pagehide", stop);
     };
   }
-  root.MagicQuizBankSheet = { answerMark, observeFigures };
+  root.MagicQuizBankSheet = { answerMark, observeFigures, bindSearch };
 })(window);

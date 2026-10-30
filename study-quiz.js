@@ -467,7 +467,7 @@
       button.classList.toggle("is-trial-open", TRIAL_MODE && trialChapterOpen);
       button.classList.toggle("is-trial-locked", TRIAL_MODE && !trialChapterOpen);
       button.setAttribute("aria-label", trialChapterOpen
-        ? `Studia il capitolo ${chapter}: ${name}`
+        ? QUIZBANK_MODE ? `Studia la scheda ${chapter}: ${name}` : `Studia il capitolo ${chapter}: ${name}`
         : `Capitolo ${chapter} bloccato. Scopri i pacchetti MagicBook.`);
 
       const number = document.createElement("span");
@@ -489,7 +489,8 @@
       arrow.setAttribute("aria-hidden", "true");
       if (trialChapterOpen) arrow.appendChild(arrowIcon);
       else arrow.textContent = "🔒";
-      button.append(number, copy, arrow);
+      if (QUIZBANK_MODE) button.append(copy, number);
+      else button.append(number, copy, arrow);
       button.addEventListener("click", () => {
         if (!trialChapterOpen) {
           window.location.href = trialOfferUrl(`Studia quiz · Capitolo ${chapter}`);
@@ -532,7 +533,8 @@
     document.title = FIGURE_STUDY_ENABLED ? "MagicBook | Studia" : "MagicBook | Studia quiz";
     if (updateHistory) history.pushState({ screen: "study" }, "", QUIZBANK_MODE ? "/quizbank" : TRIAL_MODE ? "/studia-quiz/prova-gratis" : "/studia-quiz?view=chapters");
     if (QUIZBANK_MODE) {
-      elements.title.textContent = "Studia";
+      document.body.dataset.quizbankView = "catalog";
+      elements.title.textContent = "QuizBank";
       elements.subtitle.textContent = "50 schede · 1.500 domande";
       document.title = "QuizBank | Studia";
       elements.introTitle.focus({ preventScroll: true });
@@ -570,6 +572,7 @@
     elements.subtitle.textContent = CHAPTERS[chapter - 1];
     document.title = `MagicBook | Studia quiz · Capitolo ${chapter}`;
     if (QUIZBANK_MODE) {
+      document.body.dataset.quizbankView = "reader";
       elements.title.textContent = `Scheda ${String(chapter).padStart(2, "0")}`;
       elements.subtitle.textContent = "QuizBank · Studia le domande";
       document.title = `QuizBank | Scheda ${chapter}`;
@@ -927,8 +930,8 @@
     elements.readerKicker.textContent = `CAPITOLO ${String(currentChapter).padStart(2, "0")}`;
     elements.readerTitle.textContent = CHAPTERS[currentChapter - 1];
     if (QUIZBANK_MODE) {
-      elements.readerKicker.textContent = "STUDIA QUIZBANK";
-      elements.readerTitle.textContent = `Scheda ${String(currentChapter).padStart(2, "0")}`;
+      elements.readerKicker.textContent = "";
+      elements.readerTitle.textContent = "Preparati alla prossima prova.";
       document.getElementById("quizbank-previous").disabled = currentChapter === 1;
       document.getElementById("quizbank-next").disabled = currentChapter === 50;
       const quizLink = document.getElementById("quizbank-start-quiz");
@@ -1975,7 +1978,10 @@
     const query = normalize(elements.search.value);
     let visible = 0;
     elements.list.querySelectorAll(".study-question-card").forEach(card => {
-      const matches = !query || normalize(card.dataset.search).includes(query);
+      const text = normalize(card.dataset.search);
+      const matches = !query || (QUIZBANK_MODE
+        ? query.split(/\s+/u).every(word => text.includes(word))
+        : text.includes(query));
       card.classList.toggle("hidden", !matches);
       if (matches) visible += 1;
     });
@@ -2177,7 +2183,7 @@
     if (QUIZBANK_MODE) renderStudyRoute();
     else if (currentChapter) openChapter(currentChapter, { updateHistory: false });
   });
-  elements.search.addEventListener("input", filterQuestions);
+  if (!QUIZBANK_MODE) elements.search.addEventListener("input", filterQuestions);
   window.addEventListener("popstate", () => {
     normalizeFigureStudyLocation();
     renderStudyRoute({ restore: true });
@@ -2211,10 +2217,6 @@
 
   function setQuizBankCapabilities(data = {}) {
     quizBankCanUploadAudio = data.canUploadAudio === true;
-    const label = document.getElementById("quizbank-access-label");
-    const adminHelp = document.getElementById("quizbank-admin-help");
-    if (label) label.textContent = quizBankCanUploadAudio ? "Amministratore" : "Accesso riservato";
-    if (adminHelp) adminHelp.hidden = !quizBankCanUploadAudio;
   }
 
   function showQuizBankError(error) {
@@ -2274,9 +2276,10 @@
   if (QUIZBANK_MODE) {
     document.getElementById("quizbank-previous").addEventListener("click", () => void openChapter(currentChapter - 1));
     document.getElementById("quizbank-next").addEventListener("click", () => void openChapter(currentChapter + 1));
-    document.getElementById("quizbank-clear-search").addEventListener("click", () => {
-      elements.search.value = ""; filterQuestions(); elements.search.focus();
-    });
+    window.MagicQuizBankSheet.bindSearch(
+      document.getElementById("quizbank-search-form"), elements.search,
+      document.getElementById("quizbank-clear-search"), filterQuestions
+    );
     window.addEventListener("storage", () => {
       if (!studyVideoIdentity()) showQuizBankError(new Error("unauthorized"));
     });
