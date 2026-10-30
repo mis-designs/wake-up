@@ -11,6 +11,17 @@ Owner clarification: study always shows the correct answer; practice is a separa
 
 ## Verification
 
+### Custom-arrow and header correction — 2026-10-30
+
+- Reused existing `icons/back.png`/`icons/next.png` assets from the quiz player, replacing the generic inline SVG arrows. Both loaded successfully in the local browser; decorative images retain Italian button names. The sticky header is now one72px row with QuizBank beside the current sheet number, and no repeated subtitle. Catalog reads QuizBank / Studia.
+- Verified1440px desktop and320px phone: no overflow or clipped title, sheet5→6 updates the header and restores reader focus, Back returns to the catalog.28 focused tests, CSS build, strict premium audit and DESIGN lint passed. Desktop proof is `outputs/quizbank-sheet/custom-arrows-header.jpg` in the chat workspace. No production requests or deployment.
+
+### Owner visual refinement — 2026-10-30
+
+- Added crimson previous/next buttons with decorative directional SVG arrows and complete hover/focus/pressed/disabled states. Strengthened worksheet rules to2px, including both desktop column boundaries; compact numeric markers replace repeated DOMANDA, and the visible Soluzione caption is removed while accessible answer descriptions remain.
+- Local mocked browser verification:1440px desktop,375px phone and320px reflow without horizontal overflow. Forward5→6 and backward50→49 restore title focus; previous is disabled at1 and next at50. Both arrows remain visible; narrow labels wrap within50px-or-taller targets. Empty search and Clear restore all30 rows and input focus. Screenshots: `outputs/quizbank-sheet/polish-desktop.jpg` and `polish-mobile.jpg` in the chat workspace.
+-28 focused tests passed. Full run:1070 cases,1041 passed, the same29 failures as the pre-refinement baseline (26 existing app failures and3 environment Git-permission failures); no new failures. CSS build, strict premium audit, DESIGN lint and whitespace validation passed. No network/auth/audio/practice behavior was changed. No production calls or deployment.
+
 - 29 new behavioral tests pass: sheet presentation/motion, server attempt validation and client practice/auth/audio/help behavior.
 - Full repository suite:1070 cases,1041 passing. The26 preceding failures remain; three additional Git-ignore tests cannot initialize temporary repositories because this environment denies writing their `.git/config`. No new application-test failures.
 - CSS build passes. Premium strict audit and DESIGN.md lint report zero findings.

@@ -6,11 +6,6 @@
     group.className = "quizbank-solution";
     group.setAttribute("role", "img");
     group.setAttribute("aria-label", `Risposta corretta: ${correct ? "Vero" : "Falso"}`);
-    const caption = document.createElement("span");
-    caption.className = "quizbank-solution-caption";
-    caption.textContent = "Soluzione";
-    caption.setAttribute("aria-hidden", "true");
-    group.appendChild(caption);
     for (const [value, label] of [[true, "V"], [false, "F"]]) {
       const cell = document.createElement("span");
       cell.className = "quizbank-answer-cell" + (correct === value ? " is-marked" : "");

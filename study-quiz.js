@@ -532,7 +532,7 @@
     document.title = FIGURE_STUDY_ENABLED ? "MagicBook | Studia" : "MagicBook | Studia quiz";
     if (updateHistory) history.pushState({ screen: "study" }, "", QUIZBANK_MODE ? "/quizbank" : TRIAL_MODE ? "/studia-quiz/prova-gratis" : "/studia-quiz?view=chapters");
     if (QUIZBANK_MODE) {
-      elements.title.textContent = "Studia QuizBank";
+      elements.title.textContent = "Studia";
       elements.subtitle.textContent = "50 schede · 1.500 domande";
       document.title = "QuizBank | Studia";
       elements.introTitle.focus({ preventScroll: true });
@@ -742,7 +742,8 @@
     meta.className = "study-question-meta";
     const number = document.createElement("span");
     number.className = "study-question-number";
-    number.textContent = `DOMANDA ${index + 1}`;
+    number.textContent = QUIZBANK_MODE ? String(index + 1).padStart(2, "0") : `DOMANDA ${index + 1}`;
+    if (QUIZBANK_MODE) number.setAttribute("aria-label", `Domanda ${index + 1}`);
     meta.appendChild(number);
     const answer = answerLabel(question.correct);
     if (answer && QUIZBANK_MODE && window.MagicQuizBankSheet) {

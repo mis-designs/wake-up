@@ -28,7 +28,8 @@ test('Study renders one marked V/F solution immediately without answer buttons',
   for (const correct of [true, false]) {
     const mark = f.helper.answerMark(correct);
     assert.equal(mark.attributes['aria-label'], `Risposta corretta: ${correct ? 'Vero' : 'Falso'}`);
-    const cells = mark.children.slice(1);
+    const cells = mark.children;
+    assert.equal(cells.length, 2);
     assert.equal(cells.filter(cell => cell.className.includes('is-marked')).length, 1);
     assert.equal(cells[correct ? 0 : 1].children[1].textContent, '×');
     assert.equal(cells[correct ? 1 : 0].children[1].textContent, '·');

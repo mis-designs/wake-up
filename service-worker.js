@@ -1,12 +1,12 @@
-const CACHE_NAME = "magicbook-pwa-v252-quizbank-sheet";
+const CACHE_NAME = "magicbook-pwa-v254-quizbank-header";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/quiz.html",
   "/quizbank.html",
-  "/quizbank.css?v=4-sheet",
-  "/quizbank-sheet.js?v=1",
-  "/study-quiz.js?v=44-quizbank-sheet&art=2e0d6787e201",
+  "/quizbank.css?v=6-clean-header",
+  "/quizbank-sheet.js?v=2",
+  "/study-quiz.js?v=46-quizbank-header&art=2e0d6787e201",
   "/quiz-audio-recorder.js?v=1",
   "/quiz-audio-recorder.css?v=2-add-voice",
   "/icons/add_voice.png",
@@ -140,6 +140,7 @@ const STATIC_ASSETS = [
   "/icons/errori-patente.png?v=cfedf73692e7",
   "/icons/go-back.png",
   "/icons/next.png",
+  "/icons/back.png",
   "/assets/admin/update.png",
   "/assets/admin/ADMIN_PROFILE_LOGO.jpg",
   "/data/patente/quiz-help-runtime-v2.json",
