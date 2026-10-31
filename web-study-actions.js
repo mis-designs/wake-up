@@ -10,6 +10,8 @@
   chapterHeading.replaceChildren(chapterHeadingText);
   chapterHeading.setAttribute('aria-live', 'polite');
   chapterHeading.setAttribute('aria-atomic', 'true');
+  chapterHeading.classList.add('web-chapter-heading');
+  doc.querySelector('#appHeader .header-center').append(chapterHeading);
   const pagination = doc.createElement('nav');
   pagination.className = 'chapter-pagination';
   pagination.setAttribute('aria-label', 'Navigazione capitoli');

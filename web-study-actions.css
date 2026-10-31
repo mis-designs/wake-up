@@ -406,3 +406,66 @@ html:not(.android-webview) #chapters #chapterCardDots { display: none; }
   .chapter-pagination-page[aria-current='page']::before { background: Highlight; border-color: Highlight; }
   .chapter-pagination button:focus-visible { outline-color: Highlight; }
 }
+
+
+/* Browser chapters: one quiet header, with the original Back action. */
+.web-chapter-heading { display: none; }
+html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #appHeader {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 8px;
+  background: #fff;
+  color: #111;
+  border: 0;
+  box-shadow: none;
+  padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
+}
+html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #appHeader .header-center { min-width: 0; }
+html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #appHeader :is(.chapter-status, .header-right),
+html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) :is(#adminEntryBtn, #profileBtn),
+html:not(.android-webview) body.app-mode #chapters > .lesson-head { display: none; }
+html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #appHeader .web-chapter-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  max-width: 900px;
+  height: 50px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font: 400 clamp(24px, 3vw, 36px)/1.2 'Norwester', 'Arial Narrow', sans-serif;
+  letter-spacing: .015em;
+  color: #111;
+}
+html:not(.android-webview) #appHeader .web-chapter-heading .selected-chapter-title {
+  display: inline-block;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font: inherit;
+}
+html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #backBtn {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: #111;
+}
+html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #backBtn img { filter: brightness(0); }
+html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #backBtn:hover { opacity: .65; }
+html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #backBtn:active { opacity: .45; }
+html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #backBtn:focus-visible { outline: 2px solid #111; outline-offset: 2px; }
+html:not(.android-webview) body.app-mode #chapters {
+  padding-top: 8px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+html:not(.android-webview) body.app-mode #chapters .lesson-board { margin-top: 0; gap: 16px; }
+html:not(.android-webview) body.app-mode #chapters .dashboard { min-height: 88px; padding-block: 4px; }
+html:not(.android-webview) body.app-mode #chapters .lesson-actions { padding-block: 12px 14px; }
+html:not(.android-webview) body.app-mode #chapters .web-action-footer { min-height: 44px; margin-top: 4px; padding-block: 4px; }
+@media (forced-colors: active) {
+  html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #appHeader { background: Canvas; color: CanvasText; }
+  html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #appHeader .web-chapter-heading { color: CanvasText; }
+  html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #backBtn { forced-color-adjust: none; background: white; }
+}

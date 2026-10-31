@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v263-slant-pagination";
+const CACHE_NAME = "magicbook-pwa-v264-compact-header";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -25,8 +25,8 @@ const STATIC_ASSETS = [
   "/style.css?v=77-admin-editor",
   "/admin-user-editor.css?v=1",
   "/admin-panel.css?v=2-spacing",
-  "/web-study-actions.css?v=6-slant-pagination",
-  "/web-study-actions.js?v=4-slant-pagination",
+  "/web-study-actions.css?v=7-compact-header",
+  "/web-study-actions.js?v=5-compact-header",
   "/web-action-effects.js?v=4-lesson-cover",
   "/icons/easy_video.gif",
   "/assets/easy-video-still.png",
