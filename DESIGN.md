@@ -9,6 +9,7 @@ canonical_ui:
     - admin-user-editor.css
     - admin-panel.css
     - mystyle.css
+    - quiz-chrome.css
     - quiz-help.css
     - quiz-help-desktop.js
     - mobile-experience.css
@@ -48,6 +49,13 @@ design_context:
 ---
 
 # Magic Book design context
+
+## Shared quiz header and question navigation — 2026-10-31
+
+- Owner requests the same cleaner chrome in QuizBank, chapter, mixed, trial and exam quiz modes. The shared quiz.html loads quiz-chrome.css after platform styles; it owns only header/navigation presentation. Crimson #d91c37 outlines, white paper and dark #17251e numbers replace filled circles, with44px rounded-square targets. Current = thicker border and soft tint; answered = small check, independently of current. Existing aria labels and selection/answer owners remain.
+- Title and timer use Inter with Segoe UI/sans-serif fallbacks, restrained weight and tabular timer digits. A-/A+ remain44px targets; the announced percentage is visually hidden. Compact timer20:00 removes decorative spacing. One thin horizontal scrollbar replaces the scrollbar-plus-divider stack; remove only the question area's upper border.
+- The existing Back guard extends to browsers using the same app confirmation and overlay-dismissal order. Mobile hides the exit only after successful guard installation; desktop retains a quiet44px ghost exit. History unavailable keeps the visible fallback. No changes to timing rules, grading, audio, authentication or API requests. Physical OS gestures still require device acceptance.
+
 
 ## QuizBank study preview — 2026-10-28
 

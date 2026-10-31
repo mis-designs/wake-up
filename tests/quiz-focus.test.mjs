@@ -58,24 +58,33 @@ function backFixture(native) {
     modal,modalCancel:{style:{display:'block'}},modalConfirm:{focus(){focus++;}},explanationModal:{classList:classes('hidden')},
     closeModal:r=>closes.push(r),closeExplanation(){},exitQuiz:()=>{exits++;}
   });
-  vm.runInContext(source('installNativeQuizBack','installNativeQuizBack();'),ctx);
+  vm.runInContext(source('installQuizBackGuard','installQuizBackGuard();'),ctx);
   return {ctx,root,body,modal,history,listeners,events,closes,openHelp(){helpOpen=true;},get exits(){return exits;},get pushes(){return pushes;},get focus(){return focus;}};
 }
 
-test('Android Back guard is never installed in ordinary browsers',()=>{
-  const f=backFixture(false);f.ctx.installNativeQuizBack();
-  assert.equal(f.pushes,0);assert.equal(f.listeners.popstate,undefined);
+test('browser Back installs one guard and shares the exit confirmation',()=>{
+  const f=backFixture(false);f.ctx.installQuizBackGuard();
+  assert.equal(f.pushes,1); f.listeners.popstate(); assert.equal(f.exits,1);
+  f.ctx.installQuizBackGuard(); assert.equal(f.pushes,2);
+  assert.ok(f.root.contains('quiz-back-ready'));
   assert.equal(f.root.contains('native-quiz-back-ready'),false);
 });
+test('history failure leaves the visible exit as a fallback',()=>{
+  const f=backFixture(false); f.history.pushState=()=>{throw new Error('unavailable');};
+  f.ctx.installQuizBackGuard();
+  assert.equal(f.root.contains('quiz-back-ready'),false);
+  assert.equal(f.listeners.popstate,undefined);
+});
+
 test('Android Back closes inline help before requesting quiz exit',()=>{
-  const f=backFixture(true);f.ctx.installNativeQuizBack();
+  const f=backFixture(true);f.ctx.installQuizBackGuard();
   assert.equal(f.pushes,1);assert.ok(f.root.contains('native-quiz-back-ready'));
   f.listeners.popstate();assert.equal(f.exits,1);
   f.openHelp();f.listeners.popstate();
   assert.equal(f.exits,1);assert.deepEqual(f.events,['magicbook:quiz-help-close']);
 });
 test('Android Back respects loading and existing cancellable/noncancellable dialogs',()=>{
-  const f=backFixture(true);f.ctx.installNativeQuizBack();
+  const f=backFixture(true);f.ctx.installQuizBackGuard();
   f.body.add('loading-open');f.listeners.popstate();assert.equal(f.exits,0);
   f.body.remove('loading-open');f.modal.classList.remove('hidden');f.listeners.popstate();
   assert.deepEqual(f.closes,[false]);assert.equal(f.exits,0);
@@ -86,7 +95,7 @@ test('exit confirmation ignores duplicate activation and cancellation keeps the 
   let resolve, requests=0, leaves=0;
   const ctx=vm.createContext({document:{body:{classList:classes()}},showConfirm:()=>{requests++;return new Promise(r=>resolve=r);},stopAllAudio(){},returnToBook(){leaves++;}});
   const start=script.indexOf('let exitQuizPending = false;');
-  const end=script.indexOf('// Android delegates Back',start);
+  const end=script.indexOf('// Browser gestures and Android Back',start);
   vm.runInContext(script.slice(start,end),ctx);
   const first=ctx.exitQuiz();await ctx.exitQuiz();assert.equal(requests,1);
   resolve(false);await first;assert.equal(leaves,0);

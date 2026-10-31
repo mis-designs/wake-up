@@ -265,7 +265,7 @@ function formatTimer(totalSeconds) {
 function getQuizTimerPresentation(remainingSeconds, adminMode = false) {
   const normalizedSeconds = Math.trunc(Number(remainingSeconds) || 0);
   const isOvertime = adminMode && normalizedSeconds <= 0;
-  const displayedTime = formatTimer(isOvertime ? Math.abs(normalizedSeconds) : normalizedSeconds).replace(":", " : ");
+  const displayedTime = formatTimer(isOvertime ? Math.abs(normalizedSeconds) : normalizedSeconds);
   return {
     text: isOvertime ? `+${displayedTime}` : displayedTime,
     ariaLabel: isOvertime
@@ -3454,7 +3454,7 @@ async function exitQuiz() {
   try {
     const confirmed = await showConfirm(
       "Uscire dal quiz?",
-      "Se esci adesso, tornerai al libro e il quiz non verra completato.",
+      "Se esci adesso, il quiz non verrà completato.",
       "Esci",
       "Resta qui"
     );
@@ -3468,13 +3468,18 @@ async function exitQuiz() {
   }
 }
 
-// Android delegates Back to WebView history. Keep one same-document guard;
+// Browser gestures and Android Back share one same-document guard;
 // existing owners still control dismissals and confirmation, never data loss.
-function installNativeQuizBack() {
-  if (!document.documentElement.classList.contains("android-webview")) return;
+function installQuizBackGuard() {
+  if (document.documentElement.classList.contains("quiz-back-ready")) return;
   const guard = () => history.pushState({ ...history.state, magicQuizBack: true }, "", location.href);
-  if (!history.state?.magicQuizBack) guard();
-  document.documentElement.classList.add("native-quiz-back-ready");
+  try {
+    if (!history.state?.magicQuizBack) guard();
+  } catch { return; } // Keep the visible exit available if history is unavailable.
+  document.documentElement.classList.add("quiz-back-ready");
+  if (document.documentElement.classList.contains("android-webview")) {
+    document.documentElement.classList.add("native-quiz-back-ready");
+  }
   window.addEventListener("popstate", () => {
     guard();
     if (document.body.classList.contains("magic-offline-active")) return;
@@ -3495,7 +3500,7 @@ function installNativeQuizBack() {
     void exitQuiz();
   });
 }
-installNativeQuizBack();
+installQuizBackGuard();
 
 // MOSTRA DOMANDA
 function updateAdminCorrectDots(question) {

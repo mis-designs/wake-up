@@ -9,7 +9,7 @@ const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "u
 
 function functionSource(name, nextName) {
   const start = source.indexOf(`function ${name}`);
-  const end = nextName ? source.indexOf(`function ${nextName}`, start + 1) : source.length;
+  const end = nextName ? source.indexOf(`function ${nextName}`, start + 1):source.length;
   assert.notEqual(start, -1, `${name} must exist`);
   assert.notEqual(end, -1, `${nextName} must follow ${name}`);
   return source.slice(start, end);
@@ -23,22 +23,22 @@ test("Admin timer changes from the normal countdown to explicit elapsed overtime
   )();
 
   assert.deepEqual(getPresentation(1, true), {
-    text: "0 : 01",
+    text: "0:01",
     ariaLabel: "Tempo rimanente",
     isOvertime: false
   });
   assert.deepEqual(getPresentation(0, true), {
-    text: "+0 : 00",
-    ariaLabel: "Tempo supplementare Admin: 0 : 00",
+    text: "+0:00",
+    ariaLabel: "Tempo supplementare Admin: 0:00",
     isOvertime: true
   });
   assert.deepEqual(getPresentation(-61, true), {
-    text: "+1 : 01",
-    ariaLabel: "Tempo supplementare Admin: 1 : 01",
+    text: "+1:01",
+    ariaLabel: "Tempo supplementare Admin: 1:01",
     isOvertime: true
   });
   assert.deepEqual(getPresentation(0, false), {
-    text: "0 : 00",
+    text: "0:00",
     ariaLabel: "Tempo rimanente",
     isOvertime: false
   });
@@ -59,7 +59,7 @@ test("only a server-authorized Admin enters uninterrupted overtime", () => {
 });
 
 test("the Admin overtime timer ships in fresh quiz and PWA assets", () => {
-  assert.match(page, /quiz\.js\?v=88-headlight/u);
-  assert.match(worker, /magicbook-pwa-v242-desktop-help/u);
-  assert.match(worker, /quiz\.js\?v=88-headlight/u);
+  assert.match(page, /quiz\.js\?v=92-quiz-chrome/u);
+  assert.match(worker, /magicbook-pwa-v257-quiz-chrome/u);
+  assert.match(worker, /quiz\.js\?v=92-quiz-chrome/u);
 });

@@ -102,7 +102,7 @@ test('shared template is exactly the authoritative static MagicBook controls wit
   assert.match(css, /min-height: 44px/);
   assert.match(css, /\.quiz-audio-recorder-head button \{[^}]*height: 44px/);
   assert.doesNotMatch(read('mystyle.css'), /^\.quiz-audio-(?:add|recorder|record-actions)[^{]*\{/m);
-  assert.match(read('quiz.html'), /quiz-audio-recorder\.js\?v=1[^]*quiz\.js\?v=91-quizbank-practice/);
+  assert.match(read('quiz.html'), /quiz-audio-recorder\.js\?v=1[^]*quiz\.js\?v=92-quiz-chrome/);
 });
 
 test('add-voice icon and study recorder spacing belong to the shared stylesheet', () => {

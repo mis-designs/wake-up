@@ -10,7 +10,7 @@ const examples = [
   ['La distanza di sicurezza deve essere almeno uguale ai metri che il veicolo percorre durante il tempo di reazione.', '', true],
   ['Il segnale raffigurato obbliga a fermarsi sempre prima di impegnare l’incrocio.', '40', false]
 ];
-const sheetRows = sheet => Array.from({ length: 30 }, (_, i) => ({ id: `qb_s${String(sheet).padStart(2, '0')}_q${String(i + 1).padStart(2, '0')}`, sheet, number: i + 1,
+const sheetRows = (sheet, length = 30) => Array.from({ length }, (_, i) => ({ id: `qb_s${String(sheet).padStart(2, '0')}_q${String(i + 1).padStart(2, '0')}`, sheet, number: i + 1,
   question: examples[i % 3][0], figure: examples[i % 3][1], correct: examples[i % 3][2], explanationMapped: i > 0,
   questionTranslation: 'সড়কে চলাচলের সময় সতর্ক থাকতে হবে।', questionTranslationSource: 'fixture' }));
 const bootstrap = `<script>
@@ -36,11 +36,12 @@ const server = http.createServer(async (req, res) => {
     if (mode === 'denied') return json({ error: 'quizbank_access_denied' }, 403);
     if (mode === 'fail') return json({ error: 'service_unavailable' }, 503);
     const sheet = Number(data.chapters || data.scheda || 1);
-    const rows = sheetRows(sheet);
+    const exam80 = data.mode === 'exam80';
+    const rows = sheetRows(sheet, exam80 ? 80 : 30);
     const session = { quizSessionToken: 'fixture', quizSessionTokenExpiresAt: Date.now() + 600000, canUploadAudio: mode !== 'learner', isAdmin: mode !== 'learner', role: mode === 'learner' ? 'user' : 'admin' };
     if (data.action === 'catalog') return json({ sheets: Array.from({ length: 50 }, (_, i) => ({ number: i + 1, count: 30 })), questionCount: 1500, ...session });
     if (data.action === 'getStudyQuiz') return json({ quiz: rows, ...session });
-    if (data.action === 'getQuiz') return json({ quiz: rows.map(({ correct, ...row }) => row), title: `QuizBank · Scheda ${sheet}`, quizbankRevision: 'a'.repeat(64), timerMinutes: 20, ...session });
+    if (data.action === 'getQuiz') return json({ quiz: rows.map(({ correct, ...row }) => row), title: data.mode ? 'Exam' : (url.pathname === '/api/quizbank' ? `QuizBank · Scheda ${sheet}` : 'Quiz'), quizbankRevision: 'a'.repeat(64), timerMinutes: exam80 ? 50 : 20, ...session });
     if (data.action === 'checkQuiz') {
       if (mode === 'stale') return json({ error: 'quizbank_revision_changed' }, 409);
       const answers = typeof data.answers === 'string' ? JSON.parse(data.answers) : data.answers;
@@ -56,7 +57,7 @@ const server = http.createServer(async (req, res) => {
   const file = path.resolve(repo, route);
   if (!file.startsWith(repo) || route.split(/[\\/]/).some(s => s.startsWith('.')) || !mime[path.extname(file)] || !fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404); return res.end(''); }
   let body = fs.readFileSync(file);
-  if (path.extname(file) === '.html') body = Buffer.from(body.toString().replace('<head>', '<head>' + bootstrap));
+  if (path.extname(file) === '.html') body = Buffer.from(body.toString().replace('<head>', '<head>' + (url.searchParams.get('qa_native') === '1' ? '<script>document.documentElement.classList.add("android-webview");document.documentElement.dataset.appPalette="aura-fluid";</script>' : '') + bootstrap));
   if (path.extname(file) === '.js') body = Buffer.from(body.toString().replaceAll('https://raw.githubusercontent.com/Ed0ardo/QuizPatenteB/main/img_sign/', '/qa-figures/'));
   res.writeHead(200, { 'Content-Type': mime[path.extname(file)], 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:" });
   res.end(body);

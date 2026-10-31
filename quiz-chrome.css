@@ -1,0 +1,113 @@
+/* Shared quiz header/navigation. Quiz engine and platform reading surfaces retain ownership. */
+html:root body.quiz-page.quiz-focus {
+  --quiz-chrome-accent: #d91c37;
+  --quiz-chrome-ink: #17251e;
+  --quiz-chrome-muted: #66716c;
+  --quiz-chrome-line: #e0e6e2;
+  --quiz-chrome-paper: #fff;
+  --quiz-chrome-font: "Inter", "Segoe UI", sans-serif;
+}
+html:root body.quiz-page.quiz-focus .quiz-container > .top-bar {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+}
+html:root body.quiz-page.quiz-focus .top-bar h2 {
+  position: static; left: auto; transform: none; padding: 0; margin: 0;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 600 clamp(17px, 2vw, 23px)/1.25 var(--quiz-chrome-font);
+  letter-spacing: -.025em; text-align: start; color: var(--quiz-chrome-ink);
+}
+html:root body.quiz-page.quiz-focus .top-bar h2::before { content: none; }
+html:root body.quiz-page.quiz-focus .top-bar .exit-btn {
+  width: 44px; height: 44px; margin: 0; border: 0; border-radius: 10px;
+  background: transparent; box-shadow: none;
+}
+html:root body.quiz-page.quiz-focus .exit-btn img { width: 22px; height: 22px; }
+html:root body.quiz-page.quiz-focus .top-bar-tools {
+  height: 44px; gap: 0; margin: 0; padding: 0;
+  border: 1px solid var(--quiz-chrome-line); border-radius: 12px;
+  background: var(--quiz-chrome-paper); box-shadow: none;
+}
+html:root body.quiz-page.quiz-focus .text-size-control {
+  height: 44px; border: 0; border-radius: 12px 0 0 12px;
+  background: transparent; box-shadow: none;
+}
+html:root body.quiz-page.quiz-focus .text-size-control button {
+  width: 44px; height: 44px; color: var(--quiz-chrome-ink);
+  font: 600 14px/1 var(--quiz-chrome-font);
+}
+html:root body.quiz-page.quiz-focus .text-size-control button:disabled { color: #a0aaa4; }
+html:root body.quiz-page.quiz-focus #text-size-value {
+  position: absolute; width: 1px; min-width: 0; height: 1px; padding: 0; margin: -1px;
+  clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+}
+html:root body.quiz-page.quiz-focus #timer {
+  width: 78px; padding: 0 8px; border-radius: 0;
+  border-left: 1px solid var(--quiz-chrome-line); background: transparent;
+  font: 500 19px/28px var(--quiz-chrome-font); font-variant-numeric: tabular-nums;
+  letter-spacing: -.025em; text-align: center; white-space: nowrap;
+  color: var(--quiz-chrome-ink);
+}
+html:root body.quiz-page.quiz-focus #timer.is-overtime { color: var(--quiz-chrome-accent); }
+html:root body.quiz-page.quiz-focus #progress {
+  gap: 7px; padding: 7px 3px 8px; min-height: 61px; align-items: center;
+  scroll-padding-inline: 3px; scrollbar-width: auto;
+  scrollbar-color: auto;
+}
+html:root body.quiz-page.quiz-focus #progress::-webkit-scrollbar { display: block; height: 2px; }
+html:root body.quiz-page.quiz-focus #progress::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+@supports not selector(::-webkit-scrollbar) {
+  html:root body.quiz-page.quiz-focus #progress { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--quiz-chrome-accent) 28%, white) transparent; }
+}
+html:root body.quiz-page.quiz-focus #progress::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--quiz-chrome-accent) 28%, white); border-radius: 2px;
+}
+html:root body.quiz-page.quiz-focus .progress-dot {
+  position: relative; isolation: auto; flex: 0 0 44px; min-width: 44px; max-width: 44px;
+  width: 44px; height: 44px; padding: 0;
+  border: 1px solid color-mix(in srgb, var(--quiz-chrome-accent) 65%, white); border-radius: 11px;
+  background: var(--quiz-chrome-paper); color: var(--quiz-chrome-ink);
+  font: 500 14px/1 var(--quiz-chrome-font); font-variant-numeric: tabular-nums;
+  transform: none; box-shadow: none; transition: background-color 140ms ease, border-color 140ms ease;
+}
+html:root body.quiz-page.quiz-focus .progress-dot::before { content: none; }
+html:root body.quiz-page.quiz-focus .progress-dot--answered::after {
+  content: ""; position: absolute; right: 4px; top: 4px; width: 5px; height: 3px;
+  border-left: 1.5px solid var(--quiz-chrome-accent); border-bottom: 1.5px solid var(--quiz-chrome-accent);
+  transform: rotate(-45deg); pointer-events: none;
+}
+html:root body.quiz-page.quiz-focus .progress-dot--current {
+  border: 2px solid var(--quiz-chrome-accent);
+  background: color-mix(in srgb, var(--quiz-chrome-accent) 7%, var(--quiz-chrome-paper));
+  color: var(--quiz-chrome-ink); font-weight: 700;
+}
+html:root body.quiz-page.quiz-focus .question-area { border-top: 0; }
+html:root body.quiz-page.quiz-focus :is(.progress-dot, .exit-btn, .text-size-control button):focus-visible {
+  outline: 2px solid var(--quiz-chrome-accent); outline-offset: 2px;
+}
+@media (hover: hover) {
+  html:root body.quiz-page.quiz-focus :is(.progress-dot, .exit-btn, .text-size-control button):hover:not(:disabled) {
+    background: color-mix(in srgb, var(--quiz-chrome-accent) 7%, var(--quiz-chrome-paper));
+  }
+}
+html:root body.quiz-page.quiz-focus :is(.progress-dot, .exit-btn, .text-size-control button):active:not(:disabled) {
+  background: color-mix(in srgb, var(--quiz-chrome-accent) 13%, var(--quiz-chrome-paper));
+}
+html.android-webview.native-quiz-back-ready body.quiz-page.quiz-focus .quiz-container > .top-bar {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+@media (max-width: 600px) {
+  html.quiz-back-ready body.quiz-page.quiz-focus .quiz-container > .top-bar { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  html.quiz-back-ready body.quiz-page.quiz-focus .top-bar .exit-btn { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html:root body.quiz-page.quiz-focus .progress-dot { transition: none; }
+}
+@media (forced-colors: active) {
+  html:root body.quiz-page.quiz-focus .progress-dot { border-color: ButtonText; }
+  html:root body.quiz-page.quiz-focus .progress-dot--current { border-color: Highlight; outline: 1px solid Highlight; outline-offset: -4px; }
+  html:root body.quiz-page.quiz-focus .progress-dot--answered::after { border-color: ButtonText; }
+}

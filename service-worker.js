@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v256-quizbank-actions";
+const CACHE_NAME = "magicbook-pwa-v257-quiz-chrome";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -109,6 +109,7 @@ const STATIC_ASSETS = [
   "/src/learning-insights.js?v=14-home-icons&ui=9-intact-figures",
   "/homebg.css?v=5-home-offers",
   "/mystyle.css?v=61-shared-recorder",
+  "/quiz-chrome.css?v=1-outline",
   "/audio-player-ui.css?v=10-web-quiz-slim",
   "/script.js?v=85-admin-editor",
   "/study-quiz.html",
@@ -120,7 +121,7 @@ const STATIC_ASSETS = [
   "/figure-study-data.mjs?v=2",
   "/figure-study-notes.mjs?v=1",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=91-quizbank-practice",
+  "/quiz.js?v=92-quiz-chrome",
   "/quiz-help.css?v=20260928-desktop",
   "/quiz-help.js?v=20261030-quizbank",
   "/quiz-help-desktop.js?v=1-allbooks",
