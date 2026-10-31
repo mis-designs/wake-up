@@ -3501,6 +3501,7 @@ function updateCardStyles(previewChapter = selectedChapter) {
   document.querySelectorAll(".chapter-card-dot").forEach((dot, i) => {
     dot.classList.toggle("is-active", i + 1 === selectedChapter);
   });
+  window.MagicBookWebStudyActions?.refreshSelected(CHAPTER_TITLES[selectedChapter - 1]);
 }
 
 function updateCardTrack(dragOffset, measuredBaseOffset) {

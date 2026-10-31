@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v261-chapter-type";
+const CACHE_NAME = "magicbook-pwa-v262-selected-title";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -25,8 +25,8 @@ const STATIC_ASSETS = [
   "/style.css?v=77-admin-editor",
   "/admin-user-editor.css?v=1",
   "/admin-panel.css?v=2-spacing",
-  "/web-study-actions.css?v=4-chapter-type",
-  "/web-study-actions.js?v=2-lesson-cover",
+  "/web-study-actions.css?v=5-selected-title",
+  "/web-study-actions.js?v=3-selected-title",
   "/web-action-effects.js?v=4-lesson-cover",
   "/icons/easy_video.gif",
   "/assets/easy-video-still.png",
@@ -115,7 +115,7 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=61-shared-recorder",
   "/quiz-chrome.css?v=1-outline",
   "/audio-player-ui.css?v=10-web-quiz-slim",
-  "/script.js?v=86-quizbank-intro",
+  "/script.js?v=87-selected-title",
   "/study-quiz.html",
   "/study-quiz.css?v=28-compact",
   "/study-quiz.js?v=39-session&art=2e0d6787e201",

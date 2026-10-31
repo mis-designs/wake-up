@@ -3,6 +3,48 @@
   const doc = root.document;
   if (doc.documentElement.classList.contains('android-webview')) return;
 
+  // The carousel owns selection; this browser adapter only presents its title.
+  const chapterHeading = doc.querySelector('#chapters .lesson-head h2');
+  const chapterHeadingText = doc.createElement('span');
+  chapterHeadingText.className = 'selected-chapter-title';
+  chapterHeading.replaceChildren(chapterHeadingText);
+  chapterHeading.setAttribute('aria-live', 'polite');
+  chapterHeading.setAttribute('aria-atomic', 'true');
+  let currentTitle = '';
+  function fitChapterTitle() {
+    const available = chapterHeading.clientWidth;
+    if (!available || !currentTitle) return;
+    chapterHeadingText.style.fontSize = '';
+    // Re-measure because letter spacing stays fixed while the glyphs shrink.
+    for (let pass = 0; pass < 3; pass++) {
+      const natural = chapterHeadingText.getBoundingClientRect().width;
+      if (natural <= available) break;
+      const size = parseFloat(root.getComputedStyle(chapterHeadingText).fontSize);
+      chapterHeadingText.style.fontSize = `${Math.floor(size * (available - 2) / natural * 100) / 100}px`;
+    }
+  }
+  function refreshSelected(title) {
+    if (!title || title === currentTitle) return;
+    currentTitle = title;
+    chapterHeadingText.textContent = title;
+    fitChapterTitle();
+  }
+  const titleSizeObserver = new ResizeObserver(fitChapterTitle);
+  titleSizeObserver.observe(chapterHeading);
+  doc.fonts.ready.then(fitChapterTitle);
+  doc.fonts.addEventListener('loadingdone', fitChapterTitle);
+  root.addEventListener('pagehide', () => {
+    titleSizeObserver.disconnect();
+    doc.fonts.removeEventListener('loadingdone', fitChapterTitle);
+  });
+  root.addEventListener('pageshow', event => {
+    if (event.persisted) {
+      titleSizeObserver.observe(chapterHeading);
+      doc.fonts.addEventListener('loadingdone', fitChapterTitle);
+      fitChapterTitle();
+    }
+  });
+
   const overlay = doc.getElementById('quizModeOverlay');
   const examBody = doc.querySelector('#examModeOverlay .qms-body');
   const examCards = [...examBody.children];
@@ -147,5 +189,5 @@
   doc.addEventListener('visibilitychange', () => { if (doc.hidden) settle(); });
   root.addEventListener('pagehide', () => { settle(); observer.disconnect(); });
   root.addEventListener('pageshow', event => { if (event.persisted) observer.observe(classButton); });
-  root.MagicBookWebStudyActions = Object.freeze({ open, close, reset });
+  root.MagicBookWebStudyActions = Object.freeze({ open, close, reset, refreshSelected });
 })(window);

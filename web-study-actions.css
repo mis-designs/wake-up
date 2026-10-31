@@ -249,11 +249,30 @@ html[data-native-motion-paused] .is-introducing .lesson-new > span { display: in
   .is-introducing .lesson-new > span { display: inline; }
 }
 
+/* Selected title stays complete on one line; the adapter fits long names. */
+html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #statusIcon { display: none; }
+html:not(.android-webview) #chapters .selected-chapter-title { font: inherit; display: inline-block; white-space: nowrap; flex: 0 0 auto; }
+html:not(.android-webview) #chapters .chapter-card-title { display: none; }
+html:not(.android-webview) #chapters .chapter-card-label {
+  font: 400 16px/1.2 'Norwester', 'Arial Narrow', sans-serif;
+  letter-spacing: .055em;
+  opacity: 1;
+}
+html:not(.android-webview) #chapters .chapter-card-number {
+  font: 400 64px/1 'Norwester', 'Arial Narrow', sans-serif;
+  letter-spacing: .01em;
+}
 /* Chapter typography and the teacher-led lesson cover (owner revision). */
 html:not(.android-webview) #chapters .lesson-head h2 {
-  font: 400 clamp(30px, 3.2vw, 40px)/1.25 "Norwester", "Arial Narrow", sans-serif;
+  font: 400 clamp(28px, 3.2vw, 40px)/1.25 "Norwester", "Arial Narrow", sans-serif;
   letter-spacing: .015em;
   margin-block: 6px 12px;
+  width: 100%;
+  min-width: 0;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #headerChapterName {
   max-width: none;
