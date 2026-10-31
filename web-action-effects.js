@@ -13,7 +13,8 @@
   const canvas = doc.createElement('canvas');
   canvas.className = 'web-action-core';
   canvas.setAttribute('aria-hidden', 'true');
-  button.prepend(canvas);
+  const coreEnabled = button.dataset.visual !== 'lesson-cover';
+  if (coreEnabled) button.prepend(canvas);
   let gl, program, buffer, uniforms, shaders = [];
   let frame = 0, previous = 0, time = 3, arcs = 2.4, hovered = false;
   let visible = false, suspended = false, lost = false, attempted = false;
@@ -128,7 +129,7 @@
     stop();
     const running = allowed();
     page.dataset.actionMotion = running ? 'running' : 'paused';
-    if (!running) { canvas.hidden = true; return; }
+    if (!running || !coreEnabled) { canvas.hidden = true; return; }
     if (!attempted && !lost) initialize();
     if (program) frame = win.requestAnimationFrame(paint);
   }

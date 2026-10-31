@@ -110,13 +110,13 @@ gtag('config', 'G-C5JPY9HFHD', {
 <link rel="stylesheet" href="mobile-experience.css?v=4-admin-scroll">
 <link rel="stylesheet" href="/login-experience.css?v=5-clean">
 <link rel="stylesheet" href="figure-detail.css?v=2">
-<link rel="stylesheet" href="web-study-actions.css?v=3-spacing">
+<link rel="stylesheet" href="web-study-actions.css?v=4-chapter-type">
 <link rel="stylesheet" href="/admin-user-editor.css?v=1">
 <link rel="stylesheet" href="/admin-panel.css?v=2-spacing">
 <link rel="stylesheet" href="/android-app-theme.css?v=14-welcome-split">
 <link rel="stylesheet" href="/android-study-shell.css?v=20-liquid">
 <link rel="stylesheet" href="/welcome-page.css?v=4-login-home">
-  <link rel="stylesheet" href="/home-offers.css?v=9-book-tap">
+  <link rel="stylesheet" href="/home-offers.css?v=10-brand-type">
 <link rel="stylesheet" href="/android-mode-screens.css?v=3-headlight">
 <link rel="stylesheet" href="/quizbank-home.css?v=3-bangla-caption">
 </head>
@@ -1188,12 +1188,13 @@ gtag('config', 'G-C5JPY9HFHD', {
         <img src="icons/study_quiz.svg" width="32" height="32" alt="" aria-hidden="true">
         <strong>Studia quiz</strong>
       </a>
-      <a id="webClassButton" class="lesson-tool lesson-tool-class web-study-action" href="/studia-quiz?view=videos">
-        <picture class="lesson-class-icon" aria-hidden="true">
-          <source media="(prefers-reduced-motion: reduce)" srcset="assets/easy-video-still.png">
-          <img src="icons/easy_video.gif" width="40" height="40" alt="">
-        </picture>
-        <strong>Pial sir class</strong>
+      <a id="webClassButton" class="lesson-tool lesson-tool-class web-study-action" data-visual="lesson-cover" href="/studia-quiz?view=videos">
+        <img class="lesson-class-cover" src="assets/video-class/teacher.webp?v=2e0d6787e201" width="1200" height="675" alt="" aria-hidden="true" loading="lazy">
+        <span class="lesson-class-copy">
+          <strong>Pial sir class</strong>
+          <span class="lesson-class-caption">Lezioni in Bangla</span>
+          <span class="lesson-class-link" aria-hidden="true">Apri le lezioni <img src="icons/next.png" width="20" height="20" alt=""></span>
+        </span>
         <span class="lesson-new" aria-label="Novità"><img src="assets/new-class.gif" width="44" height="24" alt="" aria-hidden="true"><span aria-hidden="true">NEW</span></span>
       </a>
     </div>
@@ -1448,8 +1449,8 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script type="module" src="figure-detail.js?v=2"></script>
 <script src="src/learning-insights.js?v=14-home-icons&ui=9-intact-figures"></script>
 <script src="android-mode-screens.js?v=2-thumb"></script>
-<script src="web-study-actions.js?v=1"></script>
-<script src="web-action-effects.js?v=3-system-motion"></script>
+<script src="web-study-actions.js?v=2-lesson-cover"></script>
+<script src="web-action-effects.js?v=4-lesson-cover"></script>
 <script src="script.js?v=86-quizbank-intro"></script>
 <script type="module" src="login-experience.js?v=3-clean"></script>
 <script type="module" src="welcome-page.js?v=2-clean"></script>

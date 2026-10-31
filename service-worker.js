@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v260-quizbank-bangla";
+const CACHE_NAME = "magicbook-pwa-v261-chapter-type";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -25,9 +25,9 @@ const STATIC_ASSETS = [
   "/style.css?v=77-admin-editor",
   "/admin-user-editor.css?v=1",
   "/admin-panel.css?v=2-spacing",
-  "/web-study-actions.css?v=3-spacing",
-  "/web-study-actions.js?v=1",
-  "/web-action-effects.js?v=3-system-motion",
+  "/web-study-actions.css?v=4-chapter-type",
+  "/web-study-actions.js?v=2-lesson-cover",
+  "/web-action-effects.js?v=4-lesson-cover",
   "/icons/easy_video.gif",
   "/assets/easy-video-still.png",
   "/assets/new-class.gif",
@@ -36,7 +36,7 @@ const STATIC_ASSETS = [
   "/login-experience.js?v=3-clean",
   "/welcome-page.css?v=4-login-home",
   "/welcome-page.js?v=2-clean",
-  "/home-offers.css?v=9-book-tap",
+  "/home-offers.css?v=10-brand-type",
   "/home-offers.js?v=8-new-tag&art=fbda23c8df0e",
   "/home-animation.js?v=4-hat&art=fbda23c8df0e",
   "/home-utilities.js?v=2-admin",

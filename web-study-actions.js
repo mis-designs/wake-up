@@ -125,16 +125,16 @@
   function settle() {
     root.clearTimeout(timer); timer = 0;
     classButton.classList.remove('is-introducing');
-    icon.src = 'assets/easy-video-still.png';
+    if (icon) icon.src = 'assets/easy-video-still.png';
     badge.removeAttribute('src');
   }
   badge.addEventListener('error', settle);
-  icon.addEventListener('error', () => { icon.style.visibility = 'hidden'; });
+  if (icon) icon.addEventListener('error', () => { icon.style.visibility = 'hidden'; });
   const observer = new IntersectionObserver(entries => {
     if (!entries[0].isIntersecting || doc.hidden || reduced.matches || doc.documentElement.hasAttribute('data-native-motion-paused')) { settle(); return; }
     if (seen) return;
     seen = true;
-    icon.src = 'icons/easy_video.gif';
+    if (icon) icon.src = 'icons/easy_video.gif';
     badge.src = 'assets/new-class.gif';
     classButton.classList.add('is-introducing');
     timer = root.setTimeout(settle, 4000);

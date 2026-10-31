@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const repo = fileURLToPath(new URL('../', import.meta.url));
-const mime = { '.html':'text/html', '.css':'text/css', '.js':'text/javascript', '.mjs':'text/javascript', '.json':'application/json', '.svg':'image/svg+xml', '.png':'image/png', '.jpg':'image/jpeg', '.gif':'image/gif', '.woff':'font/woff', '.woff2':'font/woff2', '.ttf':'font/ttf' };
+const mime = { '.html':'text/html', '.css':'text/css', '.js':'text/javascript', '.mjs':'text/javascript', '.json':'application/json', '.svg':'image/svg+xml', '.png':'image/png', '.jpg':'image/jpeg', '.webp':'image/webp', '.gif':'image/gif', '.woff':'font/woff', '.woff2':'font/woff2', '.ttf':'font/ttf' };
 const phone = '393310000000';
 const token = 'test.' + Buffer.from(JSON.stringify({phone,role:'user',exp:2208988800})).toString('base64url') + '.fixture';
 const counts = {};
@@ -18,7 +18,7 @@ http.createServer((req,res) => {
   }
   if (u.pathname === '/service-worker.js') { res.writeHead(404); return res.end(); }
   let name = decodeURIComponent(u.pathname).slice(1);
-  if (!path.extname(name)) name = name === 'quizbank' ? 'quizbank.html' : 'index.html';
+  if (!path.extname(name)) name = name === 'quizbank' ? 'quizbank.html' : name === 'studia-quiz' ? 'study-quiz.html' : 'index.html';
   const file = path.resolve(repo, name);
   if (!file.startsWith(repo) || name.split(/[\\/]/).some(s=>s.startsWith('.')) || !mime[path.extname(file)] || !fs.existsSync(file)) { res.writeHead(404); return res.end(); }
   let body = fs.readFileSync(file);
@@ -40,6 +40,7 @@ http.createServer((req,res) => {
       if(qa.get('qa_storage')==='blocked'){const get=Storage.prototype.getItem,set=Storage.prototype.setItem;Storage.prototype.getItem=function(k){if(k.startsWith('magicbook.quizbankIntro'))throw Error('fixture blocked');return get.call(this,k)};Storage.prototype.setItem=function(k,v){if(k.startsWith('magicbook.quizbankIntro'))throw Error('fixture blocked');return set.call(this,k,v)}}
     </script>`;
     body = Buffer.from(body.toString().replace('<head>', '<head>'+seed));
+    if (u.searchParams.get('qa_coverfail') === '1') body = Buffer.from(body.toString().replace('assets/video-class/teacher.webp?v=2e0d6787e201', '/qa-missing-cover.webp'));
     if (u.searchParams.get('qa_tagfail') === '1') body = Buffer.from(body.toString().replaceAll('/icons/New%20tag%20button.svg?v=26186f6f0240', '/qa-missing-tag.svg'));
   }
   res.writeHead(200,{'Content-Type':mime[path.extname(file)],'Cache-Control':'no-store','Content-Security-Policy':"default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:"});

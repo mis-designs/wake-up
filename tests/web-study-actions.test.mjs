@@ -15,7 +15,7 @@ test('three ordered web actions preserve direct quiz study and video destination
   assert.match(actions,/href="\/studia-quiz\?view=chapters"/);
   assert.match(actions,/href="\/studia-quiz\?view=videos"/);
   assert.equal((actions.match(/class="lesson-new"/g)||[]).length,1);
-  assert.match(actions,/icons\/easy_video\.gif/);
+  assert.match(actions,/assets\/video-class\/teacher\.webp/);
   assert.match(read('web-study-actions.css'),/html:not\(\.android-webview\) #chapters #examButton/);
 });
 test('web adapter reuses modal, action gate, trial guards and actual Exam nodes',()=>{
@@ -28,8 +28,8 @@ test('animated badge is a real bounded GIF with cached static fallbacks',()=>{
   assert.equal(bytes.subarray(0,6).toString(),'GIF89a');assert.ok(bytes.length<20000);
   const source=read('web-study-actions.js'), css=read('web-study-actions.css');
   assert.match(source,/setTimeout\(settle, 4000\)/);assert.match(source,/visibilitychange/);
-  for(const pattern of [/prefers-reduced-motion/,/forced-colors/,/:focus-visible/,/min-height: 54px/])assert.match(css,pattern);
-  for(const asset of ['web-study-actions.css?v=3-spacing','web-study-actions.js?v=1','web-action-effects.js?v=3-system-motion','icons/easy_video.gif','assets/new-class.gif','assets/easy-video-still.png']){
+  for(const pattern of [/prefers-reduced-motion/,/forced-colors/,/:focus-visible/,/min-height: 64px/])assert.match(css,pattern);
+  for(const asset of ['web-study-actions.css?v=4-chapter-type','web-study-actions.js?v=2-lesson-cover','web-action-effects.js?v=4-lesson-cover','icons/easy_video.gif','assets/new-class.gif','assets/easy-video-still.png']){
     assert.ok(read('service-worker.js').includes(asset));assert.ok(existsSync(new URL(`../${asset.split('?')[0]}`,import.meta.url)));
   }
 });

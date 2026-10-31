@@ -32,6 +32,11 @@ html:not(.android-webview) body.app-mode #home:not(.hidden) {
 .member-home [lang="bn"] { font-family: 'Adorsho Lipi', sans-serif; }
 html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader { background: var(--welcome-paper); border-bottom: 1px solid var(--welcome-line); box-shadow: none; }
 html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .chapter-status { color: var(--welcome-ink); }
+html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #headerChapterName {
+  font: 400 clamp(27px, 2.4vw, 34px)/1.15 'Norwester', 'Arial Narrow', sans-serif;
+  letter-spacing: .065em;
+}
+
 html:not(.android-webview) body.app-mode:has(#home:not(.hidden)) #appHeader .status-icon { display: none; }
 .member-home *, .offer-dialog *, .join-offer * { box-sizing: border-box; }
 .member-study { margin-block: auto; }

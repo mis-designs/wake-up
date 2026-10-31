@@ -10,6 +10,7 @@ html:not(.android-webview) #qmsCardStudy { display: none; }
 html:not(.android-webview) #chapters .lesson-actions {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
+  align-items: center;
   padding: 16px 12px 26px;
   overflow: visible;
 }
@@ -86,8 +87,8 @@ html:not(.android-webview) #chapters .lesson-tool {
   transition: filter 160ms ease, box-shadow 160ms ease;
 }
 html:not(.android-webview) #chapters .lesson-tool strong {
-  font: 800 clamp(16px, 1.7vw, 22px)/1.25 Inter, Arial, sans-serif;
-  letter-spacing: 0;
+  font: 400 clamp(23px, 2.2vw, 28px)/1.2 'Norwester', 'Arial Narrow', sans-serif;
+  letter-spacing: .015em;
 }
 html:not(.android-webview) #chapters :is(.lesson-tool-quiz, .lesson-tool-study) {
   --action-base: var(--action-quiz-base);
@@ -222,7 +223,7 @@ html:not(.android-webview)[data-app-transition] #chapters .lesson-tool {
 @media (max-width: 600px) {
   html:not(.android-webview) #chapters .lesson-board { gap: 20px; }
   html:not(.android-webview) #chapters .lesson-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 12px; padding-inline: 8px; }
-  html:not(.android-webview) #chapters .lesson-tool { min-height: 54px; padding: 8px 10px; border-radius: 16px; gap: 8px; }
+  html:not(.android-webview) #chapters .lesson-tool { min-height: 64px; padding: 12px 10px; border-radius: 16px; gap: 8px; }
   html:not(.android-webview) #webClassButton { grid-column: 1 / -1; }
   html:not(.android-webview) #webStudyButton img { width: 26px; height: 26px; }
 }
@@ -246,4 +247,75 @@ html[data-native-motion-paused] .is-introducing .lesson-new > span { display: in
   .lesson-new { background: Highlight; color: HighlightText; }
   .lesson-new img { display: none; }
   .is-introducing .lesson-new > span { display: inline; }
+}
+
+/* Chapter typography and the teacher-led lesson cover (owner revision). */
+html:not(.android-webview) #chapters .lesson-head h2 {
+  font: 400 clamp(30px, 3.2vw, 40px)/1.25 "Norwester", "Arial Narrow", sans-serif;
+  letter-spacing: .015em;
+  margin-block: 6px 12px;
+}
+html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #headerChapterName {
+  max-width: none;
+  font: 400 clamp(20px, 2vw, 24px)/1.3 "Norwester", "Arial Narrow", sans-serif;
+}
+html:not(.android-webview) #chapters .lesson-tool-class[data-visual="lesson-cover"] {
+  min-height: 126px;
+  justify-content: flex-start;
+  padding: 20px;
+  background: #102c28;
+  border-color: #54766b;
+  box-shadow: 0 10px 22px -12px rgb(15 57 43 / 40%), inset 0 1px 0 rgb(255 255 255 / 16%);
+  text-shadow: none;
+}
+html:not(.android-webview) #chapters .lesson-tool > .lesson-class-cover {
+  position: absolute;
+  z-index: -2;
+  inset: 0 0 0 auto;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: right center;
+  border-radius: inherit;
+  pointer-events: none;
+}
+html:not(.android-webview) #chapters .lesson-tool-class[data-visual="lesson-cover"]::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #102c28 0%, rgb(16 44 40 / 96%) 27%, rgb(16 44 40 / 80%) 47%, transparent 76%);
+  pointer-events: none;
+}
+html:not(.android-webview) #chapters .lesson-class-copy {
+  display: grid;
+  gap: 5px;
+  text-align: left;
+  max-width: 75%;
+}
+html:not(.android-webview) #chapters .lesson-class-copy strong {
+  font-size: 24px;
+}
+.lesson-class-caption { font: 500 13px/1.4 Inter, Arial, sans-serif; color: #fff; }
+.lesson-class-link {
+  display: flex; align-items: center; gap: 10px; margin-top: 6px;
+  font: 700 12px/1.4 Inter, Arial, sans-serif; color: #b9ffb5;
+}
+.lesson-class-link img { filter: brightness(0) saturate(100%) invert(94%) sepia(19%) saturate(766%) hue-rotate(51deg); }
+html:not(.android-webview) #chapters .lesson-tool-class[data-visual="lesson-cover"]:hover { border-color: #9ed6b4; }
+@media (max-width: 380px) {
+  html:not(.android-webview) #chapters .lesson-tool { gap: 6px; padding-inline: 8px; }
+  html:not(.android-webview) #webStudyButton img { width: 22px; height: 22px; }
+  html:not(.android-webview) #chapters .lesson-tool-class[data-visual="lesson-cover"] { padding-inline: 16px; }
+}
+@media (forced-colors: active) {
+  html:not(.android-webview) #chapters .lesson-tool-class[data-visual="lesson-cover"] {
+    background: Canvas; color: CanvasText; border-color: ButtonText; box-shadow: none;
+  }
+  html:not(.android-webview) #chapters .lesson-tool-class[data-visual="lesson-cover"]::before,
+  html:not(.android-webview) #chapters .lesson-class-cover { display: none; }
+  .lesson-class-caption, .lesson-class-link { color: CanvasText; }
 }
