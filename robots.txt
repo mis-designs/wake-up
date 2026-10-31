@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
+Allow: /icons/quizbank-share-cover.jpg
 Disallow: /icons/
 Disallow: /quiz.html
 
