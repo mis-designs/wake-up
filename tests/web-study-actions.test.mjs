@@ -28,8 +28,8 @@ test('animated badge is a real bounded GIF with cached static fallbacks',()=>{
   assert.equal(bytes.subarray(0,6).toString(),'GIF89a');assert.ok(bytes.length<20000);
   const source=read('web-study-actions.js'), css=read('web-study-actions.css');
   assert.match(source,/setTimeout\(settle, 4000\)/);assert.match(source,/visibilitychange/);
-  for(const pattern of [/prefers-reduced-motion/,/forced-colors/,/:focus-visible/,/min-height: 64px/])assert.match(css,pattern);
-  for(const asset of ['web-study-actions.css?v=7-compact-header','web-study-actions.js?v=5-compact-header','web-action-effects.js?v=4-lesson-cover','icons/easy_video.gif','assets/new-class.gif','assets/easy-video-still.png']){
+  for(const pattern of [/prefers-reduced-motion/,/forced-colors/,/:focus-visible/,/min-height: 68px/])assert.match(css,pattern);
+  for(const asset of ['web-study-actions.css?v=8-balanced-actions','web-study-actions.js?v=5-compact-header','web-action-effects.js?v=4-lesson-cover','icons/easy_video.gif','assets/new-class.gif','assets/easy-video-still.png']){
     assert.ok(read('service-worker.js').includes(asset));assert.ok(existsSync(new URL(`../${asset.split('?')[0]}`,import.meta.url)));
   }
 });

@@ -223,7 +223,7 @@ html:not(.android-webview)[data-app-transition] #chapters .lesson-tool {
 @media (max-width: 600px) {
   html:not(.android-webview) #chapters .lesson-board { gap: 20px; }
   html:not(.android-webview) #chapters .lesson-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 12px; padding-inline: 8px; }
-  html:not(.android-webview) #chapters .lesson-tool { min-height: 64px; padding: 12px 10px; border-radius: 16px; gap: 8px; }
+  html:not(.android-webview) #chapters .lesson-tool { min-height: 68px; padding: 6px 10px; border-radius: 16px; gap: 8px; }
   html:not(.android-webview) #webClassButton { grid-column: 1 / -1; }
   html:not(.android-webview) #webStudyButton img { width: 26px; height: 26px; }
 }
@@ -279,25 +279,31 @@ html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #headerChap
   font: 400 clamp(20px, 2vw, 24px)/1.3 "Norwester", "Arial Narrow", sans-serif;
 }
 html:not(.android-webview) #chapters .lesson-tool-class[data-visual="lesson-cover"] {
-  min-height: 126px;
+  min-height: 68px;
   justify-content: flex-start;
-  padding: 20px;
+  padding: 6px 16px;
   background: #102c28;
   border-color: #54766b;
   box-shadow: 0 10px 22px -12px rgb(15 57 43 / 40%), inset 0 1px 0 rgb(255 255 255 / 16%);
   text-shadow: none;
 }
-html:not(.android-webview) #chapters .lesson-tool > .lesson-class-cover {
+html:not(.android-webview) #chapters .lesson-tool > .lesson-class-art {
   position: absolute;
   z-index: -2;
-  inset: 0 0 0 auto;
-  height: 100%;
-  width: auto;
-  max-width: 100%;
-  object-fit: contain;
-  object-position: right center;
+  inset: 0;
   border-radius: inherit;
+  overflow: hidden;
   pointer-events: none;
+}
+html:not(.android-webview) #chapters .lesson-class-art .lesson-class-cover {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 224px;
+  height: 126px;
+  max-width: none;
+  object-fit: contain;
+  object-position: right top;
 }
 html:not(.android-webview) #chapters .lesson-tool-class[data-visual="lesson-cover"]::before {
   content: '';
@@ -311,17 +317,21 @@ html:not(.android-webview) #chapters .lesson-tool-class[data-visual="lesson-cove
 }
 html:not(.android-webview) #chapters .lesson-class-copy {
   display: grid;
-  gap: 5px;
+  gap: 0;
   text-align: left;
   max-width: 75%;
 }
 html:not(.android-webview) #chapters .lesson-class-copy strong {
-  font-size: 24px;
+  font-size: 22px;
+  line-height: 1.15;
 }
-.lesson-class-caption { font: 500 13px/1.4 Inter, Arial, sans-serif; color: #fff; }
 .lesson-class-link {
-  display: flex; align-items: center; gap: 10px; margin-top: 6px;
+  display: flex; align-items: center; gap: 6px;
   font: 700 12px/1.4 Inter, Arial, sans-serif; color: #b9ffb5;
+}
+.lesson-class-link [lang="bn"] {
+  font: 400 18px/1.25 var(--font-bn-title, 'Hadi Rounded'), sans-serif;
+  letter-spacing: 0;
 }
 .lesson-class-link img { filter: brightness(0) saturate(100%) invert(94%) sepia(19%) saturate(766%) hue-rotate(51deg); }
 html:not(.android-webview) #chapters .lesson-tool-class[data-visual="lesson-cover"]:hover { border-color: #9ed6b4; }
@@ -336,7 +346,7 @@ html:not(.android-webview) #chapters .lesson-tool-class[data-visual="lesson-cove
   }
   html:not(.android-webview) #chapters .lesson-tool-class[data-visual="lesson-cover"]::before,
   html:not(.android-webview) #chapters .lesson-class-cover { display: none; }
-  .lesson-class-caption, .lesson-class-link { color: CanvasText; }
+  .lesson-class-link { color: CanvasText; }
 }
 
 
@@ -457,11 +467,11 @@ html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #backBtn:ho
 html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #backBtn:active { opacity: .45; }
 html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #backBtn:focus-visible { outline: 2px solid #111; outline-offset: 2px; }
 html:not(.android-webview) body.app-mode #chapters {
-  padding-top: 8px;
+  padding-top: 28px;
   padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 html:not(.android-webview) body.app-mode #chapters .lesson-board { margin-top: 0; gap: 16px; }
-html:not(.android-webview) body.app-mode #chapters .dashboard { min-height: 88px; padding-block: 4px; }
+html:not(.android-webview) body.app-mode #chapters .dashboard { min-height: 88px; padding-block: 4px; margin-top: 12px; }
 html:not(.android-webview) body.app-mode #chapters .lesson-actions { padding-block: 12px 14px; }
 html:not(.android-webview) body.app-mode #chapters .web-action-footer { min-height: 44px; margin-top: 4px; padding-block: 4px; }
 @media (forced-colors: active) {
