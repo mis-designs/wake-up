@@ -9,7 +9,7 @@ test("editor assets load after shared foundations and before native owners, with
   assert.ok(page.indexOf("admin-user-editor.css?v=1") > page.indexOf("style.css"));
   assert.ok(page.indexOf("admin-user-editor.css?v=1") < page.indexOf("android-app-theme.css"));
   assert.match(read("service-worker.js"), /\/admin-user-editor\.css\?v=1/);
-  for (const source of [page, read("service-worker.js")]) assert.match(source, /script\.js\?v=87-selected-title/);
+  for (const source of [page, read("service-worker.js")]) assert.match(source, /script\.js\?v=88-slant-pagination/);
 });
 test("one desktop header groups six independent accessible phone, duration and access controls", () => {
   assert.equal((modal.match(/class="admin-editor-columns"/g)||[]).length, 1);

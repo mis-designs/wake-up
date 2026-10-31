@@ -338,3 +338,71 @@ html:not(.android-webview) #chapters .lesson-tool-class[data-visual="lesson-cove
   html:not(.android-webview) #chapters .lesson-class-cover { display: none; }
   .lesson-class-caption, .lesson-class-link { color: CanvasText; }
 }
+
+
+/* Owner reference: red parallelogram, open numbers and oblique separators. */
+html:not(.android-webview) #chapters #chapterCardDots { display: none; }
+.chapter-pagination {
+  --chapter-page-accent: #ff3b4c;
+  --chapter-page-ink: #48515a;
+  --chapter-page-line: #dce0e2;
+  display: grid;
+  grid-template-columns: 106px repeat(5, minmax(0, 1fr)) 106px;
+  align-items: center;
+  gap: 4px;
+  width: min(100%, 540px);
+  margin: 0 auto;
+  padding: 4px 10px;
+  box-sizing: border-box;
+}
+.chapter-pagination button {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--chapter-page-ink);
+  box-shadow: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.chapter-pagination-page { font: 700 20px/1 'Norwester', 'Arial Narrow', sans-serif; }
+.chapter-pagination-page > span { font: inherit; }
+.chapter-pagination-page::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 2px 0;
+  border-right: 1px solid var(--chapter-page-line);
+  transform: skewX(-29deg);
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+.chapter-pagination-page[aria-current='page'] { color: #fff; }
+.chapter-pagination-page[aria-current='page']::before { background: var(--chapter-page-accent); border-color: var(--chapter-page-accent); }
+.chapter-pagination-page:not([aria-current]):hover::before { background: #fff0f2; border-color: #ff8c98; }
+.chapter-pagination-page:active::before { background: #dc233b; }
+.chapter-pagination-direction { display: flex; align-items: center; justify-content: center; gap: 7px; }
+.chapter-pagination-direction.next { flex-direction: row-reverse; }
+.chapter-pagination-label { font: 500 12px/1.25 Inter, Arial, sans-serif; }
+.chapter-pagination-arrow { display: block; width: 7px; height: 7px; border-left: 1px solid currentColor; border-bottom: 1px solid currentColor; transform: rotate(45deg); }
+.chapter-pagination-direction.next .chapter-pagination-arrow { transform: rotate(225deg); }
+.chapter-pagination-direction:hover:not(:disabled) { color: #bd1830; }
+.chapter-pagination-direction:active:not(:disabled) { color: #8f1224; }
+.chapter-pagination button:disabled { color: #a7adb2; cursor: default; }
+.chapter-pagination button:focus-visible { outline: 2px solid #9c1930; outline-offset: 3px; }
+@media (max-width: 600px) {
+  .chapter-pagination { grid-template-columns: 32px repeat(5, minmax(0, 1fr)) 32px; gap: 3px; max-width: 330px; padding-inline: 8px; }
+  .chapter-pagination-label { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .chapter-pagination-page::before { transition: none; } }
+@media (forced-colors: active) {
+  .chapter-pagination button { color: ButtonText; }
+  .chapter-pagination button:disabled { color: GrayText; }
+  .chapter-pagination-page::before { border-color: ButtonText; }
+  .chapter-pagination-page[aria-current='page'] { color: HighlightText; forced-color-adjust: none; }
+  .chapter-pagination-page[aria-current='page']::before { background: Highlight; border-color: Highlight; }
+  .chapter-pagination button:focus-visible { outline-color: Highlight; }
+}

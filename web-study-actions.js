@@ -10,6 +10,70 @@
   chapterHeading.replaceChildren(chapterHeadingText);
   chapterHeading.setAttribute('aria-live', 'polite');
   chapterHeading.setAttribute('aria-atomic', 'true');
+  const pagination = doc.createElement('nav');
+  pagination.className = 'chapter-pagination';
+  pagination.setAttribute('aria-label', 'Navigazione capitoli');
+  const previous = doc.createElement('button');
+  const next = doc.createElement('button');
+  function direction(button, label, direction) {
+    button.type = 'button';
+    button.className = `chapter-pagination-direction ${direction}`;
+    button.setAttribute('aria-label', `Capitolo ${label.toLowerCase()}`);
+    const arrow = doc.createElement('span');
+    arrow.className = 'chapter-pagination-arrow';
+    arrow.setAttribute('aria-hidden', 'true');
+    const text = doc.createElement('span');
+    text.className = 'chapter-pagination-label';
+    text.textContent = label;
+    button.append(arrow, text);
+  }
+  direction(previous, 'Precedente', 'previous');
+  direction(next, 'Successivo', 'next');
+  const pages = Array.from({ length: 5 }, () => {
+    const button = doc.createElement('button');
+    button.type = 'button';
+    button.className = 'chapter-pagination-page';
+    const label = doc.createElement('span');
+    button.append(label);
+    return button;
+  });
+  pagination.append(previous, ...pages, next);
+  doc.getElementById('chapterCardDots').after(pagination);
+  let activeChapter = 0, chapterCount = 25;
+  function updatePagination(chapter, total) {
+    if (chapter === activeChapter && total === chapterCount) return;
+    activeChapter = chapter;
+    chapterCount = total;
+    const start = Math.max(1, Math.min(chapter - 2, total - pages.length + 1));
+    pages.forEach((button, index) => {
+      const number = start + index;
+      button.dataset.chapter = number;
+      button.firstElementChild.textContent = number;
+      button.setAttribute('aria-label', `Vai al capitolo ${number}`);
+      if (number === chapter) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    });
+    previous.disabled = chapter === 1;
+    next.disabled = chapter === total;
+    previous.dataset.chapter = chapter - 1;
+    next.dataset.chapter = chapter + 1;
+  }
+  function focusCurrentPage() {
+    pages.find(button => Number(button.dataset.chapter) === activeChapter)?.focus({ preventScroll: true });
+  }
+  pagination.addEventListener('click', event => {
+    const button = event.target.closest('button');
+    if (!button || button.disabled) return;
+    root.selectChapter(Number(button.dataset.chapter));
+    if (pages.includes(button) || button.disabled) focusCurrentPage();
+  });
+  pagination.addEventListener('keydown', event => {
+    const target = { ArrowLeft: activeChapter - 1, ArrowRight: activeChapter + 1, Home: 1, End: chapterCount }[event.key];
+    if (target === undefined) return;
+    event.preventDefault();
+    root.selectChapter(target);
+    focusCurrentPage();
+  });
   let currentTitle = '';
   function fitChapterTitle() {
     const available = chapterHeading.clientWidth;
@@ -23,7 +87,8 @@
       chapterHeadingText.style.fontSize = `${Math.floor(size * (available - 2) / natural * 100) / 100}px`;
     }
   }
-  function refreshSelected(title) {
+  function refreshSelected(title, chapter, total) {
+    if (Number.isInteger(chapter) && Number.isInteger(total)) updatePagination(chapter, total);
     if (!title || title === currentTitle) return;
     currentTitle = title;
     chapterHeadingText.textContent = title;
