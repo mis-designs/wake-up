@@ -21,7 +21,7 @@
 #home .qb-entry-tag img { width: 60px; height: 60px; max-width: none; object-fit: contain; visibility: hidden; }
 #home .qb-entry-tag[data-ready] img { visibility: visible; }
 #home .qb-entry-tag[data-ready] .qb-entry-new { visibility: hidden; }
-#home .qb-entry-caption { display: block; margin-top: 7px; color: inherit; font: 500 13px/1.5 'Inter', sans-serif; }
+#home .qb-entry-caption { display: block; margin-top: 7px; color: inherit; font: 400 22px/1.5 var(--font-bn-title, 'Hadi Rounded'), sans-serif; letter-spacing: 0; }
 .qb-entry-arrow { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border: 1px solid #ffffff66; border-radius: 50%; background: #ffffff10; }
 .qb-entry-arrow img { width: 25px; height: 25px; object-fit: contain; filter: brightness(0) invert(1); }
 .qb-sheet-emblem { position: relative; flex-shrink: 0; display: grid; place-content: center; width: 58px; height: 68px; border: 1px solid #ffffff88; border-radius: 7px; background: var(--qb-home-paper); color: var(--qb-home-accent); box-shadow: -5px 4px 0 #ffffff30, -9px 8px 0 #ffffff18; transform: rotate(-7deg); }
@@ -63,6 +63,12 @@ html:has(body.qb-intro-open) { overflow: hidden !important; }
 @keyframes qb-dialog-in { from { opacity: 0; transform: translateY(28px) scale(.96); } to { opacity: 1; transform: none; } }
 @keyframes qb-row-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @media (min-width: 900px) {
+  html:not(.android-webview) #home .qb-entry { display: grid; grid-template-columns: 58px minmax(0, 1fr) 88px minmax(0, 1fr) 58px; }
+  html:not(.android-webview) #home .qb-entry-copy { display: contents; }
+  html:not(.android-webview) #home .qb-sheet-emblem { grid-area: 1 / 1; }
+  html:not(.android-webview) #home .qb-entry-name { grid-area: 1 / 2; }
+  html:not(.android-webview) #home .qb-entry-caption { grid-area: 1 / 4; margin: 0; font-size: clamp(20px, 2vw, 26px); }
+  html:not(.android-webview) #home .qb-entry-arrow { grid-area: 1 / 5; justify-self: end; }
   html:not(.android-webview) #home .qb-entry-tag { position: absolute; top: 50%; left: 50%; width: 88px; height: 88px; transform: translate(-50%, -50%); }
   html:not(.android-webview) #home .qb-entry-tag img { width: 88px; height: 88px; }
 }
@@ -71,7 +77,7 @@ html:has(body.qb-intro-open) { overflow: hidden !important; }
   #home .qb-entry-name { font-size: 27px; gap: 9px; }
   #home .qb-entry-tag { flex-basis: 52px; width: 52px; height: 44px; }
   #home .qb-entry-tag img { width: 52px; height: 52px; }
-  #home .qb-entry-caption { font-size: 11px; }
+  #home .qb-entry-caption { font-size: 20px; }
   .qb-sheet-emblem { width: 43px; height: 57px; }
   #home .qb-sheet-emblem b { font-size: 25px; }
   .qb-entry-arrow { width: 36px; height: 36px; }

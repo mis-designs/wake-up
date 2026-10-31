@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v259-quizbank-tag";
+const CACHE_NAME = "magicbook-pwa-v260-quizbank-bangla";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -47,7 +47,7 @@ const STATIC_ASSETS = [
   // HOME_ANIMATION_ASSETS_END
   "/offer-frequency.mjs?v=1",
   "/icons/New%20tag%20button.svg?v=26186f6f0240",
-  "/quizbank-home.css?v=2-new-tag",
+  "/quizbank-home.css?v=3-bangla-caption",
   "/quizbank-home.js?v=2-new-tag",
   "/quizbank-intro-policy.mjs?v=1",
   "/login-signs.mjs?v=1",
