@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v265-balanced-actions";
+const CACHE_NAME = "magicbook-pwa-v266-title-alignment";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -25,7 +25,7 @@ const STATIC_ASSETS = [
   "/style.css?v=77-admin-editor",
   "/admin-user-editor.css?v=1",
   "/admin-panel.css?v=2-spacing",
-  "/web-study-actions.css?v=8-balanced-actions",
+  "/web-study-actions.css?v=9-title-alignment",
   "/web-study-actions.js?v=5-compact-header",
   "/web-action-effects.js?v=4-lesson-cover",
   "/icons/easy_video.gif",

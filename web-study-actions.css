@@ -454,6 +454,8 @@ html:not(.android-webview) #appHeader .web-chapter-heading .selected-chapter-tit
   flex: 0 0 auto;
   white-space: nowrap;
   font: inherit;
+  position: relative;
+  top: 3px; /* Optical alignment of Norwester capitals with the Back arrow. */
 }
 html:not(.android-webview) body.app-mode:has(#chapters:not(.hidden)) #backBtn {
   background: transparent;
