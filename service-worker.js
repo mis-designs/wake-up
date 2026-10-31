@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v257-quiz-chrome";
+const CACHE_NAME = "magicbook-pwa-v258-quizbank-home";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -37,7 +37,7 @@ const STATIC_ASSETS = [
   "/welcome-page.css?v=4-login-home",
   "/welcome-page.js?v=2-clean",
   "/home-offers.css?v=9-book-tap",
-  "/home-offers.js?v=6-hat&art=fbda23c8df0e",
+  "/home-offers.js?v=7-quizbank&art=fbda23c8df0e",
   "/home-animation.js?v=4-hat&art=fbda23c8df0e",
   "/home-utilities.js?v=2-admin",
   // HOME_ANIMATION_ASSETS_START
@@ -46,6 +46,9 @@ const STATIC_ASSETS = [
   "/assets/home-animations/40f2b1238323.png?v=6406120541f0",
   // HOME_ANIMATION_ASSETS_END
   "/offer-frequency.mjs?v=1",
+  "/quizbank-home.css?v=1",
+  "/quizbank-home.js?v=1",
+  "/quizbank-intro-policy.mjs?v=1",
   "/login-signs.mjs?v=1",
   "/greeting-view.mjs?v=1-shared-login",
   "/icons/mdesignstextlogo.png",
@@ -53,7 +56,7 @@ const STATIC_ASSETS = [
   "/android-app-theme.css?v=14-welcome-split",
   "/assets/fonts/magicbook-latin-fonts.css?v=1",
   "/android-study-shell.css?v=20-liquid",
-  "/android-study-shell.js?v=14-liquid",
+  "/android-study-shell.js?v=15-quizbank-intro",
   "/native-liquid-progress.mjs?v=1",
   "/android-mode-screens.css?v=3-headlight",
   "/android-mode-screens.js?v=2-thumb",
@@ -111,7 +114,7 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=61-shared-recorder",
   "/quiz-chrome.css?v=1-outline",
   "/audio-player-ui.css?v=10-web-quiz-slim",
-  "/script.js?v=85-admin-editor",
+  "/script.js?v=86-quizbank-intro",
   "/study-quiz.html",
   "/study-quiz.css?v=28-compact",
   "/study-quiz.js?v=39-session&art=2e0d6787e201",

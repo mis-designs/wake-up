@@ -118,6 +118,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <link rel="stylesheet" href="/welcome-page.css?v=4-login-home">
   <link rel="stylesheet" href="/home-offers.css?v=9-book-tap">
 <link rel="stylesheet" href="/android-mode-screens.css?v=3-headlight">
+<link rel="stylesheet" href="/quizbank-home.css?v=1">
 </head>
 <body>
 
@@ -714,6 +715,12 @@ gtag('config', 'G-C5JPY9HFHD', {
 <template id="androidStudyTemplate">
   <section class="native-home" aria-labelledby="nativeHomeTitle">
     <h1 id="nativeHomeTitle" tabindex="-1" aria-label="Benvenuto in Magic Book"><span class="native-greeting-rail" aria-hidden="true"><span>Ciao!</span></span></h1>
+
+    <a class="qb-entry" href="/quizbank" data-quizbank-entry aria-label="Quiz Bank, novità: scopri le 50 schede d’esame">
+      <span class="qb-sheet-emblem" aria-hidden="true"><b>50</b></span>
+      <span class="qb-entry-copy"><span class="qb-entry-name">Quiz Bank <span class="qb-entry-new">NEW</span></span><span class="qb-entry-caption">Le schede d’esame. Adesso, in Bangla.</span></span>
+      <span class="qb-entry-arrow" aria-hidden="true"><img src="/icons/next.png" width="25" height="25" alt=""></span>
+    </a>
     <button class="native-book" type="button" data-native-action="chapters" aria-label="Apri Magic Book e scegli il capitolo">
       <img class="native-book-art" src="/icons/mg_book.svg" width="280" height="390" alt="Magic Book" decoding="async">
       <img class="native-tap-cue" src="/icons/clich_here.svg" width="40" height="40" alt="" aria-hidden="true">
@@ -770,6 +777,12 @@ gtag('config', 'G-C5JPY9HFHD', {
     <header class="member-welcome">
       <h1>Il tuo spazio studio</h1>
     </header>
+
+    <a class="qb-entry" href="/quizbank" data-quizbank-entry aria-label="Quiz Bank, novità: scopri le 50 schede d’esame">
+      <span class="qb-sheet-emblem" aria-hidden="true"><b>50</b></span>
+      <span class="qb-entry-copy"><span class="qb-entry-name">Quiz Bank <span class="qb-entry-new">NEW</span></span><span class="qb-entry-caption">Le schede d’esame. Adesso, in Bangla.</span></span>
+      <span class="qb-entry-arrow" aria-hidden="true"><img src="/icons/next.png" width="25" height="25" alt=""></span>
+    </a>
     <div class="member-layout">
         <section class="member-library" aria-label="Apri Magic Book">
           <div class="member-cover">
@@ -816,6 +829,36 @@ gtag('config', 'G-C5JPY9HFHD', {
     </footer>
   </div>
 </div>
+
+
+<template id="quizBankIntroTemplate">
+  <div class="qb-intro-overlay" id="quizBankIntroOverlay">
+    <section class="qb-intro-dialog" role="dialog" aria-modal="true" aria-labelledby="qbIntroTitle" aria-describedby="qbIntroLead">
+      <button class="qb-intro-close" type="button" data-qb-close aria-label="Chiudi, ricordamelo alla prossima visita">×</button>
+      <header class="qb-intro-cover">
+        <span class="qb-intro-new">NEW · IL TUO PROSSIMO PASSO</span>
+        <h2 id="qbIntroTitle">Quiz Bank</h2>
+        <p>La scheda è italiana.<br>Il tuo studio parla Bangla.</p>
+        <div class="qb-intro-paper" aria-hidden="true"><b>50</b><span>SCHEDE REALI</span><i></i></div>
+      </header>
+      <div class="qb-intro-body">
+        <p class="qb-intro-lead" id="qbIntroLead" lang="bn">বুঝে পড়ুন, আত্মবিশ্বাস নিয়ে পরীক্ষা দিন।</p>
+        <ul class="qb-intro-features">
+          <li style="--row:0"><span class="qb-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM9 7h6M9 11h6M9 16l2 2 4-4"/></svg></span><div><strong lang="bn">আসল পরীক্ষার ৫০টি প্রশ্নপত্র</strong><small>50 schede reali · 1.500 domande da studiare e provare.</small></div></li>
+          <li style="--row:1"><span class="qb-feature-icon" aria-hidden="true"><img src="/icons/dizionario.png?v=6d8000501111" alt="" width="26" height="26"></span><div><strong lang="bn">বাংলা অনুবাদে সহজে বুঝুন</strong><small>La traduzione, accanto alla domanda.</small></div></li>
+          <li style="--row:2"><span class="qb-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10h4l5-4v12l-5-4H4zM16 9a5 5 0 0 1 0 6M19 6a9 9 0 0 1 0 12"/></svg></span><div><strong lang="bn">শুনে শুনে পড়ুন</strong><small>Ascolta le domande in italiano e in Bangla.</small></div></li>
+          <li style="--row:3"><span class="qb-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v14H5zM8 8h8M8 12h5M8 21h12V7"/></svg></span><div><strong lang="bn">গুরুত্বপূর্ণ শব্দের অর্থ জানুন</strong><small>Parole chiave per capire, non solo memorizzare.</small></div></li>
+          <li style="--row:4"><span class="qb-feature-icon" aria-hidden="true"><img src="/icons/add_voice.png" alt="" width="26" height="26"></span><div><strong lang="bn">বিশেষজ্ঞের ব্যাখ্যা বাংলায়</strong><small>Approfondisci con le spiegazioni audio disponibili.</small></div></li>
+        </ul>
+        <footer class="qb-intro-actions">
+          <a class="qb-intro-open-link" data-qb-open href="/quizbank">Apri QuizBank <img src="/icons/next.png" width="22" height="22" alt=""></a>
+          <button class="qb-intro-understood" type="button" data-qb-understood>Ho capito<span lang="bn">আমি বুঝেছি</span></button>
+        </footer>
+        <p class="qb-intro-note">«Ho capito» nasconde questa presentazione. QuizBank resta nella tua home.</p>
+      </div>
+    </section>
+  </div>
+</template>
 
 <template id="offerPopupTemplate">
   <div class="offer-overlay" id="offerPopupOverlay">
@@ -1410,10 +1453,10 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script src="android-mode-screens.js?v=2-thumb"></script>
 <script src="web-study-actions.js?v=1"></script>
 <script src="web-action-effects.js?v=3-system-motion"></script>
-<script src="script.js?v=85-admin-editor"></script>
+<script src="script.js?v=86-quizbank-intro"></script>
 <script type="module" src="login-experience.js?v=3-clean"></script>
 <script type="module" src="welcome-page.js?v=2-clean"></script>
-  <script type="module" src="home-offers.js?v=6-hat&art=fbda23c8df0e"></script>
-<script type="module" src="android-study-shell.js?v=14-liquid"></script>
+  <script type="module" src="home-offers.js?v=7-quizbank&art=fbda23c8df0e"></script>
+<script type="module" src="android-study-shell.js?v=15-quizbank-intro"></script>
 </body>
 </html>

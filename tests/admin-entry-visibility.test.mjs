@@ -29,7 +29,7 @@ test("the admin entry is hidden while the admin panel is already open", () => {
 test("leaving the admin panel restores the entry and ships the new script version", () => {
   const hideAll = functionSource("hideAll", "showHome");
   assert.match(hideAll, /adminPanel[\s\S]*?classList\.add\("hidden"\)[\s\S]*?updateAdminEntryVisibility\(\)/);
-  assert.match(htmlSource, /script\.js\?v=85-admin-editor/);
-  assert.match(workerSource, /script\.js\?v=85-admin-editor/);
+  assert.match(htmlSource, /script\.js\?v=86-quizbank-intro/);
+  assert.match(workerSource, /script\.js\?v=86-quizbank-intro/);
   assert.match(workerSource, /CACHE_NAME = "magicbook-pwa-v242-desktop-help"/);
 });

@@ -3043,6 +3043,7 @@ function hasVisibleBlockingPopup() {
   const menuOverlay = document.getElementById("menuOverlay");
 
   return Boolean(
+    document.getElementById("quizBankIntroOverlay") ||
     document.getElementById("offerPopupOverlay") ||
     document.getElementById("renewPopupOverlay") ||
     document.getElementById("whatsNewPopupOverlay") ||

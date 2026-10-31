@@ -521,7 +521,7 @@ function initialize() {
     } else if (screen === "chapters") { updateImage(true); scheduleCues(); }
   });
   const syncModalIsolation = () => {
-    const modal = doc.body.classList.contains("qms-open") || doc.body.classList.contains("magic-word-gate-open");
+    const modal = doc.body.classList.contains("qms-open") || doc.body.classList.contains("magic-word-gate-open") || doc.body.classList.contains("qb-intro-open");
     if (modal) { finishGesture(); clearActionPress(); }
     [home, chapters, dock].forEach(element => { element.inert = modal; });
     syncLiquid();

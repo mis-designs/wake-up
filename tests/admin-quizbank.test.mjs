@@ -70,12 +70,12 @@ test("recent, full and searched records preserve their server flag", async () =>
     assert.equal((action === "search" ? result.body.user : result.body.list[0]).Quiz_bank, 1);
   }
 });
-test("six independent labelled checkboxes and one edit checkbox, no Home link", () => {
+test("six independent labelled checkboxes and one edit checkbox, with the approved Home entry", () => {
   const page = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   assert.equal((page.match(/class="admin-bulk-quizbank"/g) || []).length, 6);
   assert.equal((page.match(/id="adminModalQuizBank"/g) || []).length, 1);
   assert.match(page, /id="adminUserForm"[^>]*novalidate/);
-  assert.doesNotMatch(page, /href=["']\/quizbank/i);
+  assert.match(page, /href=["']\/quizbank["'] data-quizbank-entry/);
 });
 
 test("client mutations use a bounded deadline and never replay uncertain writes", async () => {

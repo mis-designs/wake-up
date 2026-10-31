@@ -93,3 +93,8 @@ Admin flag release (2026-10-28): six independent create flags, saved edit grant/
 - `node scripts/quizbank-browser-qa.mjs <private-full-json-path> <qa-output-directory>` with `PLAYWRIGHT_PATH` if needed. All browser requests are local fixtures; no production or database calls.
 - Related study, audio, translation, trial/figure rollout tests must continue to pass. The repository's wider suite has existing stale version assertions and sandbox-dependent Git checks; report those separately instead of claiming a clean full suite.
 - Live acceptance after both deployments: unauthenticated API denied; admin and enabled learner see50 sheets; a disabled learner is denied, including media; only the admin can upload. Check flag revocation after the60s bound and device/expiry protection. R2 exact bucket/key confirmed; test existing recorded explanation plus IT/BN audio on a physical iPhone. Local fixture checks cannot prove live credentials or media availability.
+
+
+### Home introduction (2026-10-31)
+
+The signed-in Home now links to QuizBank through a bilingual introduction. The owner approved up to four automatic visits within three days, with device/account-local persistent acknowledgment. This supersedes manual URL-only discoverability; server access mode and protected catalog remain unchanged. See UX-CONTRACT.md for modal/frequency/request ownership.

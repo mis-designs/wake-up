@@ -12,11 +12,11 @@ test("QuizBank function tracing includes the exact-audio proofs and shared media
   assert.ok(![...files].some(file => /50_schede|figure_pdf|outputs\//.test(file)));
 });
 
-test("manual QuizBank route keeps API responses out of service-worker caches and is absent from home navigation", () => {
+test("QuizBank Home entry keeps private API responses out of service-worker caches", () => {
   const worker = readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
   assert.match(worker, /url\.pathname\.startsWith\("\/api\/"\)\) return/);
   const home = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-  assert.doesNotMatch(home, /href=["']\/quizbank/i);
+  assert.match(home, /href=["']\/quizbank["'] data-quizbank-entry/);
   const page = readFileSync(new URL("../quizbank.html", import.meta.url), "utf8");
   assert.match(page, /data-study-source="quizbank"/);
   assert.match(page, /noindex,nofollow,noarchive/);

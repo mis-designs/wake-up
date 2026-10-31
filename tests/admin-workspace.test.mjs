@@ -27,6 +27,6 @@ test("spacing assets are versioned after the editor and before native owners",()
   assert.ok(page.indexOf('admin-panel.css?v=2-spacing')>page.indexOf('admin-user-editor.css?v=1'));
   assert.ok(page.indexOf('admin-panel.css?v=2-spacing')<page.indexOf('android-app-theme.css'));
   assert.match(read('service-worker.js'),/\/admin-panel\.css\?v=2-spacing/);
-  assert.match(read('service-worker.js'),/magicbook-pwa-v257-quiz-chrome/);
+  assert.match(read('service-worker.js'),/magicbook-pwa-v258-quizbank-home/);
   assert.match(css,/\.admin-search-clear\.hidden \{ display: none/);
 });

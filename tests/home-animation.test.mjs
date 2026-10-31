@@ -27,7 +27,7 @@ test('Home collection publishes only the graduation cap and keeps its cache revi
   const revision = hash(read('assets/home-animations/catalog.mjs'));
   assert.ok(read('home-animation.js').includes(`catalog.mjs?v=${revision}`));
   assert.ok(read('home-offers.js').includes(`home-animation.js?v=4-hat&art=${revision}`));
-  assert.ok(read('index.html').includes(`home-offers.js?v=6-hat&art=${revision}`));
+  assert.ok(read('index.html').includes(`home-offers.js?v=7-quizbank&art=${revision}`));
 });
 test('Home decoration loops while active, stays preference-aware and scoped to the browser owner', () => {
   const js = read('home-animation.js');
