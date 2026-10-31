@@ -10,6 +10,7 @@ import { quizBankStorageIdentity } from "../api/quizbank-catalog.mjs";
 // Only dummy configuration and intercepted transports: never contact GAS/R2/Neon.
 const secret = "quizbank-access-unit-secret", adminPhone = "39123456789";
 Object.assign(process.env, {
+  QUIZBANK_ACCESS_MODE: "separate",
   SESSION_SECRET: secret, GAS_ACCESS_URL: "https://access.invalid/", GAS_SECRET: "fixture",
   QUIZ_GAS_URL: "https://tts.invalid/", QUIZ_PROXY_SECRET: "fixture", ADMIN_PHONE_NUMBERS: adminPhone,
   DATABASE_URL: "postgresql://test:test@unit-test.neon.tech/test",
@@ -79,6 +80,97 @@ async function fixture(t) {
   return state;
 }
 const rejection = (status, message) => error => error.statusCode === status && (!message || error.message === message);
+
+function accessMode(t, mode) {
+  const previous = process.env.QUIZBANK_ACCESS_MODE;
+  if (mode === undefined) delete process.env.QUIZBANK_ACCESS_MODE;
+  else process.env.QUIZBANK_ACCESS_MODE = mode;
+  t.after(() => previous === undefined ? delete process.env.QUIZBANK_ACCESS_MODE : process.env.QUIZBANK_ACCESS_MODE = previous);
+}
+
+test("promotion is the default: verified Magic Book accounts enter without a Quiz_bank grant", async t => {
+  accessMode(t, undefined);
+  const f = await fixture(t);
+  for (const fields of [{}, { Quiz_bank: 0 }, { Quiz_bank: "" }, { Quiz_bank: null }, { Quiz_bank: 1 }]) {
+    f.reply = { success: true, ...fields };
+    const response = await call(account(), { QUIZBANK_ACCESS_MODE: "separate" });
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.body.role, "user");
+    assert.equal(response.body.canUploadAudio, false);
+    assert.equal(response.body.Quiz_bank, undefined);
+  }
+  assert.equal(f.gas.length, 5);
+  assert.equal(f.storage.length + f.queries.length + f.tts.length, 0);
+});
+
+test("promotion never admits expired, absent, revoked-device or unverifiable accounts", async t => {
+  accessMode(t, "magicbook");
+  const f = await fixture(t);
+  for (const [error, status] of [["expired", 401], ["not_found", 401], ["device_replaced", 403],
+    ["device_mismatch", 403], ["device_limit", 403], ["unauthorized", 401]]) {
+    f.reply = { success: false, error, Quiz_bank: 1 };
+    assert.equal((await call(account())).statusCode, status);
+  }
+  f.reply = {};
+  assert.equal((await call(account())).statusCode, 401);
+  f.fetch = () => { throw new Error("unavailable"); };
+  assert.equal((await call(account())).statusCode, 503);
+  const reads = f.gas.length;
+  const user = account();
+  for (const [who, params] of [[{ ...user, token: "forged" }, {}], [account({ purpose: "trial" }), {}],
+    [user, { deviceId: "another_device" }], [user, { action: "saveQuizAudio", role: "admin", canUploadAudio: true }]]) {
+    const result = await call(who, params);
+    assert.ok([401, 403].includes(result.statusCode));
+  }
+  assert.equal(f.gas.length, reads);
+  assert.equal(f.storage.length + f.queries.length + f.tts.length, 0);
+});
+
+test("promotion reuses one validation, renews once and still rechecks Magic Book expiry after 60s", async t => {
+  accessMode(t, "magicbook");
+  const f = await fixture(t), start = Date.now(); let now = start;
+  t.mock.method(Date, "now", () => now);
+  const user = account(); f.reply = { success: true };
+  await Promise.all([f.gate(user), f.gate(user), f.gate(user)]);
+  assert.equal(f.gas.length, 1);
+  f.reply = { success: false, error: "expired" };
+  now = start + 59_999; await f.gate(user); assert.equal(f.gas.length, 1);
+  now = start + 60_000;
+  await assert.rejects(f.gate(user), rejection(401, "expired"));
+  assert.equal(f.gas.length, 2);
+  f.reply = { success: true, Quiz_bank: 0 };
+  const renewed = await call(account({ exp: 1 }));
+  assert.equal(renewed.statusCode, 200);
+  assert.ok(renewed.body.accessToken);
+  assert.equal(f.gas.length, 3, "expired signed session renews with one shared GAS validation");
+});
+
+test("re-enabling separate access cannot reuse a promotional cached or pending grant", async t => {
+  accessMode(t, "magicbook");
+  const f = await fixture(t), user = account(); f.reply = { success: true, Quiz_bank: 0 };
+  await f.gate(user); assert.equal(f.gas.length, 1);
+  process.env.QUIZBANK_ACCESS_MODE = "separate";
+  await assert.rejects(f.gate(user, { QUIZBANK_ACCESS_MODE: "magicbook" }), rejection(403, "quizbank_access_denied"));
+  assert.equal(f.gas.length, 2);
+  f.reply = { success: true, Quiz_bank: 1 };
+  await f.gate(user); assert.equal(f.gas.length, 3);
+  const pendingUser = account(); let resolve;
+  process.env.QUIZBANK_ACCESS_MODE = "magicbook";
+  f.fetch = () => new Promise(r => { resolve = r; });
+  const pending = f.gate(pendingUser); await turn();
+  process.env.QUIZBANK_ACCESS_MODE = "separate";
+  f.fetch = null; f.reply = { success: true, Quiz_bank: 0 };
+  await assert.rejects(f.gate(pendingUser), rejection(403, "quizbank_access_denied"));
+  resolve(Response.json({ success: true, Quiz_bank: 0 })); await pending;
+  await assert.rejects(f.gate(pendingUser), rejection(403, "quizbank_access_denied"));
+});
+
+test("unknown server access mode fails closed before external work", async t => {
+  accessMode(t, "typo");
+  const f = await fixture(t);
+  assert.equal((await call(account())).statusCode, 503);
+  assert.equal(f.gas.length + f.storage.length + f.queries.length + f.tts.length, 0);
+});
 
 test("only exact GAS Quiz_bank numeric 1 or trimmed string 1 grants access", async t => {
   const f = await fixture(t);
@@ -394,8 +486,13 @@ test("every catalog/help/TTS/media action is gated before storage, even with a w
   assert.equal(f.storage.length + f.queries.length + f.tts.length, 0);
 });
 
-test("entitled ordinary users can use every read; catalog/sheet capabilities stay false and upload stays forbidden", async t => {
+for (const mode of ["separate", "magicbook"]) test(`ordinary users can read catalog/audio/help in ${mode} mode, never upload`, async t => {
+  accessMode(t, mode);
+  const previousKey = process.env.QUIZBANK_R2_KEY;
+  process.env.QUIZBANK_R2_KEY = crypto.randomUUID();
+  t.after(() => { process.env.QUIZBANK_R2_KEY = previousKey; });
   const f = await fixture(t), user = account();
+  f.reply = { success: true, Quiz_bank: mode === "separate" ? 1 : 0 };
   const row = { question: "Domanda isolata per prova permessi.", correct: true, figure: "" };
   const identity = quizBankStorageIdentity(row), bytes = Buffer.from("ID3fixture");
   const archive = Array.from({ length: 1500 }, (_, i) => ({
@@ -443,7 +540,7 @@ test("entitled ordinary users can use every read; catalog/sheet capabilities sta
     assert.equal(response.body.role, "admin"); assert.equal(response.body.canUploadAudio, true);
   }
   f.reply = { success: true, Quiz_bank: 0 };
-  assert.equal((await call(account(), { action: "catalog" }, "GET")).statusCode, 403, "warm archive is not an access grant");
+  assert.equal((await call(account(), { action: "catalog" }, "GET")).statusCode, mode === "separate" ? 403 : 200, "warm archive still follows the current verified access policy");
 });
 
 test("QuizBank quiz-session tokens cannot unlock MagicBook or substitute for access tokens", async t => {

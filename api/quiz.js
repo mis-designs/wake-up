@@ -994,8 +994,9 @@ async function addAdminCorrectAnswers(quiz) {
 }
 
 // These are internal QuizBank imports, never actions of /api/quiz. Ordinary
-// accounts retain common account/device/expiry checks and additionally need
-// the exact GAS-owned Quiz_bank field. Signed, allow-listed admins bypass it.
+// accounts retain common account/device/expiry checks in both access modes.
+// The promotion includes valid Magic Book accounts; separate mode additionally
+// requires the exact GAS-owned Quiz_bank flag. Admin capabilities stay separate.
 const quizBankAccessError = (error, statusCode) => Object.assign(new Error(error), { statusCode });
 
 function requireSuccessfulQuizBankAccess(access) {
@@ -1003,9 +1004,16 @@ function requireSuccessfulQuizBankAccess(access) {
   return access;
 }
 
-function quizBankSessionCacheKey(proof, token) {
+function quizBankAccessMode() {
+  // Server-only promotion switch. Unknown configuration must never broaden access.
+  const mode = String(process.env.QUIZBANK_ACCESS_MODE ?? "magicbook").trim().toLowerCase();
+  if (mode !== "magicbook" && mode !== "separate") throw quizBankAccessError("quizbank_access_mode_invalid", 503);
+  return mode;
+}
+
+function quizBankSessionCacheKey(proof, token, accessMode) {
   return crypto.createHash("sha256").update(JSON.stringify([
-    proof.payload.phone, proof.payload.deviceId, token
+    accessMode, proof.payload.phone, proof.payload.deviceId, token
   ])).digest("hex");
 }
 
@@ -1031,6 +1039,7 @@ function waitForQuizBankAccess(req, entry) {
 
 export async function authorizeQuizBankPreview(req) {
   const requestStartedAt = Date.now();
+  const accessMode = quizBankAccessMode();
   if (!isConfigured()) throw Object.assign(new Error("missing_server_config"), { statusCode: 503 });
   const data = getRequestData(req);
   if (!hasValidRequestShape(data)) throw Object.assign(new Error("invalid_request"), { statusCode: 400 });
@@ -1062,7 +1071,7 @@ export async function authorizeQuizBankPreview(req) {
 
   const now = Date.now();
   for (const [key, expiry] of quizBankAllowedSessions) if (expiry <= now) quizBankAllowedSessions.delete(key);
-  const key = quizBankSessionCacheKey(proof, data.accessToken);
+  const key = quizBankSessionCacheKey(proof, data.accessToken, accessMode);
   if (proof.ok && quizBankAllowedSessions.has(key)) {
     const expiry = quizBankAllowedSessions.get(key);
     quizBankAllowedSessions.delete(key); quizBankAllowedSessions.set(key, expiry);
@@ -1087,13 +1096,13 @@ export async function authorizeQuizBankPreview(req) {
       throw quizBankAccessError(error, getAuthStatusCode(error));
     }
     const flag = authData.Quiz_bank;
-    if (flag !== 1 && !(typeof flag === "string" && flag.trim() === "1")) {
+    if (accessMode === "separate" && flag !== 1 && !(typeof flag === "string" && flag.trim() === "1")) {
       throw quizBankAccessError("quizbank_access_denied", 403);
     }
     const token = access.accessToken || data.accessToken;
     const current = verifySignedToken(token, { phone: proof.payload.phone, deviceId: proof.payload.deviceId, purpose: "access" });
     if (!current.ok) throw quizBankAccessError(current.error || "unauthorized", 401);
-    const currentKey = quizBankSessionCacheKey(current, token);
+    const currentKey = quizBankSessionCacheKey(current, token, accessMode);
     // Start the revocation window BEFORE GAS, not when its response arrives.
     // Cache hits never extend it; it also cannot outlive the signed session.
     const expiry = Math.min(requestStartedAt + QUIZ_BANK_ALLOW_TTL_MS, Number(current.payload.exp));

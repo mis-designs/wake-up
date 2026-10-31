@@ -99,7 +99,7 @@ test("sheet selection and malformed trusted rows fail closed", () => {
 
 test("API gates both actions before archive, grades transiently and preserves sessions/study", async t => {
   const secret = "quizbank-attempt-test-secret", adminPhone = "39123456789", deviceId = "attempt_test_device";
-  const env = { SESSION_SECRET: secret, GAS_ACCESS_URL: "https://attempt-access.invalid/", GAS_SECRET: "fixture",
+  const env = { QUIZBANK_ACCESS_MODE: "separate", SESSION_SECRET: secret, GAS_ACCESS_URL: "https://attempt-access.invalid/", GAS_SECRET: "fixture",
     QUIZ_GAS_URL: "https://attempt-tts.invalid/", QUIZ_PROXY_SECRET: "fixture", ADMIN_PHONE_NUMBERS: adminPhone,
     DATABASE_URL: "postgresql://test:test@unit-test.neon.tech/test", QUIZBANK_R2_ACCOUNT_ID: "attempt-fixture",
     QUIZBANK_R2_BUCKET: "attempt-archive", QUIZBANK_R2_KEY: crypto.randomUUID(),
@@ -185,6 +185,18 @@ test("API gates both actions before archive, grades transiently and preserves se
     assert.equal((await call(action, payload, { who: "39222222222" })).statusCode, 403);
   }
   assert.equal(storageReads, 1, "a warmed archive cannot bypass authorization");
+  process.env.QUIZBANK_ACCESS_MODE = "magicbook";
+  const promotional = { who: "39333333333" };
+  const promoStudy = await call("getStudyQuiz", {}, promotional);
+  assert.equal(promoStudy.statusCode, 200);
+  assert.equal(promoStudy.body.canUploadAudio, false);
+  const promoQuiz = await call("getQuiz", {}, promotional);
+  assert.equal(promoQuiz.statusCode, 200);
+  const promoGrade = await call("checkQuiz", { quizbankRevision: promoQuiz.body.quizbankRevision,
+    answers: answersFor(promoStudy.body.quiz) }, promotional);
+  assert.equal(promoGrade.statusCode, 200); assert.equal(promoGrade.body.correct, 30);
+  assert.equal(storageReads, 1, "promotion reuses the archive without per-user scans");
+  process.env.QUIZBANK_ACCESS_MODE = "separate";
   grant = true;
   source[720].domanda += " corrected";
   process.env.QUIZBANK_R2_KEY = crypto.randomUUID(); // Simulate the next archive cache generation.

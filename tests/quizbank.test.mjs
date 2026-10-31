@@ -76,7 +76,7 @@ test("R2 loads single-flight, caches validated data, retries failed work only on
 });
 
 test("private API: no role spoofing or unentitled user access, no R2 before authorization, one sheet per read", async t => {
-  const env = { SESSION_SECRET: "qb-test-secret", GAS_ACCESS_URL: "https://access.invalid/", GAS_SECRET: "fixture",
+  const env = { QUIZBANK_ACCESS_MODE: "separate", SESSION_SECRET: "qb-test-secret", GAS_ACCESS_URL: "https://access.invalid/", GAS_SECRET: "fixture",
     QUIZ_GAS_URL: "https://tts.invalid/", QUIZ_PROXY_SECRET: "fixture",
     DATABASE_URL: "postgresql://test:test@unit-test.neon.tech/test",
     QUIZ_AUDIO_R2_BUCKET: "test-audio", QUIZ_AUDIO_R2_ACCOUNT_ID: "test-account",
