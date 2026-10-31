@@ -44,8 +44,20 @@ function fixture() {
   vm.runInNewContext(source, { window, document, MutationObserver: class { observe() {} disconnect() {} }, Date: { now: () => now } });
   function advance(ms) { const end = now + ms; for (;;) { const pending = [...timers].sort((a,b) => a[1].at-b[1].at)[0]; if (!pending || pending[1].at > end) break; now = pending[1].at; timers.delete(pending[0]); pending[1].cb(); } now = end; }
   const reveal = () => intersection(frames.map(target => ({ target, isIntersecting: true, intersectionRatio: 1 })));
-  return { window, document, container, frames, reduced, forced, timers, advance, reveal, helper: window.MagicQuizBankSheet };
+  return { window, document, container, frames, reduced, forced, timers, advance, reveal,
+    revealTarget: (target, ratio) => intersection([{ target, isIntersecting: ratio > 0, intersectionRatio: ratio }]), helper: window.MagicQuizBankSheet };
 }
+
+test('Bottom QUIZ pulse waits until visible and is removed when leaving the sheet', () => {
+  const f = fixture(), link = f.frames[0];
+  const stop = f.helper.observePractice(link);
+  assert.equal(link.marks.size, 0);
+  f.revealTarget(link, .4); assert.equal(link.marks.size, 0);
+  f.revealTarget(link, .8); assert.ok(link.marks.has('is-pulsing'));
+  stop(); assert.equal(link.marks.size, 0);
+  f.revealTarget(link, 1); assert.equal(link.marks.size, 0);
+  assert.equal(f.timers.size, 0);
+});
 test('Study renders one marked V/F solution immediately without answer buttons', () => {
   const f = fixture();
   for (const correct of [true, false]) {

@@ -59,7 +59,9 @@ body.quizbank-page { min-width: 0; background: #fff; --quizbank-accent: #d91c37;
 .quizbank-page .study-figure-frame { min-height: 150px; }
 .quizbank-page .study-figure-frame p { font-size: .8rem; color: #9f172b; }
 .quizbank-page .quizbank-figure-rotated { transform: rotate(90deg); max-height: 145px; max-width: 145px; object-fit: contain; }
-.quizbank-sheet-nav { display: flex; gap: 16px; justify-content: space-between; margin-top: 28px; }
+.quizbank-sheet-nav { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: stretch; gap: 16px; margin-top: 28px; }
+#quizbank-previous { justify-self: start; }
+#quizbank-next { justify-self: end; }
 .quizbank-sheet-nav button, .quizbank-button, .quizbank-page .study-figure-frame button { min-height: 44px; padding: 10px 16px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font-size: .82rem; text-decoration: none; cursor: pointer; }
 .quizbank-sheet-nav button {
   display: inline-flex; align-items: center; justify-content: center; gap: 12px;
@@ -92,9 +94,9 @@ body.quizbank-page { min-width: 0; background: #fff; --quizbank-accent: #d91c37;
   .quizbank-page .study-chapter { min-height: 80px; padding: 10px; gap: 6px; grid-template-columns: minmax(0, 1fr) 34px; }
   .quizbank-page .study-chapter-number { width: 34px; height: 42px; font-size: 1.35rem; }
   .quizbank-page .study-reader-toolbar { grid-template-columns: 1fr; gap: 18px; }
-  .quizbank-sheet-nav { gap: 12px; }
-  .quizbank-sheet-nav button { flex: 1 1 0; min-width: 0; padding: 12px 10px; gap: 8px; font-size: .75rem; }
-  .quizbank-sheet-nav button img { width: 22px; height: 22px; }
+  .quizbank-sheet-nav { gap: 8px; }
+  .quizbank-sheet-nav button { width: 100%; min-width: 0; padding: 10px 8px; gap: 6px; font-size: .72rem; }
+  .quizbank-sheet-nav button img { width: 18px; height: 18px; }
   .quizbank-page .study-heading, .quizbank-page .study-heading h1 { gap: 8px; }
   .quizbank-page .study-heading small, .quizbank-page .study-heading h1 { font-size: 1rem; }
 }
@@ -103,11 +105,10 @@ body.quizbank-page { min-width: 0; background: #fff; --quizbank-accent: #d91c37;
 /* Study-sheet presentation. Values/recording/help remain owned by Study. */
 .quizbank-start-quiz {
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-  min-height: 48px; padding: 12px 18px; border: 1px solid var(--purple-dark);
-  border-radius: 16px; background: linear-gradient(115deg, var(--purple-dark) 15%, var(--purple) 50%, var(--purple-dark) 85%); background-size: 220% 100%; color: var(--surface);
+  min-height: 48px; padding: 12px 18px; border: 2px solid var(--quizbank-accent);
+  border-radius: 16px; background: var(--surface); color: var(--quizbank-accent);
   font: 650 .84rem/1.4 var(--font-ui); text-decoration: none; cursor: pointer;
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--forest) 12%, transparent);
-  animation: quizbank-practice-pulse 4s ease-in-out 3;
+  box-shadow: none;
 }
 .quizbank-start-quiz picture, .quizbank-start-quiz img { display: block; width: 38px; height: 38px; flex: 0 0 auto; object-fit: contain; }
 .quizbank-start-quiz img { border-radius: 9px; }
@@ -115,8 +116,20 @@ body.quizbank-page { min-width: 0; background: #fff; --quizbank-accent: #d91c37;
   0%, 100% { background-position: 0% 50%; box-shadow: 0 6px 16px color-mix(in srgb, var(--forest) 12%, transparent); }
   50% { background-position: 100% 50%; box-shadow: 0 6px 24px color-mix(in srgb, var(--purple) 28%, transparent); }
 }
-.quizbank-start-quiz:hover { background: var(--forest); border-color: var(--forest); }
-.quizbank-start-quiz:active { box-shadow: none; }
+.quizbank-start-quiz:hover { background: color-mix(in srgb, var(--quizbank-accent) 5%, var(--surface)); border-color: var(--quizbank-accent-hover); }
+.quizbank-start-quiz:active { background: color-mix(in srgb, var(--quizbank-accent) 10%, var(--surface)); }
+.quizbank-bottom-quiz {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 84px; min-height: 50px; padding: 12px 20px;
+  border: 1px solid var(--purple-dark); border-radius: 14px; color: var(--surface);
+  background: linear-gradient(115deg, var(--purple-dark) 15%, var(--purple) 50%, var(--purple-dark) 85%); background-size: 220% 100%;
+  font: 750 .88rem/1.2 var(--font-ui); letter-spacing: .06em; text-decoration: none; cursor: pointer;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--forest) 12%, transparent);
+}
+.quizbank-bottom-quiz.is-pulsing { animation: quizbank-practice-pulse 3s ease-in-out 3; }
+.quizbank-bottom-quiz:hover { border-color: var(--forest); filter: brightness(1.08); }
+.quizbank-bottom-quiz:active { filter: brightness(.92); }
+.quizbank-help-label { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; }
+.quizbank-help-label [lang="bn"] { font-family: var(--font-bn-title); font-size: 1.1rem; font-weight: 400; line-height: 1.4; }
 .quizbank-page .quizbank-sheet-search { display: flex; align-items: center; gap: 12px; width: min(100%, 620px); margin: 24px 0; padding: 6px 6px 6px 16px; border-radius: 16px; background: var(--surface); }
 .quizbank-search-icon { width: 22px; height: 22px; flex: 0 0 auto; color: var(--quizbank-accent); }
 .quizbank-page .quizbank-sheet-search input { flex: 1 1 0; width: 0; padding: 10px 0; font: 400 .9rem/1.5 var(--font-ui); }
@@ -183,12 +196,13 @@ body.quizbank-page { min-width: 0; background: #fff; --quizbank-accent: #d91c37;
 }
 @media (max-width: 600px) {
   .quizbank-start-quiz { width: 100%; }
+  .quizbank-bottom-quiz { min-width: 60px; padding: 12px 10px; font-size: .8rem; }
   .quizbank-page .quizbank-sheet-search { width: 100%; }
   .quizbank-page .study-question-list { border-radius: 16px; }
 }
 @media (prefers-reduced-motion: reduce), (forced-colors: active) {
-  .quizbank-start-quiz { animation: none; }
+  .quizbank-bottom-quiz.is-pulsing { animation: none; }
   .quizbank-page .study-figure-frame.is-sheet-flipping { animation: none; }
 }
 html[data-native-motion-paused] .quizbank-page .study-figure-frame.is-sheet-flipping { animation: none; }
-html[data-native-motion-paused] .quizbank-start-quiz { animation-play-state: paused; }
+html[data-native-motion-paused] .quizbank-bottom-quiz { animation-play-state: paused; }

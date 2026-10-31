@@ -1,6 +1,19 @@
 (function (root) {
   "use strict";
 
+  // Start the finite pulse only when the learner reaches the bottom of the sheet.
+  function observePractice(link) {
+    if (!link || !root.IntersectionObserver) return () => {};
+    const observer = new root.IntersectionObserver(entries => {
+      if (entries.some(entry => entry.target === link && entry.isIntersecting && entry.intersectionRatio >= .6)) {
+        link.classList.add("is-pulsing");
+        observer.disconnect();
+      }
+    }, { threshold: .6 });
+    observer.observe(link);
+    return () => { observer.disconnect(); link.classList.remove("is-pulsing"); };
+  }
+
   // Keep drafts in the input; only an explicit submit changes results and URL.
   function bindSearch(form, input, clear, search) {
     let composing = false;
@@ -95,5 +108,5 @@
       root.removeEventListener("pagehide", stop);
     };
   }
-  root.MagicQuizBankSheet = { answerMark, observeFigures, bindSearch };
+  root.MagicQuizBankSheet = { answerMark, observeFigures, bindSearch, observePractice };
 })(window);

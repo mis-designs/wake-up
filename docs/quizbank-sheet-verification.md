@@ -11,6 +11,13 @@ Owner clarification: study always shows the correct answer; practice is a separa
 
 ## Verification
 
+### Practice actions and bilingual help — 2026-10-31
+
+- Top practice CTA is white with a crimson QuizBank outline and the existing quiz artwork. A text-only green QUIZ action sits between the previous/next buttons, links to the current sheet, and pulses for three cycles when first scrolled into view. Leaving the sheet disconnects its observer and removes animation state; reduced-motion and forced-colors disable it.
+- QuizBank help reads বাংলা · Keywords with Hadi Rounded and separate language spans; existing disclosure and shared Magic Book behavior remain intact.
+- Local fixture browser checks at375px,320px and1440px: no horizontal overflow, centered bottom action, top white/crimson computed colors, visibility-triggered finite animation, correct current-sheet links after5→6 navigation, bottom action opening the30-question sheet05 quiz, and help expanding with the intended font. Screenshots: actions-mobile-top.jpg, actions-mobile-bottom.jpg and actions-desktop.jpg in the chat output folder.
+-36 focused tests pass. Full suite1073 cases/1044 passes retains the same29 baseline failures, with no new failures. CSS build, strict premium audit and DESIGN lint pass. No authorization, recording, grading or network service changes.
+
 ### Catalog and explicit search release — 2026-10-30
 
 - Centered catalog identity with tracked lettering; sheet identity remains centered. Archive counts replace the role badge. Catalog descriptions precede their right-aligned numbers; the centered section heading groups the01–50 range. UI sans-serif invitation replaces repeated sheet/kicker text, and the help/admin instruction line is removed.

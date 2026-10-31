@@ -828,6 +828,20 @@
       window.location.href = trialOfferUrl("Spiegazioni audio complete");
     });
     const help = actionButton("study-action-help", "Traduzione e parole chiave", "文");
+    if (QUIZBANK_MODE) {
+      const label = help.lastElementChild;
+      label.className = "quizbank-help-label";
+      const bengali = document.createElement("span");
+      bengali.lang = "bn";
+      bengali.textContent = "বাংলা";
+      const separator = document.createElement("span");
+      separator.textContent = "·";
+      separator.setAttribute("aria-hidden", "true");
+      const keywords = document.createElement("span");
+      keywords.lang = "en";
+      keywords.textContent = "Keywords";
+      label.replaceChildren(bengali, separator, keywords);
+    }
     help.setAttribute("aria-expanded", "false");
     help.addEventListener("click", () => toggleHelp(question, card, help));
     actions.append(italian, bangla, lockedExplanation || explanation.surface, help);
@@ -936,7 +950,11 @@
       document.getElementById("quizbank-next").disabled = currentChapter === 50;
       const quizLink = document.getElementById("quizbank-start-quiz");
       if (quizLink) quizLink.href = `/quiz?source=quizbank&scheda=${currentChapter}`;
-      disposeSheetMotion = window.MagicQuizBankSheet?.observeFigures(elements.list);
+      const bottomQuiz = document.getElementById("quizbank-bottom-quiz");
+      if (bottomQuiz) bottomQuiz.href = `/quiz?source=quizbank&scheda=${currentChapter}`;
+      const stopFigures = window.MagicQuizBankSheet?.observeFigures(elements.list);
+      const stopPractice = window.MagicQuizBankSheet?.observePractice(bottomQuiz);
+      disposeSheetMotion = () => { stopFigures?.(); stopPractice?.(); };
     }
     elements.count.textContent = `${questions.length} domande da studiare`;
     elements.emptySearch.classList.add("hidden");
