@@ -1,6 +1,14 @@
 import { introKey, readIntro, nextIntro, reserveIntro, acknowledgeIntro } from './quizbank-intro-policy.mjs?v=1';
 
 export function mountQuizBankHome(home) {
+  // Keep the original label until the supplied badge is actually decoded.
+  const syncBadge = image => {
+    if (!image?.matches?.('.qb-entry-tag img')) return;
+    image.parentElement.toggleAttribute('data-ready', image.complete && image.naturalWidth > 0);
+  };
+  home.addEventListener('load', event => syncBadge(event.target), true);
+  home.addEventListener('error', event => syncBadge(event.target), true);
+  home.querySelectorAll('.qb-entry-tag img').forEach(syncBadge);
   const doc = document, historyKey = 'magicBookQuizBankIntro';
   const visited = new Set(), acknowledged = new Set();
   let overlay, unmount, baseState, baseUrl, ownerKey, returnTarget, timer = 0, stopped = false, closing = false, afterClose;

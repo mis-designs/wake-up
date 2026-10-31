@@ -68,7 +68,7 @@ test("the app marker precedes styles; only named route variants may follow the t
       assert.ok(studyIndex > themeIndex);
       const modesIndex = html.indexOf("/android-mode-screens.css?v=3-headlight");
       assert.ok(modesIndex > studyIndex);
-      const introIndex = html.indexOf('/quizbank-home.css?v=1');
+      const introIndex = html.indexOf('/quizbank-home.css?v=2-new-tag');
       assert.ok(introIndex > modesIndex);
       assert.equal(introIndex, lastStylesheetIndex + 'rel="stylesheet" href="'.length);
     } else if (page === "quiz.html") {

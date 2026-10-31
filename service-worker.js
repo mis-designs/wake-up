@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v258-quizbank-home";
+const CACHE_NAME = "magicbook-pwa-v259-quizbank-tag";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -37,7 +37,7 @@ const STATIC_ASSETS = [
   "/welcome-page.css?v=4-login-home",
   "/welcome-page.js?v=2-clean",
   "/home-offers.css?v=9-book-tap",
-  "/home-offers.js?v=7-quizbank&art=fbda23c8df0e",
+  "/home-offers.js?v=8-new-tag&art=fbda23c8df0e",
   "/home-animation.js?v=4-hat&art=fbda23c8df0e",
   "/home-utilities.js?v=2-admin",
   // HOME_ANIMATION_ASSETS_START
@@ -46,8 +46,9 @@ const STATIC_ASSETS = [
   "/assets/home-animations/40f2b1238323.png?v=6406120541f0",
   // HOME_ANIMATION_ASSETS_END
   "/offer-frequency.mjs?v=1",
-  "/quizbank-home.css?v=1",
-  "/quizbank-home.js?v=1",
+  "/icons/New%20tag%20button.svg?v=26186f6f0240",
+  "/quizbank-home.css?v=2-new-tag",
+  "/quizbank-home.js?v=2-new-tag",
   "/quizbank-intro-policy.mjs?v=1",
   "/login-signs.mjs?v=1",
   "/greeting-view.mjs?v=1-shared-login",

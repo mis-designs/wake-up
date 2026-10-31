@@ -40,6 +40,7 @@ http.createServer((req,res) => {
       if(qa.get('qa_storage')==='blocked'){const get=Storage.prototype.getItem,set=Storage.prototype.setItem;Storage.prototype.getItem=function(k){if(k.startsWith('magicbook.quizbankIntro'))throw Error('fixture blocked');return get.call(this,k)};Storage.prototype.setItem=function(k,v){if(k.startsWith('magicbook.quizbankIntro'))throw Error('fixture blocked');return set.call(this,k,v)}}
     </script>`;
     body = Buffer.from(body.toString().replace('<head>', '<head>'+seed));
+    if (u.searchParams.get('qa_tagfail') === '1') body = Buffer.from(body.toString().replaceAll('/icons/New%20tag%20button.svg?v=26186f6f0240', '/qa-missing-tag.svg'));
   }
   res.writeHead(200,{'Content-Type':mime[path.extname(file)],'Cache-Control':'no-store','Content-Security-Policy':"default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:"});
   res.end(body);
