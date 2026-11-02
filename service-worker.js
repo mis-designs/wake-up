@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v266-title-alignment";
+const CACHE_NAME = "magicbook-pwa-v267-intro-close";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -37,7 +37,7 @@ const STATIC_ASSETS = [
   "/welcome-page.css?v=4-login-home",
   "/welcome-page.js?v=2-clean",
   "/home-offers.css?v=10-brand-type",
-  "/home-offers.js?v=8-new-tag&art=fbda23c8df0e",
+  "/home-offers.js?v=9-close-opens&art=fbda23c8df0e",
   "/home-animation.js?v=4-hat&art=fbda23c8df0e",
   "/home-utilities.js?v=2-admin",
   // HOME_ANIMATION_ASSETS_START
@@ -48,7 +48,7 @@ const STATIC_ASSETS = [
   "/offer-frequency.mjs?v=1",
   "/icons/New%20tag%20button.svg?v=26186f6f0240",
   "/quizbank-home.css?v=3-bangla-caption",
-  "/quizbank-home.js?v=2-new-tag",
+  "/quizbank-home.js?v=3-close-opens",
   "/quizbank-intro-policy.mjs?v=1",
   "/login-signs.mjs?v=1",
   "/greeting-view.mjs?v=1-shared-login",

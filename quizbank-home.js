@@ -52,7 +52,13 @@ export function mountQuizBankHome(home) {
     if (retainedHistory) { const { [historyKey]: unused, ...state } = baseState; baseState = state; }
     overlay = doc.getElementById('quizBankIntroTemplate').content.firstElementChild.cloneNode(true);
     const closeButton = overlay.querySelector('[data-qb-close]');
-    closeButton.addEventListener('click', () => close());
+    const enterQuizBank = () => {
+      if (key() !== ownerKey || !visible()) return dismissForNotice();
+      close(() => {
+        if (key() === ownerKey && visible()) location.assign('/quizbank');
+      });
+    };
+    closeButton.addEventListener('click', enterQuizBank);
     overlay.querySelector('[data-qb-understood]').addEventListener('click', () => {
       if (key() !== ownerKey) return dismissForNotice();
       acknowledged.add(ownerKey);
@@ -62,7 +68,7 @@ export function mountQuizBankHome(home) {
     overlay.querySelector('[data-qb-open]').addEventListener('click', event => {
       if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
       event.preventDefault();
-      close(() => location.assign('/quizbank'));
+      enterQuizBank();
     });
     doc.body.append(overlay);
     try { history[retainedHistory ? 'replaceState' : 'pushState']({ ...baseState, [historyKey]: true }, '', baseUrl); } catch { /* X/Escape still work without History API. */ }
