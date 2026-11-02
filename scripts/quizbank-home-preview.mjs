@@ -9,12 +9,20 @@ const phone = '393310000000';
 const counts = {};
 http.createServer((req,res) => {
   const u = new URL(req.url, 'http://127.0.0.1');
+  const catalog = u.searchParams.get('qa_catalog') || /qa_catalog=(ready|slow|denied)/.exec(req.headers.cookie || '')?.[1] || '';
   const role = u.searchParams.has('qa_role') ? (u.searchParams.get('qa_role') === 'admin' ? 'admin' : 'user') : (/qa_role=admin/.test(req.headers.cookie || '') ? 'admin' : 'user');
   const token = 'test.' + Buffer.from(JSON.stringify({phone,role,exp:2208988800})).toString('base64url') + '.fixture';
   const json = value => { res.writeHead(200, {'Content-Type':'application/json'}); res.end(JSON.stringify(value)); };
   if (u.pathname === '/qa/state') return json(counts);
   if (u.pathname.startsWith('/api/')) {
     counts[u.pathname] = (counts[u.pathname] || 0) + 1;
+    if (u.pathname === '/api/quizbank' && u.searchParams.get('action') === 'catalog' && catalog) {
+      counts.quizbankCatalog = (counts.quizbankCatalog || 0) + 1;
+      if (catalog === 'denied') { res.writeHead(403, {'Content-Type':'application/json'}); return res.end(JSON.stringify({success:false,error:'quizbank_access_denied'})); }
+      const respond = () => json({success:true,questionCount:1500,sheets:Array.from({length:50},(_,i)=>({number:i+1,questionCount:30})),canUploadAudio:role==='admin'});
+      if (catalog === 'slow') return setTimeout(respond,1500);
+      return respond();
+    }
     return json(u.pathname === '/api/getPages' ? {success:true,role,accessToken:token,accessTokenExpiresAt:Date.now()+86400000,expiry:'2035-01-01',pages:[],totalPages:0} : {success:true,items:[],words:[],figures:[],sheets:[],questionCount:0});
   }
   if (u.pathname === '/service-worker.js') { res.writeHead(404); return res.end(); }
@@ -36,6 +44,16 @@ http.createServer((req,res) => {
       localStorage.setItem('magicbook.offerNotice.v1','invalid');
       const qa=new URLSearchParams(location.search),key='magicbook.quizbankIntro.v1.'+(hash>>>0).toString(36);
       if(qa.get('qa_reset')==='1')localStorage.removeItem(key);
+      if(qa.get('qa_intro')==='ack')localStorage.setItem(key,JSON.stringify({firstSeen:null,count:0,acknowledged:true}));
+      if(qa.get('qa_intro')==='limit')localStorage.setItem(key,JSON.stringify({firstSeen:Date.now(),count:4,acknowledged:false}));
+      document.addEventListener('DOMContentLoaded',()=>{
+        const mark=()=>{
+          const picker=document.getElementById('study-chapters');
+          if(picker&&!picker.classList.contains('hidden')&&!document.body.dataset.qaReadyAt)document.body.dataset.qaReadyAt=String(performance.now());
+          if(document.getElementById('quizBankIntroOverlay')&&!document.body.dataset.qaIntroAt)document.body.dataset.qaIntroAt=String(performance.now());
+        };
+        new MutationObserver(mark).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});mark();
+      });
       if(qa.get('qa_native')==='1'){document.documentElement.classList.add('android-webview');document.documentElement.dataset.appPalette='aura-fluid';}
       if(qa.get('qa_motion')==='off')document.documentElement.setAttribute('data-native-motion-paused','');
       if(qa.get('qa_storage')==='blocked'){const get=Storage.prototype.getItem,set=Storage.prototype.setItem;Storage.prototype.getItem=function(k){if(k.startsWith('magicbook.quizbankIntro'))throw Error('fixture blocked');return get.call(this,k)};Storage.prototype.setItem=function(k,v){if(k.startsWith('magicbook.quizbankIntro'))throw Error('fixture blocked');return set.call(this,k,v)}}
@@ -44,6 +62,6 @@ http.createServer((req,res) => {
     if (u.searchParams.get('qa_coverfail') === '1') body = Buffer.from(body.toString().replace('assets/video-class/teacher.webp?v=2e0d6787e201', '/qa-missing-cover.webp'));
     if (u.searchParams.get('qa_tagfail') === '1') body = Buffer.from(body.toString().replaceAll('/icons/New%20tag%20button.svg?v=26186f6f0240', '/qa-missing-tag.svg'));
   }
-  res.writeHead(200,{'Content-Type':mime[path.extname(file)],'Set-Cookie':`qa_role=${role}; Path=/; SameSite=Lax`,'Cache-Control':'no-store','Content-Security-Policy':"default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:"});
+  res.writeHead(200,{'Content-Type':mime[path.extname(file)],'Set-Cookie':[`qa_role=${role}; Path=/; SameSite=Lax`,`qa_catalog=${catalog}; Path=/; SameSite=Lax`],'Cache-Control':'no-store','Content-Security-Policy':"default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:"});
   res.end(body);
 }).listen(4187,'127.0.0.1',()=>console.log('Home fixture: http://127.0.0.1:4187/home'));

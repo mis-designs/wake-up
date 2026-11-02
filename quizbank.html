@@ -31,6 +31,7 @@
   <link rel="stylesheet" href="/study-quiz.css?v=28-compact">
   <link rel="stylesheet" href="/loading-ui.css?v=4-context">
   <link rel="stylesheet" href="/audio-player-ui.css?v=10-web-quiz-slim">
+  <link rel="stylesheet" href="/quizbank-home.css?v=4-inside-intro">
   <link rel="stylesheet" href="/quizbank.css?v=8-quiz-actions">
   <link rel="stylesheet" href="/quiz-audio-recorder.css?v=2-add-voice">
   <link rel="stylesheet" href="/offline-notice.css?v=1.0.0">
@@ -83,6 +84,29 @@
     <section id="study-videos" hidden></section><section id="study-figures" hidden></section>
     <nav id="study-paths" hidden><a id="study-path-quiz" hidden></a><a id="study-path-figures" hidden></a></nav>
   </main>
+<template id="quizBankIntroTemplate">
+  <div class="qb-intro-overlay" id="quizBankIntroOverlay">
+    <section class="qb-intro-dialog" role="dialog" aria-modal="true" aria-labelledby="qbIntroTitle" aria-describedby="qbIntroLead">
+      <button class="qb-intro-close" type="button" data-qb-close aria-label="Chiudi la presentazione">×</button>
+      <header class="qb-intro-cover">
+        <span class="qb-intro-new">NEW · IL TUO PROSSIMO PASSO</span>
+        <h2 id="qbIntroTitle">Quiz Bank</h2>
+        <p>La scheda è italiana.<br>Il tuo studio parla Bangla.</p>
+        <div class="qb-intro-paper" aria-hidden="true"><b>50</b><span>SCHEDE REALI</span><i></i></div>
+      </header>
+      <div class="qb-intro-body">
+        <p class="qb-intro-lead" id="qbIntroLead" lang="bn">বুঝে পড়ুন, আত্মবিশ্বাস নিয়ে পরীক্ষা দিন।</p>
+        <ul class="qb-intro-features">
+          <li style="--row:0"><span class="qb-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM9 7h6M9 11h6M9 16l2 2 4-4"/></svg></span><div><strong lang="bn">আসল পরীক্ষার ৫০টি প্রশ্নপত্র</strong><small>50 schede reali · 1.500 domande da studiare e provare.</small></div></li>
+          <li style="--row:1"><span class="qb-feature-icon" aria-hidden="true"><img src="/icons/dizionario.png?v=6d8000501111" alt="" width="26" height="26"></span><div><strong lang="bn">বাংলা অনুবাদে সহজে বুঝুন</strong><small>La traduzione, accanto alla domanda.</small></div></li>
+          <li style="--row:2"><span class="qb-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10h4l5-4v12l-5-4H4zM16 9a5 5 0 0 1 0 6M19 6a9 9 0 0 1 0 12"/></svg></span><div><strong lang="bn">শুনে শুনে পড়ুন</strong><small>Ascolta le domande in italiano e in Bangla.</small></div></li>
+          <li style="--row:3"><span class="qb-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v14H5zM8 8h8M8 12h5M8 21h12V7"/></svg></span><div><strong lang="bn">গুরুত্বপূর্ণ শব্দের অর্থ জানুন</strong><small>Parole chiave per capire, non solo memorizzare.</small></div></li>
+          <li style="--row:4"><span class="qb-feature-icon" aria-hidden="true"><img src="/icons/add_voice.png" alt="" width="26" height="26"></span><div><strong lang="bn">বিশেষজ্ঞের ব্যাখ্যা বাংলায়</strong><small>Approfondisci con le spiegazioni audio disponibili.</small></div></li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</template>
   <div id="study-toast" class="study-toast" aria-live="polite"></div>
   <script src="/patenteGlossaryResolver.js?v=1.0.0"></script>
   <script src="/patenteContextResolverV3.js?v=4.0.0-glossary-display"></script>
@@ -94,6 +118,6 @@
   <script src="/app-popup.js?v=2"></script>
   <script src="/quiz-audio-recorder.js?v=1"></script>
   <script src="/quizbank-sheet.js?v=4-practice"></script>
-  <script src="/study-quiz.js?v=48-quizbank-actions&art=2e0d6787e201"></script>
+  <script src="/study-quiz.js?v=49-inside-intro&art=2e0d6787e201"></script>
 </body>
 </html>

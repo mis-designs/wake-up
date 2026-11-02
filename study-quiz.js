@@ -2292,6 +2292,14 @@
   }
 
   if (QUIZBANK_MODE) {
+    void import('/quizbank-intro.js?v=1-after-entry').then(({ mountQuizBankIntro }) => {
+      mountQuizBankIntro({
+        surface: document.getElementById('quizbank-main'),
+        getPhone: () => quizBankReady && studyVideoIdentity() ? session.phone : null,
+        isReady: () => elements.loading.classList.contains('hidden') && elements.error.classList.contains('hidden')
+          && (!elements.chapters.classList.contains('hidden') || !elements.reader.classList.contains('hidden'))
+      });
+    }).catch(() => { /* An unavailable presentation must never block studying. */ });
     document.getElementById("quizbank-previous").addEventListener("click", () => void openChapter(currentChapter - 1));
     document.getElementById("quizbank-next").addEventListener("click", () => void openChapter(currentChapter + 1));
     window.MagicQuizBankSheet.bindSearch(

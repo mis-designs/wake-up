@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v267-intro-close";
+const CACHE_NAME = "magicbook-pwa-v268-inside-intro";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -6,7 +6,7 @@ const STATIC_ASSETS = [
   "/quizbank.html",
   "/quizbank.css?v=8-quiz-actions",
   "/quizbank-sheet.js?v=4-practice",
-  "/study-quiz.js?v=48-quizbank-actions&art=2e0d6787e201",
+  "/study-quiz.js?v=49-inside-intro&art=2e0d6787e201",
   "/quiz-audio-recorder.js?v=1",
   "/quiz-audio-recorder.css?v=2-add-voice",
   "/icons/add_voice.png",
@@ -37,7 +37,7 @@ const STATIC_ASSETS = [
   "/welcome-page.css?v=4-login-home",
   "/welcome-page.js?v=2-clean",
   "/home-offers.css?v=10-brand-type",
-  "/home-offers.js?v=9-close-opens&art=fbda23c8df0e",
+  "/home-offers.js?v=10-direct-entry&art=fbda23c8df0e",
   "/home-animation.js?v=4-hat&art=fbda23c8df0e",
   "/home-utilities.js?v=2-admin",
   // HOME_ANIMATION_ASSETS_START
@@ -47,9 +47,10 @@ const STATIC_ASSETS = [
   // HOME_ANIMATION_ASSETS_END
   "/offer-frequency.mjs?v=1",
   "/icons/New%20tag%20button.svg?v=26186f6f0240",
-  "/quizbank-home.css?v=3-bangla-caption",
-  "/quizbank-home.js?v=3-close-opens",
+  "/quizbank-home.css?v=4-inside-intro",
+  "/quizbank-home.js?v=4-direct-entry",
   "/quizbank-intro-policy.mjs?v=1",
+  "/quizbank-intro.js?v=1-after-entry",
   "/login-signs.mjs?v=1",
   "/greeting-view.mjs?v=1-shared-login",
   "/icons/mdesignstextlogo.png",

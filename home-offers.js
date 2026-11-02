@@ -1,11 +1,11 @@
-import { mountQuizBankHome } from './quizbank-home.js?v=3-close-opens';
+import { mountQuizBankHome } from './quizbank-home.js?v=4-direct-entry';
 import { OFFER_KEY, reserveImpression } from './offer-frequency.mjs?v=1';
 import { mountHomeAnimation } from './home-animation.js?v=4-hat&art=fbda23c8df0e';
 import { mountHomeUtilities } from './home-utilities.js?v=2-admin';
 
 const doc = document;
 const home = doc.getElementById('home');
-const quizBankHome = mountQuizBankHome(home);
+mountQuizBankHome(home);
 const join = doc.getElementById('join');
 const joinHost = doc.getElementById('joinOfferHost');
 const source = 'https://www.canva.com/design/DAHLyZHWUYo/qHS9sfdQAw2ku5raxvnX6Q/view';
@@ -79,7 +79,7 @@ function embed(host) {
 }
 
 function eligible() {
-  return !quizBankHome.blocksOffers() && !stopped && !shown && !doc.hidden && navigator.onLine !== false && visible(home)
+  return !stopped && !shown && !doc.hidden && navigator.onLine !== false && visible(home)
     && Boolean(window.getCurrentSessionPhone?.())
     && !window.hasVisibleBlockingPopup?.()
     // Existing access/learning notices take priority. Do not stack promotions.
@@ -94,7 +94,6 @@ function dispose({ restoreFocus = false } = {}) {
 }
 
 function close(callback) {
-  if (quizBankHome.close(callback)) return true;
   if (!overlay || closing) return false;
   afterClose = typeof callback === 'function' ? callback : null;
   closing = true;
@@ -104,7 +103,6 @@ function close(callback) {
 }
 
 function dismissForNotice() {
-  quizBankHome.dismissForNotice();
   if (!overlay) return;
   if (history.state?.[historyKey]) history.replaceState(baseState, '', location.href);
   afterClose = null;
