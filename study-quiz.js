@@ -766,25 +766,13 @@
       image.className = "study-figure";
       image.loading = "lazy";
       image.alt = `Figura della domanda ${index + 1}`;
-      image.src = QUIZBANK_MODE
-        ? `https://raw.githubusercontent.com/Ed0ardo/QuizPatenteB/main/img_sign/${encodeURIComponent(question.figure)}.png`
-        : assetUrl(question.figure);
       if (QUIZBANK_MODE) {
         if (question.figureRotation) image.classList.add("quizbank-figure-rotated");
-        image.referrerPolicy = "no-referrer";
-        let fallbackUsed = false;
-        image.addEventListener("error", () => {
-          if (!fallbackUsed) { fallbackUsed = true; image.src = assetUrl(question.figure); return; }
-          image.hidden = true;
-          const message = document.createElement("p");
-          message.textContent = "Figura non disponibile. Riprova prima di studiare questa domanda.";
-          const retry = document.createElement("button"); retry.type = "button"; retry.textContent = "Ricarica figura";
-          retry.addEventListener("click", () => {
-            message.remove(); retry.remove(); image.hidden = false; image.src = assetUrl(question.figure);
-          }, { once: true });
-          figure.append(message, retry);
-        });
-      } else image.addEventListener("error", () => figure.remove(), { once: true });
+        window.MagicQuizBankFigures.load(image, question, { isCurrent: () => figure.isConnected });
+      } else {
+        image.src = assetUrl(question.figure);
+        image.addEventListener("error", () => figure.remove(), { once: true });
+      }
       figure.appendChild(image);
       main.appendChild(figure);
     }

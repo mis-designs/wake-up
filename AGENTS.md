@@ -26,3 +26,8 @@
 - Keep authorization, payments, answer persistence and private book protection intact. Public caching must never include private user data or authenticated book content.
 - Avoid routine per-request production logs and never log credentials or personal data. Preserve actionable errors and security diagnostics. Observability events also include requests, not just console output.
 - Separate historical samples and local benchmarks from current production measurements. Do not promise a billing reduction without an equivalent before/after usage window. Do not commit, push or deploy unless requested.
+
+## Figure storage (owner decision, 2026-11-03)
+
+- Use only our Cloudflare R2 image archive for quiz figures, including QuizBank. Deliver through the shared Vercel asset API; never load an external image catalogue or silently substitute a same-numbered image from another source.
+- Verify the actual drawing before changing a question-to-image mapping. A missing reviewed R2 object must show an unavailable/retry state, never an unverified substitute.

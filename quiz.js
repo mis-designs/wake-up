@@ -184,24 +184,10 @@ function buildFigureImageUrl(figure) {
 }
 
 function loadQuizBankFigure(img, question, onReady = () => {}, isCurrent = () => true) {
-  let fallbackUsed = false;
-  img.hidden = false;
   img.alt = "Figura della domanda";
   img.style.transform = question.figureRotation === 90 ? "rotate(90deg)" : "";
   img.style.objectFit = "contain";
-  img.referrerPolicy = "no-referrer";
-  img.onload = () => { if (isCurrent()) onReady(); };
-  img.onerror = () => {
-    if (!isCurrent()) return;
-    if (!fallbackUsed) { fallbackUsed = true; img.src = buildFigureImageUrl(question.figure); return; }
-    img.hidden = true; onReady();
-    const note = document.createElement("p"); note.className = "quizbank-figure-note";
-    note.textContent = "Figura non disponibile. ";
-    const retry = document.createElement("button"); retry.type = "button"; retry.textContent = "Ricarica figura";
-    retry.addEventListener("click", () => { note.remove(); img.hidden = false; img.src = buildFigureImageUrl(question.figure); }, { once: true });
-    note.appendChild(retry); img.after(note);
-  };
-  img.src = `https://raw.githubusercontent.com/Ed0ardo/QuizPatenteB/main/img_sign/${encodeURIComponent(question.figure)}.png`;
+  window.MagicQuizBankFigures.load(img, question, { onReady, isCurrent });
 }
 
 function stopQuizLoadingFigures() {}

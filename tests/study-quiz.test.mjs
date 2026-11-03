@@ -93,8 +93,8 @@ test("study explanation players reuse the supplied artwork with stable responsiv
   assert.match(styles, /@media \(max-width: 430px\)[\s\S]*?\.study-explanation-artwork\s*\{[^}]*flex-basis:\s*44px[^}]*width:\s*44px[^}]*height:\s*44px/u);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.study-explanation-artwork\s*\{\s*animation:\s*none/u);
   assert.match(page, /study-quiz\.css\?v=28-compact/u);
-  assert.match(page, /study-quiz\.js\?v=39-session/u);
-  assert.match(worker, /magicbook-pwa-v268-inside-intro/u);
+  assert.match(page, /study-quiz\.js\?v=40-r2-figures/u);
+  assert.match(worker, /magicbook-pwa-v269-r2-figures/u);
   assert.match(worker, /\/icons\/explain_quiz\.svg/u);
 });
 

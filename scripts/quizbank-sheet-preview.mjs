@@ -10,6 +10,9 @@ const examples = [
   ['La distanza di sicurezza deve essere almeno uguale ai metri che il veicolo percorre durante il tempo di reazione.', '', true],
   ['Il segnale raffigurato obbliga a fermarsi sempre prima di impegnare l’incrocio.', '40', false]
 ];
+// Opt-in owner reference for a local R2-delivery check; never reads production.
+const figureFixture = process.env.QUIZBANK_QA_FIGURE;
+if (figureFixture) examples[0] = ['In presenza della segnaletica in figura è consentito cambiare corsia fino a che le strisce sono ancora discontinue (tratteggiate)', '565', true];
 const sheetRows = (sheet, length = 30) => Array.from({ length }, (_, i) => ({ id: `qb_s${String(sheet).padStart(2, '0')}_q${String(i + 1).padStart(2, '0')}`, sheet, number: i + 1,
   question: examples[i % 3][0], figure: examples[i % 3][1], correct: examples[i % 3][2], explanationMapped: i > 0,
   questionTranslation: 'সড়কে চলাচলের সময় সতর্ক থাকতে হবে।', questionTranslationSource: 'fixture' }));
@@ -29,6 +32,12 @@ const server = http.createServer(async (req, res) => {
   const json = (data, status = 200) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(data)); };
   if (url.pathname === '/qa/state') return json({ counts, mode });
   if (url.pathname === '/qa/mode') { mode = url.searchParams.get('value') || 'ok'; return json({ mode }); }
+  if (url.pathname === '/api/asset' && url.searchParams.get('kind') === 'figure') {
+    counts.figure = (counts.figure || 0) + 1;
+    if (mode === 'figure-fail') { res.writeHead(404); return res.end(''); }
+    res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store' });
+    return res.end(fs.readFileSync(figureFixture || path.join(repo, 'tests/fixtures/quiz-figures/fig40.jpg')));
+  }
   if (url.pathname.startsWith('/api/')) {
     let raw = ''; for await (const chunk of req) raw += chunk;
     let data; try { data = req.method === 'POST' ? JSON.parse(raw || '{}') : Object.fromEntries(url.searchParams); } catch { return json({}, 400); }
@@ -58,7 +67,6 @@ const server = http.createServer(async (req, res) => {
   if (!file.startsWith(repo) || route.split(/[\\/]/).some(s => s.startsWith('.')) || !mime[path.extname(file)] || !fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404); return res.end(''); }
   let body = fs.readFileSync(file);
   if (path.extname(file) === '.html') body = Buffer.from(body.toString().replace('<head>', '<head>' + (url.searchParams.get('qa_native') === '1' ? '<script>document.documentElement.classList.add("android-webview");document.documentElement.dataset.appPalette="aura-fluid";</script>' : '') + bootstrap));
-  if (path.extname(file) === '.js') body = Buffer.from(body.toString().replaceAll('https://raw.githubusercontent.com/Ed0ardo/QuizPatenteB/main/img_sign/', '/qa-figures/'));
   res.writeHead(200, { 'Content-Type': mime[path.extname(file)], 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:" });
   res.end(body);
 });

@@ -101,7 +101,7 @@ test('Video Class binds a nonempty route identity before loading, independently 
   assert.match(render, /favoriteScope = activeScope/);
   assert.doesNotMatch(render, /catalog = await data\.read/);
   assert.match(read('study-quiz.js'), /video-class\.js\?v=8-session/);
-  assert.match(read('study-quiz.html'), /study-quiz\.js\?v=39-session/);
+  assert.match(read('study-quiz.html'), /study-quiz\.js\?v=40-r2-figures/);
   assert.match(read('service-worker.js'), /video-class\.js\?v=8-session/);
 });
 test('server catalogue uses established device-bound authorization, is never publicly cacheable and adds zero upstream reads for signed users', async t => {

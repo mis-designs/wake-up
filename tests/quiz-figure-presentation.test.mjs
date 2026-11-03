@@ -90,7 +90,7 @@ test("figure delivery stays in the shared API and returns the correct lossless m
   assert.match(api, /figurePresentation:\s*QUIZ_FIGURE_PRESENTATION_VERSION/u);
   assert.match(api, /selectedAsset\.figurePresentation === QUIZ_FIGURE_PRESENTATION_VERSION/u);
   assert.match(api, /await renderNumberlessQuizFigure\(selectedObject\.buffer, \{ figure: selectedAsset\.figure \}\)/u);
-  assert.match(api, /path: `Figure\/\$\{figure\}\.jpg`,\s*contentType: "image\/png"/u);
+  assert.match(api, /`Figure\/\$\{figure\}\.jpg`,\s*contentType: "image\/png"/u);
 });
 
 test("every figure consumer bypasses cached rectangular covers", () => {
