@@ -8,13 +8,17 @@ const lifetime = new AbortController();
 let active = null;
 let consumingBack = false;
 let pendingScrollRestore = null;
+let routeHref = location.href;
 
 function restoreScroll(snapshot) {
   if (!snapshot) return;
-  window.scrollTo({ left: snapshot.x, top: snapshot.y, behavior: 'instant' });
-  snapshot.parents.forEach(({ node, top, left }) => {
-    if (node.isConnected) node.scrollTo({ top, left, behavior: 'instant' });
-  });
+  // A route jump owns its destination scroll; only restore this sheet's viewport.
+  if (snapshot.href === location.href) {
+    window.scrollTo({ left: snapshot.x, top: snapshot.y, behavior: 'instant' });
+    snapshot.parents.forEach(({ node, top, left }) => {
+      if (node.isConnected) node.scrollTo({ top, left, behavior: 'instant' });
+    });
+  }
   history.scrollRestoration = snapshot.mode;
 }
 
@@ -51,7 +55,12 @@ function open(image, trigger) {
   const id = identity(image);
   if (!id || !image.complete || !image.naturalWidth || trigger.closest('[inert]')) return;
   const detail = getFigureDetail(id);
-  const scroll = { x: scrollX, y: scrollY, mode: history.scrollRestoration, parents: [] };
+  const quizbank = new URL(image.src).searchParams.get('catalog')?.startsWith('quizbank-r2-');
+  // Finish a decorative flip before measuring the thumbnail, so its placeholder
+  // cannot collapse when the figure happens to be edge-on.
+  image.closest('.is-sheet-flipping')?.classList.remove('is-sheet-flipping');
+  routeHref = location.href;
+  const scroll = { href: routeHref, x: scrollX, y: scrollY, mode: history.scrollRestoration, parents: [] };
   for (let node = trigger.parentElement; node; node = node.parentElement) {
     if (node.scrollHeight > node.clientHeight || node.scrollWidth > node.clientWidth) {
       scroll.parents.push({ node, top: node.scrollTop, left: node.scrollLeft });
@@ -65,8 +74,18 @@ function open(image, trigger) {
     <footer><button type="button" class="figure-detail-close" aria-label="Chiudi figura"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></footer>
   </section>`;
   const card = overlay.firstElementChild;
+  if (quizbank) {
+    overlay.classList.add('figure-detail-overlay--quizbank');
+    card.removeAttribute('aria-labelledby');
+    card.removeAttribute('aria-describedby');
+    card.setAttribute('aria-label', 'Figura ingrandita');
+    const rotated = image.classList.contains('quizbank-figure-rotated') || image.style.transform === 'rotate(90deg)';
+    if (rotated) overlay.classList.add('figure-detail-overlay--rotated');
+    card.style.setProperty('--figure-ratio', String(rotated ? 1 : image.naturalWidth / image.naturalHeight));
+  }
   overlay.querySelector('#figureDetailTitle').textContent = detail?.italian || 'Nome della figura non ancora disponibile';
   overlay.querySelector('#figureDetailBangla').textContent = detail?.bangla || 'এই ছবির নাম এখনো যোগ করা হয়নি';
+  if (quizbank) overlay.querySelector('.figure-detail-copy').remove();
   const spacer = document.createElement('span');
   spacer.className = 'figure-detail-spacer';
   spacer.setAttribute('aria-hidden', 'true');
@@ -76,6 +95,17 @@ function open(image, trigger) {
   image.replaceWith(spacer);
   overlay.querySelector('.figure-detail-media').append(image);
   document.body.append(overlay);
+  if (quizbank) {
+    card.style.animation = 'none';
+    const target = card.getBoundingClientRect();
+    card.style.setProperty('--figure-start-x', `${bounds.x + bounds.width / 2 - target.x - target.width / 2}px`);
+    card.style.setProperty('--figure-start-y', `${bounds.y + bounds.height / 2 - target.y - target.height / 2}px`);
+    card.style.setProperty('--figure-start-scale', String(Math.min(bounds.width / target.width, bounds.height / target.height)));
+    card.style.removeProperty('animation');
+    card.addEventListener('click', event => {
+      if (event.target === card || event.target === overlay.querySelector('.figure-detail-media')) close();
+    });
+  }
   trigger.setAttribute('aria-expanded', 'true');
   const closeButton = overlay.querySelector('.figure-detail-close');
   closeButton.addEventListener('click', () => close());
@@ -95,7 +125,7 @@ function open(image, trigger) {
     if (!trigger.isConnected || trigger.closest('.hidden, [hidden]') || image.getAttribute('src') !== source) close({ restoreFocus: false });
   });
   observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['src', 'hidden', 'class'] });
-  active = { image, trigger, spacer, unmount, observer, ownsHistory, historyKey, scroll };
+  active = { routeHref: location.href, image, trigger, spacer, unmount, observer, ownsHistory, historyKey, scroll };
 }
 
 function enhance(image) {
@@ -144,17 +174,27 @@ observer.observe(document.body, { childList: true, subtree: true, attributes: tr
 // The early shared history owner consumes only this viewer's entries before
 // Quiz/Study/Home handlers. Do not reload data, render the route or reset audio.
 const unregisterHistory = window.MagicBookPopup.registerHistoryLayer(() => {
+  const sameRoute = routeHref === location.href;
+  routeHref = location.href;
   if (consumingBack) {
+    const sameDismissalRoute = pendingScrollRestore?.href === location.href;
     consumingBack = false;
     restoreScroll(pendingScrollRestore);
     pendingScrollRestore = null;
-    return true;
+    if (sameDismissalRoute) return true;
+    // Another traversal won the race with close(): continue to the route owner.
   }
-  if (active) { close({ fromHistory: true }); return true; }
+  if (active) {
+    // A history-menu jump can leave the sheet altogether; let its route owner run.
+    const sameRoute = active.routeHref === location.href;
+    close({ fromHistory: true, restoreFocus: sameRoute });
+    return sameRoute;
+  }
   if (history.state?.magicFigureDetail) {
     const { magicFigureDetail, ...previous } = history.state;
     history.replaceState(previous, '', location.href);
-    return true;
+    // Retained viewer entries need normal routing when reached from another sheet.
+    return sameRoute;
   }
   return false;
 });

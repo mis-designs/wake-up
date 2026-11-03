@@ -45,15 +45,15 @@ test('shared early history owner consumes only owned layers and can unsubscribe'
   dispatch(); assert.equal(calls.at(-1), 'route');
 });
 test('all entry points load the early popup owner and shared assets before route code', () => {
-  for (const [html, route] of [['index.html','script.js?'],['quiz.html','quiz.js?'],['study-quiz.html','study-quiz.js?'],['aggiungi-spiegazioni.html','aggiungi-spiegazioni.js?']]) {
+  for (const [html, route] of [['index.html','script.js?'],['quiz.html','quiz.js?'],['study-quiz.html','study-quiz.js?'],['quizbank.html','study-quiz.js?'],['aggiungi-spiegazioni.html','aggiungi-spiegazioni.js?']]) {
     const page = read(html);
     assert.ok(page.indexOf('app-popup.js?v=2') >= 0, html);
     assert.ok(page.indexOf('app-popup.js?v=2') < page.lastIndexOf(route), html);
-    assert.match(page, /figure-detail\.css\?v=2/);
-    assert.match(page, /type="module" src="figure-detail\.js\?v=2"/);
+    assert.match(page, /figure-detail\.css\?v=3-quizbank-zoom/);
+    assert.match(page, /type="module" src="figure-detail\.js\?v=3-quizbank-zoom"/);
   }
   const worker = read('service-worker.js');
-  for (const asset of ['app-popup.js?v=2', 'figure-detail.js?v=2', 'figure-detail.css?v=2', 'figure-catalog.mjs?v=1']) assert.ok(worker.includes(asset), asset);
+  for (const asset of ['app-popup.js?v=2', 'figure-detail.js?v=3-quizbank-zoom', 'figure-detail.css?v=3-quizbank-zoom', 'figure-catalog.mjs?v=1']) assert.ok(worker.includes(asset), asset);
 });
 test('figure viewer preserves nodes, scroll and prior modal state without API or route calls', () => {
   const viewer = read('figure-detail.js'), popup = read('app-popup.js'), css = read('figure-detail.css');

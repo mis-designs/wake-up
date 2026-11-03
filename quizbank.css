@@ -62,7 +62,7 @@ body.quizbank-page { min-width: 0; background: #fff; --quizbank-accent: #d91c37;
 .quizbank-sheet-nav { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: stretch; gap: 16px; margin-top: 28px; }
 #quizbank-previous { justify-self: start; }
 #quizbank-next { justify-self: end; }
-.quizbank-sheet-nav button, .quizbank-button, .quizbank-page .study-figure-frame button { min-height: 44px; padding: 10px 16px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font-size: .82rem; text-decoration: none; cursor: pointer; }
+.quizbank-sheet-nav button, .quizbank-button, .quizbank-page .study-figure-frame button:not(.figure-detail-trigger) { min-height: 44px; padding: 10px 16px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font-size: .82rem; text-decoration: none; cursor: pointer; }
 .quizbank-sheet-nav button {
   display: inline-flex; align-items: center; justify-content: center; gap: 12px;
   min-height: 50px; padding: 12px 20px; border-color: var(--quizbank-accent); border-radius: 14px;

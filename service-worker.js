@@ -1,11 +1,11 @@
-const CACHE_NAME = "magicbook-pwa-v270-final-v3-content";
+const CACHE_NAME = "magicbook-pwa-v271-figure-zoom";
 const STATIC_ASSETS = [
   "/quizbank-figures.js?v=2-numbered-r2",
   "/",
   "/index.html",
   "/quiz.html",
   "/quizbank.html",
-  "/quizbank.css?v=8-quiz-actions",
+  "/quizbank.css?v=9-figure-zoom",
   "/quizbank-sheet.js?v=4-practice",
   "/study-quiz.js?v=51-content-revision&art=2e0d6787e201",
   "/quiz-audio-recorder.js?v=1",
@@ -108,8 +108,8 @@ const STATIC_ASSETS = [
   "/italian-display.js?v=1",
   "/audio-focus.js?v=1-resumable-tts",
   "/app-popup.js?v=2",
-  "/figure-detail.js?v=2",
-  "/figure-detail.css?v=2",
+  "/figure-detail.js?v=3-quizbank-zoom",
+  "/figure-detail.css?v=3-quizbank-zoom",
   "/figure-catalog.mjs?v=1",
   "/src/learning-insights.css?v=11-study-results&ui=10",
   "/src/learning-insights.js?v=14-home-icons&ui=9-intact-figures",

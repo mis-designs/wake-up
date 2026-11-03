@@ -77,3 +77,42 @@ html[data-native-motion-paused] :is(.figure-detail-overlay, .figure-detail-card)
   .figure-detail-close:focus-visible, .figure-detail-trigger:focus-visible { outline-color: Highlight; }
   .figure-detail-card { scrollbar-color: auto; }
 }
+
+/* QuizBank: inspect the actual drawing, without the bilingual identity card.
+   Shares node, focus, history and delivery ownership with the standard viewer. */
+.figure-detail-overlay--quizbank {
+  background: rgb(18 30 25 / .48);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  padding: max(48px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+}
+.figure-detail-overlay--quizbank .figure-detail-card {
+  position: relative; width: min(960px, 100%, calc((100vh - 128px) * var(--figure-ratio)));
+  width: min(960px, 100%, calc((100dvh - 128px) * var(--figure-ratio)));
+  min-height: 0; max-height: none; overflow: visible; padding: 16px;
+  border-radius: 20px; box-shadow: 0 24px 80px rgb(0 0 0 / .25);
+  animation: figure-detail-zoom 280ms cubic-bezier(.2,.7,.2,1) both;
+}
+.figure-detail-overlay--quizbank .figure-detail-media > img { height: auto !important; }
+.figure-detail-overlay--quizbank .figure-detail-card footer {
+  position: absolute; top: -24px; right: -12px; bottom: auto; padding: 0; background: transparent;
+}
+.figure-detail-overlay--quizbank .figure-detail-close {
+  background: var(--figure-paper); border: 1px solid var(--figure-line); border-radius: 50%;
+  box-shadow: 0 6px 22px rgb(0 0 0 / .18);
+}
+.figure-detail-overlay--quizbank .figure-detail-close::before { display: none; }
+.figure-detail-overlay--quizbank .figure-detail-close:hover { background: color-mix(in srgb, var(--figure-ink) 7%, var(--figure-paper)); }
+@keyframes figure-detail-zoom {
+  from { transform: translate(var(--figure-start-x, 0px), var(--figure-start-y, 10px)) scale(var(--figure-start-scale, .9)); opacity: .5; }
+  to { transform: none; opacity: 1; }
+}
+@media (max-width: 600px) { .figure-detail-overlay--quizbank .figure-detail-card { padding: 10px; border-radius: 14px; } }
+@media (prefers-reduced-motion: reduce) { .figure-detail-overlay--quizbank .figure-detail-card { animation: none; } }
+html[data-native-motion-paused] .figure-detail-overlay--quizbank .figure-detail-card { animation: none; }
+@media (forced-colors: active) { .figure-detail-overlay--quizbank { background: Canvas; backdrop-filter: none; } }
+
+/* A source-owned quarter-turn uses a square canvas so the entire drawing fits. */
+.figure-detail-overlay--quizbank.figure-detail-overlay--rotated .figure-detail-media { aspect-ratio: 1; }
+.figure-detail-overlay--quizbank.figure-detail-overlay--rotated .figure-detail-media > img {
+  height: 100% !important; transform: rotate(90deg) !important;
+}

@@ -68,3 +68,9 @@ screens, reduced motion, failed/unknown figures, nested translation/review layer
 contrast and seeking/rate controls. Physical Android Back and iOS Safari remain
 device smoke checks. Deployment is a shared-web release; this change itself does
 not alter the native APK or Google Apps Script.
+
+### QuizBank figure enlargement — 2026-11-03
+
+Owner-approved exception to the standard bilingual figure card: QuizBank uses the shared `figure-detail.js/css` viewer with the named `figure-detail-overlay--quizbank` variant. Show only the complete existing R2 drawing, up to 960px and bounded by the viewport, with a 6px blurred/dim backdrop, thumbnail-to-center entrance and a floating 48px X. X, Escape, empty space and Back dismiss it. The standard MagicBook bilingual viewer remains unchanged. Stop any thumbnail flip before measuring. Respect reduced motion, native motion pause, safe areas and forced colors.
+
+The exact loaded image node moves into the viewer and returns to its measured placeholder. Opening/closing triggers zero additional image/data requests; no new cache, fetch, retry or archive changes. Preserve scroll, focus, search, answers and existing image load/error/retry ownership. Missing images remain disabled until their existing explicit retry succeeds. A multi-entry history jump must reach the route owner rather than leave an old sheet under a new URL. QuizBank entry-point coverage is required alongside the other shared viewer consumers.
