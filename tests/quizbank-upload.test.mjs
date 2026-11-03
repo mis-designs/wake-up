@@ -6,7 +6,7 @@ import { EventEmitter } from "node:events";
 import { S3Client } from "@aws-sdk/client-s3";
 import { neonConfig } from "@neondatabase/serverless";
 import { quizAudioCatalog } from "../api/quiz-audio-catalog.mjs";
-import { quizBankAudioIdentity, quizBankStorageIdentity } from "../api/quizbank-catalog.mjs";
+import { quizBankAudioIdentity, quizBankStorageIdentity, parseQuizBank, quizBankContentToken } from "../api/quizbank-catalog.mjs";
 import { audioLookupKeys } from "../lib/quiz-audio-lookup.mjs";
 import { decodeQuizAudioUpload, saveMissingQuizAudio, MAX_QUIZ_AUDIO_BYTES } from "../lib/quiz-audio-upload.mjs";
 import { sniffQuizAudioUploadMimeType, detectQuizAudioMimeType } from "../api/audio-mime.mjs";
@@ -118,6 +118,8 @@ function fixture(t) {
     return sqlResponse([row], "INSERT");
   };
   state.call = async (params = payload(), { bearer = token(), method = "POST", request = {} } = {}) => {
+    const row = parseQuizBank(archive).byId.get(params.questionId);
+    if (row) params = { audioIdentityToken: quizBankContentToken(row), ...params };
     const req = Object.assign(new EventEmitter(), { method, headers: { authorization: `Bearer ${bearer}` },
       [method === "GET" ? "query" : "body"]: { phone, deviceId, ...params } }, request);
     const res = Object.assign(new EventEmitter(), { headers: {}, statusCode: 200,

@@ -85,10 +85,8 @@ function getDynamicAsset(query = {}) {
     if (!figure || !isSafeFilePart(figure)) return null;
 
     return {
-      // The owner-verified QuizBank lane diagram differs from the old R2 fig565.
-      // Use its explicit R2 key; missing corrections must never fall back to the old drawing.
-      path: query.catalog === "quizbank-r2-v1" && figure === "fig565"
-        ? "Figure/quizbank-fig565-v1.jpg" : `Figure/${figure}.jpg`,
+      // The owner maintains the numbered R2 archive, including corrected 565.
+      path: `Figure/${figure}.jpg`,
       contentType: "image/png",
       figure,
       figurePresentation: QUIZ_FIGURE_PRESENTATION_VERSION

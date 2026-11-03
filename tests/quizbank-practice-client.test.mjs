@@ -17,7 +17,7 @@ const revision = "a".repeat(64);
 function rows(sheet = 25) {
   return Array.from({ length: 30 }, (_, i) => ({
     id: `qb_s${String(sheet).padStart(2, "0")}_q${String(i + 1).padStart(2, "0")}`,
-    question: `Fixture ${i + 1}`, figure: i === 6 ? "546" : "", figureRotation: i === 6 ? 90 : 0
+    audioIdentityToken: `fixture-token-${sheet}-${i}`, question: `Fixture ${i + 1}`, figure: i === 6 ? "546" : "", figureRotation: i === 6 ? 90 : 0
   }));
 }
 
@@ -208,6 +208,7 @@ test("QuizBank saves directly once with original MIME/duration and blocks MagicB
   await h.context.saveInlineAudioRecording(h.payload, controller.signal);
   assert.equal(h.calls.length, 1); assert.equal(h.calls[0].url, "/api/quizbank");
   assert.equal(h.calls[0].payload.action, "saveQuizAudio"); assert.equal(h.calls[0].payload.questionId, h.question.id);
+  assert.equal(h.calls[0].payload.audioIdentityToken, h.question.audioIdentityToken);
   assert.equal(h.calls[0].payload.audioMimeType, "audio/mp4"); assert.equal(h.calls[0].payload.audioDurationMs, 1234);
   assert.equal(h.calls[0].payload.audioBase64, "data:audio/mp4;base64,YXVkaW8=");
   assert.strictEqual(h.calls[0].signal, controller.signal);

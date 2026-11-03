@@ -7,6 +7,7 @@ import { audioContentSignature, quizAudioCatalog, quizAudioLegacyRegistry } from
 
 const require = createRequire(import.meta.url);
 const reference = require("./quizbank-audio-references.json");
+const finalRelease = require("./quizbank-release.json");
 const verifiedSignatures = new Set(reference.signatures);
 const magicRows = new Map(quizAudioCatalog.rows.map(row => [audioContentSignature(row), row]));
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -51,6 +52,31 @@ export function quizBankStorageIdentity(row) {
   return { version: 1, quizKey, previousQuizKeys: [], legacySafe: false };
 }
 
+// Exact legacy content, verified from the original private JSON (SHA-256
+// 29585a67a41c6dcec5288916ae99cd2a1089aebad4a431d12a869a21dc1c8396).
+// Both old 546 occurrences have this signature. Never infer rotation from position.
+const LEGACY_HORIZONTAL_546 = "156c10023aba9daa8cee9b590aa8d48ca9f87dd00b8e79ef2907311121804b79";
+function legacyFigureRotation(row) {
+  if (row.figure !== "546") return 0;
+  const digest = crypto.createHash("sha256")
+    .update(JSON.stringify([row.question, row.correct, row.figure])).digest("hex");
+  return digest === LEGACY_HORIZONTAL_546 ? 90 : 0;
+}
+
+// HMAC prevents the practice token from exposing a guessable V/F content hash.
+// Independent of audio storage identity; includes exact text and presentation.
+export function quizBankContentToken(row, secret = process.env.SESSION_SECRET) {
+  if (!secret) throw Object.assign(new Error("quizbank_not_configured"), { statusCode: 503 });
+  const content = JSON.stringify(["quizbank-content-v1", row.id, row.question,
+    row.correct, row.figure, row.figureRotation, row.sourceRevision ?? ""]);
+  return `qbct1_${crypto.createHmac("sha256", secret).update(content).digest("hex")}`;
+}
+
+export function matchesQuizBankContentToken(row, token) {
+  return typeof token === "string" && /^qbct1_[a-f0-9]{64}$/.test(token)
+    && crypto.timingSafeEqual(Buffer.from(token), Buffer.from(quizBankContentToken(row)));
+}
+
 export function parseQuizBank(source) {
   if (!Array.isArray(source) || source.length !== 1500) throw invalid();
   const byId = new Map();
@@ -62,13 +88,18 @@ export function parseQuizBank(source) {
     if (!Number.isInteger(sheet) || sheet < 1 || sheet > 50 || !Number.isInteger(number) || number < 1 || number > 30
       || item.id !== id || byId.has(id) || typeof item.domanda !== "string" || !item.domanda.trim() || item.domanda.length > 1500
       || typeof item.risposta_corretta !== "boolean" || typeof item.ha_figura !== "boolean"
+      || (Object.hasOwn(item, "figureRotation") && ![0, 90].includes(item.figureRotation))
+      || (!item.ha_figura && item.figureRotation === 90)
+      || (Object.hasOwn(item, "sourceRevision") && (typeof item.sourceRevision !== "string"
+        || !/^[a-f0-9]{64}$/i.test(item.sourceRevision)))
       || item.risposta !== (item.risposta_corretta ? "V" : "F")
       || (item.ha_figura ? !Number.isInteger(item.numero_figura) || item.numero_figura < 1 || item.numero_figura > 9999
         : item.numero_figura !== null)) throw invalid();
     const row = { id, sheet, number, question: item.domanda, correct: item.risposta_corretta,
-      figure: item.ha_figura ? String(item.numero_figura) : "",
-      // These two PDF occurrences show the bus bay horizontally, unlike the catalogue.
-      figureRotation: ["qb_s25_q07", "qb_s26_q07"].includes(id) && item.numero_figura === 546 ? 90 : 0 };
+      figure: item.ha_figura ? String(item.numero_figura) : "" };
+    row.figureRotation = Object.hasOwn(item, "figureRotation")
+      ? item.figureRotation : legacyFigureRotation(row);
+    if (Object.hasOwn(item, "sourceRevision")) row.sourceRevision = item.sourceRevision.toLowerCase();
     const canonical = magicRows.get(audioContentSignature(row));
     if (canonical?.question_bd) row.question_bd = canonical.question_bd;
     row.explanationMapped = Boolean(quizBankAudioIdentity(row));
@@ -109,7 +140,12 @@ export async function loadQuizBank(config = quizBankConfig()) {
           if (bytes > MAX_BYTES || controller.signal.aborted) throw invalid();
           chunks.push(Buffer.from(chunk));
         }
-        const bank = parseQuizBank(JSON.parse(Buffer.concat(chunks).toString("utf8").replace(/^\uFEFF/, "")));
+        const archiveBytes = Buffer.concat(chunks);
+        const source = JSON.parse(archiveBytes.toString("utf8").replace(/^\uFEFF/, ""));
+        const isFinalRelease = config.key === finalRelease.archiveKey || (Array.isArray(source)
+          && source.some(row => row?.sourceRevision === finalRelease.sourcePdfSha256));
+        if (isFinalRelease && crypto.createHash("sha256").update(archiveBytes).digest("hex") !== finalRelease.archiveSha256) throw invalid();
+        const bank = parseQuizBank(source);
         return { ...bank, bytes };
       })()]);
     } catch (error) {

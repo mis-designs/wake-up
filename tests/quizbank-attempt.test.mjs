@@ -14,7 +14,7 @@ function archive() {
     return { id: `qb_s${String(sheet).padStart(2, "0")}_q${String(number).padStart(2, "0")}`,
       scheda: sheet, numero_domanda: number, domanda: `Attempt fixture ${i + 1}`,
       risposta_corretta: correct, risposta: correct ? "V" : "F",
-      ha_figura: rotated, numero_figura: rotated ? 546 : null };
+      ha_figura: rotated, numero_figura: rotated ? 546 : null, figureRotation: rotated ? 90 : 0 };
   });
 }
 const sheetRows = () => parseQuizBank(archive()).sheets[24];

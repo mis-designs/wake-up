@@ -112,6 +112,7 @@ if (!TRIAL_MODE && !hasCurrentClientAuthResetVersion()) {
 
 const QUIZ_API = QUIZBANK_MODE ? "/api/quizbank" : "/api/quiz";
 let quizbankRevision = "";
+let quizbankContentNoticeShown = false;
 const quizbankRequests = new Set();
 function quizBankIdentityMatches() {
   const session = getQuizSession();
@@ -140,6 +141,16 @@ async function fetchQuizBankResource(url, options = {}) {
       const data = await result.clone().json().catch(() => ({}));
       await handleQuizAccessError(data.error || "quizbank_access_denied");
       throw new Error(data.error || "quizbank_access_denied");
+    }
+    if (result.status === 409) {
+      const data = await result.clone().json().catch(() => ({}));
+      if (data.error === "quizbank_content_changed_refresh_required") {
+        if (!quizbankContentNoticeShown) {
+          quizbankContentNoticeShown = true;
+          void showMessage("Scheda aggiornata", "Ricarica la pagina prima di usare o salvare gli audio. Le risposte restano qui finché non ricarichi.");
+        }
+        throw Object.assign(new Error(data.error), { retryable: false });
+      }
     }
     return result;
   } finally {
@@ -907,6 +918,7 @@ function setSharedAudioFailure(error, stage) {
 }
 
 async function reportSharedAudioFailure() {
+  if (sharedAudioFailure?.code === "quizbank_content_changed_refresh_required") return;
   if (!isAdmin) {
     showAudioUnavailableToast("L'audio non è disponibile al momento. Riprova tra poco.");
     return;
@@ -1079,7 +1091,8 @@ function reviewAudioIdentityKey(question) {
   return [
     String(question?.id ?? ""),
     String(question?.audioQuestion || question?.question || ""),
-    QuizAudioIdentity.normalizeFigure(question?.audioFigure ?? question?.figure ?? "")
+    QuizAudioIdentity.normalizeFigure(question?.audioFigure ?? question?.figure ?? ""),
+    ...(QUIZBANK_MODE ? [question?.audioIdentityToken || ""] : [])
   ].join("\u001f");
 }
 
@@ -1140,7 +1153,9 @@ function showReviewAudioFailure(button, error) {
   const unavailable = /quiz_audio_(not_found|requires_review|legacy_not_found|legacy_not_ambiguous|not_configured)/.test(code);
   setReviewAudioStatus(
     button,
-    unavailable
+    code === "quizbank_content_changed_refresh_required"
+      ? "La scheda è stata aggiornata. Ricarica la pagina."
+      : unavailable
       ? "Spiegazione audio non disponibile per questa domanda."
       : "Audio non disponibile al momento. Riprova.",
     { unavailable }
@@ -1309,7 +1324,7 @@ function sharedAudioAvailabilityKey(question) {
   const id = String(question?.id ?? "").trim();
   const audioQuestion = String(question?.audioQuestion || question?.question || "").trim();
   const audioFigure = QuizAudioIdentity.normalizeFigure(question?.audioFigure ?? question?.figure ?? "");
-  return `${id}\u001f${audioQuestion}\u001f${audioFigure}`;
+  return `${id}\u001f${audioQuestion}\u001f${audioFigure}${QUIZBANK_MODE ? `\u001f${question?.audioIdentityToken || ""}` : ""}`;
 }
 
 function invalidateSharedAudioAvailability(question) {
@@ -1568,6 +1583,7 @@ async function quizAudioAdminApi(action, question, extra = {}, { signal } = {}) 
       question: String(question?.question || ""),
       figure: QuizAudioIdentity.normalizeFigure(question?.figure ?? ""),
       quizAudioIdentityVersion: QuizAudioIdentity.VERSION,
+      audioIdentityToken: question?.audioIdentityToken || "",
       ...extra
     })
   });
@@ -1813,7 +1829,8 @@ function updateTrialAudioButtons(question) {
   banglaAudioBtn?.setAttribute("aria-label", available ? "Ascolta l’anteprima in Bengali" : "Audio Bengali Premium");
 }
 
-async function fetchItalianAudio(text, cacheKey, questionId) {
+async function fetchItalianAudio(text, cacheKey, questionId, audioIdentityToken = "") {
+  if (QUIZBANK_MODE) cacheKey += `:${audioIdentityToken}`;
   const cached = italianAudioCache.get(cacheKey);
   if (cached) return cached;
   if (italianTtsRequest?.key === cacheKey) return italianTtsRequest.promise;
@@ -1825,7 +1842,7 @@ async function fetchItalianAudio(text, cacheKey, questionId) {
   request.promise = (async () => {
     try {
       const res = await fetchQuizJson(
-        buildQuizApiUrl("getItalianAudio", { text, questionId: String(questionId || "") }),
+        buildQuizApiUrl("getItalianAudio", { text, questionId: String(questionId || ""), ...(QUIZBANK_MODE ? { audioIdentityToken } : {}) }),
         { signal: controller.signal }
       );
       const data = res;
@@ -1862,7 +1879,7 @@ function speakItalian() {
   italianAudioBtn?.classList.add("is-loading");
   italianAudioBtn?.setAttribute("aria-busy", "true");
 
-  fetchItalianAudio(q.question, cacheKey, q.id)
+  fetchItalianAudio(q.question, cacheKey, q.id, q.audioIdentityToken || "")
     .then(data => {
       if (!isCurrentQuizTts("it", focusToken, myId)) return;
       italianAudioBtn?.classList.remove("is-loading");
@@ -1892,7 +1909,7 @@ function speakItalian() {
       if (!isCurrentQuizTts("it", focusToken, myId)) return;
       console.error("[Italian TTS] Failed:", err.message);
       if (completeQuizTts("it", focusToken, myId, { resume: true })) {
-        showAudioUnavailableToast("Audio italiano non disponibile");
+        if (err.message !== "quizbank_content_changed_refresh_required") showAudioUnavailableToast("Audio italiano non disponibile");
       }
     });
 }
@@ -1901,6 +1918,7 @@ function speakItalian() {
 // automatic translator only when no catalog translation exists.
 // Returns { audio: base64_mp3, translation: bengaliText }.
 async function fetchBengaliAudio(question, cacheKey, options = {}) {
+  if (QUIZBANK_MODE) cacheKey += `:${question?.audioIdentityToken || ""}`;
   const cached = bengaliAudioCache.get(cacheKey);
   if (cached) return cached;
   const requestKey = `${cacheKey}:${options.requireAudio === false ? "translation" : "audio"}`;
@@ -1941,7 +1959,8 @@ async function fetchBengaliAudio(question, cacheKey, options = {}) {
       const res = await fetchQuizJson(
         buildQuizApiUrl(automaticBackup ? "getBengaliAudio" : "getTTS", {
           text: automaticBackup ? String(question?.question || "") : synchronizedTranslation,
-          questionId
+          questionId,
+          ...(QUIZBANK_MODE ? { audioIdentityToken: question?.audioIdentityToken || "" } : {})
         }),
         { signal: controller.signal }
       );
@@ -2026,7 +2045,7 @@ function playBanglaAudio() {
       if (!isCurrentQuizTts("bn", focusToken, myId)) return;
       console.error("[Bengali TTS] Failed:", err.message);
       if (completeQuizTts("bn", focusToken, myId, { resume: true })) {
-        showAudioUnavailableToast("Audio bangla non disponibile");
+        if (err.message !== "quizbank_content_changed_refresh_required") showAudioUnavailableToast("Audio bangla non disponibile");
       }
     });
 }
@@ -2396,6 +2415,7 @@ async function loadQuiz() {
       quizbankRevision = data.quizbankRevision;
     }
     quiz = data.quiz;
+    quizbankContentNoticeShown = false;
 
     const modeConfig = getQuizModeConfig(quizMode);
     const titleEl = document.querySelector(".top-bar h2");
@@ -2914,11 +2934,14 @@ function getServerReviewItems(result = {}) {
       question:      q?.question || `Domanda ${qi + 1}`,
       figure:        q?.figure ?? null,
       figureRotation: q?.figureRotation || 0,
+      sourceRevision: q?.sourceRevision || "",
       audioQuestion: q?.audioQuestion || q?.question || `Domanda ${qi + 1}`,
       audioFigure:   q?.audioFigure ?? q?.figure ?? null,
       audioIdentityToken: q?.audioIdentityToken || "",
       helpQuestion: {
         id: q?.id ?? item.id ?? "",
+        sourceRevision: q?.sourceRevision || "",
+        audioIdentityToken: q?.audioIdentityToken || "",
         question: q?.question || item.question || `Domanda ${qi + 1}`,
         figure: q?.figure ?? item.figure ?? null,
         question_bd: q?.question_bd ?? q?.questionBD ?? item.question_bd ?? item.questionBD ?? "",
@@ -2951,11 +2974,14 @@ function buildAnswerReview(result = {}) {
       index:         index + 1,
       question:      question.question || `Domanda ${index + 1}`,
       figure:        question.figure ?? null,
+      sourceRevision: question.sourceRevision || "",
       audioQuestion: question.audioQuestion || question.question || `Domanda ${index + 1}`,
       audioFigure:   question.audioFigure ?? question.figure ?? null,
       audioIdentityToken: question.audioIdentityToken || "",
       helpQuestion: {
         id: question.id ?? "",
+        sourceRevision: question.sourceRevision || "",
+        audioIdentityToken: question.audioIdentityToken || "",
         question: question.question || `Domanda ${index + 1}`,
         figure: question.figure ?? null,
         question_bd: question.question_bd ?? question.questionBD ?? "",

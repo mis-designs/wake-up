@@ -233,7 +233,7 @@ test("successful save updates only exact content/figure/answer duplicates and ab
   for (let index = 0; index < f.rows.length; index++) {
     const matching = index < 2;
     assert.equal(f.requests[index].signal.aborted, matching);
-    assert.equal(f.requestMap.has(f.rows[index].id), !matching);
+    assert.equal(f.requestMap.has(f.context.audioStatusKey(f.rows[index])), !matching);
     assert.equal(f.cache(index), matching ? true : undefined);
     f.requests[index].resolve({ available: false });
   }
@@ -252,7 +252,7 @@ for (const outcome of ["missing", "temporary", "rejected"]) {
     const f = fixture(), callbacks = f.open(), checking = f.check(1);
     if (outcome === "rejected") f.requests[0].reject(new TypeError("Failed to fetch"));
     else f.requests[0].resolve({ available: false, ...(outcome === "temporary" ? { temporaryUnavailable: true } : {}) });
-    await until(() => !f.requestMap.has(f.rows[1].id), "request finally has removed its abort handle");
+    await until(() => !f.requestMap.has(f.context.audioStatusKey(f.rows[1])), "request finally has removed its abort handle");
     assert.equal(f.controls[1].surface.dataset.audioState, undefined, "observer has not painted yet");
     callbacks.onSaved();
     assert.equal(f.requests[0].signal.aborted, false, "save can no longer abort this completed request");
@@ -274,7 +274,7 @@ test("already-existing audio is a terminal conflict that restores the confirmed 
   assert.equal(f.cache(0), true); assert.equal(f.controls[0].surface.dataset.audioState, "ready");
   assert.equal(f.controls[0].trigger.hidden, true); assert.equal(callbacks.returnFocus(), f.controls[0].play);
   assert.equal(f.requests[0].signal.aborted, true); assert.equal(f.requests[1].signal.aborted, false);
-  assert.equal(f.requestMap.has(f.rows[0].id), false); assert.equal(f.requestMap.has(f.rows[2].id), true);
+  assert.equal(f.requestMap.has(f.context.audioStatusKey(f.rows[0])), false); assert.equal(f.requestMap.has(f.context.audioStatusKey(f.rows[2])), true);
   f.requests.forEach(request => request.resolve({ available: false })); await Promise.all(checking);
   assert.equal(f.cache(0), true); assert.equal(f.saves.length, 1, "no replacement/retry API is attempted");
   assert.equal(f.toasts.length, 0, "conflict is not reported as a successful new recording");
@@ -282,7 +282,7 @@ test("already-existing audio is a terminal conflict that restores the confirmed 
 
 test("repair/review/ambiguous conflicts and bad audio are terminal, never evidence of a playable recording", async t => {
   for (const [code, message] of [["quiz_audio_requires_repair", /verifica/], ["quiz_audio_requires_review", /verifica/],
-    ["quiz_audio_upload_conflict", /verifica/], ["invalid_audio_type", /non valida/],
+    ["quiz_audio_upload_conflict", /verifica/], ["quizbank_content_changed_refresh_required", /Ricarica/], ["invalid_audio_type", /non valida/],
     ["invalid_audio_base64", /non valida/], ["audio_too_large", /3 MB/]]) {
     await t.test(code, async () => {
       const f = fixture(), callbacks = f.open();

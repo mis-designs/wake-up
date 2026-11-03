@@ -4,7 +4,7 @@
   "use strict";
   function source(figure) {
     const id = String(figure || "").trim();
-    return /^[1-9]\d{0,3}$/.test(id) ? `/api/asset?kind=figure&figure=${id}&presentation=numberless-v2&catalog=quizbank-r2-v1` : "";
+    return /^[1-9]\d{0,3}$/.test(id) ? `/api/asset?kind=figure&figure=${id}&presentation=numberless-v2&catalog=quizbank-r2-v2` : "";
   }
 
   function load(image, question, { onReady = () => {}, isCurrent = () => true } = {}) {

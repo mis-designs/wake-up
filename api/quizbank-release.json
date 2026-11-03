@@ -1,0 +1,8 @@
+{
+  "release": "quizbank-final-v3-0",
+  "sourcePdfSha256": "d3445a83769b06eee77d3a5dea0e9fbba236ac070d138578256944eead04bd89",
+  "archiveKey": "releases/final-v3-0/magic_book_quiz_bank_50_schede_completo.json",
+  "archiveSha256": "6b7a0825dda5aecbaa64f31fd3aeace959e01f4eea3c110a14b469c40140aede",
+  "sheets": 50,
+  "questions": 1500
+}

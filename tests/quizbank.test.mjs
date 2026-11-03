@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { Readable } from "node:stream";
 import { S3Client } from "@aws-sdk/client-s3";
-import { parseQuizBank, quizBankConfig, loadQuizBank, quizBankAudioIdentity, quizBankStorageIdentity } from "../api/quizbank-catalog.mjs";
+import { parseQuizBank, quizBankConfig, loadQuizBank, quizBankAudioIdentity, quizBankStorageIdentity, quizBankContentToken } from "../api/quizbank-catalog.mjs";
 import { quizAudioCatalog } from "../api/quiz-audio-catalog.mjs";
 import { neonConfig } from "@neondatabase/serverless";
 
@@ -122,6 +122,8 @@ test("private API: no role spoofing or unentitled user access, no R2 before auth
     return `${payload}.${crypto.createHmac("sha256", env.SESSION_SECRET).update(payload).digest("base64url")}`;
   };
   async function request(params = {}, bearer = token("admin"), method = "GET") {
+    const row = parseQuizBank(rows).byId.get(params.questionId);
+    if (row) params = { audioIdentityToken: quizBankContentToken(row), ...params };
     const res = { headers: {}, statusCode: 200, setHeader(k, v) { this.headers[k] = v; },
       status(code) { this.statusCode = code; return this; }, json(data) { this.body = data; return this; } };
     await handler({ method, headers: { authorization: `Bearer ${bearer}` },

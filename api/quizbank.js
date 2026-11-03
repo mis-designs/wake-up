@@ -1,5 +1,5 @@
 import { authorizeQuizBankPreview, quizBankSession, serveQuizBankMedia, saveQuizBankAudio } from "./quiz.js";
-import { loadQuizBank, quizBankStorageIdentity } from "./quizbank-catalog.mjs";
+import { loadQuizBank, quizBankStorageIdentity, quizBankContentToken, matchesQuizBankContentToken } from "./quizbank-catalog.mjs";
 import { decodeQuizAudioUpload } from "../lib/quiz-audio-upload.mjs";
 import { buildQuizBankAttempt, gradeQuizBankAttempt, normalizeQuizBankSheet } from "../lib/quizbank-attempt.mjs";
 
@@ -7,6 +7,10 @@ const actions = {
   GET: new Set(["catalog", "getStudyQuiz", "getQuiz", "getItalianAudio", "getBengaliAudio", "getTTS"]),
   POST: new Set(["refreshQuizSession", "checkQuiz", "getQuizAudioStatus", "getQuizAudioBlob", "getQuizAudioPlayback", "saveQuizAudio"])
 };
+
+const withContentTokens = rows => rows.map(row => ({ ...row, audioIdentityToken: quizBankContentToken(row) }));
+const contentChanged = res => res.status(409).json({ error: "quizbank_content_changed_refresh_required",
+  refreshRequired: true, message: "La scheda è stata aggiornata. Ricarica la pagina prima di usare o salvare gli audio." });
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "private, no-store, max-age=0");
@@ -25,7 +29,8 @@ export default async function handler(req, res) {
     }
     if (data.action === "refreshQuizSession") return res.status(200).json({ ok: true, role, canUploadAudio,
       ...quizBankSession(data, { role }), ...renewed });
-    if (data.action === "getTTS") return await serveQuizBankMedia({ action: data.action, text: data.text }, res);
+    // Standalone word TTS has no archive identity; question TTS must pass the row guard.
+    if (data.action === "getTTS" && !data.questionId) return await serveQuizBankMedia({ action: data.action, text: data.text }, res);
     const upload = data.action === "saveQuizAudio" ? decodeQuizAudioUpload(data) : null;
     const isAttempt = data.action === "getQuiz" || data.action === "checkQuiz";
     const sheet = isAttempt ? normalizeQuizBankSheet(data.chapters) : Number(data.chapters);
@@ -36,7 +41,7 @@ export default async function handler(req, res) {
     if (data.action === "getQuiz") {
       return res.status(200).json({ ok: true, sheet, role, canUploadAudio, isAdmin: canUploadAudio,
         source: "quizbank", mode: "default", title: `QuizBank · Scheda ${sheet}`, timerMinutes: 20,
-        ...buildQuizBankAttempt(bank.sheets[sheet - 1]), ...quizBankSession(data, { role }), ...renewed });
+        ...buildQuizBankAttempt(withContentTokens(bank.sheets[sheet - 1])), ...quizBankSession(data, { role }), ...renewed });
     }
     if (data.action === "checkQuiz") {
       // Authorization already validated JSON/body shape. Keep this QuizBank-only
@@ -53,14 +58,16 @@ export default async function handler(req, res) {
     }
     if (data.action === "getStudyQuiz") {
       return res.status(200).json({ ok: true, sheet, role, canUploadAudio,
-        quiz: bank.sheets[sheet - 1], ...quizBankSession(data, { role }), ...renewed });
+        quiz: withContentTokens(bank.sheets[sheet - 1]), ...quizBankSession(data, { role }), ...renewed });
     }
     const row = bank.byId.get(String(data.questionId || ""));
     if (!row) return res.status(404).json({ error: "quizbank_question_not_found" });
+    // Fail before any explanation database/object access, upload or TTS request.
+    if (!matchesQuizBankContentToken(row, data.audioIdentityToken)) return contentChanged(res);
     const identity = quizBankStorageIdentity(row);
     if (upload) return await saveQuizBankAudio({ data, identity, upload, req }, res);
     // Ignore submitted text/figure/answer when choosing the explanation or IT/BN source.
-    return await serveQuizBankMedia({ action: data.action, row, identity }, res);
+    return await serveQuizBankMedia({ action: data.action, row, identity, text: data.text }, res);
   } catch (error) {
     const status = Number(error.statusCode) || 503;
     const known = new Set(["quizbank_not_configured", "quizbank_archive_unavailable", "quizbank_invalid_archive"]);

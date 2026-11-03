@@ -5,7 +5,7 @@ import {Readable} from 'node:stream';
 import {S3Client} from '@aws-sdk/client-s3';
 import handler from '../api/asset.js';
 
-test('QuizBank reads only the selected R2 object; corrected 565 never falls back to the known wrong object', async t => {
+test('QuizBank reads the owner-maintained numbered R2 object, including 565, without alternate objects', async t => {
   for (const key of ['BOOK_R2_BUCKET','BOOK_R2_ACCOUNT_ID','BOOK_R2_ACCESS_KEY_ID','BOOK_R2_SECRET_ACCESS_KEY']) {
     const previous=process.env[key]; process.env[key]='fixture';
     t.after(()=>{if(previous===undefined)delete process.env[key];else process.env[key]=previous;});
@@ -23,10 +23,10 @@ test('QuizBank reads only the selected R2 object; corrected 565 never falls back
     await handler({method:'GET',query:{kind:'figure',figure,catalog}},res);return res;
   }
   assert.equal((await request('565')).statusCode,200);
-  assert.deepEqual(keys,['Figure/quizbank-fig565-v1.jpg']);
+  assert.deepEqual(keys,['Figure/fig565.jpg']);
   failure='NoSuchKey';
   const missing=await request('565');assert.equal(missing.statusCode,404);
-  assert.equal(keys.length,2);assert.equal(keys[1],'Figure/quizbank-fig565-v1.jpg');
+  assert.equal(keys.length,2);assert.equal(keys[1],'Figure/fig565.jpg');
   assert.equal(missing.headers['Cache-Control'],'public, max-age=60, s-maxage=60');
   failure='ServiceUnavailable';
   const unavailable=await request('565');assert.equal(unavailable.statusCode,500);assert.equal(keys.length,3);

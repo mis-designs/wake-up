@@ -14,20 +14,41 @@ bulk prefetch, automatic image retry, or catalogue fallback. Manual retry
 requests the same R2 object with a fresh query parameter to bypass a cached
 failed image; it never selects a substitute. Stale callbacks do not update another question.
 
-The versioned `catalog=quizbank-r2-v1` query prevents old fallback responses
-from being reused. For figure 565 it selects `Figure/quizbank-fig565-v1.jpg`,
-the exact owner-supplied correct JPEG (SHA-256
-`011431ca0bdfeb04ea54d025ff15e59755b84af2e0b126c984c015b94c9e46c2`).
-If the object has not been uploaded, the UI shows the unavailable/retry state.
-It must never fall back to `Figure/fig565.jpg`, confirmed to have different
-lane arrows. The original object remains unchanged for existing consumers.
-Other figures retain their existing `Figure/figN.jpg` paths in R2. Their
-visual correctness is not certified by this delivery change.
+The owner confirmed that the misnumbered figure was corrected in the existing
+Cloudflare archive. All figures, including 565, now use `Figure/figN.jpg`.
+The temporary 565 object override has been removed. The v2 catalog query is
+only a browser/CDN cache version; it does not select a different R2 folder.
+No image objects were written, renamed, copied, replaced or deleted by this
+release. The application always retrieves the owner's numbered archive.
 
-The supplied 50-sheet JSON places the reported figure at qb_s03_q04 and
-qb_s46_q04. Figure 564 is different and remains distinct. No question text,
-answer, audio identity or special figure-546 rotation changes. The reference
-image was visually checked against the owner's attachment and the extracted
-PDF figure pdf_027. No private question archive or exam candidate information
-is committed. The image must be uploaded to R2 before these two questions
-can display it.
+## Prepared Final v3 question update (not uploaded or deployed)
+
+Owner clarification, 3 November 2026: the existing Cloudflare R2 figure
+archive is authoritative. Correct numero_figura in the private question JSON;
+the existing resolver retrieves the figure by that number. Do not create,
+replace, upload or introduce release-specific figure folders or catalogues.
+The previous proposal to upload versioned image copies was withdrawn.
+The standard number-based resolver is retained; only the obsolete 565 override
+has been removed after the owner corrected the numbered object.
+No remote image writes were performed. Local comparisons are audit evidence,
+not proof that a remote R2 object differs and not instructions to replace it.
+
+The owner supplied Quiz_Bank_final_v3_0.pdf, SHA-256
+d3445a83769b06eee77d3a5dea0e9fbba236ac070d138578256944eead04bd89.
+It replaces sheets 7, 11, 19, 20, 26, 29, 36, 40 and 45: 270 positions.
+All 1,500 ordered rows were checked. The 591 illustrated rows reference
+249 figure numbers in the existing archive. JSON path fields are descriptive
+existing catalogue references; runtime selection continues via numero_figura.
+The old JSON matches its older PDF. New physical page 56 is printed page 55.
+
+The local release manifest contains question-archive hashes and counts only.
+Question text and candidate information stay out of the repository. Source
+revision tokens prevent stale pages from attaching audio to replaced content;
+1,307 equivalent-content audio identities are preserved. No source-key change
+or deployment has been performed. Publishing and updating the private JSON
+are separate from the unchanged image archive.
+
+Request behavior remains unchanged: archive read on a five-minute bounded
+cache miss; authorization on every call; selected R2 figure reads only, with
+the existing cache, cancellation, unavailable and explicit-retry behavior.
+No additional image requests, upload plan, automatic retries or polling.

@@ -513,8 +513,10 @@ for (const mode of ["separate", "magicbook"]) test(`ordinary users can read cata
         ({ name, dataTypeID: name === "audio_duration_ms" ? 23 : 25 })),
       rows: [[identity.quizKey, "fixture.mp3", "audio/mpeg", 1200]] });
   };
+  let audioIdentityToken = "";
   for (const [action, method] of readActions) {
-    const response = await call(user, { action, chapters: "1", questionId: "qb_s01_q01", text: "পরীক্ষা" }, method);
+    const response = await call(user, { action, chapters: "1", questionId: "qb_s01_q01", text: "পরীক্ষা", audioIdentityToken }, method);
+    if (action === "getStudyQuiz") audioIdentityToken = response.body.quiz[0].audioIdentityToken;
     assert.equal(response.statusCode, 200, action);
     assert.match(response.headers["Cache-Control"], /private, no-store/);
     if (["catalog", "getStudyQuiz", "refreshQuizSession"].includes(action)) {

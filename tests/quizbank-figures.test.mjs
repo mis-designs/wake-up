@@ -17,7 +17,7 @@ test('a failed figure never falls back to another catalogue; retry is explicit a
   const { api, image, requests, notes } = setup();
   let ready = 0;
   api.load(image, {figure:'565'}, {onReady:()=>ready++});
-  assert.deepEqual(requests, ['/api/asset?kind=figure&figure=565&presentation=numberless-v2&catalog=quizbank-r2-v1']);
+  assert.deepEqual(requests, ['/api/asset?kind=figure&figure=565&presentation=numberless-v2&catalog=quizbank-r2-v2']);
   image.onerror(); image.onerror();
   assert.equal(requests.length, 1); assert.equal(notes.length, 1); assert.equal(image.hidden, true);
   const button=notes[0].children[0]; button.click(); button.click();

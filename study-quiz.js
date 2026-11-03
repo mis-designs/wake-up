@@ -87,6 +87,7 @@
   let loadRequestId = 0;
   let sheetRequest = null;
   let quizBankReady = false;
+  let quizBankContentNoticeShown = false;
   let quizBankCanUploadAudio = false;
   let quizBankRecorder = null;
   let figureStudy = null;
@@ -319,6 +320,13 @@
     return refreshQuizSession();
   }
 
+  function reportQuizBankContentChanged(code) {
+    if (QUIZBANK_MODE && code === "quizbank_content_changed_refresh_required" && !quizBankContentNoticeShown) {
+      quizBankContentNoticeShown = true;
+      showToast("La scheda è stata aggiornata. Ricarica la pagina prima di usare o salvare gli audio.");
+    }
+  }
+
   async function fetchStudyJson(url, options = {}) {
     if (QUIZBANK_MODE && !studyVideoIdentity()) { showQuizBankError(new Error("unauthorized")); throw new Error("unauthorized"); }
     const { allowSessionRefresh = true, ...fetchOptions } = options;
@@ -355,6 +363,7 @@
     } finally { timed?.cleanup(); }
     if (QUIZBANK_MODE) saveAccessToken(response.headers.get("X-Access-Token"), Number(response.headers.get("X-Access-Token-Expires")));
     const error = String(data?.error || "");
+    reportQuizBankContentChanged(error);
     if (
       allowSessionRefresh
       && !TRIAL_MODE
@@ -602,6 +611,7 @@
       quizSessionToken = String((TRIAL_MODE ? data.trialToken : data.quizSessionToken) || "");
       quizSessionTokenExpiresAt = Number((TRIAL_MODE ? data.trialTokenExpiresAt : data.quizSessionTokenExpiresAt) || 0);
       questions = Array.isArray(data.quiz) ? data.quiz : [];
+      quizBankContentNoticeShown = false;
       if (QUIZBANK_MODE) setQuizBankCapabilities(data);
       renderQuestions();
       rememberStudyChapter(chapter);
@@ -893,8 +903,10 @@
             cacheAudioAvailability(question, true);
             paintAudioAvailability(controls.surface, true);
           }
-          const terminal = /quiz_audio_(already_exists|requires_review|requires_repair|upload_conflict)|invalid_audio|audio_too_large/.test(code);
-          const message = code === "quiz_audio_already_exists"
+          const terminal = /quizbank_content_changed_refresh_required|quiz_audio_(already_exists|requires_review|requires_repair|upload_conflict)|invalid_audio|audio_too_large/.test(code);
+          const message = code === "quizbank_content_changed_refresh_required"
+            ? "La scheda è stata aggiornata. Ricarica la pagina prima di registrare o salvare un audio."
+            : code === "quiz_audio_already_exists"
             ? "È già presente una spiegazione. Nessun audio è stato sostituito."
             : /requires_review|requires_repair|upload_conflict/.test(code)
               ? "Questa spiegazione richiede una verifica. Nessun audio è stato sostituito."
@@ -1098,7 +1110,7 @@
   }
 
   async function loadAutomaticTranslation(question) {
-    const key = `bn:${question.id || fingerprint(question)}`;
+    const key = `bn:${audioStatusKey(question)}`;
     const cached = ttsCache.get(key);
     if (cached?.translation && cached?.translationSource === "automatic") return cached;
 
@@ -1113,6 +1125,7 @@
       phone: session.phone,
       deviceId: session.deviceId,
       questionId: String(question.id || ""),
+      ...(QUIZBANK_MODE ? { audioIdentityToken: question.audioIdentityToken || "" } : {}),
       text: String(question.question || "")
     });
     const data = await fetchStudyJson(`${API}?${query}`, {
@@ -1127,7 +1140,7 @@
   }
 
   async function getQuestionHelp(question) {
-    const key = String(question.id || fingerprint(question));
+    const key = audioStatusKey(question);
     const cached = helpCache.get(key);
     if (cached) return cached;
     let data = null;
@@ -1269,7 +1282,7 @@
     const skeleton = helpSkeleton();
     card.appendChild(skeleton);
     try {
-      const key = String(question.id || fingerprint(question));
+      const key = audioStatusKey(question);
       let help = helpCache.get(key);
       if (!help) help = await getQuestionHelp(question);
       helpCache.set(key, help);
@@ -1573,7 +1586,7 @@
       window.location.href = trialOfferUrl(language === "bn" ? "Audio Bengali completo" : "Audio italiano completo");
       return;
     }
-    const key = `${language}:${question.id || fingerprint(question)}`;
+    const key = `${language}:${audioStatusKey(question)}`;
     if (activeTtsPlayback?.key === key) {
       stopStudyTts({ resume: false, reason: "manual" });
       return;
@@ -1618,6 +1631,7 @@
             phone: session.phone,
             deviceId: session.deviceId,
             questionId: String(question.id || ""),
+            ...(QUIZBANK_MODE ? { audioIdentityToken: question.audioIdentityToken || "" } : {}),
             text: requestText
           });
           const data = await fetchStudyJson(`${API}?${query}`, {
@@ -1649,6 +1663,9 @@
       await startTtsAudio(playback, base64AudioUrl(data.audio));
     } catch (error) {
       if (error?.name === "AbortError" || ownRequest !== wordTtsRequestId || activeTtsPlayback !== playback) return;
+      if (error?.message === "quizbank_content_changed_refresh_required") {
+        completeStudyTts(playback, { resume: true }); return;
+      }
       const missingTranslation = error?.message === "translation_not_available";
       if (completeStudyTts(playback, { resume: true })) {
         showToast(language === "bn"
@@ -1745,6 +1762,13 @@
         showQuizBankError(new Error(data.error || "unauthorized"));
         throw new Error(data.error || "unauthorized");
       }
+      if (QUIZBANK_MODE && response.status === 409) {
+        const data = await response.clone().json().catch(() => ({}));
+        reportQuizBankContentChanged(data.error);
+        if (data.error === "quizbank_content_changed_refresh_required") {
+          throw Object.assign(new Error(data.error), { retryable: false });
+        }
+      }
       if (blob) {
         if (response.status === 401 || response.status === 403) clearSessionAndExit();
         if (!response.ok) {
@@ -1763,7 +1787,8 @@
   }
 
   function audioStatusKey(question) {
-    return String(question?.id || fingerprint(question));
+    const id = String(question?.id || fingerprint(question));
+    return QUIZBANK_MODE ? `${id}:${question?.audioIdentityToken || ""}` : id;
   }
 
   function cacheAudioAvailability(question, available) {
@@ -1927,6 +1952,7 @@
       if (pendingExplanation !== request || request.id !== explanationRequestId) return;
       if (error?.name === "AbortError") return;
       const code = String(error?.message || "");
+      if (code === "quizbank_content_changed_refresh_required") return;
       const definitelyMissing = code === "quiz_audio_not_found" || code === "audio_blob_404";
       if (definitelyMissing) {
         cacheAudioAvailability(question, false);
@@ -1954,7 +1980,7 @@
       if (source?.blob?.size) return source;
       firstError = new Error("empty_audio_blob");
     } catch (error) {
-      if (error?.name === "AbortError") throw error;
+      if (error?.name === "AbortError" || error?.message === "quizbank_content_changed_refresh_required") throw error;
       firstError = error;
     }
 

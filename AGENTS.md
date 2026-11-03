@@ -31,3 +31,5 @@
 
 - Use only our Cloudflare R2 image archive for quiz figures, including QuizBank. Deliver through the shared Vercel asset API; never load an external image catalogue or silently substitute a same-numbered image from another source.
 - Verify the actual drawing before changing a question-to-image mapping. A missing reviewed R2 object must show an unavailable/retry state, never an unverified substitute.
+
+- For QuizBank PDF/JSON corrections, keep the existing R2 figure archive and resolver unchanged. Update numero_figura only; do not propose new figure folders, catalogues, copies or uploads unless the owner explicitly requests them.
