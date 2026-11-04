@@ -55,7 +55,6 @@ function open(image, trigger) {
   const id = identity(image);
   if (!id || !image.complete || !image.naturalWidth || trigger.closest('[inert]')) return;
   const detail = getFigureDetail(id);
-  const quizbank = new URL(image.src).searchParams.get('catalog')?.startsWith('quizbank-r2-');
   // Finish a decorative flip before measuring the thumbnail, so its placeholder
   // cannot collapse when the figure happens to be edge-on.
   image.closest('.is-sheet-flipping')?.classList.remove('is-sheet-flipping');
@@ -74,18 +73,11 @@ function open(image, trigger) {
     <footer><button type="button" class="figure-detail-close" aria-label="Chiudi figura"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></footer>
   </section>`;
   const card = overlay.firstElementChild;
-  if (quizbank) {
-    overlay.classList.add('figure-detail-overlay--quizbank');
-    card.removeAttribute('aria-labelledby');
-    card.removeAttribute('aria-describedby');
-    card.setAttribute('aria-label', 'Figura ingrandita');
-    const rotated = image.classList.contains('quizbank-figure-rotated') || image.style.transform === 'rotate(90deg)';
-    if (rotated) overlay.classList.add('figure-detail-overlay--rotated');
-    card.style.setProperty('--figure-ratio', String(rotated ? 1 : image.naturalWidth / image.naturalHeight));
+  if (image.classList.contains('quizbank-figure-rotated') || image.style.transform === 'rotate(90deg)') {
+    overlay.classList.add('figure-detail-overlay--rotated');
   }
   overlay.querySelector('#figureDetailTitle').textContent = detail?.italian || 'Nome della figura non ancora disponibile';
   overlay.querySelector('#figureDetailBangla').textContent = detail?.bangla || 'এই ছবির নাম এখনো যোগ করা হয়নি';
-  if (quizbank) overlay.querySelector('.figure-detail-copy').remove();
   const spacer = document.createElement('span');
   spacer.className = 'figure-detail-spacer';
   spacer.setAttribute('aria-hidden', 'true');
@@ -95,17 +87,6 @@ function open(image, trigger) {
   image.replaceWith(spacer);
   overlay.querySelector('.figure-detail-media').append(image);
   document.body.append(overlay);
-  if (quizbank) {
-    card.style.animation = 'none';
-    const target = card.getBoundingClientRect();
-    card.style.setProperty('--figure-start-x', `${bounds.x + bounds.width / 2 - target.x - target.width / 2}px`);
-    card.style.setProperty('--figure-start-y', `${bounds.y + bounds.height / 2 - target.y - target.height / 2}px`);
-    card.style.setProperty('--figure-start-scale', String(Math.min(bounds.width / target.width, bounds.height / target.height)));
-    card.style.removeProperty('animation');
-    card.addEventListener('click', event => {
-      if (event.target === card || event.target === overlay.querySelector('.figure-detail-media')) close();
-    });
-  }
   trigger.setAttribute('aria-expanded', 'true');
   const closeButton = overlay.querySelector('.figure-detail-close');
   closeButton.addEventListener('click', () => close());

@@ -200,11 +200,11 @@ test('QuizBank open/close preserves exact image, source handlers, inert state, f
     f.open();
     assert.equal(f.overlay().querySelector('img'), f.image);
     assert.equal(f.surface.inert, true);
-    assert.equal(f.overlay().querySelector('.figure-detail-copy'), null);
+    assert.ok(f.overlay().querySelector('.figure-detail-copy'));
     const dialog = f.overlay().firstElementChild;
-    assert.equal(dialog.getAttribute('aria-label'), 'Figura ingrandita');
-    assert.equal(dialog.getAttribute('aria-labelledby'), null);
-    assert.equal(dialog.getAttribute('aria-describedby'), null);
+    assert.equal(dialog.getAttribute('aria-label'), null);
+    assert.equal(dialog.getAttribute('aria-labelledby'), 'figureDetailTitle');
+    assert.equal(dialog.getAttribute('aria-describedby'), 'figureDetailBangla');
     f.window.scrollTo({ left: 99, top: 999 }); f.scroller.scrollTo({ left: 88, top: 888 });
     f.overlay().querySelector('.figure-detail-close').fire('click');
     f.flushBack();
@@ -350,4 +350,18 @@ test('source-owned rotations remain explicit without changing image pixels or it
     f.viewer.close(); f.flushBack();
     assert.equal(f.image.parentElement, f.trigger);
   }
+});
+
+test('MagicBook and QuizBank use exactly the same bilingual dialog and naming source', () => {
+  const standard = fixture({ quizbank: false }), bank = fixture({ quizbank: true });
+  standard.open(); bank.open();
+  assert.equal(standard.overlay().className, bank.overlay().className);
+  for (const f of [standard, bank]) {
+    assert.ok(f.overlay().querySelector('#figureDetailTitle'));
+    assert.ok(f.overlay().querySelector('#figureDetailBangla'));
+    assert.ok(f.overlay().querySelector('.figure-detail-close'));
+    assert.equal(f.overlay().classList.contains('figure-detail-overlay--quizbank'), false);
+  }
+  assert.doesNotMatch(read('figure-detail.css'), /figure-detail-overlay--quizbank/);
+  assert.doesNotMatch(read('figure-detail.js'), /get\('catalog'\)/);
 });
