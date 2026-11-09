@@ -4854,6 +4854,7 @@ const adminState = {
   query: "",
   mode: "recent",
   totalAvailable: null,
+  loadError: false,
   loading: false,
   loadVersion: 0,
   searchTimer: null,
@@ -4902,7 +4903,9 @@ document.addEventListener("visibilitychange", refreshAdminEntryOnResume);
 function getAdminStatus(user) {
   const expiry = user?.expiry ? new Date(user.expiry) : null;
   if (!expiry || isNaN(expiry.getTime())) {
-    return { key: "no-expiry", label: "No expiry", days: null };
+    return user?.status === "expired"
+      ? { key: "expired", label: "Scaduto", days: -1 }
+      : { key: "no-expiry", label: "No expiry", days: null };
   }
   if (trialGuestMode) {
     document.querySelectorAll("#qmsCapPills .qms-pill").forEach(pill => pill.classList.toggle("guest-qms-locked", !isFreeTrialChapter(pill.dataset.ch)));
@@ -4911,7 +4914,7 @@ function getAdminStatus(user) {
   }
 
   const days = Math.ceil((expiry.getTime() - Date.now()) / 86400000);
-  if (days < 0) return { key: "expired", label: "Scaduto", days };
+  if (expiry.getTime() < Date.now()) return { key: "expired", label: "Scaduto", days: Math.min(-1, days) };
   if (days <= ADMIN_EXPIRING_DAYS) return { key: "expiring", label: "In scadenza", days };
   return { key: "active", label: "Attivo", days };
 }
@@ -5120,7 +5123,13 @@ function setupAdminUI() {
   const adminTabs = Array.from(document.querySelectorAll(".admin-tab"));
   adminTabs.forEach((tab, index) => {
     tab.addEventListener("click", () => {
+      const wasExpired = adminState.tab === "expired";
       setAdminTab(tab.dataset.adminTab || "users");
+      if (wasExpired !== (adminState.tab === "expired")) {
+        adminLoadAllUsers();
+        return;
+      }
+      if (adminState.loading) { renderAdminLoading(); return; }
       renderAdminUsers();
       if (adminState.tab === "promo"
           && adminState.mode === "all"
@@ -5213,7 +5222,8 @@ async function showAdminPanel() {
     currentScreen = "admin";
     updateAdminEntryVisibility();
     setAppRoute({ screen: "admin" });
-    loadPromise = adminLoadUsers(false, "recent");
+    setAdminTab("users");
+    loadPromise = adminLoadUsers(true, "recent");
   }, { holdMs: 360 });
   if (!started) return;
   await loadPromise;
@@ -5241,7 +5251,7 @@ function scheduleAdminPhoneSearch(value, { immediate = false } = {}) {
     return;
   }
 
-  setAdminTab("users");
+  if (adminState.tab !== "expired") setAdminTab("users");
   adminState.mode = "search-pending";
   adminState.users = [];
   adminState.totalAvailable = null;
@@ -5310,22 +5320,27 @@ async function adminLoadUsers(force = false, requestedMode = "") {
     document.getElementById("adminSearchClear")?.classList.add("hidden");
   }
 
+  const scope = adminState.tab === "expired" ? "expired" : "active";
   const loadVersion = ++adminState.loadVersion;
+  adminState.users = [];
+  adminState.totalAvailable = null;
+  adminState.loadError = false;
   adminState.loading = true;
   adminState.mode = mode;
   renderAdminLoading();
   setAdminMessage(mode === "all"
-    ? "Caricamento di tutti gli utenti..."
+    ? scope === "expired" ? "Caricamento utenti scaduti..." : "Caricamento utenti validi..."
     : mode === "search"
       ? "Ricerca utente..."
       : "Caricamento ultimi utenti...");
 
   try {
     const action = mode === "all" ? "list" : mode === "search" ? "search" : "recent";
-    const data = await adminRequest(action, mode === "search" ? { phone } : {});
+    const data = await adminRequest(action, { scope, ...(mode === "search" ? { phone } : {}) });
     if (loadVersion !== adminState.loadVersion) return;
 
     adminState.users = getAdminResponseUsers(data)
+      .filter(user => (getAdminStatus(user).key === "expired") === (scope === "expired"))
       .sort((a, b) => getAdminRegistrationTime(b) - getAdminRegistrationTime(a));
     const total = data?.total;
     adminState.totalAvailable = total !== undefined && total !== null && Number.isFinite(Number(total))
@@ -5357,6 +5372,7 @@ async function adminLoadUsers(force = false, requestedMode = "") {
       renderAdminUsers();
       return;
     }
+    adminState.loadError = true;
     setAdminMessage(getAdminErrorMessage(err.message), "error");
     renderAdminUsers();
   } finally {
@@ -5374,7 +5390,7 @@ async function adminLoadPromoUsers(loadVersion) {
   if (adminState.tab === "promo") renderAdminUsers();
 
   try {
-    const data = await adminRequest("promo_users");
+    const data = await adminRequest("promo_users", { scope: "active" });
     if (loadVersion !== adminState.loadVersion) return;
     adminState.users = mergeAdminPromoUsers(adminState.users, data.list);
     adminState.promoLoaded = true;
@@ -5401,16 +5417,17 @@ function updateAdminDatasetControls() {
   const totalLabel = document.getElementById("adminStatTotalLabel");
   const list = document.getElementById("adminUserList");
   const count = adminState.users.length;
-  let titleText = "Ultimi 10 utenti aggiunti";
+  const expired = adminState.tab === "expired";
+  let titleText = expired ? "Ultimi 10 utenti scaduti" : "Ultimi 10 utenti validi aggiunti";
   let captionText = adminState.totalAvailable !== null && adminState.totalAvailable > count
     ? `${count} caricati su ${adminState.totalAvailable}. Ricerca per telefono oppure carica l'elenco completo.`
-    : "La schermata iniziale carica solo i 10 utenti più recenti.";
+    : "Gli utenti scaduti sono disponibili solo nella sezione Scaduti.";
 
   if (adminState.mode === "all") {
-    titleText = "Tutti gli utenti";
+    titleText = expired ? "Utenti scaduti" : "Tutti gli utenti validi";
     captionText = adminState.loading
       ? "Caricamento dell'elenco completo in corso..."
-      : `${count} utenti caricati. Statistiche e filtri ora usano l'elenco completo.`;
+      : `${count} utenti ${expired ? "scaduti" : "validi"} caricati.${expired ? "" : " Per gli altri apri Scaduti."}`;
   } else if (adminState.mode === "search") {
     titleText = "Risultati della ricerca";
     captionText = adminState.loading
@@ -5429,15 +5446,15 @@ function updateAdminDatasetControls() {
   if (caption) caption.textContent = captionText;
   if (totalLabel) totalLabel.textContent = adminState.mode === "all" ? "Totale" : "Caricati";
   if (loadAll) {
-    const allLoaded = adminState.mode === "all" && !adminState.loading;
+    const allLoaded = adminState.mode === "all" && !adminState.loading && !adminState.loadError;
     loadAll.disabled = adminState.loading || allLoaded;
     loadAll.classList.toggle("is-loading", adminState.loading && adminState.mode === "all");
     loadAll.setAttribute("aria-busy", adminState.loading && adminState.mode === "all" ? "true" : "false");
     loadAll.textContent = adminState.loading && adminState.mode === "all"
       ? "Caricamento..."
       : allLoaded
-        ? "Tutti gli utenti caricati"
-        : "Carica tutti gli utenti";
+        ? expired ? "Utenti scaduti caricati" : "Utenti validi caricati"
+        : expired ? "Carica utenti scaduti" : "Carica tutti gli utenti";
   }
   list?.setAttribute("aria-busy", adminState.loading ? "true" : "false");
 }
@@ -5459,6 +5476,7 @@ function getFilteredAdminUsers() {
     const status = getAdminStatus(user);
     const phoneDigits = normalizeAdminSearch(user.phone);
     if (query && !phoneDigits.includes(query)) return false;
+    if (adminState.tab !== "expired" && status.key === "expired") return false;
     if (adminState.tab === "promo") return isAdminPromoUser(user);
     if (adminState.tab === "expiring") return status.key === "expiring";
     if (adminState.tab === "expired") return status.key === "expired";

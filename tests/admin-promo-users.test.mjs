@@ -107,7 +107,7 @@ test("promo metadata is lazy, gets enough time and never appears as a false empt
 
   assert.match(loadUsers, /const action = mode === "all" \? "list" : mode === "search" \? "search" : "recent"/u);
   assert.match(loadUsers, /mode === "all" && adminState\.tab === "promo"[\s\S]*?adminLoadPromoUsers\(loadVersion\)/u);
-  assert.match(loadPromoUsers, /adminRequest\("promo_users"\)/u);
+  assert.match(loadPromoUsers, /adminRequest\("promo_users", \{ scope: "active" \}\)/u);
   assert.match(loadPromoUsers, /promoLoading = true[\s\S]*?promoLoaded = true/u);
   assert.match(loadPromoUsers, /catch \(error\)[\s\S]*?promoError = getAdminErrorMessage/u);
   assert.match(renderUsers, /adminState\.tab === "promo" && adminState\.promoLoading[\s\S]*?Caricamento utenti promo/u);

@@ -362,3 +362,17 @@ The exact loaded image node moves into the viewer and returns to its measured pl
 ### One bilingual figure viewer throughout the product — 2026-11-04
 
 Owner correction supersedes the November3 QuizBank-only visual exception: all figure entry points (MagicBook, All Books quiz/help, study, QuizBank study/practice/review and learning details) must use the SAME `figure-detail.js/css` presentation shown in MagicBook. Keep the existing white rounded card, complete figure, Italian name and Bangla name from the shared catalogue, standard entrance/dim backdrop, and bottom-right scalloped X. Remove the route-specific image-only/large/blur/floating-close variant. Basic interactions must stay synchronized through the shared owner, not copied implementations. Unknown identities retain the existing honest bilingual unavailable-name message; never guess a name from a proposition. Preserve source-owned rotation, R2 URLs, exact node ownership, focus/scroll/history fixes, error recovery and zero extra image/API requests. No source image or JSON changes.
+
+
+## Admin valid-user scope — owner decision 2026-11-09
+The existing admin controller/API owns two exclusive read scopes. Entry/recent,
+full-list, search, Promo and Duplicati show only non-expired accounts (including
+no-expiry accounts). Only Scaduti requests expired accounts. Filter in Vercel
+before recent slicing and browser delivery; use the exact GAS expiry timestamp,
+not rounded days. Opening Scaduti or returning to another scope issues one list
+read; selecting tabs within the same scope adds none (except existing lazy Promo).
+No persistent cache or polling. Existing bounded read retries and loadVersion
+discard stale results; clear old records on scope changes, allow explicit retry
+after failure. Search stays in Scaduti when searching expired accounts. Existing
+permissions, mutations, Google Sheet and R2 are unchanged. Mock API/UI tests cover
+request counts, races, failures, search, expiry boundaries and recent selection.

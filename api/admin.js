@@ -138,7 +138,6 @@ function sanitizeAdminFields(action, body) {
   }
 
   if (action === "recent") {
-    fields.limit = ADMIN_RECENT_LIMIT;
     fields.order = "registration_desc";
   }
 
@@ -193,25 +192,24 @@ export function selectRecentAdminUsers(users, limit = ADMIN_RECENT_LIMIT) {
     .map(item => item.user);
 }
 
-function prepareRecentAdminResponse(data) {
-  const upstreamList = Array.isArray(data?.list) ? data.list : [];
-  const declaredTotal = Number(data?.total ?? data?.stats?.total);
-  const response = {
-    ...data,
-    list: selectRecentAdminUsers(upstreamList),
-    scope: "recent",
-    limit: ADMIN_RECENT_LIMIT
+// Keep the account-validity boundary identical to GAS: expiry < now.
+export function isAdminUserExpired(user, now = Date.now()) {
+  const expiry = user?.expiry ? new Date(user.expiry).getTime() : NaN;
+  return Number.isFinite(expiry) ? expiry < now : user?.status === "expired";
+}
+
+export function prepareAdminReadResponse(data, action, scope = "active", now = Date.now()) {
+  const source = Array.isArray(data?.list) ? data.list
+    : data?.user ? [data.user] : data?.result ? [data.result] : [];
+  const users = source.filter(user => isAdminUserExpired(user, now) === (scope === "expired"));
+  // Do not leave unfiltered records or totals in alternate response fields.
+  const { list, user, result, stats, total, ...metadata } = data;
+  return {
+    ...metadata, list: action === "recent" ? selectRecentAdminUsers(users) : users,
+    total: users.length, scope,
+    ...(action === "search" ? { user: users[0] || null } : {}),
+    ...(action === "recent" ? { limit: ADMIN_RECENT_LIMIT } : {})
   };
-
-  if (Number.isFinite(declaredTotal) && declaredTotal >= 0) {
-    response.total = declaredTotal;
-  } else if (upstreamList.length > ADMIN_RECENT_LIMIT) {
-    response.total = upstreamList.length;
-  } else {
-    delete response.total;
-  }
-
-  return response;
 }
 
 export default async function handler(req, res) {
@@ -257,8 +255,9 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: false, error: "quizbank_not_confirmed" });
     }
 
-    if (action === "recent") {
-      data = prepareRecentAdminResponse(data);
+    if (["recent", "list", "search", "promo_users"].includes(action)) {
+      const scope = body.scope === "expired" ? "expired" : "active";
+      data = prepareAdminReadResponse(data, action, scope);
     }
 
     if (action === "renew" && sanitized.fields.accessSource === "paid") {
