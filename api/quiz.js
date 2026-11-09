@@ -704,11 +704,13 @@ function verifySignedToken(token, { phone, deviceId, purpose }) {
     return { ok: false, error: "unauthorized" };
   }
 
-  if (payload.purpose !== purpose || payload.phone !== phone || payload.deviceId !== deviceId) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload) || payload.purpose !== purpose || payload.phone !== phone || payload.deviceId !== deviceId) {
     return { ok: false, error: "unauthorized" };
   }
 
-  if (!payload.exp || payload.exp <= Date.now()) {
+  if (!Number.isFinite(payload.exp)) return { ok: false, error: "unauthorized" };
+
+  if (payload.exp <= Date.now()) {
     return {
       ok: false,
       error: purpose === "quiz" ? "quiz_session_expired" : "token_expired",
@@ -727,7 +729,7 @@ function withPrivateAuthData(access, authData) {
 async function ensureAccess({ phone, deviceId, accessToken, forceValidate = false, quizBankValidation = false, quizBankSignal }) {
   const tokenStatus = verifySignedToken(accessToken, { phone, deviceId, purpose: "access" });
   if (tokenStatus.ok && !forceValidate) {
-    return { ok: true, usedAccessToken: true, role: tokenStatus.payload.role || "user" };
+    return { ok: true, usedAccessToken: true, role: tokenStatus.payload.role === "admin" && isAdminPhone(phone) ? "admin" : "user" };
   }
 
   const authData = await validateAccess(phone, deviceId, { bounded: quizBankValidation, signal: quizBankSignal });
@@ -737,7 +739,7 @@ async function ensureAccess({ phone, deviceId, accessToken, forceValidate = fals
   }
 
   if (tokenStatus.ok) {
-    return withPrivateAuthData({ ok: true, usedAccessToken: true, role: tokenStatus.payload.role || "user" }, authData);
+    return withPrivateAuthData({ ok: true, usedAccessToken: true, role: tokenStatus.payload.role === "admin" && isAdminPhone(phone) ? "admin" : "user" }, authData);
   }
 
   // An expired token with a valid signature can preserve the admin role only
@@ -1183,6 +1185,10 @@ export async function serveQuizBankMedia({ action, row, identity, text }, res) {
 }
 
 export default async function handler(req, res) {
+  // Authenticated content and signed audio URLs must never enter shared caches.
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("CDN-Cache-Control", "no-store");
+  res.setHeader("Vercel-CDN-Cache-Control", "no-store");
   if (req.method !== "GET" && req.method !== "POST") {
     return res.status(405).json({ error: "method_not_allowed" });
   }

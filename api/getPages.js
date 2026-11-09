@@ -1,3 +1,4 @@
+import { readRequestObject } from "../lib/request-json.mjs";
 import crypto from "crypto";
 import { fetchUpstream, publicApiError } from "./upstream-fetch.mjs";
 import {
@@ -181,11 +182,13 @@ function verifyAccessToken(token, phone, deviceId) {
     return { ok: false, error: "unauthorized" };
   }
 
-  if (payload.purpose !== "access" || payload.phone !== phone || payload.deviceId !== deviceId) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload) || payload.purpose !== "access" || payload.phone !== phone || payload.deviceId !== deviceId) {
     return { ok: false, error: "unauthorized" };
   }
 
-  if (!payload.exp || payload.exp <= Date.now()) {
+  if (!Number.isFinite(payload.exp)) return { ok: false, error: "unauthorized" };
+
+  if (payload.exp <= Date.now()) {
     return { ok: false, error: "token_expired", signatureValid: true, payload };
   }
 
@@ -210,21 +213,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const declaredLength = Number(req.headers?.["content-length"] || 0);
-    if (declaredLength > MAX_REQUEST_BODY_BYTES) {
-      return res.status(413).json({ error: "request_too_large" });
-    }
-
-    let body;
-    try {
-      body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
-    } catch {
-      return res.status(400).json({ error: "invalid_json" });
-    }
-
-    if (Buffer.byteLength(JSON.stringify(body)) > MAX_REQUEST_BODY_BYTES) {
-      return res.status(413).json({ error: "request_too_large" });
-    }
+    const body = readRequestObject(req, MAX_REQUEST_BODY_BYTES);
     const { action, book, type, chapter, page, registerDevice } = body;
     const accessToken = getBearerToken(req);
     const phone = normalizePhone(body.phone);

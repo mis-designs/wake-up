@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import vm from "node:vm";
 import { readFileSync } from "node:fs";
 
+process.env.ADMIN_PHONE_NUMBERS = "39123456789";
 process.env.GAS_ACCESS_URL = "https://fixture.invalid/access";
 process.env.GAS_SECRET = "fixture-secret";
 process.env.GAS_ADMIN_KEY = "fixture-admin-key";

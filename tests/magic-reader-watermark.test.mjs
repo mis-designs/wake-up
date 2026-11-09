@@ -60,7 +60,10 @@ test("the watermark exists only inside book images and not as a page overlay", (
 });
 
 test("the PWA requests the private-book reader build", () => {
-  assert.match(index, /script\.js\?v=88-slant-pagination/u);
-  assert.match(worker, /magicbook-pwa-v242-desktop-help/u);
-  assert.match(worker, /script\.js\?v=88-slant-pagination/u);
+  const versionedScript = index.match(/src="([^"<>]*script\.js\?v=(\d+)[^"<>]*)"/u);
+  assert.ok(versionedScript, "the reader script must be versioned");
+  assert.ok(Number(versionedScript[2]) >= 88, "do not regress to a pre-private-reader build");
+  assert.ok(worker.includes(versionedScript[1]), "HTML and precache must use the same reader build");
+  const cacheVersion = worker.match(/magicbook-pwa-v(\d+)-/u);
+  assert.ok(cacheVersion && Number(cacheVersion[1]) >= 242);
 });

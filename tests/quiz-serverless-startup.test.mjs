@@ -36,6 +36,7 @@ test("the traced Quiz function includes its catalogs and starts outside the sour
     process.env.SESSION_SECRET = 'isolated-deployment-test';
     process.env.GAS_ACCESS_URL = 'https://access.invalid';
     process.env.GAS_SECRET = 'test-only';
+    process.env.ADMIN_PHONE_NUMBERS = '1234567890';
     const { default: handler } = await import('./api/quiz.js');
     const phone = '1234567890', deviceId = 'bundle_test';
     const payload = Buffer.from(JSON.stringify({ phone, deviceId, purpose: 'access', role: 'admin', exp: Date.now() + 60000 })).toString('base64url');

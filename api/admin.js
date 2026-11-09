@@ -1,3 +1,4 @@
+import { readRequestObject } from "../lib/request-json.mjs";
 import crypto from "crypto";
 import { fetchUpstream, publicApiError } from "./upstream-fetch.mjs";
 
@@ -6,6 +7,7 @@ const GAS_SECRET = process.env.GAS_SECRET;
 const GAS_ADMIN_KEY = process.env.GAS_ADMIN_KEY || process.env.ADMIN_KEY || "";
 const SESSION_SECRET = process.env.SESSION_SECRET;
 const ADMIN_RECENT_LIMIT = 10;
+const ADMIN_PHONES = new Set((process.env.ADMIN_PHONE_NUMBERS || "").split(/[\s,;]+/).map(normalizePhone).filter(Boolean));
 
 const ADMIN_ACTIONS = new Set([
   "recent",
@@ -66,11 +68,13 @@ export function verifyAdminToken(token, phone, deviceId, secret = SESSION_SECRET
     return { ok: false, error: "unauthorized" };
   }
 
-  if (payload.purpose !== "access" || payload.phone !== phone || payload.deviceId !== deviceId) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload) || payload.purpose !== "access" || payload.phone !== phone || payload.deviceId !== deviceId) {
     return { ok: false, error: "unauthorized" };
   }
 
-  if (!payload.exp || payload.exp <= Date.now()) {
+  if (!Number.isFinite(payload.exp)) return { ok: false, error: "unauthorized" };
+
+  if (payload.exp <= Date.now()) {
     return { ok: false, error: "token_expired" };
   }
 
@@ -224,7 +228,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+    const body = readRequestObject(req);
     const action = String(body.action || "").trim();
     const sessionPhone = normalizePhone(body.sessionPhone || body.phone);
     const deviceId = String(body.deviceId || "").trim();
@@ -235,6 +239,10 @@ export default async function handler(req, res) {
         success: false,
         error: tokenStatus.error
       });
+    }
+
+    if (!ADMIN_PHONES.has(sessionPhone)) {
+      return res.status(403).json({ success: false, error: "admin_required" });
     }
 
     if (!ADMIN_ACTIONS.has(action)) {

@@ -1,3 +1,4 @@
+import { readRequestObject } from "../lib/request-json.mjs";
 import crypto from "crypto";
 import { fetchUpstream, publicApiError } from "./upstream-fetch.mjs";
 import {
@@ -532,7 +533,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+    const body = readRequestObject(req);
     const action = String(body.action || "").trim();
     const phone = normalizePhone(body.phone);
     const deviceId = String(body.deviceId || "").trim();
