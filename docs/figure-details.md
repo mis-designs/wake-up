@@ -78,3 +78,14 @@ The exact loaded image node moves into the viewer and returns to its measured pl
 ### One bilingual figure viewer throughout the product — 2026-11-04
 
 Owner correction supersedes the November3 QuizBank-only visual exception: all figure entry points (MagicBook, All Books quiz/help, study, QuizBank study/practice/review and learning details) must use the SAME `figure-detail.js/css` presentation shown in MagicBook. Keep the existing white rounded card, complete figure, Italian name and Bangla name from the shared catalogue, standard entrance/dim backdrop, and bottom-right scalloped X. Remove the route-specific image-only/large/blur/floating-close variant. Basic interactions must stay synchronized through the shared owner, not copied implementations. Unknown identities retain the existing honest bilingual unavailable-name message; never guess a name from a proposition. Preserve source-owned rotation, R2 URLs, exact node ownership, focus/scroll/history fixes, error recovery and zero extra image/API requests. No source image or JSON changes.
+
+### Figure numerate bilingui — 2026-11-09
+Le figure stradali numerate usano una scheda bianca arrotondata con disegno completo,
+centrato e nomi italiano/Bangla su due righe. È distinta dal visualizzatore delle
+fotografie delle parole, che resta trasparente, senza cornice bianca e senza autoplay.
+Il catalogo comune è figure-catalog.mjs in MagicBook, esportato in
+data/quiz-figure-names.json per AllBooks. Non inferire un nome dal testo del quiz.
+Gli aloni quasi bianchi immediatamente attorno a un numero rimosso non devono
+spostare il disegno; lettere, frecce e tratti scuri/colorati vanno preservati.
+La revisione documentata conta 410 nomi; fig334/335/445 non disponibili via R2
+restano da verificare. Nessun file R2 o abbinamento domanda/figura è stato modificato.

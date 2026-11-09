@@ -50,10 +50,10 @@ test('all entry points load the early popup owner and shared assets before route
     assert.ok(page.indexOf('app-popup.js?v=2') >= 0, html);
     assert.ok(page.indexOf('app-popup.js?v=2') < page.lastIndexOf(route), html);
     assert.match(page, /figure-detail\.css\?v=4-shared-bilingual/);
-    assert.match(page, /type="module" src="figure-detail\.js\?v=4-shared-bilingual"/);
+    assert.match(page, /type="module" src="figure-detail\.js\?v=5-figure-names"/);
   }
   const worker = read('service-worker.js');
-  for (const asset of ['app-popup.js?v=2', 'figure-detail.js?v=4-shared-bilingual', 'figure-detail.css?v=4-shared-bilingual', 'figure-catalog.mjs?v=1']) assert.ok(worker.includes(asset), asset);
+  for (const asset of ['app-popup.js?v=2', 'figure-detail.js?v=5-figure-names', 'figure-detail.css?v=4-shared-bilingual', 'figure-catalog.mjs?v=2-complete']) assert.ok(worker.includes(asset), asset);
 });
 test('figure viewer preserves nodes, scroll and prior modal state without API or route calls', () => {
   const viewer = read('figure-detail.js'), popup = read('app-popup.js'), css = read('figure-detail.css');

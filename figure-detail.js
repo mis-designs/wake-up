@@ -1,4 +1,4 @@
-import { getFigureDetail, normalizeFigureId } from './figure-catalog.mjs?v=1';
+import { getFigureDetail, normalizeFigureId } from './figure-catalog.mjs?v=2-complete';
 
 // One read-only figure viewer for Quiz, review, study and learning details.
 // No quiz text inference, TTS/translation requests, auth or answer state writes.

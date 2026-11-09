@@ -1,0 +1,1147 @@
+{
+  "reviewed_at": "2026-11-09",
+  "used_figures": 413,
+  "existing_names": 186,
+  "added_names": 224,
+  "named_total": 410,
+  "unavailable_r2": [
+    "fig334",
+    "fig335",
+    "fig445"
+  ],
+  "source_pdf": "https://www.neca.it/assets/pdf/ListatoAB.pdf",
+  "recognition_only_no_pdf_match": [
+    "fig923",
+    "fig927",
+    "fig929",
+    "fig967"
+  ],
+  "notes": [
+    "Read-only R2 through /api/figure-asset. No original image or question mapping changed.",
+    "Names describe the actual drawing, never infer truth from a quiz proposition.",
+    "Bengali names are editorial translations.",
+    "Unavailable R2 files remain unresolved; no substitute image or guessed identity."
+  ],
+  "entries": {
+    "fig6": {
+      "italian": "Doppia curva pericolosa, la prima a destra",
+      "bangla": "পরপর দুটি বিপজ্জনক বাঁক, প্রথমটি ডানে",
+      "page": 22
+    },
+    "fig7": {
+      "italian": "Doppia curva pericolosa, la prima a sinistra",
+      "bangla": "পরপর দুটি বিপজ্জনক বাঁক, প্রথমটি বামে",
+      "page": 23
+    },
+    "fig19": {
+      "italian": "Strettoia simmetrica",
+      "bangla": "রাস্তা দুই পাশ থেকে সরু হয়েছে",
+      "page": 32
+    },
+    "fig20": {
+      "italian": "Strettoia asimmetrica a sinistra",
+      "bangla": "রাস্তা বাম পাশ থেকে সরু হয়েছে",
+      "page": 32
+    },
+    "fig21": {
+      "italian": "Strettoia asimmetrica a destra",
+      "bangla": "রাস্তা ডান পাশ থেকে সরু হয়েছে",
+      "page": 33
+    },
+    "fig25": {
+      "italian": "Bambini",
+      "bangla": "শিশুদের চলাচল",
+      "page": 33
+    },
+    "fig26": {
+      "italian": "Animali domestici vaganti",
+      "bangla": "গৃহপালিত পশু চলাচল করতে পারে",
+      "page": 36
+    },
+    "fig27": {
+      "italian": "Animali selvatici vaganti",
+      "bangla": "বন্য প্রাণী চলাচল করতে পারে",
+      "page": 37
+    },
+    "fig29": {
+      "italian": "Preavviso di circolazione rotatoria",
+      "bangla": "সামনে গোলচত্বর",
+      "page": 38
+    },
+    "fig32": {
+      "italian": "Caduta massi da sinistra",
+      "bangla": "বাম দিক থেকে পাথর পড়ার আশঙ্কা",
+      "page": 39
+    },
+    "fig33": {
+      "italian": "Caduta massi da destra",
+      "bangla": "ডান দিক থেকে পাথর পড়ার আশঙ্কা",
+      "page": 40
+    },
+    "fig35": {
+      "italian": "Preavviso di semaforo orizzontale",
+      "bangla": "সামনে আড়াআড়ি ট্রাফিক সিগন্যাল",
+      "page": 41
+    },
+    "fig36": {
+      "italian": "Aeromobili a bassa quota",
+      "bangla": "নিচু দিয়ে বিমান চলাচল",
+      "page": 41
+    },
+    "fig39": {
+      "italian": "Altri pericoli",
+      "bangla": "অন্যান্য বিপদ",
+      "page": 43
+    },
+    "fig48": {
+      "italian": "Intersezione a T con diritto di precedenza: ramo a destra",
+      "bangla": "ডানে রাস্তা যুক্ত হয়েছে, আপনার অগ্রাধিকার আছে",
+      "page": 47
+    },
+    "fig49": {
+      "italian": "Intersezione a T con diritto di precedenza: ramo a sinistra",
+      "bangla": "বামে রাস্তা যুক্ত হয়েছে, আপনার অগ্রাধিকার আছে",
+      "page": 48
+    },
+    "fig58": {
+      "italian": "Limite massimo di velocità: 80 km/h",
+      "bangla": "সর্বোচ্চ গতিসীমা: ঘণ্টায় ৮০ কিলোমিটার",
+      "page": 59
+    },
+    "fig61": {
+      "italian": "Transito vietato ai veicoli a trazione animale",
+      "bangla": "পশু দিয়ে টানা যান চলাচল নিষিদ্ধ",
+      "page": 61
+    },
+    "fig62": {
+      "italian": "Transito vietato ai pedoni",
+      "bangla": "পথচারীদের চলাচল নিষিদ্ধ",
+      "page": 60
+    },
+    "fig65": {
+      "italian": "Transito vietato ai veicoli a braccia",
+      "bangla": "হাতে ঠেলা বা টানা যান চলাচল নিষিদ্ধ",
+      "page": 61
+    },
+    "fig69": {
+      "italian": "Transito vietato ai veicoli merci oltre 6,5 t",
+      "bangla": "৬.৫ টনের বেশি পণ্যবাহী যান চলাচল নিষিদ্ধ",
+      "page": 65
+    },
+    "fig74": {
+      "italian": "Transito vietato ai veicoli che trasportano prodotti contaminanti per l’acqua",
+      "bangla": "পানি দূষণকারী পদার্থ বহনকারী যান চলাচল নিষিদ্ধ",
+      "page": 64
+    },
+    "fig89": {
+      "italian": "Preavviso di parcheggio",
+      "bangla": "সামনে পার্কিংয়ের স্থান",
+      "page": 75
+    },
+    "fig93": {
+      "italian": "Direzione obbligatoria diritto",
+      "bangla": "সোজা যেতে হবে",
+      "page": 76
+    },
+    "fig94": {
+      "italian": "Direzione obbligatoria a sinistra",
+      "bangla": "বামে যেতে হবে",
+      "page": 77
+    },
+    "fig95": {
+      "italian": "Direzione obbligatoria a destra",
+      "bangla": "ডানে যেতে হবে",
+      "page": 78
+    },
+    "fig97": {
+      "italian": "Preavviso di direzione obbligatoria a sinistra",
+      "bangla": "সামনে বামে যেতে হবে",
+      "page": 80
+    },
+    "fig99": {
+      "italian": "Direzioni consentite: diritto e destra",
+      "bangla": "সোজা ও ডানে যাওয়া যায়",
+      "page": 82
+    },
+    "fig100": {
+      "italian": "Direzioni consentite: diritto e sinistra",
+      "bangla": "সোজা ও বামে যাওয়া যায়",
+      "page": 83
+    },
+    "fig109": {
+      "italian": "Fine del percorso pedonale",
+      "bangla": "পথচারীদের নির্ধারিত পথ শেষ",
+      "page": 90
+    },
+    "fig110": {
+      "italian": "Pista ciclabile",
+      "bangla": "সাইকেল চলাচলের পথ",
+      "page": 91
+    },
+    "fig111": {
+      "italian": "Fine della pista ciclabile",
+      "bangla": "সাইকেল চলাচলের পথ শেষ",
+      "page": 91
+    },
+    "fig114": {
+      "italian": "Fine della pista ciclabile contigua al marciapiede",
+      "bangla": "ফুটপাতের পাশে সাইকেল চলাচলের পথ শেষ",
+      "page": 92
+    },
+    "fig116": {
+      "italian": "Percorso riservato ai quadrupedi da soma o da sella",
+      "bangla": "মাল বা আরোহী বহনকারী চতুষ্পদ পশুর নির্ধারিত পথ",
+      "page": 94
+    },
+    "fig123": {
+      "italian": "Pannelli di validità: fasce orarie giornaliere",
+      "bangla": "প্রতিদিন কার্যকর থাকার সময়সূচির প্যানেল",
+      "page": 139
+    },
+    "fig124": {
+      "italian": "Pannello di validità nei giorni festivi",
+      "bangla": "ছুটির দিনে কার্যকর থাকার প্যানেল",
+      "page": 139
+    },
+    "fig127": {
+      "italian": "Pannello di eccezione per gli autobus",
+      "bangla": "বাসের জন্য ব্যতিক্রম নির্দেশক প্যানেল",
+      "page": 141
+    },
+    "fig128": {
+      "italian": "Pannelli di inizio",
+      "bangla": "নির্দেশ শুরু হওয়ার প্যানেল",
+      "page": 141
+    },
+    "fig129": {
+      "italian": "Pannelli di continuazione",
+      "bangla": "নির্দেশ চলমান থাকার প্যানেল",
+      "page": 142
+    },
+    "fig130": {
+      "italian": "Pannelli di fine",
+      "bangla": "নির্দেশ শেষ হওয়ার প্যানেল",
+      "page": 142
+    },
+    "fig131": {
+      "italian": "Segni orizzontali in rifacimento",
+      "bangla": "রাস্তার দাগ নতুন করে আঁকার কাজ চলছে",
+      "page": 143
+    },
+    "fig132": {
+      "italian": "Incidente",
+      "bangla": "দুর্ঘটনা",
+      "page": 143
+    },
+    "fig133": {
+      "italian": "Attraversamento di binari",
+      "bangla": "রেললাইন অতিক্রম",
+      "page": 144
+    },
+    "fig134": {
+      "italian": "Sgombraneve in azione",
+      "bangla": "তুষার সরানোর কাজ চলছে",
+      "page": 144
+    },
+    "fig135": {
+      "italian": "Zona soggetta ad allagamento",
+      "bangla": "পানিতে ডুবে যেতে পারে এমন এলাকা",
+      "page": 145
+    },
+    "fig136": {
+      "italian": "Coda",
+      "bangla": "যানজট",
+      "page": 145
+    },
+    "fig137": {
+      "italian": "Mezzi di lavoro in azione",
+      "bangla": "কাজের যন্ত্র চলমান",
+      "page": 146
+    },
+    "fig140": {
+      "italian": "Autocarri in rallentamento",
+      "bangla": "ট্রাকের গতি কমে যায়",
+      "page": 146
+    },
+    "fig141": {
+      "italian": "Zona di rimozione coatta",
+      "bangla": "গাড়ি সরিয়ে নেওয়ার এলাকা",
+      "page": 148
+    },
+    "fig142": {
+      "italian": "Pannello di corsia",
+      "bangla": "নির্দিষ্ট লেনের প্যানেল",
+      "page": 148
+    },
+    "fig143": {
+      "italian": "Tornante e serie di tornanti",
+      "bangla": "তীক্ষ্ণ বাঁক ও পরপর তীক্ষ্ণ বাঁক",
+      "page": 149
+    },
+    "fig144": {
+      "italian": "Numero del tornante",
+      "bangla": "তীক্ষ্ণ বাঁকের ক্রমিক নম্বর",
+      "page": 149
+    },
+    "fig145": {
+      "italian": "Pulizia meccanica della strada",
+      "bangla": "যন্ত্র দিয়ে রাস্তা পরিষ্কার",
+      "page": 150
+    },
+    "fig146": {
+      "italian": "Andamento della strada principale",
+      "bangla": "প্রধান রাস্তার গতিপথ",
+      "page": 150
+    },
+    "fig148": {
+      "italian": "Divieto di sosta per pulizia della strada",
+      "bangla": "রাস্তা পরিষ্কারের জন্য পার্কিং নিষিদ্ধ",
+      "page": 73
+    },
+    "fig152": {
+      "italian": "Senso unico parallelo",
+      "bangla": "একমুখী চলাচলের দিক",
+      "page": 116
+    },
+    "fig156": {
+      "italian": "Semaforo per veicoli di trasporto pubblico",
+      "bangla": "গণপরিবহনের ট্রাফিক সিগন্যাল",
+      "page": 154
+    },
+    "fig157": {
+      "italian": "Semaforo pedonale",
+      "bangla": "পথচারীদের ট্রাফিক সিগন্যাল",
+      "page": 155
+    },
+    "fig158": {
+      "italian": "Semaforo per velocipedi",
+      "bangla": "সাইকেলের ট্রাফিক সিগন্যাল",
+      "page": 156
+    },
+    "fig163": {
+      "italian": "Confine di Stato tra Paesi dell’Unione europea",
+      "bangla": "ইউরোপীয় ইউনিয়নের দেশগুলোর সীমান্ত",
+      "page": 96
+    },
+    "fig164": {
+      "italian": "Preavviso di confine di Stato tra Paesi dell’Unione europea",
+      "bangla": "সামনে ইউরোপীয় ইউনিয়নের দেশের সীমান্ত",
+      "page": 97
+    },
+    "fig169": {
+      "italian": "Preavviso di incrocio urbano con limitazione su un ramo",
+      "bangla": "শহরের মোড় ও একটি পথে চলাচলের সীমাবদ্ধতার আগাম নির্দেশ",
+      "page": 99
+    },
+    "fig170": {
+      "italian": "Preavviso di intersezione extraurbana con passaggio a livello",
+      "bangla": "শহরের বাইরের মোড় ও রেলক্রসিংয়ের আগাম নির্দেশ",
+      "page": 100
+    },
+    "fig171": {
+      "italian": "Preselezione su strada extraurbana",
+      "bangla": "শহরের বাইরের রাস্তায় গন্তব্য অনুযায়ী লেন নির্বাচন",
+      "page": 101
+    },
+    "fig173": {
+      "italian": "Preavviso di diramazione autostradale",
+      "bangla": "সামনে মহাসড়কের শাখাপথ",
+      "page": 100
+    },
+    "fig174": {
+      "italian": "Preavviso di incrocio urbano",
+      "bangla": "সামনে শহরের রাস্তার মোড়",
+      "page": 101
+    },
+    "fig187": {
+      "italian": "Zona a traffico limitato",
+      "bangla": "যান চলাচল সীমিত এলাকা",
+      "page": 118
+    },
+    "fig207": {
+      "italian": "Inizio del centro abitato",
+      "bangla": "জনবসতি এলাকার শুরু",
+      "page": 106
+    },
+    "fig210": {
+      "italian": "Pronto soccorso",
+      "bangla": "জরুরি চিকিৎসাকেন্দ্র",
+      "page": 107
+    },
+    "fig214": {
+      "italian": "Ospedale",
+      "bangla": "হাসপাতাল",
+      "page": 107
+    },
+    "fig216": {
+      "italian": "Localizzazione territoriale: fiume",
+      "bangla": "নদীর নাম নির্দেশক সংকেত",
+      "page": 108
+    },
+    "fig217": {
+      "italian": "Preavviso di informazioni turistico-alberghiere",
+      "bangla": "সামনে পর্যটন ও হোটেলের তথ্যকেন্দ্র",
+      "page": 108
+    },
+    "fig220": {
+      "italian": "S.O.S.",
+      "bangla": "জরুরি সাহায্য",
+      "page": 110
+    },
+    "fig224": {
+      "italian": "Strada senza uscita",
+      "bangla": "সামনে রাস্তা বন্ধ, বের হওয়ার পথ নেই",
+      "page": 111
+    },
+    "fig245": {
+      "italian": "Uso delle corsie su strada urbana",
+      "bangla": "শহরের রাস্তায় লেনের ব্যবহার",
+      "page": 121
+    },
+    "fig247": {
+      "italian": "Aumento delle corsie disponibili",
+      "bangla": "চলাচলের লেন বাড়ছে",
+      "page": 121
+    },
+    "fig248": {
+      "italian": "Diminuzione delle corsie disponibili",
+      "bangla": "চলাচলের লেন কমছে",
+      "page": 122
+    },
+    "fig252": {
+      "italian": "Assistenza meccanica",
+      "bangla": "গাড়ি মেরামতের সহায়তা",
+      "page": 122
+    },
+    "fig253": {
+      "italian": "Telefono",
+      "bangla": "টেলিফোন",
+      "page": 123
+    },
+    "fig254": {
+      "italian": "Rifornimento di carburante",
+      "bangla": "জ্বালানি নেওয়ার স্থান",
+      "page": 123
+    },
+    "fig260": {
+      "italian": "Campeggio",
+      "bangla": "ক্যাম্প করার স্থান",
+      "page": 126
+    },
+    "fig265": {
+      "italian": "Parcheggio di scambio con linee di autobus",
+      "bangla": "গাড়ি রেখে বাসে যাওয়ার পার্কিং",
+      "page": 125
+    },
+    "fig272": {
+      "italian": "Posteggio per taxi",
+      "bangla": "ট্যাক্সি দাঁড়ানোর স্থান",
+      "page": 124
+    },
+    "fig274": {
+      "italian": "Polizia stradale",
+      "bangla": "সড়ক পুলিশ",
+      "page": 127
+    },
+    "fig275": {
+      "italian": "Lavori in corso",
+      "bangla": "রাস্তার কাজ চলছে",
+      "page": 128
+    },
+    "fig276": {
+      "italian": "Barriera normale di cantiere",
+      "bangla": "রাস্তার কাজের বাধা",
+      "page": 133
+    },
+    "fig280": {
+      "italian": "Preavviso di cantiere mobile",
+      "bangla": "সামনে চলমান রাস্তার কাজ",
+      "page": 131
+    },
+    "fig284": {
+      "italian": "Direzione obbligatoria per autotreni e autoarticolati",
+      "bangla": "ট্রেলারসহ ভারী যানের বাধ্যতামূলক দিক",
+      "page": 130
+    },
+    "fig285": {
+      "italian": "Corsia chiusa per lavori",
+      "bangla": "রাস্তার কাজের জন্য লেন বন্ধ",
+      "page": 131
+    },
+    "fig288": {
+      "italian": "Uso delle corsie disponibili in presenza di lavori",
+      "bangla": "রাস্তার কাজ চলাকালে খোলা লেনের ব্যবহার",
+      "page": 132
+    },
+    "fig290": {
+      "italian": "Delineatori di margine su strada a doppio senso",
+      "bangla": "দুইমুখী রাস্তার প্রান্ত নির্দেশক খুঁটি",
+      "page": 134
+    },
+    "fig292": {
+      "italian": "Delineatore per strade di montagna",
+      "bangla": "পাহাড়ি রাস্তার প্রান্ত নির্দেশক খুঁটি",
+      "page": 135
+    },
+    "fig293": {
+      "italian": "Delineatore di curva stretta o tornante",
+      "bangla": "তীক্ষ্ণ বাঁকের দিক নির্দেশক",
+      "page": 136
+    },
+    "fig294": {
+      "italian": "Delineatore di intersezione a T",
+      "bangla": "টি-আকৃতির মোড় নির্দেশক",
+      "page": 137
+    },
+    "fig295": {
+      "italian": "Delineatore modulare di curva",
+      "bangla": "বাঁকের ধারাবাহিক দিক নির্দেশক",
+      "page": 136
+    },
+    "fig299": {
+      "italian": "Delineatore di ostacolo",
+      "bangla": "বাধার অবস্থান নির্দেশক",
+      "page": 137
+    },
+    "fig383": {
+      "italian": "Agente del traffico in posizione di arresto",
+      "bangla": "থামার নির্দেশ দিচ্ছেন ট্রাফিক পুলিশ",
+      "page": 162
+    },
+    "fig384": {
+      "italian": "Agente del traffico in posizione di via libera",
+      "bangla": "চলার অনুমতি দিচ্ছেন ট্রাফিক পুলিশ",
+      "page": 162
+    },
+    "fig506": {
+      "italian": "Strisce di guida in un’intersezione",
+      "bangla": "মোড়ে পথ দেখানোর দাগ",
+      "page": 170
+    },
+    "fig509": {
+      "italian": "Doppia striscia continua",
+      "bangla": "দুটি অবিচ্ছিন্ন রেখা",
+      "page": 165
+    },
+    "fig511": {
+      "italian": "Carreggiata con piste ciclabili laterali",
+      "bangla": "দুই পাশে সাইকেল লেনসহ রাস্তা",
+      "page": 201
+    },
+    "fig512": {
+      "italian": "Striscia laterale discontinua in prossimità di un accesso",
+      "bangla": "রাস্তার প্রবেশপথের কাছে ভাঙা প্রান্তরেখা",
+      "page": 170
+    },
+    "fig515": {
+      "italian": "Linea di arresto con iscrizione STOP",
+      "bangla": "থামার রেখা ও STOP লেখা",
+      "page": 173
+    },
+    "fig517": {
+      "italian": "Attraversamento pedonale (strisce pedonali)",
+      "bangla": "পথচারী পারাপারের জেব্রা ক্রসিং",
+      "page": 174
+    },
+    "fig528": {
+      "italian": "Iscrizione del limite di velocità sulla carreggiata",
+      "bangla": "রাস্তায় লেখা গতিসীমা",
+      "page": 179
+    },
+    "fig534": {
+      "italian": "Rallentatori ottici",
+      "bangla": "গতি কমানোর জন্য রাস্তার আড়াআড়ি দাগ",
+      "page": 179
+    },
+    "fig536": {
+      "italian": "Carreggiata a due corsie con doppia striscia continua",
+      "bangla": "দুটি অবিচ্ছিন্ন রেখায় বিভক্ত দুই লেনের রাস্তা",
+      "page": 201
+    },
+    "fig537": {
+      "italian": "Segnaletica di intersezione con isole di traffico",
+      "bangla": "ট্রাফিক আইল্যান্ডসহ মোড়ের দাগ",
+      "page": 170
+    },
+    "fig545": {
+      "italian": "Attraversamento pedonale con strisce gialle a zig-zag",
+      "bangla": "হলুদ আঁকাবাঁকা দাগসহ পথচারী পারাপার",
+      "page": 174
+    },
+    "fig553": {
+      "italian": "Striscia laterale continua e corsia di emergenza",
+      "bangla": "অবিচ্ছিন্ন প্রান্তরেখা ও জরুরি লেন",
+      "page": 170
+    },
+    "fig558": {
+      "italian": "Carreggiate separate da spartitraffico",
+      "bangla": "বিভাজক দিয়ে আলাদা করা যান চলাচলের রাস্তা",
+      "page": 201
+    },
+    "fig564": {
+      "italian": "Corsie di preselezione con frecce direzionali",
+      "bangla": "দিকনির্দেশক তীরসহ লেন",
+      "page": 175
+    },
+    "fig565": {
+      "italian": "Corsie di preselezione con frecce direzionali",
+      "bangla": "দিকনির্দেশক তীরসহ লেন",
+      "page": 176
+    },
+    "fig568": {
+      "italian": "Corsie e linea di arresto prima di un incrocio",
+      "bangla": "মোড়ের আগে লেন ও থামার রেখা",
+      "page": 173
+    },
+    "fig570": {
+      "italian": "Posizione del veicolo prima di una svolta a destra",
+      "bangla": "ডানে মোড় নেওয়ার আগে গাড়ির অবস্থান",
+      "page": 205
+    },
+    "fig572": {
+      "italian": "Posizione del veicolo prima di una svolta a sinistra",
+      "bangla": "বামে মোড় নেওয়ার আগে গাড়ির অবস্থান",
+      "page": 206
+    },
+    "fig595": {
+      "italian": "Isola di traffico in un’intersezione",
+      "bangla": "মোড়ের ট্রাফিক আইল্যান্ড",
+      "page": 171
+    },
+    "fig596": {
+      "italian": "Strisce di guida nelle svolte all’incrocio",
+      "bangla": "মোড় ঘোরার পথ নির্দেশক দাগ",
+      "page": 172
+    },
+    "fig601": {
+      "italian": "Traiettorie dei veicoli in un’intersezione",
+      "bangla": "মোড়ে গাড়ির গতিপথ",
+      "page": 206
+    },
+    "fig602": {
+      "italian": "Rotatoria con indicazioni di precedenza",
+      "bangla": "অগ্রাধিকার সংকেতসহ গোলচত্বর",
+      "page": 206
+    },
+    "fig676": {
+      "italian": "Uscita da un parcheggio",
+      "bangla": "পার্কিং থেকে বের হওয়া",
+      "page": 248
+    },
+    "fig695": {
+      "italian": "Simbolo dei proiettori abbaglianti",
+      "bangla": "হাই বিমের চিহ্ন",
+      "page": 337
+    },
+    "fig696": {
+      "italian": "Simbolo dei proiettori anabbaglianti",
+      "bangla": "লো বিমের চিহ্ন",
+      "page": 336
+    },
+    "fig697": {
+      "italian": "Simbolo degli indicatori di direzione",
+      "bangla": "দিক নির্দেশক বাতির চিহ্ন",
+      "page": 337
+    },
+    "fig705": {
+      "italian": "Spia della batteria",
+      "bangla": "ব্যাটারির সতর্কবাতি",
+      "page": 334
+    },
+    "fig707": {
+      "italian": "Simbolo delle cinture di sicurezza",
+      "bangla": "সিটবেল্টের চিহ্ন",
+      "page": 335
+    },
+    "fig721": {
+      "italian": "Spia di anomalia del sistema frenante",
+      "bangla": "ব্রেক ব্যবস্থার ত্রুটির সতর্কবাতি",
+      "page": 335
+    },
+    "fig903": {
+      "italian": "Strada deformata con pannello di fine",
+      "bangla": "অসমতল রাস্তা শেষ হওয়ার প্যানেলসহ সংকেত",
+      "page": 142
+    },
+    "fig904": {
+      "italian": "Cunetta con pannello di allagamento",
+      "bangla": "পানি জমার প্যানেলসহ নিচু রাস্তার সংকেত",
+      "page": 145
+    },
+    "fig905": {
+      "italian": "Doppia curva con pannello di distanza",
+      "bangla": "দূরত্বের প্যানেলসহ পরপর দুটি বাঁক",
+      "page": 22
+    },
+    "fig906": {
+      "italian": "Doppia curva con pannello di estesa",
+      "bangla": "কত দূর পর্যন্ত বাঁক আছে তার প্যানেল",
+      "page": 22
+    },
+    "fig907": {
+      "italian": "Doppia curva con pannello di estesa",
+      "bangla": "কত দূর পর্যন্ত বাঁক আছে তার প্যানেল",
+      "page": 138
+    },
+    "fig908": {
+      "italian": "Doppia croce di Sant’Andrea e STOP",
+      "bangla": "একাধিক রেললাইনের ক্রস চিহ্ন ও STOP সংকেত",
+      "page": 26
+    },
+    "fig911": {
+      "italian": "Pannelli distanziometrici e doppia croce di Sant’Andrea",
+      "bangla": "রেলক্রসিংয়ের দূরত্ব প্যানেল ও দ্বৈত ক্রস চিহ্ন",
+      "page": 27
+    },
+    "fig912": {
+      "italian": "Strettoia e dare precedenza nei sensi unici alternati",
+      "bangla": "সরু রাস্তা ও বিপরীত যানকে অগ্রাধিকার দেওয়ার সংকেত",
+      "page": 32
+    },
+    "fig913": {
+      "italian": "Strettoia e diritto di precedenza nei sensi unici alternati",
+      "bangla": "সরু রাস্তা ও নিজের অগ্রাধিকারের সংকেত",
+      "page": 32
+    },
+    "fig914": {
+      "italian": "Strada sdrucciolevole con pannello di continuazione",
+      "bangla": "পিচ্ছিল রাস্তার নির্দেশ চলমান থাকার প্যানেল",
+      "page": 142
+    },
+    "fig916": {
+      "italian": "Strada sdrucciolevole per ghiaccio",
+      "bangla": "বরফের কারণে পিচ্ছিল রাস্তা",
+      "page": 147
+    },
+    "fig917": {
+      "italian": "Segnale di strada sdrucciolevole e pannello ghiaccio",
+      "bangla": "পিচ্ছিল রাস্তার সংকেত ও বরফের প্যানেল",
+      "page": 35
+    },
+    "fig918": {
+      "italian": "Segnale di strada sdrucciolevole e pannello pioggia",
+      "bangla": "পিচ্ছিল রাস্তার সংকেত ও বৃষ্টির প্যানেল",
+      "page": 35
+    },
+    "fig919": {
+      "italian": "Altri pericoli con pannello di attraversamento binari",
+      "bangla": "রেললাইন পারাপারের প্যানেলসহ অন্যান্য বিপদের সংকেত",
+      "page": 144
+    },
+    "fig921": {
+      "italian": "Altri pericoli e pannello sgombraneve in azione",
+      "bangla": "অন্যান্য বিপদ ও তুষার সরানোর কাজের প্যানেল",
+      "page": 43
+    },
+    "fig922": {
+      "italian": "Altri pericoli con pannello mezzi di lavoro in azione",
+      "bangla": "কাজের যন্ত্র চলমান থাকার প্যানেলসহ অন্যান্য বিপদ",
+      "page": 43
+    },
+    "fig923": {
+      "italian": "Altri pericoli e pannello ghiaccio",
+      "bangla": "অন্যান্য বিপদের সংকেত ও বরফের প্যানেল",
+      "page": null
+    },
+    "fig924": {
+      "italian": "Divieto di transito con fascia oraria",
+      "bangla": "নির্দিষ্ট সময়ে যান চলাচল নিষিদ্ধ",
+      "page": 139
+    },
+    "fig925": {
+      "italian": "Divieto di transito nei giorni festivi",
+      "bangla": "ছুটির দিনে যান চলাচল নিষিদ্ধ",
+      "page": 139
+    },
+    "fig926": {
+      "italian": "Divieto di transito con pannello per veicoli merci",
+      "bangla": "পণ্যবাহী যানের প্যানেলসহ চলাচল নিষেধাজ্ঞা",
+      "page": 140
+    },
+    "fig927": {
+      "italian": "Divieto di transito con eccezione per autobus",
+      "bangla": "বাস ছাড়া অন্য যান চলাচল নিষিদ্ধ",
+      "page": null
+    },
+    "fig928": {
+      "italian": "Divieto di transito nei giorni lavorativi",
+      "bangla": "কর্মদিবসে যান চলাচল নিষিদ্ধ",
+      "page": 140
+    },
+    "fig929": {
+      "italian": "Senso vietato con eccezione per autobus",
+      "bangla": "বাস ছাড়া অন্য যানের এই দিক থেকে প্রবেশ নিষিদ্ধ",
+      "page": null
+    },
+    "fig930": {
+      "italian": "Divieto di sorpasso con pannello di continuazione",
+      "bangla": "ওভারটেক নিষেধাজ্ঞা চলমান থাকার প্যানেল",
+      "page": 142
+    },
+    "fig932": {
+      "italian": "Segnale di divieto di sorpasso e pannello di continuazione",
+      "bangla": "ওভারটেক নিষেধাজ্ঞার সংকেত ও নির্দেশ চলমান থাকার প্যানেল",
+      "page": 55
+    },
+    "fig933": {
+      "italian": "Limite di velocità con pannello di continuazione",
+      "bangla": "গতিসীমা চলমান থাকার প্যানেল",
+      "page": 142
+    },
+    "fig934": {
+      "italian": "Divieto di segnalazioni acustiche con fascia oraria",
+      "bangla": "নির্দিষ্ট সময়ে হর্ন বাজানো নিষিদ্ধ",
+      "page": 139
+    },
+    "fig935": {
+      "italian": "Transito vietato ai motocicli con fascia oraria",
+      "bangla": "নির্দিষ্ট সময়ে মোটরসাইকেল চলাচল নিষিদ্ধ",
+      "page": 139
+    },
+    "fig936": {
+      "italian": "Transito vietato ai motocicli nei giorni festivi",
+      "bangla": "ছুটির দিনে মোটরসাইকেল চলাচল নিষিদ্ধ",
+      "page": 139
+    },
+    "fig937": {
+      "italian": "Transito vietato ai veicoli merci nei giorni lavorativi",
+      "bangla": "কর্মদিবসে পণ্যবাহী যান চলাচল নিষিদ্ধ",
+      "page": 140
+    },
+    "fig938": {
+      "italian": "Divieto di sosta nei giorni festivi",
+      "bangla": "ছুটির দিনে পার্কিং নিষিদ্ধ",
+      "page": 139
+    },
+    "fig939": {
+      "italian": "Divieto di sosta con pannello di continuazione",
+      "bangla": "পার্কিং নিষেধাজ্ঞা চলমান থাকার প্যানেল",
+      "page": 142
+    },
+    "fig940": {
+      "italian": "Divieto di sosta con pannello di inizio",
+      "bangla": "পার্কিং নিষেধাজ্ঞা শুরুর প্যানেল",
+      "page": 70
+    },
+    "fig941": {
+      "italian": "Divieto di sosta con pannello per autobus",
+      "bangla": "বাসের প্যানেলসহ পার্কিং নিষেধাজ্ঞা",
+      "page": 140
+    },
+    "fig943": {
+      "italian": "Divieto di sosta con fascia oraria",
+      "bangla": "নির্দিষ্ট সময়ে পার্কিং নিষিদ্ধ",
+      "page": 139
+    },
+    "fig944": {
+      "italian": "Divieto di sosta con pannello di fine",
+      "bangla": "পার্কিং নিষেধাজ্ঞা শেষ হওয়ার প্যানেল",
+      "page": 142
+    },
+    "fig946": {
+      "italian": "Segnale di divieto di sosta e pannello dei giorni festivi",
+      "bangla": "পার্কিং নিষেধাজ্ঞার সংকেত ও ছুটির দিনের প্যানেল",
+      "page": 71
+    },
+    "fig947": {
+      "italian": "Segnale di divieto di sosta e pannello dei giorni lavorativi",
+      "bangla": "পার্কিং নিষেধাজ্ঞার সংকেত ও কর্মদিবসের প্যানেল",
+      "page": 71
+    },
+    "fig948": {
+      "italian": "Divieto di sosta con eccezione per autobus",
+      "bangla": "বাস ছাড়া অন্য যানের পার্কিং নিষিদ্ধ",
+      "page": 71
+    },
+    "fig950": {
+      "italian": "Segnale di divieto di sosta e pannello di rimozione coatta",
+      "bangla": "পার্কিং নিষেধাজ্ঞার সংকেত ও গাড়ি সরিয়ে নেওয়ার প্যানেল",
+      "page": 71
+    },
+    "fig951": {
+      "italian": "Divieto di fermata con pannello di continuazione",
+      "bangla": "থামার নিষেধাজ্ঞা চলমান থাকার প্যানেল",
+      "page": 142
+    },
+    "fig952": {
+      "italian": "Divieto di fermata con pannello di fine",
+      "bangla": "থামার নিষেধাজ্ঞা শেষ হওয়ার প্যানেল",
+      "page": 142
+    },
+    "fig953": {
+      "italian": "Divieto di fermata con pannello di inizio",
+      "bangla": "থামার নিষেধাজ্ঞা শুরুর প্যানেল",
+      "page": 141
+    },
+    "fig954": {
+      "italian": "Divieto di fermata con pannello per autobus",
+      "bangla": "বাসের প্যানেলসহ থামার নিষেধাজ্ঞা",
+      "page": 140
+    },
+    "fig956": {
+      "italian": "Parcheggio con pannello di continuazione",
+      "bangla": "পার্কিংয়ের স্থান চলমান থাকার প্যানেল",
+      "page": 142
+    },
+    "fig958": {
+      "italian": "Parcheggio con pannello di inizio",
+      "bangla": "পার্কিংয়ের স্থান শুরুর প্যানেল",
+      "page": 141
+    },
+    "fig959": {
+      "italian": "Parcheggio con pannello di fine",
+      "bangla": "পার্কিংয়ের স্থান শেষ হওয়ার প্যানেল",
+      "page": 141
+    },
+    "fig960": {
+      "italian": "Parcheggio con fascia oraria nei giorni festivi",
+      "bangla": "ছুটির দিনে নির্দিষ্ট সময়ে পার্কিং",
+      "page": 139
+    },
+    "fig961": {
+      "italian": "Parcheggio con fascia oraria nei giorni lavorativi",
+      "bangla": "কর্মদিবসে নির্দিষ্ট সময়ে পার্কিং",
+      "page": 140
+    },
+    "fig962": {
+      "italian": "Parcheggio con eccezione per autobus",
+      "bangla": "বাসের জন্য ব্যতিক্রমসহ পার্কিং সংকেত",
+      "page": 141
+    },
+    "fig963": {
+      "italian": "Percorso pedonale con pannello di inizio",
+      "bangla": "পথচারীদের পথ শুরুর প্যানেল",
+      "page": 141
+    },
+    "fig964": {
+      "italian": "Percorso pedonale con fascia oraria nei giorni festivi",
+      "bangla": "ছুটির দিনে নির্দিষ্ট সময়ে পথচারীদের নির্ধারিত পথ",
+      "page": 139
+    },
+    "fig965": {
+      "italian": "Pista ciclabile con fascia oraria nei giorni festivi",
+      "bangla": "ছুটির দিনে নির্দিষ্ট সময়ে সাইকেলের নির্ধারিত পথ",
+      "page": 139
+    },
+    "fig966": {
+      "italian": "Pannello di fascia oraria e divieto di transito ai pedoni",
+      "bangla": "সময়সূচির প্যানেল ও পথচারীদের চলাচল নিষেধাজ্ঞা",
+      "page": 139
+    },
+    "fig967": {
+      "italian": "Senso vietato con eccezione per autobus",
+      "bangla": "বাস ছাড়া অন্য যানের এই দিক থেকে প্রবেশ নিষিদ্ধ",
+      "page": null
+    },
+    "fig968": {
+      "italian": "Discesa pericolosa con pannello autocarri in rallentamento",
+      "bangla": "ট্রাকের গতি কমার প্যানেলসহ বিপজ্জনক উতরাই",
+      "page": 146
+    },
+    "fig970": {
+      "italian": "Lavori con pannello di fine",
+      "bangla": "রাস্তার কাজ শেষ হওয়ার প্যানেল",
+      "page": 142
+    },
+    "fig971": {
+      "italian": "Obbligo di rotatoria e preavviso di rotatoria",
+      "bangla": "গোলচত্বরের বাধ্যতামূলক দিক ও আগাম সংকেত",
+      "page": 87
+    },
+    "fig972": {
+      "italian": "Diritto di precedenza e andamento della strada principale",
+      "bangla": "অগ্রাধিকারের সংকেত ও প্রধান রাস্তার গতিপথ",
+      "page": 50
+    },
+    "fig604": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 212
+    },
+    "fig606": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 212
+    },
+    "fig607": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 213
+    },
+    "fig608": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 213
+    },
+    "fig610": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 213
+    },
+    "fig613": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 214
+    },
+    "fig614": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 214
+    },
+    "fig615": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 215
+    },
+    "fig616": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 215
+    },
+    "fig618": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 217
+    },
+    "fig620": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 217
+    },
+    "fig631": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 218
+    },
+    "fig632": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 218
+    },
+    "fig633": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 219
+    },
+    "fig634": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 219
+    },
+    "fig636": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 220
+    },
+    "fig637": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 220
+    },
+    "fig639": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 222
+    },
+    "fig640": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 223
+    },
+    "fig643": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 224
+    },
+    "fig644": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 224
+    },
+    "fig646": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 225
+    },
+    "fig647": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 225
+    },
+    "fig648": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 226
+    },
+    "fig650": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 227
+    },
+    "fig651": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 228
+    },
+    "fig652": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 229
+    },
+    "fig654": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 229
+    },
+    "fig655": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 230
+    },
+    "fig657": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 230
+    },
+    "fig659": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 231
+    },
+    "fig660": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 231
+    },
+    "fig661": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 232
+    },
+    "fig662": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 232
+    },
+    "fig663": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 233
+    },
+    "fig664": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 233
+    },
+    "fig665": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 234
+    },
+    "fig668": {
+      "italian": "Schema di precedenza all’incrocio",
+      "bangla": "মোড়ে অগ্রাধিকারের চিত্র",
+      "page": 235
+    }
+  }
+}

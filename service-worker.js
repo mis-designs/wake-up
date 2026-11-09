@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v272-shared-figures";
+const CACHE_NAME = "magicbook-pwa-v273-figure-names-20261109";
 const STATIC_ASSETS = [
   "/quizbank-figures.js?v=2-numbered-r2",
   "/",
@@ -108,9 +108,9 @@ const STATIC_ASSETS = [
   "/italian-display.js?v=1",
   "/audio-focus.js?v=1-resumable-tts",
   "/app-popup.js?v=2",
-  "/figure-detail.js?v=4-shared-bilingual",
+  "/figure-detail.js?v=5-figure-names",
   "/figure-detail.css?v=4-shared-bilingual",
-  "/figure-catalog.mjs?v=1",
+  "/figure-catalog.mjs?v=2-complete",
   "/src/learning-insights.css?v=11-study-results&ui=10",
   "/src/learning-insights.js?v=14-home-icons&ui=9-intact-figures",
   "/homebg.css?v=5-home-offers",
