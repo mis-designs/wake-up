@@ -1,8 +1,9 @@
-const CACHE_NAME = "magicbook-pwa-v276-admin-access-recovery";
+const CACHE_NAME = "magicbook-pwa-v277-theory-card";
 const STATIC_ASSETS = [
   "/quiz-theory-index.js?v=1-chapter1",
   "/quiz-theory.js?v=1-protected",
-  "/quiz-theory.css?v=1-protected",
+  "/quiz-theory.css?v=2-white-sticker",
+  "/icons/pial_sirr_sticker.png",
   "/quizbank-figures.js?v=2-numbered-r2",
   "/",
   "/index.html",

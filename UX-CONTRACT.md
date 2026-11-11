@@ -395,3 +395,8 @@ Adding a previously registered phone renews Magic Book for the selected duration
 After one successful save, open an exact active search for that number; a batch retains separate added/renewed/unconfirmed counts. Save feedback stays visible after refreshing the list. Search treats +39 and 0039 equivalently. Expired records remain exclusive to Scaduti; an exact match in the opposite scope supplies only its destination. The client enters that section and performs at most one additional exact lookup, never a full list scan. Concurrent state changes cannot cause a lookup loop.
 
 The device-ID owner reuses the existing local/cookie/session identifier without awaiting IndexedDB. Recovery from IndexedDB is single-flight; opening and transactions have a 1.5-second timeout with late-connection cleanup. This does not loosen login authorization or reset registered devices. API and real-page offline regression fixtures cover create/renew, failures, scoped search, phone formatting and blocked browser storage. Production account mutations are excluded from regression tests.
+
+
+## Theory card presentation — 2026-11-11
+
+The shared white-card variant and decorative Pial sticker follow DESIGN.md. quiz-theory.js, MagicBookPopup and MagicAudioFocus retain all behavior. The static PNG is requested at most once per browser cache miss when the card is rendered (or during the existing service-worker static install), then reused by HTTP/PWA caching; no private API requests, prefetch loops, retries or new audio actions are introduced. A missing decoration cannot hide content or block controls. Verify both apps, narrow/desktop, dark/light/native, long text, slow/failing content, inline audio, Escape/focus return and forced colors.
