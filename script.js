@@ -447,6 +447,8 @@ function normalizePhone(input) {
 const DEVICE_DB_NAME = "magicph_device";
 const DEVICE_STORE_NAME = "kv";
 let cachedDeviceId = null;
+let deviceIdResolutionPromise = null;
+const DEVICE_STORAGE_TIMEOUT_MS = 1500;
 
 function isValidStoredDeviceId(value) {
   return typeof value === "string" && value.trim().length > 0;
@@ -488,17 +490,59 @@ function openDeviceDb() {
       return;
     }
 
-    const request = indexedDB.open(DEVICE_DB_NAME, 1);
+    let settled = false;
+    let request;
+    const fail = error => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(error || new Error("indexeddb_error"));
+    };
+    const timer = setTimeout(() => fail(new Error("indexeddb_timeout")), DEVICE_STORAGE_TIMEOUT_MS);
+    try { request = indexedDB.open(DEVICE_DB_NAME, 1); }
+    catch (error) { fail(error); return; }
 
     request.onupgradeneeded = () => {
+      if (settled) { request.transaction?.abort(); return; }
       const db = request.result;
       if (!db.objectStoreNames.contains(DEVICE_STORE_NAME)) {
         db.createObjectStore(DEVICE_STORE_NAME);
       }
     };
 
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || new Error("indexeddb_error"));
+    request.onsuccess = () => {
+      if (settled) { request.result?.close(); return; }
+      settled = true;
+      clearTimeout(timer);
+      resolve(request.result);
+    };
+    request.onerror = () => fail(request.error);
+    request.onblocked = () => fail(new Error("indexeddb_blocked"));
+  });
+}
+
+function runDeviceTransaction(db, mode, operation) {
+  return new Promise((resolve, reject) => {
+    let transaction, settled = false, value;
+    const finish = error => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (error) reject(error);
+      else resolve(value);
+    };
+    const timer = setTimeout(() => {
+      finish(new Error("indexeddb_timeout"));
+      try { transaction?.abort(); } catch { /* Already completed. */ }
+    }, DEVICE_STORAGE_TIMEOUT_MS);
+    try {
+      transaction = db.transaction(DEVICE_STORE_NAME, mode);
+      const request = operation(transaction.objectStore(DEVICE_STORE_NAME));
+      request.onsuccess = () => { value = request.result; };
+      request.onerror = () => finish(request.error || new Error("indexeddb_error"));
+      transaction.oncomplete = () => finish();
+      transaction.onerror = transaction.onabort = () => finish(transaction.error || new Error("indexeddb_error"));
+    } catch (error) { finish(error); }
   });
 }
 
@@ -506,12 +550,7 @@ async function getIndexedDbDeviceId() {
   let db = null;
   try {
     db = await openDeviceDb();
-    return await new Promise((resolve, reject) => {
-      const tx = db.transaction(DEVICE_STORE_NAME, "readonly");
-      const request = tx.objectStore(DEVICE_STORE_NAME).get(KEYS.deviceId);
-      request.onsuccess = () => resolve(request.result || null);
-      request.onerror = () => reject(request.error || new Error("indexeddb_read_error"));
-    });
+    return await runDeviceTransaction(db, "readonly", store => store.get(KEYS.deviceId)) || null;
   } catch {
     return null;
   } finally {
@@ -523,12 +562,7 @@ async function setIndexedDbDeviceId(id) {
   let db = null;
   try {
     db = await openDeviceDb();
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(DEVICE_STORE_NAME, "readwrite");
-      tx.objectStore(DEVICE_STORE_NAME).put(id, KEYS.deviceId);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error || new Error("indexeddb_write_error"));
-    });
+    await runDeviceTransaction(db, "readwrite", store => store.put(id, KEYS.deviceId));
   } catch {
     // IndexedDB is a best-effort persistence layer.
   } finally {
@@ -540,12 +574,7 @@ async function clearIndexedDbDeviceId() {
   let db = null;
   try {
     db = await openDeviceDb();
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(DEVICE_STORE_NAME, "readwrite");
-      tx.objectStore(DEVICE_STORE_NAME).delete(KEYS.deviceId);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error || new Error("indexeddb_delete_error"));
-    });
+    await runDeviceTransaction(db, "readwrite", store => store.delete(KEYS.deviceId));
   } catch {
     // IndexedDB is a best-effort persistence layer.
   } finally {
@@ -618,14 +647,26 @@ async function getRobustDeviceId() {
     cachedDeviceId,
     Storage.get(KEYS.deviceId),
     getDeviceCookie(),
-    await getIndexedDbDeviceId(),
     readStoredSession()?.deviceId
   ];
 
   const existing = candidates.find(isValidStoredDeviceId);
-  const id = existing || createDeviceId();
-  syncDeviceId(id);
-  return id;
+  if (existing) {
+    syncDeviceId(existing);
+    return existing;
+  }
+  if (!deviceIdResolutionPromise) {
+    deviceIdResolutionPromise = (async () => {
+      const stored = await getIndexedDbDeviceId();
+      const id = [cachedDeviceId, Storage.get(KEYS.deviceId), getDeviceCookie(),
+        readStoredSession()?.deviceId, stored].find(isValidStoredDeviceId) || createDeviceId();
+      syncDeviceId(id);
+      return id;
+    })();
+  }
+  const pending = deviceIdResolutionPromise;
+  try { return await pending; }
+  finally { if (deviceIdResolutionPromise === pending) deviceIdResolutionPromise = null; }
 }
 
 function getDeviceId() {
@@ -4979,7 +5020,7 @@ function mergeAdminPromoUsers(users, promoUsers) {
 }
 
 function normalizeAdminSearch(input) {
-  return String(input || "").replace(/\D+/g, "");
+  return String(input || "").replace(/\D+/g, "").replace(/^0039/, "39");
 }
 
 function isRenewActionVisible(user) {
@@ -5108,7 +5149,10 @@ async function adminRequest(action, fields = {}, retryToken = true, transientAtt
   }
 
   if (!response.ok || !data?.success) {
-    const errorCode = String(data?.error || (readOnlyAction ? "admin_backend_error" : "save_unconfirmed")).trim();
+    const errorCode = !readOnlyAction && response.status >= 500
+      && (!data?.error || ["service_unavailable", "server_error"].includes(data.error))
+      ? "save_unconfirmed"
+      : String(data?.error || (readOnlyAction ? "admin_backend_error" : "save_unconfirmed")).trim();
     if (readOnlyAction && transientAttempt < maxTransientAttempts && ADMIN_READ_RETRYABLE_ERRORS.has(errorCode)) {
       await waitForAdminRetry(transientAttempt === 0 ? 700 : 1400);
       return adminRequest(action, fields, retryToken, transientAttempt + 1);
@@ -5300,7 +5344,7 @@ function adminRefreshUsers() {
   return adminLoadUsers(true, requestedMode);
 }
 
-async function adminLoadUsers(force = false, requestedMode = "") {
+async function adminLoadUsers(force = false, requestedMode = "", allowScopeSwitch = true) {
   if (!isCurrentSessionAdmin()) return;
   if (adminState.loading && !force) return;
 
@@ -5323,6 +5367,7 @@ async function adminLoadUsers(force = false, requestedMode = "") {
   const scope = adminState.tab === "expired" ? "expired" : "active";
   const loadVersion = ++adminState.loadVersion;
   adminState.users = [];
+  adminState.searchOtherScope = "";
   adminState.totalAvailable = null;
   adminState.loadError = false;
   adminState.loading = true;
@@ -5338,6 +5383,14 @@ async function adminLoadUsers(force = false, requestedMode = "") {
     const action = mode === "all" ? "list" : mode === "search" ? "search" : "recent";
     const data = await adminRequest(action, { scope, ...(mode === "search" ? { phone } : {}) });
     if (loadVersion !== adminState.loadVersion) return;
+    adminState.searchOtherScope = mode === "search" && ["active", "expired"].includes(data?.foundInScope)
+      ? data.foundInScope : "";
+    if (mode === "search" && allowScopeSwitch && adminState.searchOtherScope && adminState.searchOtherScope !== scope) {
+      // Exact lookup only: enter the correct section before requesting its row.
+      // One switch at most; concurrent edits/new searches must not fan out.
+      setAdminTab(adminState.searchOtherScope === "expired" ? "expired" : "users");
+      return await adminLoadUsers(true, "search", false);
+    }
 
     adminState.users = getAdminResponseUsers(data)
       .filter(user => (getAdminStatus(user).key === "expired") === (scope === "expired"))
@@ -5354,7 +5407,7 @@ async function adminLoadUsers(force = false, requestedMode = "") {
       : mode === "search"
         ? adminState.users.length
           ? `${adminState.users.length} utente trovato.`
-          : "Nessun utente trovato."
+          : getAdminSearchEmptyMessage()
         : "Ultimi 10 utenti aggiornati.", "success");
     renderAdminUsers();
     if (mode === "all" && adminState.tab === "promo") {
@@ -5434,7 +5487,7 @@ function updateAdminDatasetControls() {
       ? "Ricerca nel database in corso..."
       : count
         ? `Risultati per ${normalizeAdminSearch(adminState.query)}. Non è stato caricato l'elenco completo.`
-        : `Nessun risultato per ${normalizeAdminSearch(adminState.query)}.`;
+        : getAdminSearchEmptyMessage();
   } else if (adminState.mode === "search-pending") {
     titleText = "Cerca per numero di telefono";
     captionText = `Inserisci almeno ${ADMIN_SEARCH_MIN_DIGITS} cifre; la ricerca avviene senza caricare tutti gli utenti.`;
@@ -5467,6 +5520,12 @@ function renderAdminLoading() {
       <span class="magic-loading-indicator__media" aria-hidden="true"><img class="magic-loading-indicator__image" src="icons/loading_headlight.gif" alt=""></span>
       <strong class="magic-loading-indicator__label">Caricamento utenti…</strong>
     </div>`;
+}
+
+function getAdminSearchEmptyMessage() {
+  if (adminState.searchOtherScope === "expired") return "Questo numero è presente in Scaduti. Apri Scaduti per visualizzarlo o rinnovalo da Aggiungi utenti.";
+  if (adminState.searchOtherScope === "active") return "Questo numero è già valido. Apri Users per visualizzarlo.";
+  return "Nessun utente trovato nella sezione selezionata. Controlla il numero completo.";
 }
 
 function getFilteredAdminUsers() {
@@ -5605,7 +5664,7 @@ function renderAdminUsers() {
       ? `Inserisci almeno ${ADMIN_SEARCH_MIN_DIGITS} cifre del telefono.`
       : adminState.tab === "promo"
         ? "Nessun utente promo trovato."
-        : "Nessun utente trovato.";
+        : getAdminSearchEmptyMessage();
     list.innerHTML = `<div class="admin-empty">${emptyText}</div>`;
     return;
   }
@@ -5741,7 +5800,7 @@ function adminOpenUserModal(mode, user = null) {
   if (save) save.textContent = mode === "create" ? "Aggiungi utenti" : mode === "renew" ? "Rinnova accesso" : "Salva modifiche";
   const description = document.getElementById("adminModalDescription");
   if (description) description.textContent = mode === "create"
-    ? "Imposta la durata di Magic Book e scegli a chi abilitare QuizBank."
+    ? "I nuovi numeri vengono aggiunti; quelli già presenti si rinnovano da oggi per la durata scelta, senza cambiare QuizBank."
     : mode === "renew" ? "Prolunga Magic Book senza modificare gli altri accessi."
       : "Aggiorna i dati e gestisci l'accesso separato a QuizBank.";
   adminUpdateUserFormSummary();
@@ -5881,12 +5940,13 @@ async function adminSubmitUserModal() {
   }
 
   try {
+    let successMessage;
     if (mode === "create") {
-      await adminRequest("create", { phone, days: days || 90, expiry, Quiz_bank });
-      setAdminMessage("Utente creato.", "success");
+      const result = await adminRequest("create", { phone, days: days || 90, expiry, Quiz_bank });
+      successMessage = result.outcome === "renewed" ? "Utente già presente: accesso rinnovato. QuizBank invariato." : "Utente creato.";
     } else if (mode === "edit") {
       await adminRequest("update", { phone: originalPhone, newPhone: phone, expiry, Quiz_bank });
-      setAdminMessage("Utente aggiornato.", "success");
+      successMessage = "Utente aggiornato.";
     } else {
       await adminRequest("renew", {
         phone: originalPhone || phone,
@@ -5895,11 +5955,13 @@ async function adminSubmitUserModal() {
         mode: addMode ? "add" : "set",
         accessSource: "paid"
       });
-      setAdminMessage("Rinnovo completato.", "success");
+      successMessage = "Rinnovo completato.";
     }
 
     adminCloseUserModal(true);
-    await adminLoadUsers(true);
+    await adminShowSavedUsers([phone]);
+    setAdminMessage(successMessage + (adminState.loadError
+      ? " L'elenco non si è aggiornato: premi Aggiorna per verificarlo." : ""), "success");
   } catch (err) {
     setAdminMessage(getAdminErrorMessage(err.message), "error");
   } finally {
@@ -5911,6 +5973,21 @@ async function adminSubmitUserModal() {
       save.textContent = originalText;
     }
   }
+}
+
+async function adminShowSavedUsers(phones) {
+  if (!phones.length) return adminLoadUsers(true);
+  setAdminTab("users");
+  if (adminState.searchTimer) clearTimeout(adminState.searchTimer);
+  adminState.searchTimer = null;
+  if (phones.length === 1) {
+    adminState.query = normalizePhone(phones[0]);
+    const search = document.getElementById("adminSearchInput");
+    if (search) search.value = adminState.query;
+    document.getElementById("adminSearchClear")?.classList.remove("hidden");
+    return adminLoadUsers(true, "search");
+  }
+  return adminLoadUsers(true, "recent");
 }
 
 async function adminSubmitBulkCreate(save) {
@@ -5941,14 +6018,6 @@ async function adminSubmitBulkCreate(save) {
     uniqueEntries.push(entry);
   });
 
-  const existing = [];
-  const toCreate = [];
-  uniqueEntries.forEach(entry => {
-    const existingUser = getExistingAdminUser(entry.phone);
-    if (existingUser) existing.push(existingUser.phone);
-    else toCreate.push(entry);
-  });
-
   const originalText = save?.textContent || "Aggiungi";
   setAdminUserFormBusy(true);
   if (save) {
@@ -5959,21 +6028,20 @@ async function adminSubmitBulkCreate(save) {
   }
 
   const created = [];
+  const renewed = [];
   const failed = [];
-  const backendDuplicates = [];
 
   try {
-    for (const entry of toCreate) {
+    for (const entry of uniqueEntries) {
       try {
-        await adminRequest("create", { phone: entry.phone, days: entry.days, Quiz_bank: entry.Quiz_bank });
-        created.push(entry.phone);
+        const result = await adminRequest("create", { phone: entry.phone, days: entry.days, Quiz_bank: entry.Quiz_bank });
+        (result.outcome === "renewed" ? renewed : created).push(entry.phone);
       } catch (err) {
-        if (err.message === "duplicate") backendDuplicates.push(entry.phone);
-        else failed.push({ phone: entry.phone, error: err.message });
+        failed.push({ phone: entry.phone, error: err.message });
       }
     }
 
-    await adminLoadUsers(true);
+    await adminShowSavedUsers([...created, ...renewed]);
     if (!failed.length) adminCloseUserModal(true);
     else {
       // Keep only unresolved rows, including each row's original QB selection.
@@ -5989,15 +6057,15 @@ async function adminSubmitBulkCreate(save) {
       });
     }
 
-    const allDuplicates = [...existing, ...duplicatedInBatch, ...backendDuplicates];
     const parts = [];
-    if (created.length) parts.push(`${created.length} utenti aggiunti`);
-    if (allDuplicates.length) parts.push(`${allDuplicates.length} gia esistenti`);
+    if (created.length) parts.push(`${created.length} ${created.length === 1 ? "utente aggiunto" : "utenti aggiunti"}`);
+    if (renewed.length) parts.push(`${renewed.length} ${renewed.length === 1 ? "utente rinnovato" : "utenti rinnovati"} (QuizBank invariato)`);
+    if (duplicatedInBatch.length) parts.push(`${duplicatedInBatch.length} numeri ripetuti nella stessa lista ignorati`);
     if (failed.length) parts.push(`${failed.length} da verificare. ${getAdminErrorMessage(failed[0].error)}`);
+    if (adminState.loadError) parts.push("L'elenco non si è aggiornato: premi Aggiorna per verificarlo.");
 
     setAdminMessage(parts.join(", ") || "Nessun utente aggiunto.", failed.length ? "error" : "success");
     adminUpdateUserFormSummary();
-    if (allDuplicates.length) showAdminDuplicateUsers(allDuplicates);
   } finally {
     setAdminUserFormBusy(false);
     if (save) {

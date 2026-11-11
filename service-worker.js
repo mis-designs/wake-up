@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v275-protected-theory";
+const CACHE_NAME = "magicbook-pwa-v276-admin-access-recovery";
 const STATIC_ASSETS = [
   "/quiz-theory-index.js?v=1-chapter1",
   "/quiz-theory.js?v=1-protected",
@@ -120,7 +120,7 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=61-shared-recorder",
   "/quiz-chrome.css?v=1-outline",
   "/audio-player-ui.css?v=10-web-quiz-slim",
-  "/script.js?v=89-admin-valid-users",
+  "/script.js?v=90-admin-access-recovery",
   "/study-quiz.html",
   "/study-quiz.css?v=28-compact",
   "/study-quiz.js?v=42-protected-theory&art=2e0d6787e201",

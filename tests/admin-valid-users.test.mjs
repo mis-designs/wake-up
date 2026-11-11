@@ -47,7 +47,7 @@ function harness(){
  adminLoadPromoUsers:async()=>{},adminRetryPromoUsers(){},adminUpdateUserFormSummary(){},adminFillBulkFromClipboard(){},
  adminRequest:async(action,fields)=>{calls.push({action,...fields});return await new Promise((resolve,reject)=>pending.push({resolve,reject}));}
  });
- for(const name of ['getAdminStatus','getAdminRegistrationTime','getAdminResponseUsers','setAdminTab','adminLoadUsers','adminLoadAllUsers','adminRefreshUsers','updateAdminDatasetControls','setupAdminUI','scheduleAdminPhoneSearch','clearAdminPhoneSearch'])vm.runInContext(extract(name),ctx);
+ for(const name of ['getAdminSearchEmptyMessage','getAdminStatus','getAdminRegistrationTime','getAdminResponseUsers','setAdminTab','adminLoadUsers','adminLoadAllUsers','adminRefreshUsers','updateAdminDatasetControls','setupAdminUI','scheduleAdminPhoneSearch','clearAdminPhoneSearch'])vm.runInContext(extract(name),ctx);
  ctx.setupAdminUI();
  return {ctx,calls,pending,node,click:name=>tabs.find(t=>t.dataset.adminTab===name).handlers.click()};
 }
@@ -80,4 +80,18 @@ test('search within Scaduti retains expired scope',async()=>{
  ctx.scheduleAdminPhoneSearch('393330001015',{immediate:true});await tick();
  assert.equal(calls.length,1);assert.equal(calls[0].action,'search');assert.equal(calls[0].scope,'expired');
  pending.shift().resolve({user:users[15]});await tick();assert.equal(ctx.adminState.users.length,1);
+});
+
+test('exact search enters the matching section once; races cannot start a lookup loop',async()=>{
+ const {ctx,calls,pending}=harness();ctx.adminState.query=users[15].phone;
+ const task=ctx.adminLoadUsers(true,'search');
+ pending.shift().resolve({list:[],foundInScope:'expired'});await tick();
+ assert.equal(ctx.adminState.tab,'expired');assert.equal(calls.length,2);assert.equal(calls[1].scope,'expired');
+ pending.shift().resolve({list:[users[15]]});await task;
+ assert.equal(ctx.adminState.users.length,1);
+ // A concurrent renewal can move the row again. Do not chase it endlessly.
+ ctx.adminState.tab='users';const race=ctx.adminLoadUsers(true,'search');
+ pending.shift().resolve({list:[],foundInScope:'expired'});await tick();
+ pending.shift().resolve({list:[],foundInScope:'active'});await race;
+ assert.equal(calls.length,4);assert.equal(ctx.adminState.searchOtherScope,'active');
 });

@@ -1,6 +1,6 @@
 import { readRequestObject } from "../lib/request-json.mjs";
 import crypto from "crypto";
-import { fetchUpstream, publicApiError } from "./upstream-fetch.mjs";
+import { fetchUpstreamJson, publicApiError } from "./upstream-fetch.mjs";
 
 const GAS_ACCESS_URL = process.env.GAS_ACCESS_URL;
 const GAS_SECRET = process.env.GAS_SECRET;
@@ -90,7 +90,7 @@ function readAdminError(data) {
 }
 
 async function callGasAdmin(action, fields = {}, timeoutMs = 12_000) {
-  const response = await fetchUpstream(GAS_ACCESS_URL, {
+  const { response, data } = await fetchUpstreamJson(GAS_ACCESS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -100,13 +100,6 @@ async function callGasAdmin(action, fields = {}, timeoutMs = 12_000) {
       ...fields
     })
   }, { service: "admin_service", timeoutMs });
-
-  let data = null;
-  try {
-    data = await response.json();
-  } catch {
-    data = null;
-  }
 
   if (!response.ok && !data) return { success: false, error: "admin_backend_error" };
   return data || { success: false, error: "admin_backend_error" };
@@ -211,6 +204,8 @@ export function prepareAdminReadResponse(data, action, scope = "active", now = D
   return {
     ...metadata, list: action === "recent" ? selectRecentAdminUsers(users) : users,
     total: users.length, scope,
+    ...(action === "search" && !users.length && source.length
+      ? { foundInScope: scope === "expired" ? "active" : "expired" } : {}),
     ...(action === "search" ? { user: users[0] || null } : {}),
     ...(action === "recent" ? { limit: ADMIN_RECENT_LIMIT } : {})
   };
@@ -253,11 +248,27 @@ export default async function handler(req, res) {
     if (sanitized.error) return res.status(400).json({ success: false, error: sanitized.error });
 
     const timeoutMs = action === "promo_users" ? 20_000 : 12_000;
+    const createDeadline = Date.now() + 20_000;
     let data = await callGasAdmin(getGasAction(action), sanitized.fields, timeoutMs);
+    let renewedExisting = false;
+    // Owner-approved upsert: renew only after an explicit duplicate rejection.
+    // A timeout/uncertain create must never trigger another write. Renewal sets
+    // the selected duration from today; it preserves devices and QuizBank.
+    if (action === "create" && data?.success === false && data?.error === "duplicate") {
+      renewedExisting = true;
+      const remainingMs = createDeadline - Date.now();
+      if (remainingMs <= 0) throw Object.assign(new Error("service_unavailable"), { statusCode: 503 });
+      data = await callGasAdmin("admin_renew", {
+        phone: sanitized.fields.phone,
+        ...(sanitized.fields.days ? { days: sanitized.fields.days } : {}),
+        ...(sanitized.fields.expiry ? { expiry: sanitized.fields.expiry } : {}),
+        mode: "set"
+      }, Math.min(timeoutMs, remainingMs));
+    }
     if (data?.success !== true) {
       return res.status(200).json({ success: false, error: readAdminError(data) });
     }
-    if (Object.hasOwn(sanitized.fields, "Quiz_bank") && data.Quiz_bank !== sanitized.fields.Quiz_bank) {
+    if (!renewedExisting && Object.hasOwn(sanitized.fields, "Quiz_bank") && data.Quiz_bank !== sanitized.fields.Quiz_bank) {
       // Older GAS deployments can save the phone while ignoring the new flag.
       // Never present that partial/uncertain result as a confirmed grant.
       return res.status(200).json({ success: false, error: "quizbank_not_confirmed" });
@@ -267,6 +278,7 @@ export default async function handler(req, res) {
       const scope = body.scope === "expired" ? "expired" : "active";
       data = prepareAdminReadResponse(data, action, scope);
     }
+    if (action === "create") data = { ...data, outcome: renewedExisting ? "renewed" : "created" };
 
     if (action === "renew" && sanitized.fields.accessSource === "paid") {
       try {
