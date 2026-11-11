@@ -1,11 +1,12 @@
-import { authorizeQuizBankPreview, quizBankSession, serveQuizBankMedia, saveQuizBankAudio } from "./quiz.js";
+import { authorizeQuizBankPreview, quizBankSession, serveQuizBankMedia, saveQuizBankAudio, serveQuizTheory } from "./quiz.js";
 import { loadQuizBank, quizBankStorageIdentity, quizBankContentToken, matchesQuizBankContentToken } from "./quizbank-catalog.mjs";
+import { isQuizTheoryAction } from "../lib/quiz-theory-response.mjs";
 import { decodeQuizAudioUpload } from "../lib/quiz-audio-upload.mjs";
 import { buildQuizBankAttempt, gradeQuizBankAttempt, normalizeQuizBankSheet } from "../lib/quizbank-attempt.mjs";
 
 const actions = {
   GET: new Set(["catalog", "getStudyQuiz", "getQuiz", "getItalianAudio", "getBengaliAudio", "getTTS"]),
-  POST: new Set(["refreshQuizSession", "checkQuiz", "getQuizAudioStatus", "getQuizAudioBlob", "getQuizAudioPlayback", "saveQuizAudio"])
+  POST: new Set(["getQuizTheory", "getQuizTheoryAudio", "refreshQuizSession", "checkQuiz", "getQuizAudioStatus", "getQuizAudioBlob", "getQuizAudioPlayback", "saveQuizAudio"])
 };
 
 const withContentTokens = rows => rows.map(row => ({ ...row, audioIdentityToken: quizBankContentToken(row) }));
@@ -64,6 +65,7 @@ export default async function handler(req, res) {
     if (!row) return res.status(404).json({ error: "quizbank_question_not_found" });
     // Fail before any explanation database/object access, upload or TTS request.
     if (!matchesQuizBankContentToken(row, data.audioIdentityToken)) return contentChanged(res);
+    if (isQuizTheoryAction(data.action)) return res.status(200).json(await serveQuizTheory(data, row, req, res));
     const identity = quizBankStorageIdentity(row);
     if (upload) return await saveQuizBankAudio({ data, identity, upload, req }, res);
     // Ignore submitted text/figure/answer when choosing the explanation or IT/BN source.

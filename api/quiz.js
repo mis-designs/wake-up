@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { isQuizTheoryAction, quizTheoryResponse } from "../lib/quiz-theory-response.mjs";
 import { audioLookupKeys, selectAudioRow } from "../lib/quiz-audio-lookup.mjs";
 import { saveMissingQuizAudio } from "../lib/quiz-audio-upload.mjs";
 import { createWorkCache } from "../lib/bounded-work-cache.mjs";
@@ -1184,6 +1185,26 @@ export async function serveQuizBankMedia({ action, row, identity, text }, res) {
   return res.status(200).end(Buffer.from(bytes));
 }
 
+// Internal reuse by QuizBank only, after its entitlement and current-row gates.
+export async function serveQuizTheory(data, row, req, res) {
+  const deadline = Date.now() + 20_000;
+  let cancelled = false;
+  const cancel = () => { cancelled = true; };
+  req.once?.("aborted", cancel);
+  res.once?.("close", cancel);
+  try {
+    return await withOperationalTimeout(quizTheoryResponse({ row, data, speak: forwardGetAction,
+      isCancelled: () => Boolean(cancelled || req.aborted || req.signal?.aborted || Date.now() >= deadline) }),
+      { service: "quiz_theory", timeoutMs: 20_000 });
+  } finally {
+    // An existing shared GAS call may finish for other consumers; this closed
+    // response must never start another chunk or deliver late content.
+    cancelled = true;
+    req.removeListener?.("aborted", cancel);
+    res.removeListener?.("close", cancel);
+  }
+}
+
 export default async function handler(req, res) {
   // Authenticated content and signed audio URLs must never enter shared caches.
   res.setHeader("Cache-Control", "private, no-store");
@@ -1238,6 +1259,17 @@ export default async function handler(req, res) {
       audioIdentityToken
     })) {
       return res.status(400).json({ error: "invalid_request" });
+    }
+
+    if (req.method === "POST" && isQuizTheoryAction(action)) {
+      // The same signed quiz-session boundary as question TTS. Access/QuizBank/
+      // trial tokens cannot substitute; only a server-owned canonical row resolves.
+      const quizSession = verifySignedToken(quizSessionToken, { phone, deviceId, purpose: "quiz" });
+      if (!quizSession.ok) return res.status(401).json({ error: quizSession.error });
+      const row = LOCAL_MAGIC_BOOK_ROWS.find(item => String(item.id) === questionId)
+        || LOCAL_EXAM_ROWS.find(item => String(item.id) === questionId);
+      const result = await serveQuizTheory({ action, questionId, question, figure, language }, row, req, res);
+      return res.status(200).json(result);
     }
 
     if (req.method === "POST" && action === "getDictionaryAudio") {

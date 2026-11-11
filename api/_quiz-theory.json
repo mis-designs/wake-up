@@ -1,0 +1,942 @@
+[
+  {
+    "id": "theory_v1_q2_ab0d5381352fac8a3296acd9df5208b3ec01ce8ae91d60424ce159d6ea4f74ac_true",
+    "keys": [
+      "q2_ab0d5381352fac8a3296acd9df5208b3ec01ce8ae91d60424ce159d6ea4f74ac"
+    ],
+    "question_it": "La carreggiata non comprende le piste ciclabili",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "piste ciclabili",
+    "explanation": {
+      "it": "La pista ciclabile è uno spazio riservato alle biciclette, distinto dalla carreggiata destinata alla normale circolazione dei veicoli. Attenzione: «pista ciclabile» e «corsia ciclabile» non indicano la stessa cosa.",
+      "bn": "Pista ciclabile হলো সাইকেলের জন্য আলাদা নির্ধারিত পথ; এটি সাধারণ যানবাহন চলার carreggiata-র অংশ নয়। মনে রাখুন, pista ciclabile ও corsia ciclabile এক জিনিস নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_f277748caaa7f3abdcf7e0b9178c3438520dbcb7c2c0a2d0a263bd54eb1d898f_false",
+    "keys": [
+      "q2_f277748caaa7f3abdcf7e0b9178c3438520dbcb7c2c0a2d0a263bd54eb1d898f"
+    ],
+    "question_it": "La carreggiata comprende le piazzole di sosta",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "piazzole di sosta",
+    "explanation": {
+      "it": "La piazzola di sosta si trova fuori dalla carreggiata: serve ad accogliere i veicoli che si fermano, non allo scorrimento del traffico. Per questo non va inclusa nella carreggiata.",
+      "bn": "Piazzola di sosta হলো গাড়ি থামানোর জন্য রাস্তার পাশে তৈরি জায়গা। এটি গাড়ি চলাচলের মূল অংশ অর্থাৎ carreggiata-র বাইরে থাকে। তাই একে carreggiata-র অংশ বলা ভুল।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_bcedbf5c59e630d55c609ea844b1e2b52b13e59c5e6ba22eec6194bebf7f7ecf_false",
+    "keys": [
+      "q2_bcedbf5c59e630d55c609ea844b1e2b52b13e59c5e6ba22eec6194bebf7f7ecf"
+    ],
+    "question_it": "Fanno parte della carreggiata le corsie di emergenza delle autostrade",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "corsie di emergenza",
+    "explanation": {
+      "it": "La corsia di emergenza è adiacente alla carreggiata, ma non ne fa parte. È destinata alle emergenze e ai soccorsi, non alla normale marcia dei veicoli.",
+      "bn": "Corsia di emergenza carreggiata-র পাশে থাকে, কিন্তু তার অংশ নয়। এটি জরুরি প্রয়োজনে থামা ও উদ্ধারকাজের জন্য; সাধারণভাবে গাড়ি চালানোর লেন নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_a9eae753250a6a2779fdb95f8471f7af081d7640f1805bcd38fbeb4b0fa17350_false",
+    "keys": [
+      "q2_a9eae753250a6a2779fdb95f8471f7af081d7640f1805bcd38fbeb4b0fa17350"
+    ],
+    "question_it": "Fanno parte della carreggiata le banchine",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "banchine",
+    "explanation": {
+      "it": "La banchina è la fascia laterale oltre il margine della carreggiata. Appartiene alla strada, ma non alla carreggiata: le due parole non sono sinonimi.",
+      "bn": "Banchina হলো carreggiata-র ধার বরাবর বাইরের সরু অংশ। এটি পুরো রাস্তার অংশ, কিন্তু গাড়ি চলার carreggiata-র অংশ নয়। Strada ও carreggiata একই অর্থে ব্যবহার করা যাবে না।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_0a81fb5176ee2e23b6df257463384d227256c77be3d431292d25a4b5dd40f023_false",
+    "keys": [
+      "q2_0a81fb5176ee2e23b6df257463384d227256c77be3d431292d25a4b5dd40f023"
+    ],
+    "question_it": "La corsia è una strada a scorrimento veloce",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "corsia",
+    "explanation": {
+      "it": "La corsia è una striscia longitudinale della strada, larga abbastanza per una fila di veicoli. Non è un tipo di strada e non si definisce in base alla velocità.",
+      "bn": "Corsia মানে রাস্তার লম্বালম্বি একটি লেন, যেখানে এক সারি গাড়ি চলতে পারে। এটি দ্রুতগতির কোনো রাস্তার নাম নয়। প্রশ্নে একটি লেনকে পুরো রাস্তার ধরন বলা হয়েছে, তাই ভুল।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_c3134e6433ebd38db9b9dc9cd3fa64528c80b3ed355bf048e59a9f413136507a_false",
+    "keys": [
+      "q2_c3134e6433ebd38db9b9dc9cd3fa64528c80b3ed355bf048e59a9f413136507a"
+    ],
+    "question_it": "La corsia può essere a doppio senso di circolazione",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "doppio senso",
+    "explanation": {
+      "it": "Una corsia serve una fila di veicoli che procede in un solo senso. Una carreggiata può invece essere a doppio senso, con corsie destinate alle direzioni opposte.",
+      "bn": "একটি corsia-তে গাড়ি এক দিকেই চলে। কিন্তু একটি carreggiata-তে বিপরীত দিকে যাওয়ার আলাদা লেন থাকতে পারে। প্রশ্নে corsia ও carreggiata গুলিয়ে ফেলা হয়েছে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_91a278775807a54f37c0708c252e6377c67e02e82e3f1c2fde30b637248824a2_false",
+    "keys": [
+      "q2_91a278775807a54f37c0708c252e6377c67e02e82e3f1c2fde30b637248824a2"
+    ],
+    "question_it": "La corsia di accelerazione serve per uscire da una piazzola di sosta",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "piazzola di sosta",
+    "explanation": {
+      "it": "La corsia di accelerazione permette di acquistare velocità per immettersi nella carreggiata, per esempio dopo uno svincolo. La normale uscita da una piazzola non è la funzione che definisce questa corsia.",
+      "bn": "Corsia di accelerazione-তে গতি বাড়িয়ে মূল carreggiata-তে প্রবেশ করা হয়, যেমন কোনো সংযোগপথ থেকে ওঠার সময়। সাধারণ piazzola di sosta থেকে বের হওয়ার লেন হিসেবে এর সংজ্ঞা দেওয়া ঠিক নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_21c31f2b3a4bf1898340d78c24e2962a1f6eb52717a365de571180c6d67f2a3f_false",
+    "keys": [
+      "q2_21c31f2b3a4bf1898340d78c24e2962a1f6eb52717a365de571180c6d67f2a3f"
+    ],
+    "question_it": "La corsia di decelerazione serve per entrare in una piazzola di sosta",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "piazzola di sosta",
+    "explanation": {
+      "it": "La corsia di decelerazione consente di rallentare per lasciare la carreggiata, per esempio verso un'uscita. Non va confusa con l'accesso a una normale piazzola di sosta.",
+      "bn": "Corsia di decelerazione-তে গতি কমিয়ে মূল carreggiata থেকে বের হওয়া হয়, যেমন নির্ধারিত বের হওয়ার পথে। সাধারণ piazzola di sosta-তে ঢোকার জায়গার সঙ্গে একে গুলিয়ে ফেলা যাবে না।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_aec56be52f480a42bc35481e24419c87ec9333eb0a0534b6ffc162576d581049_true",
+    "keys": [
+      "q2_aec56be52f480a42bc35481e24419c87ec9333eb0a0534b6ffc162576d581049"
+    ],
+    "question_it": "Il marciapiede consente la sosta dei veicoli solo in presenza di apposite strisce di parcheggio",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "apposite strisce di parcheggio",
+    "explanation": {
+      "it": "Il marciapiede è destinato ai pedoni: normalmente non vi si parcheggia. La sosta è ammessa soltanto dove la segnaletica la autorizza, negli spazi appositamente predisposti.",
+      "bn": "Marciapiede বা ফুটপাত পথচারীদের জন্য; সাধারণভাবে সেখানে গাড়ি পার্ক করা নিষেধ। কেবল চিহ্ন দিয়ে অনুমতি দেওয়া নির্দিষ্ট পার্কিংয়ের জায়গায় গাড়ি রাখা যায়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_5b5b71885c7dd8ffa9b805495ed06cc0811d77240124cb85b607d29dede5b93d_false",
+    "keys": [
+      "q2_5b5b71885c7dd8ffa9b805495ed06cc0811d77240124cb85b607d29dede5b93d"
+    ],
+    "question_it": "L'isola di traffico facilita la salita e la discesa di passeggeri da tram, filobus e autobus",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "isola di traffico",
+    "explanation": {
+      "it": "L'isola di traffico guida e separa i flussi dei veicoli. Lo spazio protetto per i pedoni presso le fermate si chiama invece salvagente: il quiz scambia le due funzioni.",
+      "bn": "Isola di traffico গাড়ির চলাচলকে আলাদা করে নির্দিষ্ট পথে পরিচালনা করে। বাস বা ট্রামের স্টপে পথচারীদের নিরাপদে দাঁড়ানোর অংশকে salvagente বলে। প্রশ্নে এই দুইটির কাজ বদলে দেওয়া হয়েছে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_b99c5f2a1e2431349945849783ac45c301bd49fa8a5f8eb19329bb88bb043799_true",
+    "keys": [
+      "q2_b99c5f2a1e2431349945849783ac45c301bd49fa8a5f8eb19329bb88bb043799"
+    ],
+    "question_it": "Il salvagente può essere segnalato da colonnine luminose a luce gialla fissa",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "luce gialla fissa",
+    "explanation": {
+      "it": "Le colonnine gialle fisse rendono visibile il salvagente, soprattutto quando c'è poca luce. La frase dice «può»: questo è un modo ammesso per segnalarne la presenza.",
+      "bn": "একটানা জ্বলা হলুদ আলোযুক্ত খুঁটি দিয়ে salvagente-র অবস্থান বোঝানো যায়, বিশেষ করে অন্ধকারে। প্রশ্নে «può» মানে করা যেতে পারে; সব salvagente-তে এটি থাকতেই হবে, এমন বলা হয়নি।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_e787c018ec4ee24dd9fc224831da8eee9a703d16e91e76995de843b23291d3e2_true",
+    "keys": [
+      "q2_e787c018ec4ee24dd9fc224831da8eee9a703d16e91e76995de843b23291d3e2"
+    ],
+    "question_it": "Il passo carrabile permette ai veicoli che circolano su una strada pubblica di accedere ad un'area laterale adibita alla sosta",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "area laterale adibita alla sosta",
+    "explanation": {
+      "it": "Il passo carrabile collega la strada a uno spazio laterale dove possono entrare e sostare veicoli, come un garage o un cortile. È proprio questa la sua funzione.",
+      "bn": "Passo carrabile দিয়ে রাস্তা থেকে পাশের গ্যারেজ, উঠান বা গাড়ি রাখার জায়গায় ঢোকা যায়। তাই প্রশ্নে বলা কাজটি এর সঠিক কাজ।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_6f4b57b7dfa25613eb85b88f08e8183cbd0ed3073b976ae202cb3d6c0d28b9d6_true",
+    "keys": [
+      "q2_6f4b57b7dfa25613eb85b88f08e8183cbd0ed3073b976ae202cb3d6c0d28b9d6"
+    ],
+    "question_it": "Nelle aree pedonali possono transitare i veicoli al servizio di persone diversamente abili",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "veicoli al servizio",
+    "explanation": {
+      "it": "L'area pedonale prevede un'eccezione per i veicoli al servizio di persone con mobilità ridotta. Il transito richiede il rispetto delle condizioni previste e delle eventuali restrizioni segnalate: non è un permesso generico per qualsiasi veicolo.",
+      "bn": "চলাফেরায় সীমাবদ্ধতা আছে এমন ব্যক্তির সেবায় ব্যবহৃত গাড়ির জন্য area pedonale-তে প্রবেশের ব্যতিক্রম রয়েছে। তবে প্রযোজ্য শর্ত ও সাইনবোর্ডে দেখানো বিধিনিষেধ মানতে হবে; এটি সব গাড়ির জন্য সাধারণ অনুমতি নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_3d6c064830f8ce49fd7a100d67696e60cbf4188370592ad1106e01bdeb6b44a4_true",
+    "keys": [
+      "q2_3d6c064830f8ce49fd7a100d67696e60cbf4188370592ad1106e01bdeb6b44a4"
+    ],
+    "question_it": "Nelle aree pedonali possono transitare i veicoli ad emissione zero (elettrici), se espressamente consentito",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "se espressamente consentito",
+    "explanation": {
+      "it": "Essere elettrico non dà automaticamente accesso all'area pedonale. Possono essere ammesse deroghe per veicoli a emissioni zero con ingombro e velocità assimilabili alle biciclette: serve l'autorizzazione prevista.",
+      "bn": "গাড়ি বৈদ্যুতিক হলেই area pedonale-তে ঢোকা যায় না। আকার ও গতিতে সাইকেলের সঙ্গে তুলনীয় শূন্য নির্গমনের যানকে বিশেষ অনুমতি দেওয়া যেতে পারে। তাই «se espressamente consentito» - স্পষ্ট অনুমতি থাকলে - অংশটি গুরুত্বপূর্ণ।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_a56b1b1960be500ac3d637bbbbe48ba6788d89900b86246f61021f2fa74c863b_true",
+    "keys": [
+      "q2_a56b1b1960be500ac3d637bbbbe48ba6788d89900b86246f61021f2fa74c863b"
+    ],
+    "question_it": "Nelle aree pedonali possono transitare le biciclette",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "biciclette",
+    "explanation": {
+      "it": "Le biciclette rientrano tra i veicoli normalmente ammessi nelle aree pedonali. Si devono comunque rispettare i pedoni e le eventuali ulteriori limitazioni indicate sul posto.",
+      "bn": "Area pedonale-তে সাধারণভাবে সাইকেল চলতে পারে। তবে পথচারীদের নিরাপত্তা বজায় রাখতে হবে এবং সেখানে কোনো অতিরিক্ত নিষেধাজ্ঞা থাকলে সেটিও মানতে হবে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_c5659adb8855a7106e0e54ac235a7ccd5488731c5c5bb4b04d79cdd444b45920_true",
+    "keys": [
+      "q2_c5659adb8855a7106e0e54ac235a7ccd5488731c5c5bb4b04d79cdd444b45920"
+    ],
+    "question_it": "Una zona a traffico limitato è un'area in cui può essere limitata la circolazione dei veicoli solo in alcune ore",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "solo in alcune ore",
+    "explanation": {
+      "it": "Una ZTL può limitare accesso e circolazione in determinati orari o per determinate categorie. Non deve necessariamente essere chiusa al traffico per l'intera giornata.",
+      "bn": "ZTL-এ নির্দিষ্ট সময়ে বা নির্দিষ্ট ধরনের গাড়ির চলাচল সীমিত করা যেতে পারে। তাই নিষেধাজ্ঞা সারাদিনের না হয়ে কেবল কিছু ঘণ্টার জন্যও থাকতে পারে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_bc8fa667d78f6f3c1295720b16c24f43d4c78eb4a11068ad16b52c9399e16f04_false",
+    "keys": [
+      "q2_bc8fa667d78f6f3c1295720b16c24f43d4c78eb4a11068ad16b52c9399e16f04"
+    ],
+    "question_it": "In una zona a traffico limitato non possono entrare più di un certo numero di veicoli",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "un certo numero di veicoli",
+    "explanation": {
+      "it": "«Traffico limitato» non significa che si conta un numero massimo di auto. La ZTL regola chi può entrare e quando, secondo le autorizzazioni e la segnaletica.",
+      "bn": "«Traffico limitato» মানে নির্দিষ্ট সংখ্যক গাড়ি ঢোকার পর বাকিদের আটকানো নয়। ZTL-এর নিয়ম বলে কোন গাড়ি, কোন অনুমতিতে এবং কখন ঢুকতে পারবে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_c72513d1440d83e4248b29a1218983767383aa793232bf265c227710aaf0644f_false",
+    "keys": [
+      "q2_c72513d1440d83e4248b29a1218983767383aa793232bf265c227710aaf0644f"
+    ],
+    "question_it": "L'intersezione (incrocio) a livelli sfalsati è, di norma, regolata da semafori",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "livelli sfalsati",
+    "explanation": {
+      "it": "In un incrocio a livelli sfalsati le strade passano ad altezze diverse, tramite ponti o sottopassi. Non c'è il normale incrocio delle traiettorie sullo stesso piano da alternare con un semaforo.",
+      "bn": "Livelli sfalsati মানে রাস্তা দুটি ভিন্ন উচ্চতায় পার হয়েছে - একটি ওপর দিয়ে, অন্যটি নিচ দিয়ে। একই সমতলে গাড়ির পথ কাটাকাটি করে না, তাই সাধারণ সমতল মোড়ের মতো সেমাফোর দিয়ে পালা করে পার করানো এর বৈশিষ্ট্য নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_d260c67b77432a4555910cd00ce569f55dbf1ef454f4b3931145b6c6b3b5bf7e_false",
+    "keys": [
+      "q2_d260c67b77432a4555910cd00ce569f55dbf1ef454f4b3931145b6c6b3b5bf7e"
+    ],
+    "question_it": "Il passaggio a livello è un cavalcavia ferroviario o tranviario",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "passaggio a livello",
+    "explanation": {
+      "it": "Il passaggio a livello è un attraversamento di binari sullo stesso piano della strada. Se la ferrovia passa sopra la strada su un ponte, si tratta di un cavalcavia, non di un passaggio a livello.",
+      "bn": "Passaggio a livello-তে রেললাইন ও রাস্তা একই সমতলে একে অন্যকে পার করে। রেললাইন সেতু দিয়ে রাস্তার ওপর দিয়ে গেলে সেটি cavalcavia; passaggio a livello নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_69a6b4dc7eac0bec533ec699d28a97bd9ee815bd93b065b6184890655418b497_true",
+    "keys": [
+      "q2_69a6b4dc7eac0bec533ec699d28a97bd9ee815bd93b065b6184890655418b497"
+    ],
+    "question_it": "La strada extraurbana principale non ha incroci a raso che l'attraversano",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "non ha incroci a raso",
+    "explanation": {
+      "it": "Una strada extraurbana principale è progettata senza intersezioni sullo stesso piano. I collegamenti avvengono tramite svincoli, evitando gli attraversamenti diretti della carreggiata.",
+      "bn": "Strada extraurbana principale-তে একই সমতলে রাস্তা কাটাকাটি করা মোড় থাকে না। সংযোগপথ বা svincolo দিয়ে ওঠানামা করা হয়, যাতে মূল চলাচলের পথ সরাসরি পার হতে না হয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_8b3fb77ac16419b76d8aadb0264c636956273d849956c392e54356b5db9935a3_false",
+    "keys": [
+      "q2_8b3fb77ac16419b76d8aadb0264c636956273d849956c392e54356b5db9935a3"
+    ],
+    "question_it": "Sulle strade extraurbane principali i quadricicli leggeri possono transitare",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "quadricicli leggeri",
+    "explanation": {
+      "it": "I quadricicli leggeri sono equiparati ai ciclomotori ai fini della circolazione e non possono entrare sulle strade extraurbane principali. Avere quattro ruote non basta per essere ammessi.",
+      "bn": "চলাচলের নিয়মে quadricicli leggeri-কে ciclomotori-র সমতুল্য ধরা হয়। তাই strada extraurbana principale-তে এগুলোর প্রবেশ নিষেধ। শুধু চারটি চাকা থাকলেই সেখানে চলার অনুমতি হয় না।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_fb7d5e6a02d1227b8e18919f3717650720a7585f19279230d1e0a39773553ff4_false",
+    "keys": [
+      "q2_fb7d5e6a02d1227b8e18919f3717650720a7585f19279230d1e0a39773553ff4"
+    ],
+    "question_it": "Sulle strade extraurbane principali i ciclomotori possono transitare",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "ciclomotori",
+    "explanation": {
+      "it": "Le strade extraurbane principali sono riservate alle categorie di veicoli ammesse. I ciclomotori sono esclusi: non basta riuscire a percorrere fisicamente quella strada per poterla usare.",
+      "bn": "Strada extraurbana principale-তে কেবল অনুমোদিত শ্রেণির যান চলতে পারে। Ciclomotori সেখানে নিষিদ্ধ। গাড়িটি সেই রাস্তায় চলতে সক্ষম হলেই আইনগত অনুমতি পাওয়া যায় না।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_c991f9d927382f91c76bcc9b6fbb8501e1a2b1b8e6ce0b12531463e83c1cb278_false",
+    "keys": [
+      "q2_c991f9d927382f91c76bcc9b6fbb8501e1a2b1b8e6ce0b12531463e83c1cb278"
+    ],
+    "question_it": "Le strade extraurbane principali devono essere dotate di pannelli a messaggio variabile",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "devono essere dotate",
+    "explanation": {
+      "it": "I pannelli a messaggio variabile possono esserci, ma non sono un requisito che tutte le strade extraurbane principali devono avere. L'errore è trasformare una possibile dotazione in un obbligo generale.",
+      "bn": "পরিবর্তনশীল বার্তার ইলেকট্রনিক বোর্ড থাকতে পারে, কিন্তু সব strada extraurbana principale-তে তা থাকতেই হবে - এমন শর্ত নেই। «থাকতে পারে» কথাটিকে «থাকতেই হবে» বানানো হয়েছে, তাই প্রশ্নটি ভুল।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_477eeb9915062d3fbb28cb6ca9cd05980df627ceeefd9eebc5ee836886f01d18_false",
+    "keys": [
+      "q2_477eeb9915062d3fbb28cb6ca9cd05980df627ceeefd9eebc5ee836886f01d18"
+    ],
+    "question_it": "Le strade extraurbane principali possono essere ad un'unica carreggiata",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "un'unica carreggiata",
+    "explanation": {
+      "it": "La strada extraurbana principale ha carreggiate indipendenti o separate da uno spartitraffico invalicabile. Non è quindi una strada con un'unica carreggiata per i due sensi.",
+      "bn": "Strada extraurbana principale-তে দুই দিকের carreggiata আলাদা থাকে, অথবা মাঝখানে পার হওয়া যায় না এমন বিভাজক থাকে। তাই দুই দিকের জন্য একটি মাত্র carreggiata বলা ভুল।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_ddf145e6ecc0529a91f1a56c1272a8d73a769fb416919f38053e49ad08de1b51_true",
+    "keys": [
+      "q2_ddf145e6ecc0529a91f1a56c1272a8d73a769fb416919f38053e49ad08de1b51"
+    ],
+    "question_it": "I tricicli a motore sono veicoli con motore di cilindrata superiore a 50 cm³",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "cilindrata superiore a 50 cm³",
+    "explanation": {
+      "it": "Nel quiz questa frase è considerata VERA, ma è semplificata. Per i tricicli L5e l'art. 47 prevede cilindrata oltre 50 cm³ se il motore è termico, oppure velocità massima per costruzione oltre 45 km/h, qualunque sia la propulsione. Non sono due requisiti sempre necessari insieme: la sola cilindrata non descrive tutti i casi.",
+      "bn": "এই কুইজে বাক্যটি VERO ধরা হয়, তবে এটি সরল করে বলা হয়েছে। L5e tricicli-এর জন্য ৪৭ ধারায় তাপীয় ইঞ্জিনের সিলিন্ডারের আয়তন ৫০ cm³-এর বেশি অথবা যেকোনো চালনাশক্তির ক্ষেত্রে নির্মাণগত সর্বোচ্চ গতি ৪৫ km/h-এর বেশি বলা আছে। দুটি শর্ত একসঙ্গে পূরণ করা সব সময় জরুরি নয়; শুধু সিলিন্ডারের আয়তন দিয়ে সব ক্ষেত্রে এই শ্রেণি বোঝানো যায় না।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_7f382b8eec2d7a6b3d6bb421b5a0512f06831f7cf4c7bbabbcff0d95efa1df62_true",
+    "keys": [
+      "q2_7f382b8eec2d7a6b3d6bb421b5a0512f06831f7cf4c7bbabbcff0d95efa1df62"
+    ],
+    "question_it": "I tricicli a motore sono veicoli a motore aventi una velocità massima per costruzione superiore a 45 km/h",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "velocità massima per costruzione",
+    "explanation": {
+      "it": "Nel quiz questa frase è considerata VERA, ma è semplificata. Per i tricicli L5e l'art. 47 prevede velocità massima per costruzione oltre 45 km/h, qualunque sia la propulsione, oppure cilindrata oltre 50 cm³ se il motore è termico. Non richiede sempre entrambe le condizioni. La velocità di costruzione non è il limite da rispettare sulla strada.",
+      "bn": "এই কুইজে বাক্যটি VERO ধরা হয়, তবে এটি সরল করে বলা হয়েছে। L5e tricicli-এর জন্য ৪৭ ধারায় যেকোনো চালনাশক্তির ক্ষেত্রে নির্মাণগত সর্বোচ্চ গতি ৪৫ km/h-এর বেশি অথবা তাপীয় ইঞ্জিনের সিলিন্ডারের আয়তন ৫০ cm³-এর বেশি বলা আছে। দুটি শর্ত একসঙ্গে পূরণ করা সব সময় জরুরি নয়। নির্মাণগত সর্বোচ্চ গতি আর রাস্তায় মানতে হয় এমন গতিসীমা এক নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_c160374aee286eb836b61eefb9409737cf10d10e46908ff2e3dbd4588916b9f6_true",
+    "keys": [
+      "q2_c160374aee286eb836b61eefb9409737cf10d10e46908ff2e3dbd4588916b9f6"
+    ],
+    "question_it": "La potenza dei quadricicli non leggeri è sempre inferiore o uguale a 15 kW",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "inferiore o uguale a 15 kW",
+    "explanation": {
+      "it": "Per i quadricicli non leggeri della categoria L7e il limite di potenza è 15 kW. «Inferiore o uguale» comprende anche il valore esatto di 15 kW; kW misura la potenza, non la cilindrata.",
+      "bn": "L7e শ্রেণির quadricicli non leggeri-এর ক্ষমতার সর্বোচ্চ সীমা ১৫ kW। «Inferiore o uguale» মানে ১৫-এর কম বা ঠিক ১৫ - দুটিই গ্রহণযোগ্য। kW দিয়ে ক্ষমতা মাপা হয়, সিলিন্ডারের আয়তন নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_eb76bd3ebaba0102c354db5a50201b2716cf522283f60b0bf21f086d9e81bf13_true",
+    "keys": [
+      "q2_eb76bd3ebaba0102c354db5a50201b2716cf522283f60b0bf21f086d9e81bf13"
+    ],
+    "question_it": "I quadricicli non sono autoveicoli",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "non sono autoveicoli",
+    "explanation": {
+      "it": "Il nome della categoria non dipende soltanto dal numero delle ruote. I quadricicli hanno una classificazione propria e sono esclusi dalla categoria degli autoveicoli.",
+      "bn": "চারটি চাকা দেখেই কোনো যানকে autoveicolo বলা যায় না। Quadricicli-এর আলাদা শ্রেণিবিভাগ আছে এবং এগুলো autoveicoli শ্রেণির অন্তর্ভুক্ত নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_6d690a0a2508a931a7fbf42283b90d47b8cbb0494171857b4d9bb1b38669265a_true",
+    "keys": [
+      "q2_6d690a0a2508a931a7fbf42283b90d47b8cbb0494171857b4d9bb1b38669265a"
+    ],
+    "question_it": "I quadricicli leggeri, ai fini della circolazione, sono equiparati ai ciclomotori",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "quadricicli leggeri",
+    "explanation": {
+      "it": "L'equiparazione ai ciclomotori riguarda i quadricicli leggeri. Per questo seguono le relative regole di circolazione, pur avendo quattro ruote.",
+      "bn": "শুধু quadricicli leggeri-কে চলাচলের ক্ষেত্রে ciclomotori-র সমতুল্য ধরা হয়। চার চাকা থাকলেও চলাচলের প্রাসঙ্গিক নিয়ম এই শ্রেণি অনুযায়ী প্রযোজ্য হয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_3f4af31ce2e90540b3beea09e665ac576fcad89a03cb8b68e3af65c2dc323f42_false",
+    "keys": [
+      "q2_3f4af31ce2e90540b3beea09e665ac576fcad89a03cb8b68e3af65c2dc323f42"
+    ],
+    "question_it": "I quadricicli NON leggeri, ai fini della circolazione, sono equiparati ai ciclomotori",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "NON leggeri",
+    "explanation": {
+      "it": "La frase estende ai quadricicli non leggeri una regola che vale per quelli leggeri. Le due categorie non sono intercambiabili: la parola «NON» cambia la risposta.",
+      "bn": "Ciclomotori-র সমতুল্য করার নিয়মটি quadricicli leggeri-এর জন্য। NON leggeri-এর জন্য নয়। এখানে «NON» শব্দটি শ্রেণি বদলে দিয়েছে, তাই উত্তর FALSO।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_92f747310099952bd0e0feeed8148cdadcf8a9c6a79c7e6c4665b563271de9e3_false",
+    "keys": [
+      "q2_92f747310099952bd0e0feeed8148cdadcf8a9c6a79c7e6c4665b563271de9e3"
+    ],
+    "question_it": "I motocicli hanno motore di cilindrata fino a 50 cm³ e sviluppano una velocità fino a 45 km/h",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "fino a 50 cm³ e fino a 45 km/h",
+    "explanation": {
+      "it": "Queste soglie descrivono il caso classico del ciclomotore a due ruote con motore termico. Il quiz attribuisce al motociclo le caratteristiche del ciclomotore, confondendo due categorie diverse.",
+      "bn": "তাপীয় ইঞ্জিনের সাধারণ দুই চাকার ciclomotore-এর ক্ষেত্রে ৫০ cm³ পর্যন্ত ও নির্মাণগত গতি ৪৫ km/h পর্যন্ত সীমা ব্যবহৃত হয়। প্রশ্নে সেই বৈশিষ্ট্য motociclo-র বলে দেওয়া হয়েছে। এই দুই শ্রেণি আলাদা।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_dbb02af67366999efd69485b1e5f09efd429249263dbb1ff42b00e92ca5bc3ee_true",
+    "keys": [
+      "q2_dbb02af67366999efd69485b1e5f09efd429249263dbb1ff42b00e92ca5bc3ee"
+    ],
+    "question_it": "L'autoveicolo è un veicolo a motore con non meno di quattro ruote, eccetto i quadricicli",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "eccetto i quadricicli",
+    "explanation": {
+      "it": "Un autoveicolo ha un motore e almeno quattro ruote. L'esclusione dei quadricicli è essenziale: non basta contare le ruote per assegnare la categoria.",
+      "bn": "Autoveicolo-তে ইঞ্জিন এবং অন্তত চারটি চাকা থাকে। কিন্তু quadricicli এই শ্রেণির বাইরে। তাই «eccetto i quadricicli» - quadricicli বাদে - অংশটি সঠিক সংজ্ঞার জন্য জরুরি।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_d7045aac8c00da07e9148551fdd35b34491b615fef18d9dc42f3b34212f28b14_false",
+    "keys": [
+      "q2_d7045aac8c00da07e9148551fdd35b34491b615fef18d9dc42f3b34212f28b14"
+    ],
+    "question_it": "L'autoveicolo è un qualunque veicolo a motore",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "qualunque veicolo a motore",
+    "explanation": {
+      "it": "Anche una moto ha un motore, ma non è un autoveicolo. Perciò non tutti i veicoli a motore sono autoveicoli: la parola «qualunque» rende falsa la frase.",
+      "bn": "মোটরসাইকেলেও ইঞ্জিন থাকে, কিন্তু সেটি autoveicolo নয়। তাই সব মোটরচালিত যানকে autoveicolo বলা যায় না। এখানে «qualunque» - যেকোনো - শব্দটির কারণেই উত্তর মিথ্যা।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_e568fba7b50ff76f8a1960f6a8bb0c206b43f2052584eb21325f0c40341747b4_false",
+    "keys": [
+      "q2_e568fba7b50ff76f8a1960f6a8bb0c206b43f2052584eb21325f0c40341747b4"
+    ],
+    "question_it": "Gli autoveicoli sono tutti i veicoli a motore con quattro o più ruote, compresi i quadricicli",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "compresi i quadricicli",
+    "explanation": {
+      "it": "Il numero minimo di quattro ruote è corretto, ma i quadricicli vanno esclusi. Basta questa inclusione sbagliata a rendere falsa tutta la frase.",
+      "bn": "অন্তত চারটি চাকা থাকার কথাটি ঠিক। কিন্তু quadricicli-কে অন্তর্ভুক্ত করার অংশটি ভুল - এগুলো বাদ যাবে। বাক্যের একটি অংশ ভুল হলেও পুরো উত্তরে FALSO দিতে হবে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_a6c568ae2a30a41653da46548eaafa6c7e4819b3a8fa2fc835b2ff4e503c2922_true",
+    "keys": [
+      "q2_a6c568ae2a30a41653da46548eaafa6c7e4819b3a8fa2fc835b2ff4e503c2922"
+    ],
+    "question_it": "L'autocaravan non è un rimorchio",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "autocaravan",
+    "explanation": {
+      "it": "L'autocaravan, cioè il camper, è un autoveicolo con motore proprio e attrezzatura abitativa. Un rimorchio viene invece trainato: il camper non va confuso con il caravan.",
+      "bn": "Autocaravan বা camper নিজের ইঞ্জিনে চলে এবং ভেতরে থাকার ব্যবস্থা থাকে। Rimorchio-কে অন্য গাড়ি দিয়ে টেনে নিতে হয়। তাই autocaravan ও caravan এক জিনিস নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_73b7ad353c2348c69dc843dee1bb7eb63cd4d67722bf091b39c8da079b253a57_true",
+    "keys": [
+      "q2_73b7ad353c2348c69dc843dee1bb7eb63cd4d67722bf091b39c8da079b253a57"
+    ],
+    "question_it": "L'autobus viene classificato autoveicolo",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "autobus",
+    "explanation": {
+      "it": "L'autobus è una delle categorie di autoveicoli. È destinato al trasporto di persone e dispone di più di nove posti contando anche quello del conducente.",
+      "bn": "Autobus হলো autoveicoli-এর একটি শ্রেণি। এটি মানুষ পরিবহনের জন্য তৈরি এবং চালকসহ নয়টির বেশি আসন থাকে। তাই autobus-কে autoveicolo বলা সঠিক।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_a8fb52f4329cf266b814bb7808b2aa4293a805f4a6c92c216ef0fc9dfccb67c3_true",
+    "keys": [
+      "q2_a8fb52f4329cf266b814bb7808b2aa4293a805f4a6c92c216ef0fc9dfccb67c3"
+    ],
+    "question_it": "L'autobus non è un'autovettura",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "non è un'autovettura",
+    "explanation": {
+      "it": "Autobus e autovettura trasportano persone, ma appartengono a categorie diverse. L'autovettura arriva al massimo a nove posti complessivi; l'autobus ne ha di più.",
+      "bn": "Autobus ও autovettura দুটিই মানুষ বহন করে, কিন্তু আলাদা শ্রেণির। Autovettura-তে চালকসহ সর্বোচ্চ নয়টি আসন থাকে; autobus-এ তার বেশি থাকে। তাই autobus-কে autovettura বলা যায় না।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_e27ae60f4e32ff4322329e247d04438c0a4a250486cbd414881f265366dba8a8_true",
+    "keys": [
+      "q2_e27ae60f4e32ff4322329e247d04438c0a4a250486cbd414881f265366dba8a8"
+    ],
+    "question_it": "L'autocarro è un autoveicolo",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "autocarro",
+    "explanation": {
+      "it": "L'autocarro rientra negli autoveicoli ed è destinato al trasporto di cose, oltre alle persone addette al loro uso o trasporto. «Autoveicolo» non significa soltanto automobile per passeggeri.",
+      "bn": "Autocarro হলো মালামাল ও সেই মালামালের ব্যবহার বা পরিবহনের কাজে যুক্ত ব্যক্তিদের বহনের যান। এটি autoveicoli শ্রেণির অন্তর্ভুক্ত। Autoveicolo মানে শুধু ব্যক্তিগত যাত্রীবাহী গাড়ি নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_f07ecb589bc243519f2b48a15bbe615c9ff1bbc2871af76c3e94ab59997ee600_false",
+    "keys": [
+      "q2_f07ecb589bc243519f2b48a15bbe615c9ff1bbc2871af76c3e94ab59997ee600"
+    ],
+    "question_it": "L'autocarro è un'autovettura",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "autovettura",
+    "explanation": {
+      "it": "L'autocarro è destinato al trasporto di cose; l'autovettura al trasporto di persone. Sono entrambi autoveicoli, ma non sono la stessa sottocategoria.",
+      "bn": "Autocarro মূলত মালামাল পরিবহনের জন্য, আর autovettura মানুষ পরিবহনের জন্য। দুটিই autoveicoli হলেও একে অন্যের সমান শ্রেণি নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_ad3edd18e86273ad06ade8eade83ffba9ebfa0637b3a8d3a51834701e54550d2_false",
+    "keys": [
+      "q2_ad3edd18e86273ad06ade8eade83ffba9ebfa0637b3a8d3a51834701e54550d2"
+    ],
+    "question_it": "I semirimorchi sono rimorchi privi di impianto frenante",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "privi di impianto frenante",
+    "explanation": {
+      "it": "«Semi» non significa «senza freni». Il semirimorchio si riconosce perché appoggia una parte del proprio peso sulla motrice; l'assenza di freni non è la sua caratteristica distintiva.",
+      "bn": "«Semi» মানে ব্রেক নেই - এমন নয়। Semirimorchio-র ওজনের একটি অংশ টেনে নেওয়া গাড়ি বা motrice বহন করে। এই বৈশিষ্ট্য দিয়ে তাকে চেনা হয়, ব্রেক না থাকা দিয়ে নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_5ab3eeef7b334da71eb5e6080429e8c7705336ea5f6477b860095c9d50b7d60d_false",
+    "keys": [
+      "q2_5ab3eeef7b334da71eb5e6080429e8c7705336ea5f6477b860095c9d50b7d60d"
+    ],
+    "question_it": "Il caravan non è un rimorchio",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "caravan",
+    "explanation": {
+      "it": "Il caravan, o roulotte, è un rimorchio attrezzato per l'alloggio a veicolo fermo. Non ha la funzione di un camper a motore proprio: deve essere trainato.",
+      "bn": "Caravan বা roulotte হলো থেমে থাকা অবস্থায় বসবাসের ব্যবস্থা করা rimorchio। এটি নিজের ইঞ্জিনে চলা camper নয়; অন্য গাড়ি দিয়ে টেনে নিতে হয়। তাই «rimorchio নয়» কথাটি ভুল।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_8be708b557b01027ce4780e26e2491efe885662ea00a762e805c20f2ccd34ab4_false",
+    "keys": [
+      "q2_8be708b557b01027ce4780e26e2491efe885662ea00a762e805c20f2ccd34ab4"
+    ],
+    "question_it": "Il caravan non è considerato un rimorchio perché può essere adibito ad alloggio",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "perché può essere adibito ad alloggio",
+    "explanation": {
+      "it": "La possibilità di usarlo come alloggio non cambia la categoria del caravan. Rimane un rimorchio, e l'alloggio è previsto quando il veicolo è fermo.",
+      "bn": "ভেতরে থাকার ব্যবস্থা আছে বলে caravan-এর শ্রেণি বদলে যায় না। এটি rimorchio-ই থাকে। থাকার ব্যবস্থাটি গাড়ি থেমে থাকা অবস্থার জন্য।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_27cbe6df9874982e51fd0d3fd078eb90f48cda767c68b4ce54b685534401001c_false",
+    "keys": [
+      "q2_27cbe6df9874982e51fd0d3fd078eb90f48cda767c68b4ce54b685534401001c"
+    ],
+    "question_it": "Il rimorchio si considera parte integrante del veicolo se ha una massa fino a 3,5 tonnellate",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "massa fino a 3,5 tonnellate",
+    "explanation": {
+      "it": "Un rimorchio non diventa parte integrante della motrice per il solo fatto di pesare non più di 3,5 tonnellate. Il quiz confonde il rimorchio con il carrello appendice, soggetto a regole diverse.",
+      "bn": "ওজন ৩.৫ টনের কম বা সমান হলেই rimorchio টেনে নেওয়া গাড়ির অবিচ্ছেদ্য অংশ হয়ে যায় না। এখানে rimorchio-কে carrello appendice-এর সঙ্গে গুলিয়ে ফেলা হয়েছে; দুটির নিয়ম আলাদা।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_744b91d4c8a29238f6a1b1319fdc9d39414fcafa17853739e21f840be03a6f14_false",
+    "keys": [
+      "q2_744b91d4c8a29238f6a1b1319fdc9d39414fcafa17853739e21f840be03a6f14"
+    ],
+    "question_it": "Il rimorchio è parte integrante del veicolo a cui è stato abbinato in fase di collaudo e non può essere agganciato a un altro veicolo",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "parte integrante",
+    "explanation": {
+      "it": "L'abbinamento come parte integrante riguarda il carrello appendice. Un rimorchio può essere trainato da un'altra motrice idonea, rispettando omologazione, capacità di traino e limiti previsti.",
+      "bn": "গাড়ির অংশ হিসেবে নির্দিষ্ট গাড়ির সঙ্গে যুক্ত থাকার বিষয়টি carrello appendice-এর ক্ষেত্রে প্রযোজ্য। Rimorchio অন্য উপযুক্ত গাড়ি দিয়েও টানা যায়, যদি অনুমোদন, টানার ক্ষমতা ও প্রযোজ্য সীমা ঠিক থাকে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_1aec3e3d804082f5c585535941631e7026a0692e2cf7383f9fea6f2ca8ac7b28_true",
+    "keys": [
+      "q2_1aec3e3d804082f5c585535941631e7026a0692e2cf7383f9fea6f2ca8ac7b28"
+    ],
+    "question_it": "I rimorchi T.A.T.S. sono destinati al trasporto di attrezzature che non devono costituire oggetto di commercio, ma essere impiegate solo per il tempo libero",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "attrezzature turistiche e sportive",
+    "explanation": {
+      "it": "T.A.T.S. indica il trasporto di attrezzature turistiche e sportive, come una barca per uso ricreativo. Il quiz distingue questo impiego dal trasporto di merci destinate al commercio.",
+      "bn": "T.A.T.S. হলো ভ্রমণ ও খেলাধুলার সরঞ্জাম বহনের rimorchio, যেমন অবসরে ব্যবহারের নৌকা। প্রশ্নে ব্যক্তিগত বিনোদনের সরঞ্জাম ও বেচাকেনার জন্য পণ্য পরিবহনের পার্থক্য বোঝানো হয়েছে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_4a460b6133864bc2ee2c917401e52de588b3e5cf7d1d8b4a052ec6208c80748d_false",
+    "keys": [
+      "q2_4a460b6133864bc2ee2c917401e52de588b3e5cf7d1d8b4a052ec6208c80748d"
+    ],
+    "question_it": "Il conducente di un veicolo pesante può tenere un comportamento che è causa di insofferenza negli altri",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "può tenere un comportamento",
+    "explanation": {
+      "it": "Le dimensioni del veicolo non autorizzano prepotenza o intralcio. Chi guida un mezzo pesante deve favorire una circolazione sicura e rispettosa, come ogni altro conducente.",
+      "bn": "বড় বা ভারী গাড়ি চালালেই অন্যদের বিরক্ত করা, বাধা সৃষ্টি করা বা জোর দেখানোর অধিকার হয় না। অন্য চালকদের মতো তাকেও নিরাপদ ও সহযোগিতাপূর্ণ আচরণ করতে হবে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_6bce79dd1e95944160abea63f09acd11b60425aee40deb57cd4881783889d688_false",
+    "keys": [
+      "q2_6bce79dd1e95944160abea63f09acd11b60425aee40deb57cd4881783889d688"
+    ],
+    "question_it": "Bisogna lasciare liberi i cavalcavia in caso di traffico intenso",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "cavalcavia",
+    "explanation": {
+      "it": "Non esiste un obbligo generale di lasciare vuoto ogni cavalcavia solo perché il traffico è intenso. Non va confuso con un incrocio da non bloccare; restano da rispettare segnali, distanze e condizioni di sicurezza.",
+      "bn": "যানজট হলেই সব cavalcavia বা উড়ালপথ সম্পূর্ণ খালি রাখতে হবে - এমন সাধারণ নিয়ম নেই। এটিকে আটকে রাখা নিষেধ এমন মোড়ের সঙ্গে গুলিয়ে ফেলবেন না। সাইন, নিরাপদ দূরত্ব ও পরিস্থিতির নিয়ম অবশ্যই মানতে হবে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_43c476c989cd118467bda7b7047bea7d4b5643a60848f9a119e0440ca100dcd6_false",
+    "keys": [
+      "q2_43c476c989cd118467bda7b7047bea7d4b5643a60848f9a119e0440ca100dcd6"
+    ],
+    "question_it": "Bisogna lasciare liberi i sottovia in caso di traffico intenso",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "sottovia",
+    "explanation": {
+      "it": "L'arresto imposto da una coda è diverso dalla fermata o dalla sosta volontaria. Il sottovia non deve restare sempre vuoto in caso di traffico intenso, ma ciò non autorizza a parcheggiarvi.",
+      "bn": "যানজটে বাধ্য হয়ে থেমে থাকা এবং নিজের ইচ্ছায় থামা বা পার্ক করা আলাদা। যানজট হলে sottovia সব সময় খালি রাখতেই হবে না; তবে এর মানে সেখানে পার্ক করার অনুমতি আছে নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_7d9d63fd6b903cbfd4e6be78f84e049d0ecb3b2f596703d56c75725fb42d0f5e_false",
+    "keys": [
+      "q2_7d9d63fd6b903cbfd4e6be78f84e049d0ecb3b2f596703d56c75725fb42d0f5e"
+    ],
+    "question_it": "Bisogna lasciare libere le gallerie in caso di formazione di code di veicoli",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "gallerie",
+    "explanation": {
+      "it": "La coda può imporre un arresto anche in galleria: non è la sosta volontaria vietata. La frase esprime un obbligo assoluto inesistente; bisogna comunque seguire segnali e istruzioni di sicurezza della galleria.",
+      "bn": "যানজটের কারণে সুড়ঙ্গের ভেতরেও বাধ্য হয়ে থামতে হতে পারে; সেটি ইচ্ছাকৃত পার্কিং নয়। প্রশ্নে সব অবস্থায় সুড়ঙ্গ খালি রাখার নিয়ম বলা হয়েছে, তাই ভুল। তবে সুড়ঙ্গের সাইন ও নিরাপত্তা নির্দেশনা অবশ্যই মানতে হবে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_81526afb6b725dfc1b15acd48e67b1376a3c8308138b67db5d331c034a4e3a2d_false",
+    "keys": [
+      "q2_81526afb6b725dfc1b15acd48e67b1376a3c8308138b67db5d331c034a4e3a2d"
+    ],
+    "question_it": "Bisogna lasciare liberi gli ingressi delle abitazioni private in caso di formazione di code di veicoli",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "ingressi delle abitazioni private",
+    "explanation": {
+      "it": "Il semplice ingresso pedonale di un'abitazione non equivale a un incrocio da lasciare sgombro in coda. Questo non autorizza a bloccare attraversamenti o accessi di soccorso, né a sostare davanti a un passo carrabile.",
+      "bn": "বাড়ির সাধারণ পায়ে ঢোকার দরজা আর যানজটে খালি রাখতে হয় এমন রাস্তার মোড় এক নয়। তবে এর অর্থ পথচারী পারাপার বা উদ্ধারকাজের প্রবেশপথ আটকে রাখা কিংবা passo carrabile-এর সামনে পার্ক করা বৈধ - এমন নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_b473427a1191addb098033d63167d9eade771ca3389102a8032338f30ddd137e_true",
+    "keys": [
+      "q2_b473427a1191addb098033d63167d9eade771ca3389102a8032338f30ddd137e"
+    ],
+    "question_it": "Il conducente di un veicolo non può pretendere di passare per primo quando sorge il dubbio che non gli venga concessa la precedenza",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "non può pretendere",
+    "explanation": {
+      "it": "Avere la precedenza non elimina il dovere di evitare un incidente. Se l'altro non sembra cederla, occorre rallentare e, se necessario, fermarsi invece di forzare il passaggio.",
+      "bn": "আগে যাওয়ার অধিকার থাকলেও দুর্ঘটনা এড়ানোর দায়িত্ব থাকে। অন্যজন পথ ছাড়বে কি না সন্দেহ হলে জোর করে এগোবেন না; গতি কমাবেন এবং প্রয়োজনে থামবেন।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_bb1f145d4cb12d3b92043f0b4c8572f75f8bd531c545fd5046583690e5ddfb45_true",
+    "keys": [
+      "q2_bb1f145d4cb12d3b92043f0b4c8572f75f8bd531c545fd5046583690e5ddfb45"
+    ],
+    "question_it": "Il conducente di un veicolo non deve fare sempre affidamento sul comportamento degli altri, che può non essere corretto",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "non deve fare sempre affidamento",
+    "explanation": {
+      "it": "Gli altri utenti possono sbagliare o agire in modo imprevedibile. Una guida prudente mantiene margine di tempo e spazio per reagire, senza supporre che tutti rispettino sempre le regole.",
+      "bn": "অন্য চালক বা পথচারী ভুল করতে পারেন। তাই সবাই সব সময় নিয়ম মানবেন ধরে নেওয়া ঠিক নয়। নিরাপদ চালনায় প্রতিক্রিয়া জানানোর মতো সময় ও দূরত্ব রাখা হয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_66110c90df5c3815bdcdb4045c6317807e433f8a8d5dfe8c2409c15c494a1e1d_false",
+    "keys": [
+      "q2_66110c90df5c3815bdcdb4045c6317807e433f8a8d5dfe8c2409c15c494a1e1d",
+      "q2_9ef81fd0b9a224638e86346b8aec8194cc39833e0c2c4b885f8c7bdbac180eb2"
+    ],
+    "question_it": "Il conducente di un veicolo può fare a meno di usare la massima prudenza quando si avvicina a un incrocio in cui ha il diritto di precedenza",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "ha il diritto di precedenza",
+    "explanation": {
+      "it": "La massima prudenza all'incrocio è richiesta anche a chi ha la precedenza. Il diritto di passare prima non permette di ignorare un pericolo prevedibile.",
+      "bn": "মোড়ে আগে যাওয়ার অধিকার যার আছে, তাকেও সর্বোচ্চ সতর্ক থাকতে হবে। Precedenza আছে বলে দেখা যাচ্ছে এমন বিপদ উপেক্ষা করা যায় না। তাই «সতর্ক না হলেও চলে» কথাটি ভুল।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_dae50b667bdd83199ba1b4e50426ea6ebc8bce49b838d83036874113f48428fe_false",
+    "keys": [
+      "q2_dae50b667bdd83199ba1b4e50426ea6ebc8bce49b838d83036874113f48428fe"
+    ],
+    "question_it": "Bisogna usare maggiore prudenza nei confronti dei conducenti di tricicli a motore",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "conducenti di tricicli a motore",
+    "explanation": {
+      "it": "La sola categoria «triciclo a motore» non identifica un conducente che richiede sempre prudenza maggiore. La cautela va adattata ai rischi reali; questo non significa che si possa essere imprudenti verso di lui.",
+      "bn": "শুধু triciclo a motore চালান বলেই একজন চালকের প্রতি সব সময় বাড়তি সতর্কতার বিশেষ নিয়ম তৈরি হয় না। সতর্কতা বাস্তব ঝুঁকি অনুযায়ী বাড়াতে হবে। তার প্রতি অসতর্ক হওয়া যাবে - এমন অর্থ নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_d8e4e3de64541257ba5b4ab8de0f3fdec042a1a396c4abcace01422cf7d0d084_false",
+    "keys": [
+      "q2_d8e4e3de64541257ba5b4ab8de0f3fdec042a1a396c4abcace01422cf7d0d084"
+    ],
+    "question_it": "Bisogna usare maggiore prudenza nei confronti dei conducenti di autoveicoli elettrici",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "conducenti di autoveicoli elettrici",
+    "explanation": {
+      "it": "Il tipo di alimentazione non rende automaticamente più vulnerabile il conducente. La prudenza dipende dalla situazione e dal comportamento degli utenti, non dal solo fatto che l'auto sia elettrica.",
+      "bn": "গাড়ি বৈদ্যুতিক হলেই তার চালক স্বয়ংক্রিয়ভাবে বেশি অসহায় বা ঝুঁকিপূর্ণ হয়ে যান না। সতর্কতা পরিস্থিতি ও মানুষের আচরণ অনুযায়ী নির্ধারিত হয়, শুধু গাড়ির শক্তির উৎস দেখে নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_ed45e367c5748182e23489bf6344bfeb0e3d2a65433b9fce0f42262aef38ea38_false",
+    "keys": [
+      "q2_ed45e367c5748182e23489bf6344bfeb0e3d2a65433b9fce0f42262aef38ea38"
+    ],
+    "question_it": "Bisogna usare particolare prudenza nei confronti dei conducenti che hanno conseguito la patente di guida in uno Stato estero",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "patente conseguita in uno Stato estero",
+    "explanation": {
+      "it": "Non si presume che una persona guidi male perché ha ottenuto la patente all'estero. Occorre osservare il comportamento concreto e usare prudenza verso tutti.",
+      "bn": "বিদেশে লাইসেন্স পেয়েছেন বলেই কেউ খারাপ চালান - এমন ধরে নেওয়া ঠিক নয়। তিনি বাস্তবে কী করছেন তা লক্ষ্য করতে হবে এবং সবার প্রতি সতর্ক থাকতে হবে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_0294dae439ee2b94628df19cde00329ff8a9e302e12cdad53736004d3ef98e41_false",
+    "keys": [
+      "q2_0294dae439ee2b94628df19cde00329ff8a9e302e12cdad53736004d3ef98e41"
+    ],
+    "question_it": "Un incidente a bassa velocità non crea problemi di incolumità ai conducenti coinvolti",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "bassa velocità",
+    "explanation": {
+      "it": "Una velocità bassa non garantisce che nessuno si faccia male. Anche un urto lento può provocare lesioni: «non crea problemi» è un'affermazione troppo assoluta.",
+      "bn": "গতি কম হলেই কেউ আহত হবেন না - এ নিশ্চয়তা নেই। কম গতির ধাক্কাতেও আঘাত লাগতে পারে। তাই «নিরাপত্তার কোনো সমস্যা হয় না» কথাটি ভুল।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_4bb833c49fcc6cbf5c52acdd5895bd3348c75812ab39a234cbd80133afd2051e_true",
+    "keys": [
+      "q2_4bb833c49fcc6cbf5c52acdd5895bd3348c75812ab39a234cbd80133afd2051e"
+    ],
+    "question_it": "Quando le persone anziane attraversano la carreggiata non bisogna avvicinarsi troppo con il veicolo, per evitare che si sentano minacciati e reagiscano con movimenti pericolosi",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "persone anziane",
+    "explanation": {
+      "it": "Una persona anziana può muoversi lentamente o reagire in modo inatteso se si sente incalzata. Lasciare spazio e tempo, rallentando o fermandosi quando serve, riduce il pericolo.",
+      "bn": "বয়স্ক ব্যক্তি ধীরে হাঁটতে পারেন বা গাড়ি খুব কাছে এলে ভয় পেয়ে হঠাৎ নড়তে পারেন। তাই চাপ না দিয়ে যথেষ্ট জায়গা ও সময় দিতে হবে; প্রয়োজনে গতি কমাতে বা থামতে হবে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_88a3cfd544bef91a3c5357b2bc2882802a7a111c488e7d7910e8b6b3f760e269_false",
+    "keys": [
+      "q2_88a3cfd544bef91a3c5357b2bc2882802a7a111c488e7d7910e8b6b3f760e269"
+    ],
+    "question_it": "Il conducente che intende sorpassare ciclisti o pedoni che occupano la carreggiata deve mantenere una distanza laterale di almeno 2 metri",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "almeno 2 metri",
+    "explanation": {
+      "it": "Non c'è un minimo generale di 2 metri valido insieme per ciclisti e pedoni. Per superare i ciclisti con un veicolo a motore occorre un distanziamento adeguato e, dove la strada lo consente, almeno 1,5 metri; se non si può sorpassare in sicurezza, si aspetta.",
+      "bn": "সাইকেল আর পথচারী - দুজনের ক্ষেত্রেই সর্বজনীন ন্যূনতম ২ মিটার নিয়ম নেই। মোটরযান দিয়ে সাইকেলকে ওভারটেক করার সময় যথেষ্ট পাশের দূরত্ব রাখতে হবে এবং রাস্তার অবস্থা অনুমতি দিলে অন্তত ১.৫ মিটার। নিরাপদে পার হওয়া না গেলে অপেক্ষা করতে হবে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_19f6d2ba896810c049a8e71ac47065da66ccbb6841cc703ec000c85a97fb8ea5_true",
+    "keys": [
+      "q2_19f6d2ba896810c049a8e71ac47065da66ccbb6841cc703ec000c85a97fb8ea5"
+    ],
+    "question_it": "Quando la carreggiata è occupata da ciclisti o pedoni, non è prudente sorpassarli se non si può rispettare una distanza laterale sufficiente",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "distanza laterale sufficiente",
+    "explanation": {
+      "it": "Nel sorpasso serve spazio per proteggere chi cammina o pedala, anche da piccoli spostamenti improvvisi. Se il margine laterale non è sicuro, bisogna rinunciare alla manovra e attendere.",
+      "bn": "পথচারী বা সাইকেল আরোহী সামান্য হঠাৎ সরে গেলেও যেন ধাক্কা না লাগে, ওভারটেক করার সময় পাশে যথেষ্ট জায়গা রাখতে হবে। সেই নিরাপদ জায়গা না থাকলে তখন ওভারটেক না করে অপেক্ষা করতে হবে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_7c0298b53bd40953010879e9fcadc87e11d7c3368f535b2fe020815ede64f5cd_true",
+    "keys": [
+      "q2_7c0298b53bd40953010879e9fcadc87e11d7c3368f535b2fe020815ede64f5cd"
+    ],
+    "question_it": "Quando una donna in stato di gravidanza attraversa la carreggiata non bisogna avvicinarsi troppo con il veicolo, per evitare di spaventarla",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "per evitare di spaventarla",
+    "explanation": {
+      "it": "Avvicinarsi troppo può spaventare chi attraversa e provocare movimenti rischiosi. Con una donna incinta bisogna lasciare tempo e spazio, senza metterle fretta con il veicolo.",
+      "bn": "গর্ভবতী নারী রাস্তা পার হওয়ার সময় গাড়ি খুব কাছে নিলে তিনি ভয় পেয়ে ঝুঁকিপূর্ণভাবে নড়তে পারেন। তাই গাড়ি দিয়ে তাড়া না দিয়ে তাকে যথেষ্ট সময় ও জায়গা দিতে হবে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_434f4ad27f36fa12da3422f94094bf6cb381b7c8ff6f5bd67a65d667afaa9f03_false",
+    "keys": [
+      "q2_434f4ad27f36fa12da3422f94094bf6cb381b7c8ff6f5bd67a65d667afaa9f03"
+    ],
+    "question_it": "Alla guida di un veicolo, in vicinanza di una piazzola di fermata di autobus per scolari, non si può proseguire nella marcia se le portiere dello scuolabus sono ancora aperte",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "portiere ancora aperte",
+    "explanation": {
+      "it": "Le porte aperte dello scuolabus, da sole, non impongono sempre l'arresto a chi passa. Impongono però attenzione ai bambini: bisogna rallentare ed essere pronti a fermarsi se attraversano o c'è pericolo.",
+      "bn": "স্কুলবাসের দরজা খোলা থাকলেই পাশ দিয়ে যাওয়া সব গাড়িকে সব অবস্থায় থামতেই হবে - এমন নিয়ম নয়। তবে শিশুদের দিকে বিশেষ খেয়াল রেখে গতি কমাতে হবে; তারা রাস্তা পার হলে বা বিপদ থাকলে থামতে হবে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_648be925acc9862ef31fe0b3ebe0f999a777c9af5a6c77160f3522151fbb158e_false",
+    "keys": [
+      "q2_648be925acc9862ef31fe0b3ebe0f999a777c9af5a6c77160f3522151fbb158e"
+    ],
+    "question_it": "Alla guida di un veicolo, in vicinanza di una piazzola di fermata di autobus per scolari, non si deve rallentare, per evitare di ostacolare la circolazione degli altri veicoli",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "non si deve rallentare",
+    "explanation": {
+      "it": "Vicino a uno scuolabus possono comparire bambini davanti o dietro il mezzo. Bisogna ridurre la velocità ed essere pronti a fermarsi: la sicurezza viene prima del desiderio di non rallentare il traffico.",
+      "bn": "স্কুলবাসের সামনে বা পেছন থেকে হঠাৎ শিশু বের হতে পারে। তাই গতি কমিয়ে প্রয়োজনে থামার জন্য প্রস্তুত থাকতে হবে। যানবাহনের গতি ধরে রাখার চেয়ে শিশুদের নিরাপত্তা বেশি জরুরি।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_f9c2dd5ac57d11b3e6bb25338f9d04a3d60431e74269152cea0eb56925b6e3a8_false",
+    "keys": [
+      "q2_f9c2dd5ac57d11b3e6bb25338f9d04a3d60431e74269152cea0eb56925b6e3a8"
+    ],
+    "question_it": "La patente di categoria B abilita a condurre solo autovetture con al massimo 9 posti compreso il conducente",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "solo autovetture",
+    "explanation": {
+      "it": "L'errore è «solo»: la patente B permette anche altri veicoli, per esempio un autocarro con massa massima autorizzata entro 3,5 tonnellate, alle condizioni previste. Il limite dei nove posti non significa che abiliti soltanto alle autovetture.",
+      "bn": "ভুলটি «solo» বা «শুধু» শব্দে। B লাইসেন্সে প্রযোজ্য শর্ত মেনে অন্য যানও চালানো যায়, যেমন অনুমোদিত সর্বোচ্চ মোট ওজন ৩.৫ টনের মধ্যে এমন autocarro। নয় আসনের সীমা মানে এই লাইসেন্সে শুধু autovettura চালানো যায় নয়।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_b0e5eed14b539471773047ce1d1cea93a5c8c51284ff30bc1d801b4f97c6e4b9_true",
+    "keys": [
+      "q2_b0e5eed14b539471773047ce1d1cea93a5c8c51284ff30bc1d801b4f97c6e4b9",
+      "q2_6fb5d4104cbe0ced49ae01dcc60279a20fadea7e2a244eb93ee4b68fa290bbb2"
+    ],
+    "question_it": "L'autovettura non può avere più di 9 posti, compreso il conducente",
+    "figure": "",
+    "correct_answer": true,
+    "focus_it": "compreso il conducente",
+    "explanation": {
+      "it": "Nella definizione di autovettura il massimo è di nove posti totali: conducente più otto passeggeri. Ogni singolo veicolo può trasportare solo il numero effettivamente omologato sul documento di circolazione.",
+      "bn": "Autovettura-র সংজ্ঞায় সর্বোচ্চ নয়টি আসন - একজন চালক এবং আটজন যাত্রী। তবে কোনো নির্দিষ্ট গাড়িতে তার নথিতে যত আসন অনুমোদিত, কেবল ততজনই নেওয়া যাবে।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_1fb9f2352b28c76ae15beea6626c149f9edf38c590feebfd7af6852d9d6f63a2_false",
+    "keys": [
+      "q2_1fb9f2352b28c76ae15beea6626c149f9edf38c590feebfd7af6852d9d6f63a2"
+    ],
+    "question_it": "Il numero di persone trasportabili sui motocicli è sempre di due, oltre il conducente",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "due, oltre il conducente",
+    "explanation": {
+      "it": "Su un normale motociclo a due ruote il massimo è conducente più un passeggero, se omologato per due. La frase aggiunge due persone al conducente e dice «sempre»: entrambi i punti sono sbagliati.",
+      "bn": "সাধারণ দুই চাকার motociclo দুইজনের জন্য অনুমোদিত হলে চালক ও একজন যাত্রী যেতে পারেন। প্রশ্নে চালকের বাইরে আরও দুইজন এবং «সব সময়» বলা হয়েছে - দুটিই ভুল।"
+    }
+  },
+  {
+    "id": "theory_v1_q2_99c8073ed960a893dd4d21bb666c231038e72345d18343d1b6b431e72e00bf20_false",
+    "keys": [
+      "q2_99c8073ed960a893dd4d21bb666c231038e72345d18343d1b6b431e72e00bf20"
+    ],
+    "question_it": "Il numero di persone trasportabili sulle autovetture è al massimo di quattro",
+    "figure": "",
+    "correct_answer": false,
+    "focus_it": "al massimo di quattro",
+    "explanation": {
+      "it": "Le autovetture non hanno tutte quattro posti: possono arrivare a nove, conducente incluso. Per sapere quante persone può portare quella specifica auto, si controllano i posti sul documento di circolazione.",
+      "bn": "সব autovettura-তে সর্বোচ্চ চারজন - এমন নয়। চালকসহ নয়টি আসন পর্যন্ত হতে পারে। নির্দিষ্ট গাড়িতে কতজন নেওয়া যাবে, তা তার চলাচলের নথির অনুমোদিত আসনসংখ্যা দেখে জানতে হবে।"
+    }
+  }
+]

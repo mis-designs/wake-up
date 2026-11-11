@@ -197,7 +197,10 @@ test("request deadlines are retryable timeouts, while navigation remains a silen
 });
 
 test("BFCache return restores observation without refetching the chapter", () => {
-  const resume = source.slice(source.indexOf('window.addEventListener("pageshow"'), source.indexOf('document.addEventListener("visibilitychange"'));
+  const start = source.indexOf('window.addEventListener("pageshow"');
+  const end = source.indexOf('document.addEventListener("visibilitychange"', start);
+  assert.ok(start >= 0 && end > start, "inspect the pageshow owner, not an earlier session listener");
+  const resume = source.slice(start, end);
   assert.match(resume, /event.persisted && currentChapter/);
   assert.match(resume, /audioObserver.observe\(card\)/);
   assert.doesNotMatch(resume, /openChapter|fetch\(/);

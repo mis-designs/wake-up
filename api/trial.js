@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { isQuizTheoryAction, quizTheoryResponse } from "../lib/quiz-theory-response.mjs";
 import {
   GUEST_TRIAL_ENABLED,
   GUEST_TRIAL_CHAPTERS,
@@ -99,6 +100,9 @@ function getRows(data) {
 }
 
 export default async function handler(req, res) {
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("CDN-Cache-Control", "no-store");
+  res.setHeader("Vercel-CDN-Cache-Control", "no-store");
   if (!GUEST_TRIAL_ENABLED) return res.status(410).json({ error: "guest_trial_disabled" });
   if (!QUIZ_GAS_URL || !QUIZ_PROXY_SECRET || !SESSION_SECRET) return res.status(500).json({ error: "missing_server_config" });
   res.setHeader("Cache-Control", "no-store");
@@ -113,6 +117,18 @@ export default async function handler(req, res) {
   if (!/^[a-zA-Z0-9_-]{16,80}$/.test(trialId)) return res.status(400).json({ error: "invalid_trial" });
 
   try {
+    if (req.method === "POST" && isQuizTheoryAction(action)) {
+      const payload = verify(body.trialToken, trialId);
+      if (!payload) return res.status(401).json({ error: "trial_session_expired" });
+      if (!isAllowedTrialChapter(payload.chapter) || typeof body.questionId !== "string"
+        || !payload.ids?.includes(body.questionId)) return res.status(403).json({ error: "trial_content_forbidden" });
+      // Existing trial policy excludes explanation audio, including question-audio
+      // preview rows. Text is limited to questions actually issued to this guest.
+      if (action === "getQuizTheoryAudio") return res.status(403).json({ error: "trial_premium_audio" });
+      const row = selectLocalQuizRows(payload.chapter).find(item => String(item.id) === body.questionId);
+      return res.status(200).json(await quizTheoryResponse({ row, data: body,
+        isCancelled: () => Boolean(req.aborted || req.signal?.aborted) }));
+    }
     if (req.method === "GET" && (action === "getQuiz" || action === "getStudyQuiz")) {
       const chapter = String(req.query?.chapter || "").trim();
       const guest = verifyGuestTrialToken(req.query?.guestKey, trialId);

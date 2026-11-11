@@ -199,6 +199,65 @@
     if (practiceLink) practiceLink.href = "/quiz/prova-gratis?chapter=1";
   }
 
+  const studyTheoryButtons = new Set();
+  const studyTheoryRequests = new Set();
+  const studyTheoryScope = `magic-study:${QUIZBANK_MODE ? "quizbank" : "book"}:${crypto.randomUUID()}`;
+  function resetStudyTheory() {
+    for (const controller of studyTheoryRequests) controller.abort();
+    window.MagicQuizTheory?.reset();
+  }
+  function clearStudyTheory() {
+    resetStudyTheory();
+    for (const button of studyTheoryButtons) {
+      window.MagicQuizTheory?.destroyButton(button); button.remove();
+    }
+    studyTheoryButtons.clear();
+  }
+  async function requestStudyTheory(question, action, language, signal) {
+    if (TRIAL_MODE && action === "getQuizTheoryAudio") {
+      window.location.href = trialOfferUrl("Spiegazioni audio complete"); throw new Error("trial_premium_audio");
+    }
+    if (!TRIAL_MODE && !studyVideoIdentity()) { resetStudyTheory(); throw new Error("unauthorized"); }
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    signal?.addEventListener("abort", abort, { once: true });
+    if (signal?.aborted) abort();
+    studyTheoryRequests.add(controller);
+    const timeout = setTimeout(abort, 28_000);
+    try {
+      const data = await fetchStudyJson(`${API}?action=${encodeURIComponent(action)}`, {
+        method: "POST", cache: "no-store", signal: controller.signal,
+        headers: authHeaders({ json: true, withQuizSession: true }),
+        body: JSON.stringify({ action, ...(TRIAL_MODE
+          ? { trialId: session.deviceId, trialToken: quizSessionToken }
+          : { phone: session.phone, deviceId: session.deviceId }),
+          questionId: String(question.id), question: question.question, figure: String(question.figure ?? ""),
+          ...(QUIZBANK_MODE ? { audioIdentityToken: question.audioIdentityToken || "" } : {}),
+          ...(action === "getQuizTheoryAudio" ? { language } : {}) })
+      });
+      if (controller.signal.aborted) throw new DOMException("Cancelled", "AbortError");
+      if (!TRIAL_MODE && !studyVideoIdentity()) { resetStudyTheory(); throw new Error("unauthorized"); }
+      return data;
+    } finally {
+      clearTimeout(timeout); studyTheoryRequests.delete(controller);
+      signal?.removeEventListener("abort", abort);
+    }
+  }
+  function createStudyTheoryButton(question, card) {
+    if (!window.MagicQuizTheory) return null;
+    const button = window.MagicQuizTheory.createButton({ question, cacheScope: studyTheoryScope,
+      isCurrent: () => (TRIAL_MODE || Boolean(studyVideoIdentity())) && questions.includes(question)
+        && !elements.reader.classList.contains("hidden") && card.isConnected && !card.hidden,
+      request: (action, language, signal) => requestStudyTheory(question, action, language, signal) });
+    button.addEventListener("click", () => stopPlayback(), { capture: true });
+    button.dataset.quizTheoryEntry = "study"; studyTheoryButtons.add(button);
+    return button;
+  }
+  window.addEventListener("storage", () => { if (!TRIAL_MODE && !studyVideoIdentity()) resetStudyTheory(); });
+  document.addEventListener("visibilitychange", () => {
+    if (!TRIAL_MODE && !document.hidden && !studyVideoIdentity()) resetStudyTheory();
+  });
+
   function accessToken() {
     if (TRIAL_MODE) return "";
     try {
@@ -235,6 +294,7 @@
   }
 
   function clearSessionAndExit() {
+    clearStudyTheory();
     if (QUIZBANK_MODE) {
       showQuizBankError(new Error("unauthorized"));
       return;
@@ -274,7 +334,7 @@
   }
 
   function isQuizSessionProtectedAction(action) {
-    return ["getItalianAudio", "getBengaliAudio", "getTTS"].includes(String(action || ""));
+    return ["getItalianAudio", "getBengaliAudio", "getTTS", "getQuizTheory", "getQuizTheoryAudio"].includes(String(action || ""));
   }
 
   async function refreshQuizSession() {
@@ -513,6 +573,7 @@
   }
 
   function showPicker({ updateHistory = false, scroll = true } = {}) {
+    clearStudyTheory();
     if (QUIZBANK_MODE && !quizBankReady) { void loadQuizBankCatalog(); return; }
     sheetRequest?.abort();
     if (QUIZBANK_MODE) { helpRequest?.abort(); elements.list.replaceChildren(); }
@@ -552,6 +613,7 @@
   }
 
   async function openChapter(chapter, { updateHistory = true } = {}) {
+    clearStudyTheory();
     if (!Number.isInteger(chapter) || chapter < 1 || chapter > CHAPTERS.length) return;
     if (TRIAL_MODE && !TRIAL_ALLOWED_CHAPTERS.has(chapter)) {
       window.location.href = trialOfferUrl(`Studia quiz · Capitolo ${chapter}`);
@@ -843,6 +905,8 @@
     help.setAttribute("aria-expanded", "false");
     help.addEventListener("click", () => toggleHelp(question, card, help));
     actions.append(italian, bangla, lockedExplanation || explanation.surface, help);
+    const theoryButton = createStudyTheoryButton(question, card);
+    if (theoryButton) actions.insertBefore(theoryButton, help);
     if (QUIZBANK_MODE && quizBankCanUploadAudio) {
       const upload = document.createElement("button");
       upload.type = "button";
@@ -937,6 +1001,7 @@
   }
 
   function renderQuestions() {
+    clearStudyTheory();
     resetAudioObservation();
     const fragment = document.createDocumentFragment();
     questions.forEach((question, index) => fragment.appendChild(renderQuestion(question, index)));
@@ -2237,6 +2302,7 @@
     if (document.visibilityState === "visible" && !currentChapter) renderStudyIntro();
   });
   window.addEventListener("pagehide", event => {
+    resetStudyTheory();
     sheetRequest?.abort();
     if (event.persisted) videoClass?.pause();
     else videoClass?.destroy();
@@ -2252,6 +2318,7 @@
   }
 
   function showQuizBankError(error) {
+    clearStudyTheory();
     setQuizBankCapabilities();
     loadRequestId += 1;
     sheetRequest?.abort();

@@ -270,6 +270,12 @@
     }
   ],
   "rewrites": [
+    {"source": "/api/_quiz-theory.json", "destination": "/api/quiz?action=privateQuizTheory"},
+    {"source": "/api/_quiz-theory", "destination": "/api/quiz?action=privateQuizTheory"},
+    {"source": "/lib/quiz-theory.cjs", "destination": "/api/quiz?action=privateQuizTheory"},
+    {"source": "/lib/quiz-theory", "destination": "/api/quiz?action=privateQuizTheory"},
+    {"source": "/lib/quiz-theory-response.mjs", "destination": "/api/quiz?action=privateQuizTheory"},
+    {"source": "/lib/quiz-theory-response", "destination": "/api/quiz?action=privateQuizTheory"},
     {
       "source": "/scegli-quiz",
       "destination": "/"

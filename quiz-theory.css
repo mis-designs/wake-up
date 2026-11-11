@@ -1,0 +1,152 @@
+/* Tokens follow figure-detail.css / android-app-theme.css. The host loads
+   assets/fonts/magicbook-bangla-fonts.css; no duplicate font-face or download.
+   --quiz-theory-* properties may be supplied by a host theme. The approved
+   action blue intentionally does NOT inherit the Study/AllBooks green primary;
+   native --app-palette-primary-strong remains its canonical blue override. */
+.quiz-theory-button,
+.quiz-theory-overlay {
+  --qt-paper: var(--quiz-theory-paper, var(--app-palette-paper, var(--color-white, #fff)));
+  --qt-ink: var(--quiz-theory-ink, var(--app-palette-text, var(--color-text, #17352d)));
+  --qt-line: var(--quiz-theory-line, var(--app-palette-divider, var(--color-surface-strong, #dce7e1)));
+  --qt-brand: var(--quiz-theory-brand, var(--app-palette-primary-strong, #2d5df5));
+  --qt-on-brand: var(--quiz-theory-on-brand, var(--app-palette-on-primary, #fff));
+  --qt-muted: color-mix(in srgb, var(--qt-ink) 72%, var(--qt-paper));
+  --qt-soft: color-mix(in srgb, var(--qt-ink) 5%, var(--qt-paper));
+  --qt-brand-soft: color-mix(in srgb, var(--qt-brand) 9%, var(--qt-paper));
+  font-family: Inter, 'Segoe UI', system-ui, sans-serif;
+  color: var(--qt-ink);
+  text-align: start;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.quiz-theory-button,
+.quiz-theory-overlay,
+.quiz-theory-overlay * { box-sizing: border-box; }
+.quiz-theory-button[hidden], .quiz-theory-overlay [hidden] { display: none !important; }
+.quiz-theory-button,
+.quiz-theory-overlay button {
+  appearance: none; cursor: pointer; touch-action: manipulation;
+  font: 600 13px/1.3 Inter, 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: normal; text-transform: none;
+  border: 1px solid var(--qt-line); color: var(--qt-ink); background: var(--qt-paper);
+  margin: 0; box-shadow: none;
+}
+.quiz-theory-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  width: max-content; max-width: 100%; min-width: 0; flex: 0 0 auto;
+  min-height: 46px; padding: 9px 12px; border-radius: 12px; border-color: transparent;
+  background: var(--qt-brand); color: var(--qt-on-brand);
+}
+.quiz-theory-button-label { display: block; line-height: 26px; }
+.quiz-theory-button-bn {
+  display: block; font-family: var(--font-bn-hadi, 'Hadi Rounded', sans-serif);
+  font-size: 21px; font-weight: 700; line-height: 26px; transform: translateY(1px);
+}
+.quiz-theory-button svg { display: block; width: 18px; height: 18px; flex: none; }
+.quiz-theory-button:hover { filter: brightness(.94); }
+.quiz-theory-button:active { filter: brightness(.86); }
+.quiz-theory-button:focus-visible,
+.quiz-theory-overlay button:focus-visible { outline: 3px solid var(--qt-brand); outline-offset: 3px; }
+.quiz-theory-overlay button:disabled { opacity: .45; cursor: default; }
+body.quiz-theory-open { overflow: hidden; }
+.quiz-theory-overlay {
+  position: fixed; inset: 0; z-index: var(--quiz-theory-layer, var(--figure-layer-detail, 1200));
+  display: flex; align-items: center; justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: rgb(19 39 31 / .3); overscroll-behavior: contain;
+}
+.quiz-theory-dialog {
+  display: flex; flex-direction: column; width: min(100%, 540px); min-width: 0;
+  max-height: 100%; overflow: hidden; border: 1px solid var(--qt-line); border-radius: 24px;
+  color: var(--qt-ink); background: var(--qt-paper); box-shadow: 0 18px 60px rgb(0 0 0 / .16);
+  animation: quiz-theory-enter 180ms ease-out both;
+}
+.quiz-theory-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 18px 18px 12px; flex: none;
+}
+.quiz-theory-header > div { min-width: 0; }
+.quiz-theory-header small { font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--qt-muted); }
+.quiz-theory-dialog .quiz-theory-title { font: 700 24px/1.2 Inter, 'Segoe UI', system-ui, sans-serif; margin: 5px 0 0; color: inherit; overflow-wrap: anywhere; }
+.quiz-theory-overlay .quiz-theory-close,
+.quiz-theory-overlay .quiz-theory-speak,
+.quiz-theory-overlay .quiz-theory-media-toggle {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 44px; height: 44px; min-height: 44px; padding: 10px; border-radius: 50%;
+}
+.quiz-theory-overlay .quiz-theory-close { border: 0; background: var(--qt-soft); }
+.quiz-theory-overlay svg { display: block; width: 20px; height: 20px; flex: none; }
+.quiz-theory-content {
+  padding: 0 18px 18px; min-height: 0; overflow: auto; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-color: var(--qt-line) transparent; scrollbar-gutter: stable;
+}
+.quiz-theory-content:empty { min-height: min(180px, 25vh); }
+.quiz-theory-content::-webkit-scrollbar { width: 7px; }
+.quiz-theory-content::-webkit-scrollbar-thumb { background: var(--qt-line); border-radius: 7px; }
+.quiz-theory-content::-webkit-scrollbar-thumb:hover { background: var(--qt-muted); }
+.quiz-theory-focus { padding: 12px 14px; border-radius: 13px; background: var(--qt-brand-soft); margin-bottom: 17px; overflow-wrap: anywhere; }
+.quiz-theory-focus small { display: block; font-size: 11px; color: var(--qt-muted); margin-bottom: 5px; }
+.quiz-theory-focus strong { font-size: 17px; line-height: 1.5; color: var(--qt-brand); }
+.quiz-theory-dialog .quiz-theory-explanation { color: inherit; white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal; text-transform: none; letter-spacing: normal; }
+.quiz-theory-explanation[lang='bn'] { margin: 0 0 17px; font: 600 20px/1.75 var(--font-bn-ekushey, 'Ekushey Lal Sabuj', sans-serif); }
+.quiz-theory-explanation[lang='it'] { margin: 0; font: 400 16px/1.65 Inter, 'Segoe UI', system-ui, sans-serif; }
+.quiz-theory-audio-tail { display: inline-block; max-width: 100%; }
+.quiz-theory-overlay .quiz-theory-speak { vertical-align: middle; margin-inline-start: 3px; border: 0; color: var(--qt-brand); background: var(--qt-brand-soft); }
+.quiz-theory-overlay .quiz-theory-speak[aria-pressed='true'] { background: var(--qt-brand); color: var(--qt-on-brand); }
+.quiz-theory-footer { border-top: 1px solid var(--qt-line); padding: 12px 18px 10px; flex: none; background: var(--qt-paper); }
+.quiz-theory-media { display: flex; align-items: center; gap: 10px; }
+.quiz-theory-overlay .quiz-theory-media-toggle { color: var(--qt-brand); }
+.quiz-theory-media-body { flex: 1; min-width: 0; }
+.quiz-theory-media-label { font: 400 11px/1.5 Inter, system-ui, sans-serif; color: var(--qt-muted); margin-bottom: 6px; overflow-wrap: anywhere; }
+.quiz-theory-progress { appearance: none; display: block; width: 100%; height: 3px; border: 0; border-radius: 5px; overflow: hidden; background: var(--qt-line); color: var(--qt-brand); }
+.quiz-theory-progress::-webkit-progress-bar { background: var(--qt-line); }
+.quiz-theory-progress::-webkit-progress-value { background: var(--qt-brand); }
+.quiz-theory-progress::-moz-progress-bar { background: var(--qt-brand); }
+.quiz-theory-feedback { display: grid; grid-template-columns: minmax(0, 1fr) 64px; align-items: center; gap: 8px; min-height: 44px; }
+.quiz-theory-status { font: 400 12px/1.5 Inter, system-ui, sans-serif; color: var(--qt-muted); overflow-wrap: anywhere; }
+.quiz-theory-overlay .quiz-theory-retry { min-height: 44px; padding: 6px; color: var(--qt-brand); border: 0; border-radius: 8px; background: transparent; }
+.quiz-theory-overlay button:hover:not(:disabled) { background: var(--qt-soft); }
+.quiz-theory-overlay button:active:not(:disabled) { background: var(--qt-brand-soft); }
+.quiz-theory-overlay .quiz-theory-speak[aria-pressed='true']:hover { background: var(--qt-brand); }
+@media (max-width: 600px) {
+  .quiz-theory-overlay {
+    align-items: flex-end;
+    padding: max(16px, env(safe-area-inset-top)) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+  }
+  .quiz-theory-dialog { border-radius: 25px 25px 0 0; border-bottom: 0; }
+  .quiz-theory-footer { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+}
+@media (max-width: 360px) {
+  .quiz-theory-header, .quiz-theory-content, .quiz-theory-footer { padding-inline: 14px; }
+}
+@media (max-height: 400px) {
+  .quiz-theory-header { padding-block: 8px; }
+  .quiz-theory-footer { padding-top: 6px; }
+  .quiz-theory-content:empty { min-height: 40px; }
+  .quiz-theory-dialog .quiz-theory-title { font-size: 20px; }
+}
+/* Explicit dark theme wins over legacy paper tokens which stay white. */
+:is(html[data-theme='dark'], body[data-theme='dark'], html.dark, body.dark) :is(.quiz-theory-button, .quiz-theory-overlay) {
+  --qt-paper: var(--quiz-theory-paper, #12251e); --qt-ink: var(--quiz-theory-ink, #eff6f2);
+  --qt-line: var(--quiz-theory-line, #395044); --qt-brand: var(--quiz-theory-brand, #87aaff);
+  --qt-on-brand: var(--quiz-theory-on-brand, #10224c); color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]):not(.light):not(.android-webview) :is(.quiz-theory-button, .quiz-theory-overlay) {
+    --qt-paper: var(--quiz-theory-paper, #12251e); --qt-ink: var(--quiz-theory-ink, #eff6f2);
+    --qt-line: var(--quiz-theory-line, #395044); --qt-brand: var(--quiz-theory-brand, #87aaff);
+    --qt-on-brand: var(--quiz-theory-on-brand, #10224c); color-scheme: dark;
+  }
+}
+@keyframes quiz-theory-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .quiz-theory-dialog { animation: none; } }
+html[data-native-motion-paused] .quiz-theory-dialog { animation: none; }
+@media (forced-colors: active) {
+  .quiz-theory-button, .quiz-theory-dialog, .quiz-theory-overlay button { border: 1px solid ButtonText; color: CanvasText; background: Canvas; box-shadow: none; }
+  .quiz-theory-focus, .quiz-theory-focus strong { background: Canvas; color: CanvasText; }
+  .quiz-theory-button:focus-visible, .quiz-theory-overlay button:focus-visible { outline-color: Highlight; }
+  .quiz-theory-content { scrollbar-color: auto; }
+  .quiz-theory-progress { forced-color-adjust: none; background: Canvas; color: Highlight; border: 1px solid CanvasText; height: 5px; }
+  .quiz-theory-progress::-webkit-progress-bar { background: Canvas; }
+  .quiz-theory-progress::-webkit-progress-value, .quiz-theory-progress::-moz-progress-bar { background: Highlight; }
+}

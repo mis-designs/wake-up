@@ -21,6 +21,18 @@ function rows(sheet = 25) {
   }));
 }
 
+function installTheoryFixture(context) {
+  const calls = [], pending = new AbortController();
+  const button = { dataset: { quizTheoryEntry: "quiz" }, remove() { calls.push("remove"); } };
+  context.quizTheoryRequests = new Set([pending]);
+  context.quizTheoryButtons = new Set([button]);
+  context.window.MagicQuizTheory = { reset() { calls.push("reset"); },
+    destroyButton(value) { assert.equal(value, button); calls.push("destroy"); } };
+  // Exercise the actual adapter cleanup; only the shared UI owner is mocked.
+  for (const name of ["resetQuizTheory", "clearQuizTheoryButtons"]) vm.runInContext(functionSource(name), context);
+  return { calls, pending, button };
+}
+
 function fixture(path = "/quiz?source=quizbank&scheda=25") {
   const url = new URL(path, "https://practice.invalid"), calls = [], events = [], reviews = [], results = [], errors = [], dialogs = [];
   const context = vm.createContext({ URLSearchParams, URL, console: { log: noop, warn: noop, error: (...args) => errors.push(args) },
@@ -55,6 +67,7 @@ function fixture(path = "/quiz?source=quizbank&scheda=25") {
       return structuredClone(context.response);
     }
   });
+  const theory = installTheoryFixture(context);
   context.response = { quiz: rows(Number(url.searchParams.get("scheda")) || 25), quizbankRevision: revision,
     canUploadAudio: false, isAdmin: false, timerMinutes: 20, quizSessionToken: "qb-token", quizSessionTokenExpiresAt: 123456 };
   // Execute the real route constants rather than duplicate source detection.
@@ -66,7 +79,7 @@ function fixture(path = "/quiz?source=quizbank&scheda=25") {
     "beginLearningQuizSession", "queueLearningAnswer", "allAnswered", "loadQuiz", "finishQuiz"]) {
     vm.runInContext(functionSource(name), context);
   }
-  return { context, calls, events, reviews, results, errors, dialogs };
+  return { context, calls, events, reviews, results, errors, dialogs, theory };
 }
 
 test("valid QuizBank routes load only their exact sheet and return to it", async () => {
@@ -74,6 +87,8 @@ test("valid QuizBank routes load only their exact sheet and return to it", async
     const h = fixture(`/quiz?source=quizbank&scheda=${sheet}&chapters=3&mode=exam80`);
     await h.context.loadQuiz();
     assert.deepEqual(h.errors, []);
+    assert.equal(h.theory.pending.signal.aborted, true);
+    assert.deepEqual(h.theory.calls, ["reset", "destroy", "remove"]);
     assert.equal(h.calls.length, 1);
     const url = new URL(h.calls[0].url, "https://practice.invalid");
     assert.equal(url.pathname, "/api/quizbank"); assert.equal(url.searchParams.get("action"), "getQuiz");
@@ -327,11 +342,14 @@ test("identity mismatch makes no request, aborts existing media and clears priva
     Event, isQuizRevokedSessionError: () => false, getQuizAccessErrorMessage: code => code,
     showMessage: async (_title, code) => h.denied.push(code)
   });
+  const theory = installTheoryFixture(h.context);
   h.context.quizbankRequests.add(active);
   vm.runInContext(functionSource("handleQuizAccessError"), h.context);
   await assert.rejects(h.context.fetchQuizBankResource("/api/quizbank"), /unauthorized/);
   assert.equal(h.calls.length, 0); assert.equal(h.saved.length, 0); assert.equal(h.timers.size, 0);
   assert.equal(active.signal.aborted, true); assert.deepEqual(h.denied, ["unauthorized"]);
+  assert.equal(theory.pending.signal.aborted, true);
+  assert.deepEqual(theory.calls, ["reset", "destroy", "remove"]);
   assert.deepEqual(cleanup, [["timer", 123], "audio", "recorder", "shared", "review", "magicbook:quiz-help-close"]);
   assert.equal(h.context.quiz.length, 0); assert.equal(h.context.answers.length, 0);
   assert.equal(h.context.lastQuizSet, null); assert.equal(h.context.quizbankRevision, "");

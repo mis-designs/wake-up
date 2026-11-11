@@ -388,7 +388,7 @@ function getQuizSessionToken() {
 }
 
 function isQuizSessionProtectedAction(action) {
-  return ["getItalianAudio", "getBengaliAudio", "getTTS", "checkQuiz"].includes(String(action || ""));
+  return ["getItalianAudio", "getBengaliAudio", "getTTS", "checkQuiz", "getQuizTheory", "getQuizTheoryAudio"].includes(String(action || ""));
 }
 
 function quizApiAction(url) {
@@ -509,6 +509,68 @@ function buildQuizApiUrl(action, params = {}) {
   return `${QUIZ_API}?${query.toString()}`;
 }
 
+const quizTheoryButtons = new Set();
+const quizTheoryRequests = new Set();
+const quizTheoryScope = `magic:${QUIZBANK_MODE ? "quizbank" : "book"}:${createQuizDrawId()}`;
+
+function clearQuizTheoryButtons(kind) {
+  for (const button of quizTheoryButtons) {
+    if (kind && button.dataset.quizTheoryEntry !== kind) continue;
+    window.MagicQuizTheory?.destroyButton(button);
+    button.remove(); quizTheoryButtons.delete(button);
+  }
+}
+function resetQuizTheory() {
+  for (const controller of quizTheoryRequests) controller.abort();
+  window.MagicQuizTheory?.reset();
+}
+async function requestQuizTheory(question, action, language, signal) {
+  if (TRIAL_MODE && action === "getQuizTheoryAudio") {
+    openTrialAudioOffer("Spiegazioni audio"); throw new Error("trial_premium_audio");
+  }
+  if (!TRIAL_MODE && !quizBankIdentityMatches()) { resetQuizTheory(); throw new Error("unauthorized"); }
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  signal?.addEventListener("abort", abort, { once: true });
+  if (signal?.aborted) abort();
+  quizTheoryRequests.add(controller);
+  const timeout = setTimeout(abort, 28_000);
+  try {
+    const data = await fetchQuizJson(`${TRIAL_MODE ? "/api/trial" : QUIZ_API}?action=${encodeURIComponent(action)}`, {
+      method: "POST", cache: "no-store", signal: controller.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, ...(TRIAL_MODE
+        ? { trialId: getQuizDeviceId(), trialToken: getQuizSessionToken() }
+        : { phone: getQuizPhone(), deviceId: getQuizDeviceId() }),
+        questionId: String(question.id), question: question.question, figure: String(question.figure ?? ""),
+        ...(QUIZBANK_MODE ? { audioIdentityToken: question.audioIdentityToken || "" } : {}),
+        ...(action === "getQuizTheoryAudio" ? { language } : {}) })
+    });
+    if (controller.signal.aborted) throw new DOMException("Cancelled", "AbortError");
+    if (!TRIAL_MODE && !quizBankIdentityMatches()) { resetQuizTheory(); throw new Error("unauthorized"); }
+    return data;
+  } finally {
+    clearTimeout(timeout); quizTheoryRequests.delete(controller);
+    signal?.removeEventListener("abort", abort);
+  }
+}
+function createQuizTheoryButton(question, kind, isCurrent) {
+  // A dormant trial may read issued-question text, never premium theory audio.
+  if (!window.MagicQuizTheory) return null;
+  const button = window.MagicQuizTheory.createButton({ question, cacheScope: quizTheoryScope,
+    isCurrent: () => !quizAccessErrorHandled && (TRIAL_MODE || quizBankIdentityMatches()) && isCurrent(),
+    request: (action, language, signal) => requestQuizTheory(question, action, language, signal) });
+  button.addEventListener("click", () => stopAllAudio(), { capture: true });
+  button.dataset.quizTheoryEntry = kind;
+  quizTheoryButtons.add(button);
+  return button;
+}
+window.addEventListener("pagehide", resetQuizTheory);
+window.addEventListener("storage", () => { if (!TRIAL_MODE && !quizBankIdentityMatches()) resetQuizTheory(); });
+document.addEventListener("visibilitychange", () => {
+  if (!TRIAL_MODE && !document.hidden && !quizBankIdentityMatches()) resetQuizTheory();
+});
+
 function getQuizAccessErrorMessage(error) {
   if (QUIZBANK_MODE && ["quizbank_access_denied", "quizbank_access_required", "quizbank_preview_forbidden"].includes(error)) return "Il tuo account non è abilitato a QuizBank. Torna alla scheda dopo l’attivazione.";
   if (QUIZBANK_MODE && error === "quizbank_admin_required") return "Solo gli amministratori possono aggiungere spiegazioni audio.";
@@ -560,6 +622,7 @@ function clearQuizSessionDataForLogout() {
 }
 
 async function handleQuizAccessError(error) {
+  resetQuizTheory(); clearQuizTheoryButtons();
   if (quizAccessErrorHandled) return;
   quizAccessErrorHandled = true;
   if (QUIZBANK_MODE) {
@@ -2350,6 +2413,7 @@ function hideLoading() {
 }
 
 function returnToBook() {
+  resetQuizTheory(); clearQuizTheoryButtons();
   window.location.href = TRIAL_MODE ? TRIAL_HOME_ROUTE : HOME_ROUTE;
 }
 
@@ -2381,6 +2445,7 @@ function rifaiScheda() {
 
 // LOAD QUIZ
 async function loadQuiz() {
+  resetQuizTheory(); clearQuizTheoryButtons();
   showLoading("Caricamento quiz...");
   let recoveryAction = null;
 
@@ -2785,6 +2850,7 @@ function openModal({
 }
 
 function closeModal(result) {
+  clearQuizTheoryButtons("review");
   stopResultVideo();
   resetReviewAudioPlayer();
   reviewTranslationGeneration += 1;
@@ -3306,6 +3372,7 @@ function createReviewTranslationDisclosure(item) {
 }
 
 function renderAnswerReview(items = []) {
+  clearQuizTheoryButtons("review");
   resetReviewAudioPlayer();
   modalReviewList.replaceChildren();
 
@@ -3338,6 +3405,9 @@ function renderAnswerReview(items = []) {
       : `La tua risposta: ${answerLabel(item.userAnswer)} | Corretta: ${answerLabel(item.correctAnswer)}`;
 
     const translationDisclosure = createReviewTranslationDisclosure(item);
+    const theoryButton = createQuizTheoryButton(item, "review", () =>
+      !modal.classList.contains("hidden") && modalReviewList.contains(theoryButton));
+    if (theoryButton) translationDisclosure.tools.appendChild(theoryButton);
     const reviewAudioStatus = document.createElement("p");
     reviewAudioStatus.className = "modal-review-audio-status";
     reviewAudioStatus.setAttribute("role", "status");
@@ -3542,6 +3612,7 @@ function updateAdminCorrectDots(question) {
 }
 
 function showQuestion() {
+  clearQuizTheoryButtons("quiz");
   const q = quiz[current];
   window.dispatchEvent(new Event("magicbook:quiz-question-change"));
   markLearningQuestionVisible();
@@ -3556,6 +3627,9 @@ function showQuestion() {
 
   loadQuizImage(q);
   updateExplanationButton(q);
+  const theoryButton = createQuizTheoryButton(q, "quiz", () => quiz[current] === q);
+  const actions = document.querySelector(".quiz-question-actions");
+  if (theoryButton && actions) actions.insertBefore(theoryButton, actions.querySelector(".quiz-click-hint"));
   void updateSharedAudioAvailability(q);
 
   // reset bottoni
@@ -3653,6 +3727,7 @@ function getTimerExpiryCopy(durationMinutes = quizDurationMinutes) {
 }
 
 function closeTransientQuizOverlaysForTimer() {
+  window.MagicQuizTheory?.close({ restoreFocus: false });
   stopAllAudio();
   document.querySelector('#quiz-help-workspace:not(.hidden) [data-help-close]')?.click();
   if (explanationModal && !explanationModal.classList.contains("hidden")) {
