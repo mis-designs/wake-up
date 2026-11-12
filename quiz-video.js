@@ -16,14 +16,19 @@
     video_already_exists: 'Un video è già stato salvato per questa domanda. Riapri per visualizzarlo.',
     video_storage_not_configured: 'Archivio video non configurato. Collega le credenziali R2 al bucket magicbook-assets.',
     video_storage_denied: 'Accesso all’archivio video negato. Verifica i permessi di lettura e scrittura del bucket magicbook-assets.',
+    video_storage_credentials_invalid: 'Le credenziali del collegamento video non sono valide. Il video non è stato salvato.',
+    video_upload_incomplete: 'Caricamento interrotto. Premi Riprendi caricamento per completarlo.',
+    video_chunk_invalid: 'Una parte del video non è valida. Riapri il caricamento e seleziona il file.',
+    video_upload_invalid: 'Il caricamento non è più valido. Riapri e seleziona il video.',
+    invalid_request: 'La richiesta non è valida. Riapri il caricamento e seleziona il video.',
     video_storage_bucket_missing: 'Il bucket dell’archivio video non è disponibile. Verifica la configurazione R2.',
     video_storage_unavailable: 'Non riesco a verificare l’archivio video. Riprova prima di caricare.',
     admin_forbidden: 'Il caricamento è riservato al master admin.',
     master_admin_required: 'Accedi di nuovo con il codice master per caricare video.',
     video_question_unavailable: 'Questa domanda deve essere verificata prima di collegare un video.',
     video_answer_unavailable: 'La risposta corretta deve essere verificata prima di collegare un video.',
-    video_upload_expired: 'La sessione di caricamento è scaduta. Riapri e seleziona il video.',
-    video_file_mismatch: 'Il file ricevuto non è completo. Riapri e riprova il caricamento.'
+    video_upload_expired: 'La sessione di caricamento è scaduta. Premi Riprova caricamento: il file è ancora selezionato.',
+    video_file_mismatch: 'Il file ricevuto non è completo. Premi Riprova caricamento.'
   };
   function current(binding) {
     try { return binding.epoch === epoch && binding.button.isConnected && binding.options.isCurrent(); } catch { return false; }
@@ -103,6 +108,17 @@
       xhr.send(blob);
     });
   }
+  function encodeChunk(blob, signal) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader(), abort = () => reader.abort();
+      const finish = (error, value) => { signal.removeEventListener('abort', abort); error ? reject(error) : resolve(value); };
+      reader.onload = () => finish(null, String(reader.result).split(',')[1]);
+      reader.onerror = () => finish(new Error('video_unreadable'));
+      reader.onabort = () => finish(new DOMException('Aborted', 'AbortError'));
+      if (signal.aborted) return finish(new DOMException('Aborted', 'AbortError'));
+      signal.addEventListener('abort', abort, { once: true }); reader.readAsDataURL(blob);
+    });
+  }
   async function open(binding) {
     close({ restoreFocus: false });
     if (!current(binding)) return;
@@ -154,7 +170,7 @@
     const originalLabel = node('label', '', 'quiz-video-original'); const original = node('input'); original.type = 'checkbox'; originalLabel.append(original, node('span', 'Usa il file originale')); originalLabel.hidden = true;
     const actions = node('div', '', 'quiz-video-actions'), save = node('button', 'Carica video', 'quiz-video-save'); save.disabled = true;
     actions.append(save); dialog.append(label, originalLabel, actions);
-    let prepared, file, busy = false, uploadToken = '';
+    let prepared, file, busy = false, transfer = null, preferRelay = false;
     report(state, 'Il video sarà condiviso con le stesse domande negli altri libri.');
     const showPreview = () => {
       if (active !== state || !prepared) return;
@@ -166,7 +182,7 @@
     original.onchange = showPreview;
     input.onchange = async () => {
       if (busy || active !== state || !input.files[0]) return;
-      file = input.files[0]; busy = true; input.disabled = true; save.disabled = true; originalLabel.hidden = true;
+      file = input.files[0]; prepared = null; transfer = null; busy = true; input.disabled = true; save.disabled = true; originalLabel.hidden = true;
       try {
         prepared = await root.QuizVideoOptimizer.optimize(file, { signal: controller.signal, progress: text => report(state, text) });
         if (active !== state) return;
@@ -178,27 +194,61 @@
       if (busy || !prepared || active !== state || !admin(binding)) return;
       busy = true; save.disabled = input.disabled = original.disabled = true; video.pause();
       try {
-        if (!uploadToken) {
+        const begin = async relay => {
           cache.delete(cacheKey(binding));
           const blob = original.checked ? new Blob([file], { type: 'video/mp4' }) : prepared.blob;
           report(state, 'Preparazione del caricamento…');
-          const created = await request(binding, 'createQuizVideoUpload', { bytes: blob.size, mime: 'video/mp4', duration: prepared.duration }, controller.signal);
-          uploadToken = created.uploadToken;
-          await directUpload(created.uploadUrl, blob, controller.signal, value => report(state, `Caricamento ${value}%`));
+          const created = await request(binding, 'createQuizVideoUpload', { bytes: blob.size, mime: 'video/mp4', duration: prepared.duration, ...(relay ? { transport: 'relay' } : {}) }, controller.signal);
+          if (!created.uploadToken || (relay && (created.transport !== 'relay' || created.chunkBytes !== 2621440))) throw new Error('video_upload_invalid');
+          transfer = { ...created, blob, nextChunk: 0 };
+        };
+        const relayUpload = async () => {
+          const count = Math.ceil(transfer.blob.size / transfer.chunkBytes);
+          while (transfer.nextChunk < count) {
+            controller.signal.throwIfAborted();
+            const index = transfer.nextChunk;
+            report(state, `Caricamento ${Math.round(100 * index / count)}%`);
+            const chunkBase64 = await encodeChunk(transfer.blob.slice(index * transfer.chunkBytes, (index + 1) * transfer.chunkBytes), controller.signal);
+            const result = await request(binding, 'uploadQuizVideoChunk', { uploadToken: transfer.uploadToken, chunkIndex: index, chunkBase64 }, controller.signal);
+            if (result.received !== true || result.nextChunk !== index + 1) throw new Error('video_upload_invalid');
+            transfer.nextChunk = result.nextChunk;
+          }
+        };
+        const confirm = () => {
+          report(state, 'Verifica del salvataggio…');
+          return request(binding, 'confirmQuizVideoUpload', { uploadToken: transfer.uploadToken }, controller.signal);
+        };
+        if (!transfer) {
+          await begin(preferRelay);
+          if (transfer.transport !== 'relay') {
+            try { await directUpload(transfer.uploadUrl, transfer.blob, controller.signal, value => report(state, `Caricamento ${value}%`)); }
+            catch (error) { if (controller.signal.aborted) throw error; /* Reconcile before choosing another transport. */ }
+          }
         }
-        report(state, 'Verifica del salvataggio…');
-        const saved = await request(binding, 'confirmQuizVideoUpload', { uploadToken }, controller.signal);
+        if (transfer.transport === 'relay') await relayUpload();
+        let saved;
+        try { saved = await confirm(); }
+        catch (error) {
+          // Only an authoritative missing-object response permits a fresh upload.
+          // Lost PUT/confirm responses never cause a blind duplicate upload.
+          if (error.message !== 'video_upload_not_received' || !transfer.relaySupported) throw error;
+          preferRelay = true; transfer = null;
+          report(state, 'Ripresa del caricamento…');
+          await begin(true); await relayUpload(); saved = await confirm();
+        }
+        if (saved.saved !== true || typeof saved.url !== 'string' || !/^https?:\/\//.test(saved.url)) throw new Error('video_upload_invalid');
         if (active !== state) return;
         remember(binding, saved); binding.button.innerHTML = icon + '<span>Video</span>';
         label.remove(); originalLabel.remove(); actions.remove(); video.src = saved.url;
         report(state, 'Video salvato. Disponibile per la stessa domanda, risposta e figura.');
       } catch (error) {
         if (active !== state) return;
-        if (error.message === 'video_upload_not_received') uploadToken = '';
-        report(state, failMessage(error));
-        // Keep an uncertain PUT/finalize ticket: the next click checks the same object, never reuploads blindly.
-        save.textContent = uploadToken ? 'Verifica salvataggio' : 'Riprova caricamento';
-        save.disabled = false; input.disabled = original.disabled = Boolean(uploadToken);
+        if (['video_upload_not_received', 'video_upload_expired', 'video_file_mismatch', 'video_file_invalid'].includes(error.message)) transfer = null;
+        if (error.message === 'video_upload_incomplete' && transfer?.transport === 'relay') transfer.nextChunk = 0;
+        const incomplete = transfer?.transport === 'relay' && transfer.nextChunk < Math.ceil(transfer.blob.size / transfer.chunkBytes);
+        report(state, incomplete && !messages[error.message] ? messages.video_upload_incomplete : failMessage(error));
+        save.textContent = incomplete ? 'Riprendi caricamento' : transfer ? 'Verifica salvataggio' : 'Riprova caricamento';
+        save.disabled = false; input.disabled = original.disabled = Boolean(transfer);
       } finally { busy = false; }
     };
   }

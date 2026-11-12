@@ -1,9 +1,9 @@
-const CACHE_NAME = "magicbook-pwa-v283-video-upload";
+const CACHE_NAME = "magicbook-pwa-v284-video-recovery";
 const STATIC_ASSETS = [
   "/account-role.js?v=1",
   "/account-role.css?v=1",
   "/icons/video-upload.png",
-  "/quiz-video.js?v=5-upload",
+  "/quiz-video.js?v=6-recovery",
   "/quiz-video.css?v=3-storage",
   "/quiz-video-optimizer.js?v=1",
   "/quiz-theory-index.js?v=1-chapter1",
@@ -17,7 +17,7 @@ const STATIC_ASSETS = [
   "/quizbank.html",
   "/quizbank.css?v=9-figure-zoom",
   "/quizbank-sheet.js?v=4-practice",
-  "/study-quiz.js?v=54-video-master",
+  "/study-quiz.js?v=55-video-recovery",
   "/quiz-audio-recorder.js?v=1",
   "/quiz-audio-recorder.css?v=2-add-voice",
   "/icons/add_voice.png",
@@ -130,14 +130,14 @@ const STATIC_ASSETS = [
   "/script.js?v=20261112-master-key",
   "/study-quiz.html",
   "/study-quiz.css?v=28-compact",
-  "/study-quiz.js?v=54-video-master",
+  "/study-quiz.js?v=55-video-recovery",
   "/figure-study.css?v=2",
   "/figure-study.js?v=3-headlight",
   "/figure-study-catalog.mjs?v=2",
   "/figure-study-data.mjs?v=2",
   "/figure-study-notes.mjs?v=1",
   "/quiz-audio-identity.js?v=2-live-catalog-reconcile",
-  "/quiz.js?v=20261112-quiz-video",
+  "/quiz.js?v=20261112-video-recovery",
   "/quiz-help.css?v=20260928-desktop",
   "/quiz-help.js?v=20261030-quizbank",
   "/quiz-help-desktop.js?v=1-allbooks",
@@ -221,7 +221,7 @@ self.addEventListener("fetch", event => {
   const request = event.request;
   const url = new URL(request.url);
 
-  if (request.method !== "GET" || url.pathname.startsWith("/api/")) return;
+  if (request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
 
   if (url.origin === self.location.origin && request.mode !== "navigate"
     && !["reload", "no-store", "no-cache"].includes(request.cache)
@@ -284,9 +284,9 @@ self.addEventListener("fetch", event => {
       })
       .catch(() => {
         if (request.mode === "navigate") {
-          return caches.match(fallbackPage);
+          return caches.match(fallbackPage).then(cached => cached || Response.error());
         }
-        return caches.match(request);
+        return caches.match(request).then(cached => cached || Response.error());
       })
   );
 });

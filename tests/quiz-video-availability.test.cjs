@@ -26,7 +26,7 @@ test('verified master retains upload action when storage cannot be inspected', a
     assert.deepEqual(result, { available: false, availability: 'unknown', canUpload: true, error: code });
     assert.equal(JSON.stringify(result).includes('private'), false);
     for (const master of [false, undefined]) await assert.rejects(runRequest({ action: 'getQuizVideo', row, master }, () => { throw error; }), e => e === error);
-    for (const action of ['createQuizVideoUpload', 'confirmQuizVideoUpload']) await assert.rejects(runRequest({ action, row, master: true }, () => { throw error; }), e => e === error);
+    for (const action of ['createQuizVideoUpload', 'uploadQuizVideoChunk', 'confirmQuizVideoUpload']) await assert.rejects(runRequest({ action, row, master: true }, () => { throw error; }), e => error.name === 'AccessDenied' ? e.message === 'video_storage_denied' && e.statusCode === 409 : e === error);
   }
 });
 

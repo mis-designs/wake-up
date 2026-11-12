@@ -388,7 +388,7 @@ function getQuizSessionToken() {
 }
 
 function isQuizSessionProtectedAction(action) {
-  return ["getItalianAudio", "getBengaliAudio", "getTTS", "checkQuiz", "getQuizTheory", "getQuizTheoryAudio", "getQuizVideo", "createQuizVideoUpload", "confirmQuizVideoUpload"].includes(String(action || ""));
+  return ["getItalianAudio", "getBengaliAudio", "getTTS", "checkQuiz", "getQuizTheory", "getQuizTheoryAudio", "getQuizVideo", "createQuizVideoUpload", "uploadQuizVideoChunk", "confirmQuizVideoUpload"].includes(String(action || ""));
 }
 
 function quizApiAction(url) {
