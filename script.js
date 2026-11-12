@@ -412,6 +412,7 @@ function persistSession(phone, data = {}) {
   if (session.accessToken) Storage.set(KEYS.accessToken, session.accessToken);
   if (session.accessTokenExpiresAt) Storage.set(KEYS.accessTokenExpiresAt, session.accessTokenExpiresAt);
   if (session.expiry) Storage.set(KEYS.expiry, session.expiry);
+  window.AccountRole?.render(document.getElementById("profileRoleBadge"), session.accessToken);
 }
 
 function restoreSession(session) {
@@ -993,6 +994,7 @@ function completeLogin(phone, deviceId, data) {
   checkRenewReminder(true);
   maybeShowWhatsAppGroupPopup();
 
+  window.AccountRole?.announce(data.accessToken, showPromoLoginToast);
   if (data?.promoGranted) {
     setTimeout(() => showPromoLoginToast("Promo attivata: 5 giorni di accesso completo. La promozione può essere utilizzata una sola volta."), 120);
   } else if (data?.promoNotice === "access_already_active") {
@@ -1085,7 +1087,7 @@ async function login(options = {}) {
     const deviceId = await getRobustDeviceId();
     const masterInput = document.getElementById('masterAdminCode');
     const masterCode = adminPasswordRequired ? String(masterInput?.value || '') : '';
-    if (masterInput) masterInput.value = '';
+    if (masterInput) { masterInput.value = ''; setLoginFieldInvalid(masterInput, false); }
     const authPayload = {
       action: "login",
       phone,
@@ -1129,6 +1131,9 @@ async function login(options = {}) {
       }
 
       const loginError = data?.error || data?.status;
+      if (String(loginError).startsWith("master_admin_")) {
+        setLoginFieldInvalid(masterInput, true); masterInput?.focus();
+      }
       if (loginError === "expired") {
         setTimeout(showExpiredRenewPopup, 80);
       }
@@ -1651,6 +1656,7 @@ function logout(showLogin = true, reason = "revoked") {
 }
 
 function clearSessionData() {
+  window.AccountRole?.render(document.getElementById("profileRoleBadge"), "");
   [
     KEYS.loggedIn,
     KEYS.phone,
@@ -2381,7 +2387,8 @@ function updateProfileUI(isLoggedIn = true) {
   profileBtn.classList.toggle("hidden", !phone);
   profilePanel.classList.add("hidden");
   profileBtn.setAttribute("aria-expanded", "false");
-  if (userPhone) userPhone.textContent = phone ? "Telefono: " + phone : "";
+  if (userPhone) userPhone.textContent = phone || "";
+  window.AccountRole?.render(document.getElementById("profileRoleBadge"), phone ? getCurrentAccessToken() : "");
   syncAppUtilityLayout();
 }
 
@@ -2426,7 +2433,8 @@ function setupProfileUI() {
     if (appActionGate.isBusy()) return;
     const phone = getCurrentSessionPhone();
     const userPhone = document.getElementById("userPhone");
-    if (userPhone) userPhone.textContent = phone ? "Telefono: " + phone : "";
+    if (userPhone) userPhone.textContent = phone || "";
+  window.AccountRole?.render(document.getElementById("profileRoleBadge"), phone ? getCurrentAccessToken() : "");
     profilePanel.classList.toggle("hidden");
     profileBtn.setAttribute("aria-expanded", profilePanel.classList.contains("hidden") ? "false" : "true");
   });

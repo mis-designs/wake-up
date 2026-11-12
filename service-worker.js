@@ -1,7 +1,9 @@
-const CACHE_NAME = "magicbook-pwa-v279-master-video";
+const CACHE_NAME = "magicbook-pwa-v280-role-feedback";
 const STATIC_ASSETS = [
+  "/account-role.js?v=1",
+  "/account-role.css?v=1",
   "/icons/video-upload.png",
-  "/quiz-video.js?v=2-master",
+  "/quiz-video.js?v=3-availability",
   "/quiz-video.css?v=2-master",
   "/quiz-video-optimizer.js?v=1",
   "/quiz-theory-index.js?v=1-chapter1",
@@ -41,7 +43,7 @@ const STATIC_ASSETS = [
   "/assets/easy-video-still.png",
   "/assets/new-class.gif",
   "/mobile-experience.css?v=4-admin-scroll",
-  "/login-experience.css?v=5-clean",
+  "/login-experience.css?v=6-feedback",
   "/login-experience.js?v=3-clean",
   "/welcome-page.css?v=4-login-home",
   "/welcome-page.js?v=2-clean",
@@ -125,7 +127,7 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=61-shared-recorder",
   "/quiz-chrome.css?v=1-outline",
   "/audio-player-ui.css?v=10-web-quiz-slim",
-  "/script.js?v=20261112-master-video",
+  "/script.js?v=20261112-role-feedback",
   "/study-quiz.html",
   "/study-quiz.css?v=28-compact",
   "/study-quiz.js?v=53-quiz-video",

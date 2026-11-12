@@ -191,23 +191,26 @@
     };
   }
   function createButton(options) {
-    const button = node('button', '', 'quiz-video-button'); button.type = 'button'; button.innerHTML = icon + '<span>Video</span>';
+    const button = node('button', '', 'quiz-video-button'); button.type = 'button'; button.hidden = true; button.innerHTML = icon + '<span>Video</span>';
     button.setAttribute('aria-label', 'Spiegazione video');
     const binding = { button, options, epoch, controllers: new Set() }; bindings.add(binding);
-    binding.click = () => { if (active?.binding !== binding && current(binding)) void open(binding); }; button.addEventListener('click', binding.click);
+    binding.click = () => { if (!button.hidden && active?.binding !== binding && current(binding)) void open(binding); }; button.addEventListener('click', binding.click);
     const update = async () => {
       if (!current(binding)) return;
       try {
         const result = await lookup(binding);
         if (!current(binding)) return; remember(binding, result);
-        button.hidden = !result.available && !admin(binding);
-        button.innerHTML = (result.available ? icon : uploadIcon) + `<span>${result.available ? 'Video' : 'Carica video'}</span>`;
-        button.setAttribute('aria-label', result.available ? 'Spiegazione video' : 'Carica spiegazione video');
-      } catch (_) { /* Keep a visible retry entry; unknown availability is not absence. */ }
+        const available = result.available === true && typeof result.url === 'string' && /^https?:\/\//.test(result.url);
+        button.hidden = !available && !admin(binding);
+        button.innerHTML = (available ? icon : uploadIcon) + `<span>${available ? 'Video' : 'Carica video'}</span>`;
+        button.setAttribute('aria-label', available ? 'Spiegazione video' : 'Carica spiegazione video');
+      } catch (_) { if (current(binding)) button.hidden = true; }
     };
     binding.observer = new IntersectionObserver(entries => {
       if (entries.some(entry => entry.isIntersecting)) { binding.observer.disconnect(); void update(); }
-    }); binding.observer.observe(button);
+    });
+    // The action is hidden until verified. Observe its visible host instead.
+    queueMicrotask(() => { if (bindings.has(binding) && button.isConnected) binding.observer.observe(button.parentElement); });
     return button;
   }
   root.MagicBookPopup?.registerHistoryLayer(() => {

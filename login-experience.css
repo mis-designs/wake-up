@@ -212,3 +212,6 @@ html[data-native-motion-paused] #login .login-hero-img { animation: none; transf
   #login .login-sign { mix-blend-mode: normal; }
   #login .watermark-link { forced-color-adjust: none; background: white; }
 }
+
+/* The empty-state rule includes #err; match its specificity for real feedback. */
+#login #err.login-feedback:not(:empty){visibility:visible;opacity:1;transform:translateY(0)}
