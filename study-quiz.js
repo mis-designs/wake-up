@@ -336,7 +336,7 @@
   }
 
   function isQuizSessionProtectedAction(action) {
-    return ["getItalianAudio", "getBengaliAudio", "getTTS", "getQuizTheory", "getQuizTheoryAudio", "getQuizVideo", "createQuizVideoUpload", "uploadQuizVideoChunk", "confirmQuizVideoUpload"].includes(String(action || ""));
+    return ["getItalianAudio", "getBengaliAudio", "getTTS", "getQuizTheory", "getQuizTheoryAudio", "getQuizVideo", "createQuizVideoUpload", "uploadQuizVideoChunk", "confirmQuizVideoUpload", "deleteQuizVideo", "cleanupQuizVideo"].includes(String(action || ""));
   }
 
   async function refreshQuizSession() {

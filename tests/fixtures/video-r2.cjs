@@ -20,7 +20,9 @@ function storageFixture() {
     }
     if (name === 'PutObjectCommand') {
       if (x.IfNoneMatch === '*' && obj) throw error('PreconditionFailed', 412);
+      if (x.IfMatch && x.IfMatch !== obj?.etag) throw error('PreconditionFailed', 412);
       objects.set(x.Key, object(x.Body, x.ContentType));
+      response = { ETag: objects.get(x.Key).etag };
     } else if (name === 'CreateMultipartUploadCommand') {
       const id = crypto.randomUUID(); uploads.set(id, { key: x.Key, mime: x.ContentType, parts: new Map() }); response = { UploadId: id };
     } else if (['UploadPartCommand', 'ListPartsCommand', 'CompleteMultipartUploadCommand'].includes(name)) {

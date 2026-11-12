@@ -4,8 +4,11 @@
   let active = null, epoch = 0, pendingBack = false;
   const icon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="4" stroke="currentColor" stroke-width="1.8"/><path d="m10 8 6 4-6 4Z" fill="currentColor"/></svg>';
   const uploadIcon = '<span class="quiz-video-upload-icon" aria-hidden="true"></span>';
-  const bytes = value => `${(value / 1048576).toLocaleString('it-IT', { maximumFractionDigits: 1 })} MB`;
+  const bytes = value => `${(value / 1048576).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MB`;
   const messages = {
+    video_changed: 'Il video è stato modificato da un’altra sessione. Chiudi e riapri per vedere la versione aggiornata.',
+    video_cleanup_required: 'Completa prima la rimozione del vecchio file.',
+    compression_timeout: 'Ottimizzazione interrotta per tempo eccessivo: conservato il file originale.',
     video_upload_failed: 'Invio del video non riuscito. Controlla la connessione e la regola CORS del bucket R2. Prima di riprovare, verifica il salvataggio.',
     video_upload_timeout: 'Il caricamento ha superato il tempo massimo. Verifica il salvataggio prima di riprovare.',
     video_upload_denied: 'R2 ha rifiutato il caricamento. Verifica i permessi di scrittura e riprova con un nuovo caricamento.',
@@ -136,16 +139,14 @@
     active = state;
     history.pushState({ ...(history.state || {}), quizVideo: state.historyId }, '');
     state.unmount = root.MagicBookPopup.mount(overlay, { returnFocus: binding.button, bodyClass: 'quiz-video-open', onDismiss: () => close(), initialFocus: exit,
-      focusable: () => dialog.querySelectorAll('button, input, video') });
+      focusable: () => dialog.querySelectorAll('button, input, select, summary, video') });
     video.addEventListener('play', () => stopForPlayback(state));
-    video.addEventListener('error', () => report(state, 'Video non disponibile. Chiudi e riapri per riprovare.'));
+    video.addEventListener('error', () => { cache.delete(cacheKey(binding)); report(state, 'Video non disponibile. Chiudi e riapri per riprovare.'); });
     try {
       const result = await lookup(binding);
       if (active !== state) return; remember(binding, result);
       if (result.error) throw new Error(result.error);
-      if (result.available) { video.src = result.url; video.hidden = false; report(state, 'Premi play per ascoltare la spiegazione.'); return; }
-      if (!admin(binding)) { report(state, 'Nessun video disponibile per questa domanda.'); return; }
-      uploadForm(state);
+      renderVideoState(state, result);
     } catch (error) {
       if (active !== state) return;
       report(state, failMessage(error));
@@ -156,49 +157,152 @@
           if (active !== state) return; remember(binding, result);
           if (result.error) throw new Error(result.error);
           retry.remove();
-          if (result.available) { video.src = result.url; video.hidden = false; report(state, 'Premi play per ascoltare la spiegazione.'); }
-          else if (admin(binding)) uploadForm(state);
-          else report(state, 'Nessun video disponibile per questa domanda.');
+          renderVideoState(state, result);
         } catch (error) { report(state, failMessage(error)); retry.disabled = false; }
       }; dialog.append(retry);
     }
   }
-  function uploadForm(state) {
+  function refreshButtons(binding, result) {
+    for (const other of bindings) {
+      if (!current(other) || cacheKey(other) !== cacheKey(binding)) continue;
+      remember(other, result);
+      const available = result.available === true;
+      other.button.hidden = !available && !admin(other);
+      other.button.innerHTML = (available ? icon : uploadIcon) + `<span>${available ? 'Video' : 'Carica video'}</span>`;
+      other.button.setAttribute('aria-label', available ? 'Spiegazione video' : 'Carica spiegazione video');
+    }
+  }
+  function renderVideoState(state, result, message) {
+    if (active !== state) return;
+    state.preparation?.abort(); state.preparation = null;
+    if (!state.controls) { state.controls = node('div', '', 'quiz-video-management'); state.dialog.append(state.controls); }
+    state.controls.replaceChildren(); refreshButtons(state.binding, result);
+    state.video.pause(); state.video.removeAttribute('src'); state.video.load();
+    for (const url of state.urls) URL.revokeObjectURL(url); state.urls.length = 0;
+    state.video.hidden = !result.available;
+    if (result.available) state.video.src = result.url;
+    report(state, message || (result.available ? 'Premi play per ascoltare la spiegazione.' : 'Nessun video disponibile per questa domanda.'));
+    if (!admin(state.binding)) return;
+    if (result.cleanupPending) {
+      const cleanup = node('button', 'Completa rimozione', 'quiz-video-save');
+      report(state, result.available ? 'Nuovo video salvato. Completa la rimozione del vecchio file.' : 'Video nascosto agli utenti. Completa la rimozione del file dall’archivio.');
+      cleanup.onclick = async () => {
+        cleanup.disabled = true;
+        try {
+          const value = await request(state.binding, 'cleanupQuizVideo', { expectedRevision: result.revision }, state.controller.signal);
+          if (value.cleaned !== true) throw new Error('video_storage_unavailable');
+          renderVideoState(state, value, 'Rimozione del file completata.');
+        } catch (error) { cache.delete(cacheKey(state.binding)); report(state, failMessage(error)); cleanup.disabled = false; }
+      };
+      state.controls.append(cleanup);
+    } else if (result.available) {
+      const actions = node('div', '', 'quiz-video-actions');
+      const replace = node('button', 'Sostituisci video'), remove = node('button', 'Rimuovi video', 'quiz-video-danger');
+      replace.onclick = () => { uploadForm(state, result); state.controls.querySelector('input')?.focus(); };
+      remove.onclick = () => removeVideo(state, result);
+      actions.append(replace, remove); state.controls.append(actions);
+    } else uploadForm(state, result);
+    if (result.archive) {
+      const details = node('details', '', 'quiz-video-archive'), summary = node('summary', 'Trova questo video in R2');
+      const label = node('label', 'Percorso della cartella'), path = node('input'); path.readOnly = true; path.value = result.archive.prefix;
+      label.append(path);
+      const copy = node('button', 'Copia percorso R2');
+      copy.onclick = async () => {
+        try { await navigator.clipboard.writeText(path.value); report(state, 'Percorso copiato. Incollalo in “Search objects by prefix” nel bucket ' + result.archive.bucket + '.'); }
+        catch { path.focus(); path.select(); report(state, 'Seleziona e copia il percorso mostrato.'); }
+      };
+      details.append(summary, node('p', 'Bucket: ' + result.archive.bucket), label, copy);
+      details.append(node('p', 'current.json identifica la domanda e il video attuale.'));
+      if (result.fileName) details.append(node('p', 'File caricato: ' + result.fileName));
+      if (result.bytes) details.append(node('p', 'Dimensione salvata: ' + bytes(result.bytes) + (result.originalBytes ? ' · Originale: ' + bytes(result.originalBytes) : '')));
+      state.controls.append(details);
+    }
+    if (message && !result.cleanupPending) report(state, message);
+  }
+  function removeVideo(state, previous) {
+    state.video.pause(); state.controls.replaceChildren();
+    const box = node('div', '', 'quiz-video-confirm');
+    const text = node('p', 'Rimuovere questo video? Sarà tolto da questa stessa domanda, risposta e figura in Magic Book, All Books e Quiz Bank.');
+    const actions = node('div', '', 'quiz-video-actions'), cancel = node('button', 'Annulla'), remove = node('button', 'Conferma rimozione', 'quiz-video-danger');
+    const operationId = crypto.randomUUID();
+    cancel.onclick = () => { renderVideoState(state, previous); state.controls.querySelector('button')?.focus(); };
+    remove.onclick = async () => {
+      remove.disabled = cancel.disabled = true; cache.delete(cacheKey(state.binding)); report(state, 'Rimozione del video…');
+      try {
+        const value = await request(state.binding, 'deleteQuizVideo', { expectedRevision: previous.revision, operationId }, state.controller.signal);
+        if (value.removed !== true || value.available !== false) throw new Error('video_storage_unavailable');
+        renderVideoState(state, value, 'Video rimosso dai tre sistemi. Puoi caricarne un altro.');
+        state.controls.querySelector('input')?.focus();
+      } catch (error) {
+        report(state, failMessage(error)); remove.textContent = 'Verifica rimozione'; remove.disabled = false;
+        // Keep the same operation ID after an uncertain response. A new lookup is
+        // required before canceling back to a possibly deleted playback URL.
+        cancel.textContent = 'Aggiorna stato'; cancel.disabled = false;
+        cancel.onclick = async () => {
+          cancel.disabled = true;
+          try { const value = await request(state.binding, 'getQuizVideo', {}, state.controller.signal); if (value.error) throw new Error(value.error); renderVideoState(state, value); }
+          catch (error) { report(state, failMessage(error)); cancel.disabled = false; }
+        };
+      }
+    };
+    actions.append(cancel, remove); box.append(text, actions); state.controls.append(box); cancel.focus();
+  }
+
+  function uploadForm(state, previous) {
     const { dialog, binding, controller, video } = state;
-    const label = node('label', 'Carica un video MP4', 'quiz-video-upload-label');
+    state.controls.replaceChildren();
+    const replacing = previous.available === true;
+    const label = node('label', replacing ? 'Scegli il nuovo video MP4' : 'Carica un video MP4', 'quiz-video-upload-label');
     const input = node('input'); input.type = 'file'; input.accept = 'video/mp4,.mp4'; label.append(input);
     const originalLabel = node('label', '', 'quiz-video-original'); const original = node('input'); original.type = 'checkbox'; originalLabel.append(original, node('span', 'Usa il file originale')); originalLabel.hidden = true;
-    const actions = node('div', '', 'quiz-video-actions'), save = node('button', 'Carica video', 'quiz-video-save'); save.disabled = true;
-    actions.append(save); dialog.append(label, originalLabel, actions);
+    const qualityLabel = node('label', 'Ottimizzazione', 'quiz-video-quality');
+    const quality = node('select'); quality.append(new Option('Qualità originale — senza perdita', 'lossless'), new Option('File più piccolo — ricodifica ad alta qualità', 'quality')); qualityLabel.append(quality);
+    const qualityHint = node('p', 'Senza perdita mantiene identici immagini e audio. Un MP4 già compresso può restare della stessa dimensione.', 'quiz-video-hint');
+    const actions = node('div', '', 'quiz-video-actions'), save = node('button', replacing ? 'Sostituisci video' : 'Carica video', 'quiz-video-save'); save.disabled = true;
+    const cancel = node('button', 'Annulla'); cancel.type = 'button'; cancel.onclick = () => renderVideoState(state, previous);
+    actions.append(save); if (replacing) actions.append(cancel);
+    state.controls.append(label, qualityLabel, qualityHint, originalLabel, actions);
     let prepared, file, busy = false, transfer = null, preferRelay = false;
-    report(state, 'Il video sarà condiviso con le stesse domande negli altri libri.');
+    report(state, replacing ? 'Il video attuale resterà disponibile finché il nuovo non sarà salvato. La sostituzione vale nei tre sistemi.' : 'Il video sarà condiviso con la stessa domanda, risposta e figura nei tre sistemi.');
     const showPreview = () => {
       if (active !== state || !prepared) return;
       video.pause(); const blob = original.checked ? new Blob([file], { type: 'video/mp4' }) : prepared.blob;
       for (const url of state.urls) URL.revokeObjectURL(url); state.urls.length = 0;
       const url = URL.createObjectURL(blob); state.urls.push(url); video.src = url; video.hidden = false;
-      report(state, `${bytes(file.size)} → ${bytes(blob.size)}. Controlla l’anteprima prima di caricare.${prepared.reason === 'compression_unavailable' ? ' Ottimizzazione non disponibile: conservato l’originale.' : ''}`);
+      const percent = Math.max(0, 100 * (file.size - blob.size) / file.size);
+      const reason = original.checked ? 'File originale selezionato.' : prepared.reason === 'compression_timeout' ? messages.compression_timeout
+        : prepared.reason === 'compression_unavailable' ? 'Questo dispositivo non ha completato l’ottimizzazione: conservato l’originale.'
+        : !prepared.compressed ? 'Nessun risparmio utile con questa impostazione: conservato l’originale.'
+        : prepared.reason === 'lossless' ? 'Immagini e audio originali, senza ricodifica.' : 'Ricodifica ad alta qualità. Controlla testi, dettagli e audio nell’anteprima.';
+      report(state, `${bytes(file.size)} → ${bytes(blob.size)} (−${percent.toLocaleString('it-IT', { maximumFractionDigits: 1 })}%). ${reason}`);
     };
     original.onchange = showPreview;
-    input.onchange = async () => {
+    const prepare = async () => {
       if (busy || active !== state || !input.files[0]) return;
-      file = input.files[0]; prepared = null; transfer = null; busy = true; input.disabled = true; save.disabled = true; originalLabel.hidden = true;
+      file = input.files[0]; prepared = null; transfer = null; busy = true; input.disabled = quality.disabled = true; save.disabled = true; originalLabel.hidden = true;
+      const preparation = new AbortController(); state.preparation?.abort(); state.preparation = preparation;
+      const abortPreparation = () => preparation.abort(); controller.signal.addEventListener('abort', abortPreparation, { once: true });
       try {
-        prepared = await root.QuizVideoOptimizer.optimize(file, { signal: controller.signal, progress: text => report(state, text) });
-        if (active !== state) return;
+        prepared = await root.QuizVideoOptimizer.optimize(file, { signal: preparation.signal, mode: quality.value, progress: text => report(state, text) });
+        if (active !== state || preparation.signal.aborted) return;
         original.checked = false; originalLabel.hidden = !prepared.compressed; showPreview(); save.disabled = false;
-      } catch (error) { if (active === state) report(state, failMessage(error)); }
-      finally { busy = false; if (active === state) input.disabled = false; }
+      } catch (error) { if (active === state && !preparation.signal.aborted) report(state, failMessage(error)); }
+      finally { controller.signal.removeEventListener('abort', abortPreparation); busy = false; if (active === state) input.disabled = quality.disabled = false; }
+    };
+    input.onchange = prepare;
+    quality.onchange = () => {
+      qualityHint.textContent = quality.value === 'lossless' ? 'Senza perdita mantiene identici immagini e audio. Un MP4 già compresso può restare della stessa dimensione.' : 'Riduce il peso ricodificando il video. Risoluzione e audio restano invariati; non è una compressione senza perdita. Controlla l’anteprima prima di salvare.';
+      void prepare();
     };
     save.onclick = async () => {
       if (busy || !prepared || active !== state || !admin(binding)) return;
-      busy = true; save.disabled = input.disabled = original.disabled = true; video.pause();
+      busy = true; save.disabled = input.disabled = original.disabled = quality.disabled = cancel.disabled = true; video.pause();
       try {
         const begin = async relay => {
           cache.delete(cacheKey(binding));
           const blob = original.checked ? new Blob([file], { type: 'video/mp4' }) : prepared.blob;
           report(state, 'Preparazione del caricamento…');
-          const created = await request(binding, 'createQuizVideoUpload', { bytes: blob.size, mime: 'video/mp4', duration: prepared.duration, ...(relay ? { transport: 'relay' } : {}) }, controller.signal);
+          const created = await request(binding, 'createQuizVideoUpload', { bytes: blob.size, mime: 'video/mp4', duration: prepared.duration, expectedRevision: previous.revision ?? null, fileName: file.name, originalBytes: file.size, compression: original.checked ? 'original_selected' : prepared.reason || (prepared.compressed ? 'compressed' : 'original_better'), ...(relay ? { transport: 'relay' } : {}) }, controller.signal);
           if (!created.uploadToken || (relay && (created.transport !== 'relay' || created.chunkBytes !== 2621440))) throw new Error('video_upload_invalid');
           transfer = { ...created, blob, nextChunk: 0 };
         };
@@ -238,9 +342,8 @@
         }
         if (saved.saved !== true || typeof saved.url !== 'string' || !/^https?:\/\//.test(saved.url)) throw new Error('video_upload_invalid');
         if (active !== state) return;
-        remember(binding, saved); binding.button.innerHTML = icon + '<span>Video</span>';
-        label.remove(); originalLabel.remove(); actions.remove(); video.src = saved.url;
-        report(state, 'Video salvato. Disponibile per la stessa domanda, risposta e figura.');
+        renderVideoState(state, saved, saved.cleanupPending ? 'Nuovo video salvato. Completa la rimozione del vecchio file.' : 'Video salvato. Disponibile per la stessa domanda, risposta e figura.');
+        state.controls.querySelector('button')?.focus();
       } catch (error) {
         if (active !== state) return;
         if (['video_upload_not_received', 'video_upload_expired', 'video_file_mismatch', 'video_file_invalid'].includes(error.message)) transfer = null;
@@ -248,7 +351,8 @@
         const incomplete = transfer?.transport === 'relay' && transfer.nextChunk < Math.ceil(transfer.blob.size / transfer.chunkBytes);
         report(state, incomplete && !messages[error.message] ? messages.video_upload_incomplete : failMessage(error));
         save.textContent = incomplete ? 'Riprendi caricamento' : transfer ? 'Verifica salvataggio' : 'Riprova caricamento';
-        save.disabled = false; input.disabled = original.disabled = Boolean(transfer);
+        save.disabled = false; input.disabled = original.disabled = quality.disabled = Boolean(transfer); cancel.disabled = false;
+        if (['video_changed', 'video_cleanup_required'].includes(error.message)) { cache.delete(cacheKey(binding)); save.disabled = true; }
       } finally { busy = false; }
     };
   }
