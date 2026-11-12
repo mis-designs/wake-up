@@ -1550,6 +1550,7 @@ function getLoginErrorMessage(error) {
   if (error === "otp_required") return "Inserisci il codice OTP inviato al tuo telefono.";
   if (error === "device_reset_required") return "Questo numero è già associato a un altro dispositivo. Contatta l’amministratore per autorizzare questo dispositivo.";
   if (error === 'master_admin_invalid') return 'Codice master non corretto. Riprova oppure lascia il campo vuoto per accedere come admin.';
+  if (error === 'master_admin_configuration_invalid') return 'Il codice master configurato deve contenere da 20 a 256 caratteri, senza spazi. Correggi il valore nelle impostazioni del servizio.';
   if (error === 'master_admin_not_configured') return 'Accesso master non configurato. Puoi accedere come admin lasciando vuoto il codice master.';
   if (error === 'master_admin_forbidden') return 'Il codice master richiede un account amministratore.';
   if (error === "admin_password_required") return "Inserisci la password amministratore.";

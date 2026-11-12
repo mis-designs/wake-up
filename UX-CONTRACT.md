@@ -431,3 +431,7 @@ Video actions start hidden for everyone. For ordinary users/admins, show Video o
 The shared account-role.js/css presents Admin or Master admin next to the profile number and confirms the successful login. Labels derive only from the current server-issued access token and expire with its claims; they are presentation, never authorization. Existing signed-token checks and server-side master revision checks remain authoritative. Token renewal/revocation updates the badge; logout clears it. Wrong/unconfigured master codes remain inline, associated with the code field and focused for correction. Magic reuses the existing login toast; All Books uses the shared account status owner. No secret is persisted or shown.
 
 Login feedback repair: login-experience.css explicitly restores visibility/opacity/transform for nonempty #err, matching the specificity of the legacy hidden-state selector. Empty error space stays reserved. This fixes existing error text being present but invisible.
+
+
+## Master key length correction — 2026-11-12
+Owner confirmed a20–30-character alphanumeric key. Supersedes the earlier32-character minimum: master_admin now accepts20–256 characters, including symbols, with no whitespace/control characters. Normal admin authentication remains mandatory; constant-time comparison, signed claims, eight-hour limit and rotation revocation are unchanged. A present but invalid configured value reports master_admin_configuration_invalid, distinct from a missing variable and an incorrect entered key. No secret is read from production or shown.

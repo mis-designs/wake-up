@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v280-role-feedback";
+const CACHE_NAME = "magicbook-pwa-v281-master-key";
 const STATIC_ASSETS = [
   "/account-role.js?v=1",
   "/account-role.css?v=1",
@@ -127,7 +127,7 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=61-shared-recorder",
   "/quiz-chrome.css?v=1-outline",
   "/audio-player-ui.css?v=10-web-quiz-slim",
-  "/script.js?v=20261112-role-feedback",
+  "/script.js?v=20261112-master-key",
   "/study-quiz.html",
   "/study-quiz.css?v=28-compact",
   "/study-quiz.js?v=53-quiz-video",
