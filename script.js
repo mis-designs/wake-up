@@ -1083,6 +1083,9 @@ async function login(options = {}) {
 
   try {
     const deviceId = await getRobustDeviceId();
+    const masterInput = document.getElementById('masterAdminCode');
+    const masterCode = adminPasswordRequired ? String(masterInput?.value || '') : '';
+    if (masterInput) masterInput.value = '';
     const authPayload = {
       action: "login",
       phone,
@@ -1090,6 +1093,7 @@ async function login(options = {}) {
       ...(fromPromoCard || (adminPasswordRequired && pendingPromoLoginCode)
         ? { promoCode: (fromPromoCard ? promoCode : pendingPromoLoginCode) || undefined }
         : {}),
+      masterCode: masterCode || undefined,
       adminPassword: adminPasswordRequired ? String(adminPasswordInput?.value || "") : undefined
     };
     const data = fromPromoCard
@@ -1218,6 +1222,7 @@ function showAdminPasswordUI() {
 }
 
 function hideAdminPasswordUI() {
+  const master = document.getElementById('masterAdminCode'); if (master) master.value = '';
   adminPasswordRequired = false;
   const group = document.getElementById("adminPasswordGroup");
   const input = document.getElementById("adminPassword");
@@ -1539,6 +1544,9 @@ function isValidPhoneNumber(input) {
 function getLoginErrorMessage(error) {
   if (error === "otp_required") return "Inserisci il codice OTP inviato al tuo telefono.";
   if (error === "device_reset_required") return "Questo numero è già associato a un altro dispositivo. Contatta l’amministratore per autorizzare questo dispositivo.";
+  if (error === 'master_admin_invalid') return 'Codice master non corretto. Riprova oppure lascia il campo vuoto per accedere come admin.';
+  if (error === 'master_admin_not_configured') return 'Accesso master non configurato. Puoi accedere come admin lasciando vuoto il codice master.';
+  if (error === 'master_admin_forbidden') return 'Il codice master richiede un account amministratore.';
   if (error === "admin_password_required") return "Inserisci la password amministratore.";
   if (error === "admin_password_invalid") return "Password amministratore non corretta.";
   if (error === "missing_admin_password_config") return "Password amministratore non configurata.";

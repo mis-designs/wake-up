@@ -39,6 +39,22 @@ import {
 } from "./local-quiz-bank.mjs";
 
 const require = createRequire(import.meta.url);
+const quizVideo = require('../lib/quiz-video.cjs');
+const masterAdmin = require('../lib/master-admin.cjs');
+export function isQuizVideoMaster(data) {
+  const proof = verifySignedToken(data.accessToken, { phone: data.phone, deviceId: data.deviceId, purpose: 'access' });
+  return proof.ok && isAdminPhone(data.phone) && masterAdmin.isMaster(proof.payload);
+}
+export async function serveQuizVideo({ action, row, master, owner, video }, req, res) {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  const onClose = () => { if (!res.writableEnded) abort(); };
+  req.once?.('aborted', abort); res.once?.('close', onClose);
+  const timer = setTimeout(abort, 20000);
+  try {
+    return await quizVideo.configuredService()({ action, row, master, owner, data: video, signal: controller.signal });
+  } finally { clearTimeout(timer); req.removeListener?.('aborted', abort); res.removeListener?.('close', onClose); }
+}
 const {
   QUIZ_AUDIO_IDENTITY_VERSION,
   getQuizAudioIdentity,
@@ -756,6 +772,7 @@ async function ensureAccess({ phone, deviceId, accessToken, forceValidate = fals
     deviceId,
     purpose: "access",
     ttlMs: ACCESS_TOKEN_TTL_MS,
+    claims: renewedRole === "admin" ? masterAdmin.preserveClaims(tokenStatus.payload) : {},
     role: renewedRole
   });
 
@@ -880,6 +897,7 @@ function getRequestData(req) {
     audioDurationMs: body.audioDurationMs || query.audioDurationMs,
     audioBase64: body.audioBase64 || query.audioBase64,
     audioMimeType: body.audioMimeType || query.audioMimeType,
+    video: body.video,
     answers: body.answers
   };
 }
@@ -1259,6 +1277,18 @@ export default async function handler(req, res) {
       audioIdentityToken
     })) {
       return res.status(400).json({ error: "invalid_request" });
+    }
+
+    if (req.method === 'POST' && quizVideo.ACTIONS.has(action)) {
+      const { isAdmin, access } = await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: action !== 'getQuizVideo' });
+      const master = isAdmin && isQuizVideoMaster({ phone, deviceId, accessToken: access.accessToken || accessToken });
+      if (action !== 'getQuizVideo' && !master) return res.status(403).json({ error: 'master_admin_required' });
+      const sourceRow = LOCAL_MAGIC_BOOK_ROWS.find(item => String(item.id) === String(questionId)) || LOCAL_EXAM_ROWS.find(item => String(item.id) === String(questionId));
+      if (!sourceRow) return res.status(404).json({ error: 'video_question_unavailable' });
+      const row = normalizeQuestionRow(sourceRow);
+      if (getQuizAudioIdentity(row.question, row.figure).quizKey !== getQuizAudioIdentity(question, figure).quizKey) return res.status(409).json({ error: 'video_question_changed' });
+      const result = await serveQuizVideo({ action, row, master, owner: normalizePhoneNumber(phone), video: getRequestData(req).video }, req, res);
+      return res.status(200).json({ ...result, ...(access.accessToken ? { accessToken: access.accessToken, accessTokenExpiresAt: access.accessTokenExpiresAt } : {}) });
     }
 
     if (req.method === "POST" && isQuizTheoryAction(action)) {

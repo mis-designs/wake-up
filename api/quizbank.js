@@ -1,4 +1,4 @@
-import { authorizeQuizBankPreview, quizBankSession, serveQuizBankMedia, saveQuizBankAudio, serveQuizTheory } from "./quiz.js";
+import { authorizeQuizBankPreview, quizBankSession, serveQuizBankMedia, saveQuizBankAudio, serveQuizTheory, serveQuizVideo, isQuizVideoMaster } from "./quiz.js";
 import { loadQuizBank, quizBankStorageIdentity, quizBankContentToken, matchesQuizBankContentToken } from "./quizbank-catalog.mjs";
 import { isQuizTheoryAction } from "../lib/quiz-theory-response.mjs";
 import { decodeQuizAudioUpload } from "../lib/quiz-audio-upload.mjs";
@@ -6,7 +6,7 @@ import { buildQuizBankAttempt, gradeQuizBankAttempt, normalizeQuizBankSheet } fr
 
 const actions = {
   GET: new Set(["catalog", "getStudyQuiz", "getQuiz", "getItalianAudio", "getBengaliAudio", "getTTS"]),
-  POST: new Set(["getQuizTheory", "getQuizTheoryAudio", "refreshQuizSession", "checkQuiz", "getQuizAudioStatus", "getQuizAudioBlob", "getQuizAudioPlayback", "saveQuizAudio"])
+  POST: new Set(["getQuizVideo", "createQuizVideoUpload", "confirmQuizVideoUpload", "getQuizTheory", "getQuizTheoryAudio", "refreshQuizSession", "checkQuiz", "getQuizAudioStatus", "getQuizAudioBlob", "getQuizAudioPlayback", "saveQuizAudio"])
 };
 
 const withContentTokens = rows => rows.map(row => ({ ...row, audioIdentityToken: quizBankContentToken(row) }));
@@ -23,6 +23,8 @@ export default async function handler(req, res) {
     // Authorize every call BEFORE touching R2 or the shared process cache.
     const { data, access, role, canUploadAudio } = await authorizeQuizBankPreview(req);
     if (!actions[req.method].has(data.action)) return res.status(400).json({ error: "invalid_action" });
+    const canUploadVideo = canUploadAudio && isQuizVideoMaster({ ...data, accessToken: access.accessToken || data.accessToken });
+    if (['createQuizVideoUpload', 'confirmQuizVideoUpload'].includes(data.action) && !canUploadVideo) return res.status(403).json({ error: 'master_admin_required' });
     const renewed = access.accessToken ? { accessToken: access.accessToken, accessTokenExpiresAt: access.accessTokenExpiresAt } : {};
     if (access.accessToken) {
       res.setHeader("X-Access-Token", access.accessToken);
@@ -65,6 +67,7 @@ export default async function handler(req, res) {
     if (!row) return res.status(404).json({ error: "quizbank_question_not_found" });
     // Fail before any explanation database/object access, upload or TTS request.
     if (!matchesQuizBankContentToken(row, data.audioIdentityToken)) return contentChanged(res);
+    if (['getQuizVideo', 'createQuizVideoUpload', 'confirmQuizVideoUpload'].includes(data.action)) return res.status(200).json(await serveQuizVideo({ action: data.action, row, master: canUploadVideo, owner: String(data.phone).replace(/\D/g, ''), video: data.video }, req, res));
     if (isQuizTheoryAction(data.action)) return res.status(200).json(await serveQuizTheory(data, row, req, res));
     const identity = quizBankStorageIdentity(row);
     if (upload) return await saveQuizBankAudio({ data, identity, upload, req }, res);

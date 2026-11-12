@@ -2,29 +2,65 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "functions": {
-    "api/learning-sync.mjs": { "maxDuration": 35 }
+    "api/learning-sync.mjs": {
+      "maxDuration": 35
+    }
   },
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://banglawebfonts.pages.dev; font-src 'self' data: https://fonts.gstatic.com https://banglawebfonts.pages.dev; img-src 'self' data: blob: https:; media-src 'self' blob: https://*.r2.cloudflarestorage.com https://*.r2.dev; frame-src https://my.spline.design https://www.canva.com https://www.youtube-nocookie.com; connect-src 'self' https://www.tmmbooks.eu https://tmmbooks.eu https://*.r2.cloudflarestorage.com https://*.r2.dev https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests" },
-        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "camera=(), display-capture=(), geolocation=(), microphone=(self), payment=(), usb=()" },
-        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
-        { "key": "X-DNS-Prefetch-Control", "value": "off" }
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://banglawebfonts.pages.dev; font-src 'self' data: https://fonts.gstatic.com https://banglawebfonts.pages.dev; img-src 'self' data: blob: https:; media-src 'self' blob: https://*.r2.cloudflarestorage.com https://*.r2.dev; frame-src https://my.spline.design https://www.canva.com https://www.youtube-nocookie.com; connect-src 'self' https://www.tmmbooks.eu https://tmmbooks.eu https://*.r2.cloudflarestorage.com https://*.r2.dev https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), display-capture=(), geolocation=(), microphone=(self), payment=(), usb=()"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "X-DNS-Prefetch-Control",
+          "value": "off"
+        }
       ]
     },
     {
       "source": "/scegli-quiz",
-      "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
     },
     {
       "source": "/scegli-exam",
-      "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
     },
     {
       "source": "/",
@@ -270,12 +306,30 @@
     }
   ],
   "rewrites": [
-    {"source": "/api/_quiz-theory.json", "destination": "/api/quiz?action=privateQuizTheory"},
-    {"source": "/api/_quiz-theory", "destination": "/api/quiz?action=privateQuizTheory"},
-    {"source": "/lib/quiz-theory.cjs", "destination": "/api/quiz?action=privateQuizTheory"},
-    {"source": "/lib/quiz-theory", "destination": "/api/quiz?action=privateQuizTheory"},
-    {"source": "/lib/quiz-theory-response.mjs", "destination": "/api/quiz?action=privateQuizTheory"},
-    {"source": "/lib/quiz-theory-response", "destination": "/api/quiz?action=privateQuizTheory"},
+    {
+      "source": "/api/_quiz-theory.json",
+      "destination": "/api/quiz?action=privateQuizTheory"
+    },
+    {
+      "source": "/api/_quiz-theory",
+      "destination": "/api/quiz?action=privateQuizTheory"
+    },
+    {
+      "source": "/lib/quiz-theory.cjs",
+      "destination": "/api/quiz?action=privateQuizTheory"
+    },
+    {
+      "source": "/lib/quiz-theory",
+      "destination": "/api/quiz?action=privateQuizTheory"
+    },
+    {
+      "source": "/lib/quiz-theory-response.mjs",
+      "destination": "/api/quiz?action=privateQuizTheory"
+    },
+    {
+      "source": "/lib/quiz-theory-response",
+      "destination": "/api/quiz?action=privateQuizTheory"
+    },
     {
       "source": "/scegli-quiz",
       "destination": "/"

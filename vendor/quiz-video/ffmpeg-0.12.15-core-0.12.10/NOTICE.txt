@@ -1,0 +1,6 @@
+Unmodified @ffmpeg/ffmpeg 0.12.15 (MIT) and @ffmpeg/core 0.12.10 (GPL-2.0-or-later).
+Official source/build scripts: https://github.com/ffmpegwasm/ffmpeg.wasm
+Core sources: https://github.com/ffmpegwasm/ffmpeg.wasm/tree/main/packages/core
+Package integrity: @ffmpeg/core sha512-dzNplnn2Nxle2c2i2rrDhqcB19q9cglCkWnoMTDN9Q9l3PvdjZWd1HfSPjCNWc/p8Q3CT+Es9fWOR0UhAeYQZA==
+@ffmpeg/ffmpeg sha512-1C8Obr4GsN3xw+/1Ww6PFM84wSQAGsdoTuTWPOj2OizsRDLT4CXTaVjPhkw6ARyDus1B9X/L2LiXHqYYsGnRFw==
+The worker is isolated and loaded only for an administrator's explicit video selection. It is not included in PWA precaching.

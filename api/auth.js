@@ -1,3 +1,4 @@
+import masterAdmin from '../lib/master-admin.cjs';
 import { readRequestObject } from "../lib/request-json.mjs";
 import crypto from "crypto";
 import { fetchUpstream, publicApiError } from "./upstream-fetch.mjs";
@@ -245,13 +246,14 @@ function signTokenPayload(encodedPayload) {
   return crypto.createHmac("sha256", SESSION_SECRET).update(encodedPayload).digest("base64url");
 }
 
-function createAccessToken(phone, deviceId, role = "user") {
+function createAccessToken(phone, deviceId, role = "user", masterClaims = {}) {
   const accessTokenExpiresAt = Date.now() + ACCESS_TOKEN_TTL_MS;
   const payload = {
     phone,
     deviceId,
     role: role === "admin" ? "admin" : "user",
     purpose: "access",
+    ...(role === "admin" ? masterClaims : {}),
     exp: accessTokenExpiresAt
   };
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
@@ -431,9 +433,9 @@ async function checkTwilioVerification(phone, code) {
   };
 }
 
-function sendSuccessfulLogin(res, { phone, deviceId, authData, role = "user", extra = {} }) {
+function sendSuccessfulLogin(res, { phone, deviceId, authData, role = "user", masterClaims = {}, extra = {} }) {
   const safeRole = role === "admin" ? "admin" : "user";
-  const tokenData = createAccessToken(phone, deviceId, safeRole);
+  const tokenData = createAccessToken(phone, deviceId, safeRole, masterClaims);
 
   return res.status(200).json({
     success: true,
@@ -577,6 +579,12 @@ export default async function handler(req, res) {
         });
       }
 
+      let masterClaims;
+      try { masterClaims = masterAdmin.loginClaims({ code: body.masterCode, isAdmin: adminPasswordCheck.admin }); }
+      catch (error) {
+        if (adminPasswordCheck.admin) recordAdminLoginFailure(adminRateLimitKey);
+        return res.status(error.statusCode || 401).json({ success: false, error: error.message });
+      }
       const submittedPromoCode = normalizePromoCode(body.promoCode);
       let authData;
       let promoExtra = {};
@@ -664,6 +672,7 @@ export default async function handler(req, res) {
           deviceId,
           authData,
           role: adminPasswordCheck.admin ? "admin" : "user",
+          masterClaims,
           extra: {
             ...(authData.rotated ? { rotated: true } : {}),
             ...(authData.replacedDevice ? { replacedDevice: authData.replacedDevice } : {}),

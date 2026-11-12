@@ -388,7 +388,7 @@ function getQuizSessionToken() {
 }
 
 function isQuizSessionProtectedAction(action) {
-  return ["getItalianAudio", "getBengaliAudio", "getTTS", "checkQuiz", "getQuizTheory", "getQuizTheoryAudio"].includes(String(action || ""));
+  return ["getItalianAudio", "getBengaliAudio", "getTTS", "checkQuiz", "getQuizTheory", "getQuizTheoryAudio", "getQuizVideo", "createQuizVideoUpload", "confirmQuizVideoUpload"].includes(String(action || ""));
 }
 
 function quizApiAction(url) {
@@ -521,6 +521,7 @@ function clearQuizTheoryButtons(kind) {
   }
 }
 function resetQuizTheory() {
+  window.MagicQuizVideo?.reset();
   for (const controller of quizTheoryRequests) controller.abort();
   window.MagicQuizTheory?.reset();
 }
@@ -544,7 +545,7 @@ async function requestQuizTheory(question, action, language, signal) {
         : { phone: getQuizPhone(), deviceId: getQuizDeviceId() }),
         questionId: String(question.id), question: question.question, figure: String(question.figure ?? ""),
         ...(QUIZBANK_MODE ? { audioIdentityToken: question.audioIdentityToken || "" } : {}),
-        ...(action === "getQuizTheoryAudio" ? { language } : {}) })
+        ...(action === "getQuizTheoryAudio" ? { language } : action.includes("Video") ? { video: language } : {}) })
     });
     if (controller.signal.aborted) throw new DOMException("Cancelled", "AbortError");
     if (!TRIAL_MODE && !quizBankIdentityMatches()) { resetQuizTheory(); throw new Error("unauthorized"); }
@@ -3612,6 +3613,7 @@ function updateAdminCorrectDots(question) {
 }
 
 function showQuestion() {
+  document.querySelectorAll('.quiz-video-button').forEach(button => { window.MagicQuizVideo?.destroyButton(button); button.remove(); });
   clearQuizTheoryButtons("quiz");
   const q = quiz[current];
   window.dispatchEvent(new Event("magicbook:quiz-question-change"));
@@ -3629,7 +3631,13 @@ function showQuestion() {
   updateExplanationButton(q);
   const theoryButton = createQuizTheoryButton(q, "quiz", () => quiz[current] === q);
   const actions = document.querySelector(".quiz-question-actions");
-  if (theoryButton && actions) actions.insertBefore(theoryButton, actions.querySelector(".quiz-click-hint"));
+  if (theoryButton && actions) actions.insertBefore(theoryButton, actions.querySelector('.quiz-click-hint'));
+  if (!TRIAL_MODE && actions && window.MagicQuizVideo) actions.insertBefore(window.MagicQuizVideo.createButton({
+    question: q, cacheScope: quizTheoryScope, isAdmin: () => isAdmin,
+    isCurrent: () => !quizAccessErrorHandled && quizBankIdentityMatches() && quiz[current] === q,
+    onOpen: () => { window.MagicQuizTheory?.close(); stopAllAudio(); },
+    request: (action, extra, signal) => requestQuizTheory(q, action, extra, signal)
+  }), actions.querySelector('.quiz-click-hint'));
   void updateSharedAudioAvailability(q);
 
   // reset bottoni

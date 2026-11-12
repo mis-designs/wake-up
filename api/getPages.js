@@ -1,3 +1,4 @@
+import masterAdmin from '../lib/master-admin.cjs';
 import { readRequestObject } from "../lib/request-json.mjs";
 import crypto from "crypto";
 import { fetchUpstream, publicApiError } from "./upstream-fetch.mjs";
@@ -140,13 +141,14 @@ function signTokenPayload(encodedPayload) {
   return crypto.createHmac("sha256", SESSION_SECRET).update(encodedPayload).digest("base64url");
 }
 
-function createAccessToken(phone, deviceId, role = "user") {
+function createAccessToken(phone, deviceId, role = "user", masterClaims = {}) {
   const accessTokenExpiresAt = Date.now() + ACCESS_TOKEN_TTL_MS;
   const payload = {
     phone,
     deviceId,
     role: role === "admin" ? "admin" : "user",
     purpose: "access",
+    ...(role === "admin" ? masterClaims : {}),
     exp: accessTokenExpiresAt
   };
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
@@ -235,7 +237,7 @@ export default async function handler(req, res) {
 
       const previousTokenStatus = verifyAccessToken(accessToken, phone, deviceId);
       const role = getSessionRole(phone, previousTokenStatus);
-      const tokenData = createAccessToken(phone, deviceId, role);
+      const tokenData = createAccessToken(phone, deviceId, role, role === "admin" && previousTokenStatus.signatureValid ? masterAdmin.preserveClaims(previousTokenStatus.payload) : {});
 
       return res.status(200).json({
         success: true,

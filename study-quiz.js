@@ -205,6 +205,7 @@
   function resetStudyTheory() {
     for (const controller of studyTheoryRequests) controller.abort();
     window.MagicQuizTheory?.reset();
+    window.MagicQuizVideo?.reset();
   }
   function clearStudyTheory() {
     resetStudyTheory();
@@ -233,7 +234,7 @@
           : { phone: session.phone, deviceId: session.deviceId }),
           questionId: String(question.id), question: question.question, figure: String(question.figure ?? ""),
           ...(QUIZBANK_MODE ? { audioIdentityToken: question.audioIdentityToken || "" } : {}),
-          ...(action === "getQuizTheoryAudio" ? { language } : {}) })
+          ...(action === "getQuizTheoryAudio" ? { language } : action.includes("Video") ? { video: language } : {}) })
       });
       if (controller.signal.aborted) throw new DOMException("Cancelled", "AbortError");
       if (!TRIAL_MODE && !studyVideoIdentity()) { resetStudyTheory(); throw new Error("unauthorized"); }
@@ -907,6 +908,12 @@
     actions.append(italian, bangla, lockedExplanation || explanation.surface, help);
     const theoryButton = createStudyTheoryButton(question, card);
     if (theoryButton) actions.insertBefore(theoryButton, help);
+    if (!TRIAL_MODE && window.MagicQuizVideo) actions.insertBefore(window.MagicQuizVideo.createButton({
+      question, cacheScope: studyTheoryScope, isAdmin: () => quizBankCanUploadAudio === true,
+      isCurrent: () => Boolean(studyVideoIdentity()) && questions.includes(question) && card.isConnected && !card.hidden && !elements.reader.classList.contains('hidden'),
+      onOpen: () => { window.MagicQuizTheory?.close(); stopPlayback(); },
+      request: (action, extra, signal) => requestStudyTheory(question, action, extra, signal)
+    }), help);
     if (QUIZBANK_MODE && quizBankCanUploadAudio) {
       const upload = document.createElement("button");
       upload.type = "button";
