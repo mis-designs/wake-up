@@ -478,3 +478,8 @@ Login feedback repair: login-experience.css explicitly restores visibility/opaci
 
 ## Master key length correction — 2026-11-12
 Owner confirmed a20–30-character alphanumeric key. Supersedes the earlier32-character minimum: master_admin now accepts20–256 characters, including symbols, with no whitespace/control characters. Normal admin authentication remains mandatory; constant-time comparison, signed claims, eight-hour limit and rotation revocation are unchanged. A present but invalid configured value reports master_admin_configuration_invalid, distinct from a missing variable and an incorrect entered key. No secret is read from production or shown.
+
+
+## Master video action during storage failures — 2026-11-12
+The owner verified Master admin in the profile but could not see upload in chapter study. Authenticated master capability must survive a failed storage lookup. Shared runRequest returns canUpload=true with availability=unknown and a safe error only for server-verified masters; ordinary readers retain the hidden-on-error behavior. The master can open the action and see a specific configuration/permission/retry message; file selection waits for a successful lookup. Create/confirm errors are never masked and no write authorization is relaxed.
+Video storage resolves complete credential groups: explicit QUIZ_VIDEO_R2 first, then EXPLANATION_R2/R2/BOOK_R2/QUIZ_AUDIO_R2 only when the declared bucket matches the video bucket. BOOK_R2 must explicitly name that bucket. No cross-account credential mixing, alternate-bucket writes, automatic retry or extra lookup. Chapter study persists renewed access tokens returned by its existing request owner. Verify real auth-to-storage-error-to-UI, not only mocked canUpload=true responses.

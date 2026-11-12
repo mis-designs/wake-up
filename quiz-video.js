@@ -9,7 +9,10 @@
     video_size_invalid: 'Scegli un video MP4 fino a 128 MB.', video_mp4_required: 'Scegli un video in formato MP4.',
     video_unreadable: 'Il video non si apre oppure supera 10 minuti. Prova un MP4 compatibile.',
     video_already_exists: 'Un video è già stato salvato per questa domanda. Riapri per visualizzarlo.',
-    video_storage_not_configured: 'Il caricamento video deve essere abilitato nello storage.',
+    video_storage_not_configured: 'Archivio video non configurato. Collega le credenziali R2 al bucket magicbook-assets.',
+    video_storage_denied: 'Accesso all’archivio video negato. Verifica i permessi di lettura e scrittura del bucket magicbook-assets.',
+    video_storage_bucket_missing: 'Il bucket dell’archivio video non è disponibile. Verifica la configurazione R2.',
+    video_storage_unavailable: 'Non riesco a verificare l’archivio video. Riprova prima di caricare.',
     admin_forbidden: 'Il caricamento è riservato al master admin.',
     master_admin_required: 'Accedi di nuovo con il codice master per caricare video.',
     video_question_unavailable: 'Questa domanda deve essere verificata prima di collegare un video.',
@@ -117,6 +120,7 @@
     try {
       const result = await lookup(binding);
       if (active !== state) return; remember(binding, result);
+      if (result.error) throw new Error(result.error);
       if (result.available) { video.src = result.url; video.hidden = false; report(state, 'Premi play per ascoltare la spiegazione.'); return; }
       if (!admin(binding)) { report(state, 'Nessun video disponibile per questa domanda.'); return; }
       uploadForm(state);
@@ -127,7 +131,9 @@
         retry.disabled = true;
         try {
           const result = await request(binding, 'getQuizVideo', {}, state.controller.signal);
-          if (active !== state) return; remember(binding, result); retry.remove();
+          if (active !== state) return; remember(binding, result);
+          if (result.error) throw new Error(result.error);
+          retry.remove();
           if (result.available) { video.src = result.url; video.hidden = false; report(state, 'Premi play per ascoltare la spiegazione.'); }
           else if (admin(binding)) uploadForm(state);
           else report(state, 'Nessun video disponibile per questa domanda.');

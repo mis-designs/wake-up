@@ -52,7 +52,7 @@ export async function serveQuizVideo({ action, row, master, owner, video }, req,
   req.once?.('aborted', abort); res.once?.('close', onClose);
   const timer = setTimeout(abort, 20000);
   try {
-    return await quizVideo.configuredService()({ action, row, master, owner, data: video, signal: controller.signal });
+    return await quizVideo.runRequest({ action, row, master, owner, data: video, signal: controller.signal });
   } finally { clearTimeout(timer); req.removeListener?.('aborted', abort); res.removeListener?.('close', onClose); }
 }
 const {

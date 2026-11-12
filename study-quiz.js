@@ -238,6 +238,7 @@
       });
       if (controller.signal.aborted) throw new DOMException("Cancelled", "AbortError");
       if (!TRIAL_MODE && !studyVideoIdentity()) { resetStudyTheory(); throw new Error("unauthorized"); }
+      saveAccessToken(data.accessToken, data.accessTokenExpiresAt);
       return data;
     } finally {
       clearTimeout(timeout); studyTheoryRequests.delete(controller);

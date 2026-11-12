@@ -1,10 +1,10 @@
-const CACHE_NAME = "magicbook-pwa-v281-master-key";
+const CACHE_NAME = "magicbook-pwa-v282-video-master";
 const STATIC_ASSETS = [
   "/account-role.js?v=1",
   "/account-role.css?v=1",
   "/icons/video-upload.png",
-  "/quiz-video.js?v=3-availability",
-  "/quiz-video.css?v=2-master",
+  "/quiz-video.js?v=4-storage",
+  "/quiz-video.css?v=3-storage",
   "/quiz-video-optimizer.js?v=1",
   "/quiz-theory-index.js?v=1-chapter1",
   "/quiz-theory.js?v=1-protected",
@@ -17,7 +17,7 @@ const STATIC_ASSETS = [
   "/quizbank.html",
   "/quizbank.css?v=9-figure-zoom",
   "/quizbank-sheet.js?v=4-practice",
-  "/study-quiz.js?v=53-quiz-video",
+  "/study-quiz.js?v=54-video-master",
   "/quiz-audio-recorder.js?v=1",
   "/quiz-audio-recorder.css?v=2-add-voice",
   "/icons/add_voice.png",
@@ -130,7 +130,7 @@ const STATIC_ASSETS = [
   "/script.js?v=20261112-master-key",
   "/study-quiz.html",
   "/study-quiz.css?v=28-compact",
-  "/study-quiz.js?v=53-quiz-video",
+  "/study-quiz.js?v=54-video-master",
   "/figure-study.css?v=2",
   "/figure-study.js?v=3-headlight",
   "/figure-study-catalog.mjs?v=2",
