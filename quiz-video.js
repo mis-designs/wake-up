@@ -6,6 +6,11 @@
   const uploadIcon = '<span class="quiz-video-upload-icon" aria-hidden="true"></span>';
   const bytes = value => `${(value / 1048576).toLocaleString('it-IT', { maximumFractionDigits: 1 })} MB`;
   const messages = {
+    video_upload_failed: 'Invio del video non riuscito. Controlla la connessione e la regola CORS del bucket R2. Prima di riprovare, verifica il salvataggio.',
+    video_upload_timeout: 'Il caricamento ha superato il tempo massimo. Verifica il salvataggio prima di riprovare.',
+    video_upload_denied: 'R2 ha rifiutato il caricamento. Verifica i permessi di scrittura e riprova con un nuovo caricamento.',
+    video_upload_not_received: 'Il video non è arrivato nell’archivio. Dopo aver corretto il problema, premi Riprova caricamento.',
+    video_file_invalid: 'Il file ricevuto non è un MP4 valido. Scegli un altro video.',
     video_size_invalid: 'Scegli un video MP4 fino a 128 MB.', video_mp4_required: 'Scegli un video in formato MP4.',
     video_unreadable: 'Il video non si apre oppure supera 10 minuti. Prova un MP4 compatibile.',
     video_already_exists: 'Un video è già stato salvato per questa domanda. Riapri per visualizzarlo.',
@@ -89,8 +94,9 @@
       const finish = error => { signal.removeEventListener('abort', abort); error ? reject(error) : resolve(); };
       xhr.open('PUT', url); xhr.timeout = 10 * 60 * 1000; xhr.setRequestHeader('Content-Type', 'video/mp4');
       xhr.upload.onprogress = event => { if (event.lengthComputable) onProgress(Math.round(100 * event.loaded / event.total)); };
-      xhr.onload = () => finish(xhr.status >= 200 && xhr.status < 300 ? null : new Error('video_upload_failed'));
-      xhr.onerror = xhr.ontimeout = () => finish(new Error('video_upload_failed'));
+      xhr.onload = () => finish(xhr.status >= 200 && xhr.status < 300 ? null : new Error(xhr.status === 403 ? 'video_upload_denied' : 'video_upload_failed'));
+      xhr.onerror = () => finish(new Error('video_upload_failed'));
+      xhr.ontimeout = () => finish(new Error('video_upload_timeout'));
       xhr.onabort = () => finish(new DOMException('Aborted', 'AbortError'));
       signal.addEventListener('abort', abort, { once: true });
       if (signal.aborted) return finish(new DOMException('Aborted', 'AbortError'));

@@ -1,9 +1,9 @@
-const CACHE_NAME = "magicbook-pwa-v282-video-master";
+const CACHE_NAME = "magicbook-pwa-v283-video-upload";
 const STATIC_ASSETS = [
   "/account-role.js?v=1",
   "/account-role.css?v=1",
   "/icons/video-upload.png",
-  "/quiz-video.js?v=4-storage",
+  "/quiz-video.js?v=5-upload",
   "/quiz-video.css?v=3-storage",
   "/quiz-video-optimizer.js?v=1",
   "/quiz-theory-index.js?v=1-chapter1",
