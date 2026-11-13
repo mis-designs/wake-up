@@ -1,4 +1,4 @@
-import { createWatchTracker } from './video-progress.mjs?v=2';
+import { createWatchTracker } from './video-progress.mjs?v=3';
 
 let apiPromise;
 // One lazy API load per document. Failure is retryable only on the next explicit Watch.
@@ -61,7 +61,7 @@ export function trackYouTubePlayer({ frame, id, store, isCurrent, changed, ready
   armReadyTimeout();
   loadAPI().then(YT => {
     if (stopped || broken || !isCurrent()) return;
-    player = new YT.Player(frame, { events:{
+    player = new YT.Player(frame, { host:'https://www.youtube-nocookie.com', events:{
       onReady() {
         if (stopped || broken || !isCurrent()) return;
         initialized = true; clearTimeout(readyTimer); ready();
@@ -89,7 +89,7 @@ export function trackYouTubePlayer({ frame, id, store, isCurrent, changed, ready
     suspended = false; tracker.reset(); armReadyTimeout(); // Deliberately do not autoplay on return.
   }, stop() {
     if (stopped) return;
-    sample(); store.flush(); stopped = true; clearSampling(); clearTimeout(readyTimer); tracker.reset();
+    sample(true); store.flush(); stopped = true; clearSampling(); clearTimeout(readyTimer); tracker.reset();
     try { player?.destroy(); } catch (_) { /* detached frame */ }
   } };
 }

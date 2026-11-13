@@ -114,3 +114,5 @@ test('autoplay is explicit Watch-only; provider API origin and public-cache boun
   assert.match(csp,/script-src[^;]* https:\/\/www.youtube.com;/);assert.doesNotMatch(csp,/\*\.youtube/);
   for(const file of ['video-player.mjs','video-progress.mjs'])for(const lesson of getVideoClassCatalog().lessons)assert.ok(!read(file).includes(lesson.id));
 });
+
+test('long lessons expose real sub-percent progress without rounding it to zero',()=>{const store=createVideoProgress(null,'fraction',new Set(['a']));store.add('a',0,2,3600);assert.equal(store.summary('a').percent,0);assert.ok(store.fraction('a')>0);assert.ok(store.fraction('a')<1);assert.equal(store.fraction('missing'),0);});

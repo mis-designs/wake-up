@@ -107,3 +107,5 @@ test('leaving and returning before the API is ready does not revive the original
   const p=fixture.instance;p.events.onReady();assert.equal(p.plays,0);assert.equal(p.state,2);assert.equal(fixture.calls.checkpoints.length,0);
   p.playVideo();assert.equal(p.time,24);assert.equal(p.plays,1);playback.stop();
 });
+
+test('closing between timer ticks records the final watched fraction',async t=>{const clock=clockFixture(t),f=playerFixture(),p=trackYouTubePlayer(f.options);await Promise.resolve();f.instance.events.onReady();f.instance.time=.6;clock.advance(600);f.instance.time=.9;clock.advance(300);p.stop();assert.ok(f.calls.add.some(x=>x[2]===.9));});

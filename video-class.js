@@ -1,6 +1,7 @@
-import { PAGE_SIZE, createVideoCatalogReader, createVideoFavorites, embedSource, selectVideoLessons, supportsVideoEmbed, videoPath } from './video-class-model.mjs?v=3';
-import { createVideoProgress } from './video-progress.mjs?v=2';
-import { trackYouTubePlayer } from './video-player.mjs?v=2';
+import { PAGE_SIZE, createVideoCatalogReader, createVideoFavorites, embedSource, selectVideoLessons, supportsVideoEmbed, videoPath } from './video-class-model.mjs?v=4';
+import { createVideoProgress } from './video-progress.mjs?v=3';
+import { trackYouTubePlayer } from './video-player.mjs?v=3';
+import { trackFacebookPlayer } from './video-facebook.mjs?v=1';
 import { carIndicatorIcon, createCarIndicator } from './car-indicator.mjs?v=1';
 
 const KIND = { teoria: 'Teoria', quiz: 'Quiz', misto: 'Teoria e quiz', parole: 'Parole', guide: 'Guida' };
@@ -85,8 +86,8 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     updateProgressView(view,lesson); return view;
   }
   function updateProgressView(view, lesson) {
-    const value = progress?.summary(lesson.id) || { known:false,percent:0,seconds:0 };
-    const externalOnly = lesson.provider !== 'youtube' || !embeddedVideo;
+    const value = progress?.summary(lesson.progressId || lesson.id) || { known:false,percent:0,seconds:0 };
+    const externalOnly = false;
     view.dataset.complete = String(value.known && value.percent === 100);
     view.querySelector('.vc-progress-label').textContent = value.known ? value.percent === 100 ? 'Lezione completata' : 'Hai visto' : externalOnly ? 'Video esterno' : 'Il tuo progresso';
     const label = value.known ? value.seconds > 0 && value.percent === 0 ? 'Meno dell’1% visto' : `${value.percent}% visto` : 'Il progresso si aggiorna guardando la lezione qui';
@@ -97,7 +98,8 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     for (const [key,n] of Object.entries({ 'aria-valuemin':0,'aria-valuemax':100,'aria-valuenow':value.percent })) {
       if (value.known) bar.setAttribute(key,String(n)); else bar.removeAttribute(key);
     }
-    view.querySelector('.vc-progress-fill').style.width = `${value.percent}%`;
+    view.querySelector('.vc-progress-fill').style.width = `${progress?.fraction(lesson.progressId || lesson.id) || 0}%`;
+    view.querySelector('.vc-progress-fill').style.minWidth = value.seconds > 0 ? '2px' : '0';
   }
   function updateProgress() {
     for (const view of root.querySelectorAll('[data-progress]')) {
@@ -183,19 +185,19 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
   function renderLesson(lesson) {
     const group = catalog.groups.find(x => x.id === lesson.group);
     const stage = node('div', { class: 'vc-stage', id: 'vc-stage' });
-    const seconds = Math.floor(progress?.resume(lesson.id) || 0);
+    const seconds = Math.floor(progress?.resume(lesson.progressId || lesson.id) || 0);
     const resumeLabel = seconds > 0 ? `Riprendi da ${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}` : 'Guarda la lezione';
-    const play = button('', 'play', 'vc-play'); play.append(cover(lesson, true), node('span', { class: 'vc-play-label' }, playIcon(), lesson.provider !== 'youtube' ? 'Apri su Facebook' : embeddedVideo ? resumeLabel : 'Guarda su YouTube'));
+    const play = button('', 'play', 'vc-play'); play.append(cover(lesson, true), node('span', { class: 'vc-play-label' }, playIcon(), resumeLabel));
     // Do not create a frame, contact YouTube or imply playback before this action.
     stage.append(play);
     const information = node('aside', { class: 'vc-lesson-info' },
       node('p', { class: 'vc-eyebrow' }, /^\d+$/.test(lesson.group) ? `CAPITOLO ${lesson.group} · ${KIND[lesson.kind]}` : KIND[lesson.kind]),
       node('h2', { id: 'vc-heading', tabindex: '-1' }, lesson.title), node('p', { class: 'vc-topic' }, group.title),
       progressView(lesson),
-      node('p', { class: 'vc-progress-note' }, lesson.provider === 'youtube' && embeddedVideo ? 'Riparti da dove ti sei fermato, su questo dispositivo. La barra indica le parti guardate, senza contare quelle saltate.' : 'I video aperti su un sito esterno non aggiornano il progresso qui.'),
+      node('p', { class: 'vc-progress-note' }, embeddedVideo ? 'Riparti da dove ti sei fermato, su questo dispositivo. La barra indica le parti guardate, senza contare quelle saltate.' : 'I video aperti su un sito esterno non aggiornano il progresso qui.'),
       lesson.teacher || lesson.minutes ? node('p', {}, [lesson.teacher,lesson.minutes ? `Circa ${lesson.minutes} min` : ''].filter(Boolean).join(' · ')) : null,
       node('div', { class: 'vc-lesson-actions' }, saveButton(lesson, true)),
-      node('p', { class: 'vc-provider-note' }, lesson.provider !== 'youtube' ? 'Questo video si guarda su Facebook.' : embeddedVideo ? 'Il video non parte?' : 'Questa versione dell’app apre la lezione su YouTube.',
+      node('p', { class: 'vc-provider-note' }, 'Il video non parte?',
         external(lesson.provider === 'youtube' ? 'Apri su YouTube' : 'Apri su Facebook', lesson.url)),
       node('p', { id: 'vc-player-status', role: 'status' }),
       link('Tutte le lezioni del capitolo', videoPath({ group: lesson.group }), 'vc-back-link'));
@@ -250,7 +252,7 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
       if (!favorites || favoriteScope !== identity()) {
         favoriteScope = activeScope; let storage; try { storage = window.localStorage; } catch (_) { /* memory only */ }
         favorites = createVideoFavorites(storage, favoriteScope, new Set(catalog.lessons.map(x => x.id)));
-        progress = createVideoProgress(storage, favoriteScope, new Set(catalog.lessons.filter(x => x.provider === 'youtube').map(x => x.id)));
+        progress = createVideoProgress(storage, favoriteScope, new Set(catalog.lessons.map(x => x.progressId || x.id)));
       }
       paint();
       const selected = catalog.lessons.find(x => x.id === state.lesson);
@@ -269,18 +271,18 @@ export function createVideoClass({ root, request, identity, navigate, toast, hea
     if (!guardIdentity()) return;
     const lesson = catalog.lessons.find(x => x.id === state.lesson);
     if (!lesson) return;
-    if (lesson.provider !== 'youtube' || !embeddedVideo) { window.open(lesson.url, '_blank', 'noopener'); return; }
     stopPlayer();
-    const start = progress.resume(lesson.id);
-    iframe = node('iframe', { src: embedSource(lesson, location.origin, { autoplay:true, start }), title: `${lesson.title} · YouTube`, allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: '', referrerpolicy: 'strict-origin-when-cross-origin' });
+    const start = progress.resume(lesson.progressId || lesson.id);
+    iframe = lesson.provider === 'facebook' ? node('div', { id:'vc-facebook-player', class:'fb-video', 'data-href':lesson.url, 'data-allowfullscreen':'true', 'data-show-text':'false', 'data-width':String(Math.max(220,Math.floor(root.querySelector('#vc-stage').clientWidth))), tabindex:'0' }) : node('iframe', { src: embedSource(lesson, location.origin, { autoplay:true, start }), title: `${lesson.title} · YouTube`, allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: '', referrerpolicy: 'strict-origin-when-cross-origin' });
     const own = iframe;
     const message = root.querySelector('#vc-player-status');
-    const fail = () => { if (iframe === own && message) message.textContent = 'Non riesco a collegare il player: il progresso non si aggiorna. Puoi riaprire la lezione o usare Apri su YouTube.'; };
+    const fail = () => { if (iframe === own && message) message.textContent = 'Non riesco a collegare il player: il progresso non si aggiorna. Riapri la lezione per riprovare.'; };
     own.addEventListener('error', fail, { once: true });
     root.querySelector('#vc-stage').replaceChildren(own);
-    playback = trackYouTubePlayer({ frame:own, id:lesson.id, store:progress, start,
+    playback = (lesson.provider === 'facebook' ? trackFacebookPlayer : trackYouTubePlayer)({ frame:own, id:lesson.progressId || lesson.id, store:progress, start,
       isCurrent:() => active && iframe === own && identity() === favoriteScope,
-      changed:updateProgress, ready:() => { if (message) message.textContent = ''; }, failed:fail,
+      changed:() => { updateProgress(); if (lesson.provider === 'facebook' && message && progress.summary(lesson.progressId || lesson.id).seconds > 0) message.textContent = ''; },
+      ready:() => { if (message) message.textContent = lesson.provider === 'facebook' ? 'Premi Play nel video per iniziare.' : ''; }, failed:fail,
       blocked:() => { if (message) message.textContent = 'Premi Play nel video: il browser richiede un tocco sul player.'; } });
     foreground();
     own.focus();

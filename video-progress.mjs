@@ -80,6 +80,7 @@ export function createVideoProgress(storage, scope, allowedIds, now = Date.now) 
   read();
   return { key, read, flush, get durable() { return durable; },
     summary(id) { return watchedSummary(records[id]); },
+    fraction(id) { const record = records[id]; return record ? Math.min(100, watchedSummary(record).seconds / record.duration * 100) : 0; },
     resume(id) { return records[id]?.position || 0; },
     checkpoint(id, position, duration) {
       if (!allowedIds.has(id) || !validDuration(duration) || !Number.isFinite(position) || position < 0 || position > duration) return false;

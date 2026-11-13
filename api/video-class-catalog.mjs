@@ -116,9 +116,10 @@ export function getVideoClassCatalog() {
   const byId = new Map();
   for (const entry of VIDEO_SOURCE_ENTRIES) {
     if (byId.has(entry.id)) { byId.get(entry.id).aliases.push(entry.title); continue; }
-    const provider = entry.id.startsWith('facebook-') ? 'facebook' : 'youtube';
+    const provider = entry.id === '76N4jRgx-Vo' || entry.id.startsWith('facebook-') ? 'facebook' : 'youtube';
     const lesson = { ...entry, provider, aliases: [], cover: entry.id === 'LFeD_CfkVNA' ? 'road' : entry.id === 'YhISuYsEYC0' ? 'danger' : '', kind: entry.group === 'parole' ? 'parole' : entry.group === 'guide' ? 'guide' : /^Quiz/i.test(entry.title) ? 'quiz' : /Teoria e quiz/i.test(entry.title) ? 'misto' : 'teoria',
-      url: provider === 'youtube' ? `https://www.youtube.com/watch?v=${entry.id}` : 'https://www.facebook.com/share/v/SaV7bhTHu4JyUnQ2/' };
+      progressId: entry.id === '76N4jRgx-Vo' ? 'facebook-28632349289755090' : entry.id,
+      url: entry.id === '76N4jRgx-Vo' ? 'https://www.facebook.com/TMMBanglaPatente/videos/28632349289755090/' : provider === 'youtube' ? `https://www.youtube.com/watch?v=${entry.id}` : 'https://www.facebook.com/share/v/SaV7bhTHu4JyUnQ2/' };
     lessons.push(lesson); byId.set(entry.id, lesson);
   }
   for (const lesson of lessons) {
@@ -132,7 +133,7 @@ export function getVideoClassCatalog() {
       if (chapter) lesson.relatedChapter = chapter[1].padStart(2, '0');
     }
   }
-  return { version: '2026-09-23.3', groups: sections.map(([id, title]) => ({ id, title })), lessons,
+  return { version: '2026-11-13.1', groups: sections.map(([id, title]) => ({ id, title })), lessons,
     resources: [
       { id: 'tmm-webapp', title: 'TMM · app sul computer', url: 'https://www.tmmpatente.it/webapp/#/', description: 'Apri la pagina e segui le istruzioni per il codice QR.' },
       { id: 'quiz-rmastri', title: 'Quiz misti · sito esterno', url: 'http://www.rmastri.it/quiz-patente-b/', description: 'Collegamento presente nel documento studenti.' }

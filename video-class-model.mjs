@@ -1,7 +1,7 @@
 export const VIDEO_ID = /^[a-zA-Z0-9_-]{11}$/;
 export const PAGE_SIZE = 12;
 export function supportsVideoEmbed(userAgent = '') {
-  return !/MagicBookViewer\//i.test(userAgent) || /MagicBookVideo\/1\b/.test(userAgent);
+  return true; // Always attempt playback here; never force an external navigation.
 }
 export function videoPath({ group = '', saved = false, lesson = '', kind = '' } = {}) {
   const p = new URLSearchParams({ view: 'videos' });

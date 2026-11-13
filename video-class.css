@@ -235,3 +235,5 @@ html:has(.study-page) { --study-scroll-thumb: var(--muted); --study-scroll-track
   .vc-group { border-color: CanvasText; }
   .vc-group:is(:hover,:focus-visible,:active) .vc-group-arrow { background: Canvas; border-color: CanvasText; }
 }
+
+.vc-stage > .fb-video,.vc-stage > .fb-video > span{display:block!important;width:100%!important;height:100%!important}.vc-stage .fb-video iframe{width:100%!important;height:100%!important}

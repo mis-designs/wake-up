@@ -7,18 +7,18 @@ import { createVideoFavorites, createVideoCatalogReader, embedSource, videoPath,
 const read = name => readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
 const catalog = getVideoClassCatalog();
 
-test('old native shells get an explicit external player, browsers and video-capable shells embed', () => {
+test('all browser and native versions attempt playback inside the page', () => {
   assert.equal(supportsVideoEmbed('Mozilla/5.0 Chrome/130'), true);
-  assert.equal(supportsVideoEmbed('MagicBookViewer/1.3'), false);
+  assert.equal(supportsVideoEmbed('MagicBookViewer/1.3'), true);
   assert.equal(supportsVideoEmbed('MagicBookViewer/1.3 MagicBookVideo/1'), true);
-  assert.equal(supportsVideoEmbed('MagicBookViewer/1.3 MagicBookVideo/10'), false);
+  assert.equal(supportsVideoEmbed('MagicBookViewer/1.3 MagicBookVideo/10'), true);
 });
 
 test('source audit: all 174 YouTube occurrences retain exact identity and source order; eight duplicates become aliases', () => {
   const expected = JSON.parse(read('docs/video-class-source-ids.json')).youtubeIds;
   assert.deepEqual(VIDEO_SOURCE_ENTRIES.filter(x => !x.id.startsWith('facebook-')).map(x => x.id), expected);
   assert.equal(catalog.lessons.length, 167);
-  assert.equal(catalog.lessons.filter(x => x.provider === 'youtube').length, 166);
+  assert.equal(catalog.lessons.filter(x => x.provider === 'youtube').length, 165);
   assert.equal(catalog.lessons.reduce((n,x) => n + x.aliases.length, 0), 8);
   assert.equal(catalog.resources.length, 2);
   assert.equal(catalog.groups.length, 27);
@@ -100,9 +100,9 @@ test('Video Class binds a nonempty route identity before loading, independently 
   assert.match(render, /const loadedCatalog = await data\.read\(\);\s*if \(!active \|\| own !== version \|\| !guardIdentity\(\)\) return;\s*catalog = loadedCatalog/);
   assert.match(render, /favoriteScope = activeScope/);
   assert.doesNotMatch(render, /catalog = await data\.read/);
-  assert.match(read('study-quiz.js'), /video-class\.js\?v=8-session/);
-  assert.match(read('study-quiz.html'), /study-quiz\.js\?v=40-r2-figures/);
-  assert.match(read('service-worker.js'), /video-class\.js\?v=8-session/);
+  assert.match(read('study-quiz.js'), /video-class\.js\?v=9-embedded/);
+  assert.match(read('study-quiz.html'), /study-quiz\.js\?v=57-video-class/);
+  assert.match(read('service-worker.js'), /video-class\.js\?v=9-embedded/);
 });
 test('server catalogue uses established device-bound authorization, is never publicly cacheable and adds zero upstream reads for signed users', async t => {
   const env={SESSION_SECRET:'video-catalog-test',GAS_ACCESS_URL:'https://fixture.invalid',GAS_SECRET:'fixture',QUIZ_GAS_URL:'https://fixture.invalid',QUIZ_PROXY_SECRET:'fixture'};
@@ -129,3 +129,5 @@ test('only authorized catalogue response carries unlisted links; browser assets 
   assert.match(read('vercel.json'),/frame-src[^;]*https:\/\/www\.youtube-nocookie\.com;/);
   assert.doesNotMatch(read('api/trial.js'),/getVideoClasses/);
 });
+
+test('owner replacement retains the lesson route but isolates watched coverage',()=>{const lesson=catalog.lessons.find(x=>x.id==='76N4jRgx-Vo');assert.equal(lesson.title,'Teoria · Parte 6');assert.equal(lesson.provider,'facebook');assert.equal(lesson.url,'https://www.facebook.com/TMMBanglaPatente/videos/28632349289755090/');assert.notEqual(lesson.progressId,lesson.id);});
