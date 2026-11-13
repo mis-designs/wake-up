@@ -23,3 +23,5 @@
 .quiz-video-archive summary{min-height:44px;box-sizing:border-box;padding:10px 0;cursor:pointer;font-weight:600}
 .quiz-video-archive label{display:grid;gap:6px;margin-bottom:10px}.quiz-video-archive input{width:100%;min-width:0;box-sizing:border-box;min-height:44px;padding:8px;border:1px solid #8faaa0;border-radius:8px;font:13px/1.4 monospace;background:#f4f8f6;color:#19382d}
 .quiz-video-dialog summary:focus-visible,.quiz-video-dialog select:focus-visible{outline:3px solid #3159d7;outline-offset:3px}
+
+.quiz-video-thumbnail{margin-top:16px}.quiz-video-thumbnail img{display:block;width:auto;max-width:100%;height:auto;max-height:220px;object-fit:contain;border-radius:10px;margin:12px auto;background:#101714}.quiz-video-thumbnail img[hidden],.quiz-video-thumbnail button[hidden]{display:none}

@@ -6,6 +6,8 @@
   const uploadIcon = '<span class="quiz-video-upload-icon" aria-hidden="true"></span>';
   const bytes = value => `${(value / 1048576).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MB`;
   const messages = {
+    thumbnail_invalid: 'La copertina non è valida. Scegli un’immagine JPG, PNG o WebP più piccola.',
+    thumbnail_video_required: 'Salva prima il video, poi aggiungi la copertina.',
     video_changed: 'Il video è stato modificato da un’altra sessione. Chiudi e riapri per vedere la versione aggiornata.',
     video_cleanup_required: 'Completa prima la rimozione del vecchio file.',
     compression_timeout: 'Ottimizzazione interrotta per tempo eccessivo: conservato il file originale.',
@@ -71,7 +73,7 @@
   }
   function close({ restoreFocus = true, fromHistory = false } = {}) {
     const state = active; if (!state) return;
-    active = null; state.controller.abort(); state.video.pause(); state.video.removeAttribute('src'); state.video.load();
+    active = null; state.thumbnailPicker?.destroy(); state.controller.abort(); state.video.pause(); state.video.removeAttribute('src'); state.video.load();
     for (const url of state.urls) URL.revokeObjectURL(url);
     if (state.audioToken) void root.MagicAudioFocus?.completeTransient(state.audioToken, { resume: false });
     state.unmount?.({ restoreFocus });
@@ -174,13 +176,14 @@
   }
   function renderVideoState(state, result, message) {
     if (active !== state) return;
-    state.preparation?.abort(); state.preparation = null;
+    state.preparation?.abort(); state.preparation = null; state.thumbnailPicker?.destroy(); state.thumbnailPicker = null;
     if (!state.controls) { state.controls = node('div', '', 'quiz-video-management'); state.dialog.append(state.controls); }
     state.controls.replaceChildren(); refreshButtons(state.binding, result);
     state.video.pause(); state.video.removeAttribute('src'); state.video.load();
     for (const url of state.urls) URL.revokeObjectURL(url); state.urls.length = 0;
     state.video.hidden = !result.available;
-    if (result.available) state.video.src = result.url;
+    state.video.removeAttribute('poster');
+    if (result.available) { state.video.src = result.url; if (result.thumbnail?.url) state.video.poster = result.thumbnail.url; }
     report(state, message || (result.available ? 'Premi play per ascoltare la spiegazione.' : 'Nessun video disponibile per questa domanda.'));
     if (!admin(state.binding)) return;
     if (result.cleanupPending) {
@@ -191,7 +194,9 @@
         try {
           const value = await request(state.binding, 'cleanupQuizVideo', { expectedRevision: result.revision }, state.controller.signal);
           if (value.cleaned !== true) throw new Error('video_storage_unavailable');
+          const pendingCover = state.pendingThumbnail; state.pendingThumbnail = null;
           renderVideoState(state, value, 'Rimozione del file completata.');
+          if (pendingCover && value.available && !value.cleanupPending) thumbnailForm(state, value, pendingCover, 'Video salvato. Conferma il caricamento della copertina selezionata.');
         } catch (error) { cache.delete(cacheKey(state.binding)); report(state, failMessage(error)); cleanup.disabled = false; }
       };
       state.controls.append(cleanup);
@@ -200,7 +205,9 @@
       const replace = node('button', 'Sostituisci video'), remove = node('button', 'Rimuovi video', 'quiz-video-danger');
       replace.onclick = () => { uploadForm(state, result); state.controls.querySelector('input')?.focus(); };
       remove.onclick = () => removeVideo(state, result);
-      actions.append(replace, remove); state.controls.append(actions);
+      const cover = node('button', result.thumbnail ? 'Modifica copertina' : 'Carica copertina');
+      cover.onclick = () => thumbnailForm(state, result);
+      actions.append(replace, cover, remove); state.controls.append(actions);
     } else uploadForm(state, result);
     if (result.archive) {
       const details = node('details', '', 'quiz-video-archive'), summary = node('summary', 'Trova questo video in R2');
@@ -212,7 +219,7 @@
         catch { path.focus(); path.select(); report(state, 'Seleziona e copia il percorso mostrato.'); }
       };
       details.append(summary, node('p', 'Bucket: ' + result.archive.bucket), label, copy);
-      details.append(node('p', 'current.json identifica la domanda e il video attuale.'));
+      details.append(node('p', 'current.json identifica la domanda, il video attuale e la copertina.'));
       if (result.fileName) details.append(node('p', 'File caricato: ' + result.fileName));
       if (result.bytes) details.append(node('p', 'Dimensione salvata: ' + bytes(result.bytes) + (result.originalBytes ? ' · Originale: ' + bytes(result.originalBytes) : '')));
       state.controls.append(details);
@@ -248,8 +255,41 @@
     actions.append(cancel, remove); box.append(text, actions); state.controls.append(box); cancel.focus();
   }
 
+  function thumbnailForm(state, previous, initial = null, message = '') {
+    state.thumbnailPicker?.destroy(); state.controls.replaceChildren(); state.video.pause(); state.video.hidden = true;
+    if (initial) cache.delete(cacheKey(state.binding));
+    let busy = false, submitted = Boolean(initial), removing = false, operationId = crypto.randomUUID();
+    const actions = node('div', '', 'quiz-video-actions'), save = node('button', initial ? 'Verifica copertina' : 'Salva copertina', 'quiz-video-save'), cancel = node('button', initial ? 'Aggiorna stato' : 'Annulla');
+    const picker = root.QuizVideoThumbnail.create({ signal: state.controller.signal, initial, currentUrl: previous.thumbnail?.url || '', onChange: () => { save.disabled = busy || !state.thumbnailPicker?.selection || state.thumbnailPicker?.busy || state.thumbnailPicker?.invalid; } });
+    state.thumbnailPicker = picker; save.disabled = !initial; if(initial)picker.setDisabled(true);
+    actions.append(save, cancel);state.controls.append(picker.element, actions);
+    report(state, message || 'La copertina sarà visibile prima di avviare il video e resterà collegata a questo quiz.');
+    cancel.onclick = async () => {
+      if(!submitted){renderVideoState(state,previous);return;}
+      cancel.disabled = true;
+      try { const current = await request(state.binding, 'getQuizVideo', {}, state.controller.signal);if(current.error)throw Error(current.error);renderVideoState(state,current); }
+      catch(error){report(state,failMessage(error));cancel.disabled=false;}
+    };
+    const submit = async () => {
+      if(busy || (!removing && (!picker.selection || picker.busy || picker.invalid)))return;
+      busy = submitted = true; picker.setDisabled(true); save.disabled = cancel.disabled = true; if(remove)remove.disabled=true;
+      cache.delete(cacheKey(state.binding));report(state,removing?'Rimozione della copertina…':'Salvataggio della copertina…');
+      try {
+        const value=await request(state.binding, removing?'deleteQuizVideoThumbnail':'saveQuizVideoThumbnail', { expectedRevision: previous.revision, ...(removing ? { operationId } : picker.selection) },state.controller.signal);
+        if(removing?!value.thumbnailRemoved:!value.thumbnailSaved)throw Error('thumbnail_invalid');
+        renderVideoState(state,value,removing?'Copertina rimossa. Il video è ancora disponibile.':'Copertina salvata.');state.controls.querySelector('button')?.focus();
+      }catch(error){if(active!==state)return;report(state,failMessage(error));save.textContent=removing?'Verifica rimozione':'Verifica copertina';cancel.textContent='Aggiorna stato';cancel.disabled=false;save.disabled=['video_changed','video_cleanup_required'].includes(error.message);}
+      finally{busy=false;}
+    };
+    save.onclick=submit;
+    const remove=previous.thumbnail ? node('button','Rimuovi copertina','quiz-video-danger') : null;
+    if(remove){actions.append(remove);remove.onclick=()=>{removing=true;picker.setDisabled(true);remove.hidden=true;save.textContent='Conferma rimozione';save.disabled=false;report(state,'Rimuovere la copertina da questo quiz nei tre sistemi? Il video resterà disponibile.');cancel.focus();};}
+    picker.element.querySelector('input')?.focus();
+  }
+
   function uploadForm(state, previous) {
     const { dialog, binding, controller, video } = state;
+    state.thumbnailPicker?.destroy();
     state.controls.replaceChildren();
     const replacing = previous.available === true;
     const label = node('label', replacing ? 'Scegli il nuovo video MP4' : 'Carica un video MP4', 'quiz-video-upload-label');
@@ -261,8 +301,10 @@
     const actions = node('div', '', 'quiz-video-actions'), save = node('button', replacing ? 'Sostituisci video' : 'Carica video', 'quiz-video-save'); save.disabled = true;
     const cancel = node('button', 'Annulla'); cancel.type = 'button'; cancel.onclick = () => renderVideoState(state, previous);
     actions.append(save); if (replacing) actions.append(cancel);
-    state.controls.append(label, qualityLabel, qualityHint, originalLabel, actions);
     let prepared, file, busy = false, transfer = null, preferRelay = false;
+    const coverPicker = root.QuizVideoThumbnail.create({ signal: controller.signal, currentUrl: previous.thumbnail?.url || '', onChange: () => { save.disabled = busy || !prepared || Boolean(state.thumbnailPicker?.busy || state.thumbnailPicker?.invalid); } });
+    state.thumbnailPicker = coverPicker;
+    state.controls.append(label, coverPicker.element, qualityLabel, qualityHint, originalLabel, actions);
     report(state, replacing ? 'Il video attuale resterà disponibile finché il nuovo non sarà salvato. La sostituzione vale nei tre sistemi.' : 'Il video sarà condiviso con la stessa domanda, risposta e figura nei tre sistemi.');
     const showPreview = () => {
       if (active !== state || !prepared) return;
@@ -285,7 +327,7 @@
       try {
         prepared = await root.QuizVideoOptimizer.optimize(file, { signal: preparation.signal, mode: quality.value, progress: text => report(state, text) });
         if (active !== state || preparation.signal.aborted) return;
-        original.checked = false; originalLabel.hidden = !prepared.compressed; showPreview(); save.disabled = false;
+        original.checked = false; originalLabel.hidden = !prepared.compressed; showPreview(); save.disabled = coverPicker.busy || coverPicker.invalid;
       } catch (error) { if (active === state && !preparation.signal.aborted) report(state, failMessage(error)); }
       finally { controller.signal.removeEventListener('abort', abortPreparation); busy = false; if (active === state) input.disabled = quality.disabled = false; }
     };
@@ -295,8 +337,8 @@
       void prepare();
     };
     save.onclick = async () => {
-      if (busy || !prepared || active !== state || !admin(binding)) return;
-      busy = true; save.disabled = input.disabled = original.disabled = quality.disabled = cancel.disabled = true; video.pause();
+      if (busy || !prepared || coverPicker.busy || coverPicker.invalid || active !== state || !admin(binding)) return;
+      busy = true; coverPicker.setDisabled(true); save.disabled = input.disabled = original.disabled = quality.disabled = cancel.disabled = true; video.pause();
       try {
         const begin = async relay => {
           cache.delete(cacheKey(binding));
@@ -342,7 +384,24 @@
         }
         if (saved.saved !== true || typeof saved.url !== 'string' || !/^https?:\/\//.test(saved.url)) throw new Error('video_upload_invalid');
         if (active !== state) return;
-        renderVideoState(state, saved, saved.cleanupPending ? 'Nuovo video salvato. Completa la rimozione del vecchio file.' : 'Video salvato. Disponibile per la stessa domanda, risposta e figura.');
+        const selectedCover = coverPicker.selection;
+        if (selectedCover && !saved.cleanupPending) {
+          report(state, 'Video salvato. Caricamento della copertina…');
+          try {
+            saved = await request(binding, 'saveQuizVideoThumbnail', { ...selectedCover, expectedRevision: saved.revision }, controller.signal);
+            if (!saved.thumbnailSaved || !saved.thumbnail?.url) throw new Error('thumbnail_invalid');
+          } catch(error) {
+            if(active !== state)return;
+            renderVideoState(state, saved);
+            thumbnailForm(state, saved, selectedCover, 'Video salvato. Copertina non confermata: ' + failMessage(error));
+            return;
+          }
+        } else if(selectedCover && saved.cleanupPending) {
+          state.pendingThumbnail = selectedCover;
+          renderVideoState(state, saved, 'Video salvato. Completa la rimozione del vecchio file, poi aggiungi la copertina.');
+          return;
+        }
+        renderVideoState(state, saved, saved.cleanupPending ? 'Nuovo video salvato. Completa la rimozione del vecchio file.' : (selectedCover ? 'Video e copertina salvati.' : 'Video salvato. Disponibile per la stessa domanda, risposta e figura.'));
         state.controls.querySelector('button')?.focus();
       } catch (error) {
         if (active !== state) return;
@@ -351,7 +410,7 @@
         const incomplete = transfer?.transport === 'relay' && transfer.nextChunk < Math.ceil(transfer.blob.size / transfer.chunkBytes);
         report(state, incomplete && !messages[error.message] ? messages.video_upload_incomplete : failMessage(error));
         save.textContent = incomplete ? 'Riprendi caricamento' : transfer ? 'Verifica salvataggio' : 'Riprova caricamento';
-        save.disabled = false; input.disabled = original.disabled = quality.disabled = Boolean(transfer); cancel.disabled = false;
+        coverPicker.setDisabled(Boolean(transfer)); save.disabled = false; input.disabled = original.disabled = quality.disabled = Boolean(transfer); cancel.disabled = false;
         if (['video_changed', 'video_cleanup_required'].includes(error.message)) { cache.delete(cacheKey(binding)); save.disabled = true; }
       } finally { busy = false; }
     };
