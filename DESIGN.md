@@ -514,3 +514,9 @@ Owner replaces chapter 01 Teoria Parte 6 with Facebook video 28632349289755090 (
 
 ## Quiz video covers — 2026-11-13
 Owner requests an optional image alongside each uploaded quiz video, with later chapter galleries in mind. Extend the shared MagicQuizVideo management dialog; do not change Video Class, quiz figures or chapter mappings. The canonical file picker is QuizVideoThumbnail in quiz-video-thumbnail.js, styled by quiz-video.css using the existing upload label, action, hint, focus and error styles. Use “Carica copertina”, “Modifica copertina” and “Salva copertina”. Keep portrait/landscape images intact with object-fit:contain; no automatic crop or forced landscape. The dedicated cover editor hides the video temporarily so preview and save controls remain reachable on phones. Ordinary learners see the poster, never upload controls. Existing videos without covers remain valid.
+
+## Master-admin video gallery - 2026-11-14
+
+The Home entry is visible only with a current master-role presentation; every gallery read and gallery upload independently checks signed master authorization on the server. The gallery uses the existing forest-green/white Home palette, inherited application typography and portrait 9:14 thumbnail frames with contain-fit images. `video-gallery.css` owns this named admin variant; `app-popup.js` owns overlay focus, inert background and dismissal. `quiz-video.js` remains the only upload, playback, thumbnail and destructive-management UI owner. No second upload implementation.
+
+Desktop uses a chapter-progress rail and three portrait columns; phone uses a chapter disclosure and a single readable card column below 420px. Missing thumbnails use a labelled playback placeholder. Quiz text, answer and optional figure number remain readable below the media. Native select, semantic buttons, shared modal focus, labelled progress elements and an explicit Load more action are canonical for this surface.

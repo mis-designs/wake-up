@@ -77,6 +77,7 @@
     for (const url of state.urls) URL.revokeObjectURL(url);
     if (state.audioToken) void root.MagicAudioFocus?.completeTransient(state.audioToken, { resume: false });
     state.unmount?.({ restoreFocus });
+    state.binding.options.onClose?.();
     if (!fromHistory && history.state?.quizVideo === state.historyId) { pendingBack = true; history.back(); }
   }
   function reset() {
@@ -419,7 +420,12 @@
     const button = node('button', '', 'quiz-video-button'); button.type = 'button'; button.hidden = true; button.innerHTML = icon + '<span>Video</span>';
     button.setAttribute('aria-label', 'Spiegazione video');
     const binding = { button, options, epoch, controllers: new Set() }; bindings.add(binding);
+    if (options.initialVideo) remember(binding, options.initialVideo);
     binding.click = () => { if (!button.hidden && active?.binding !== binding && current(binding)) void open(binding); }; button.addEventListener('click', binding.click);
+    if (options.gallery === true) {
+      button.hidden = false; button.textContent = '⋯ Gestisci'; button.setAttribute('aria-label', 'Apri video e opzioni di modifica');
+      return button;
+    }
     const update = async () => {
       if (!current(binding)) return;
       try {

@@ -4,6 +4,9 @@
   "functions": {
     "api/learning-sync.mjs": {
       "maxDuration": 35
+    },
+    "api/quiz.js": {
+      "maxDuration": 60
     }
   },
   "headers": [
