@@ -135,7 +135,7 @@
     const titleId = 'quiz-video-title'; title.id = titleId; dialog.setAttribute('role', 'dialog'); dialog.setAttribute('aria-modal', 'true'); dialog.setAttribute('aria-labelledby', titleId);
     header.append(title, exit);
     const question = node('p', binding.options.question.question, 'quiz-video-question');
-    const video = node('video'); video.controls = true; video.playsInline = true; video.preload = 'metadata'; video.hidden = true;
+    const video = node('video'); video.controls = true; video.setAttribute('controlslist', 'nodownload'); video.addEventListener('contextmenu', event => event.preventDefault()); video.playsInline = true; video.preload = 'metadata'; video.hidden = true;
     const status = node('p', 'Caricamento…', 'quiz-video-status'); status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
     dialog.append(header, question, video, status); overlay.append(dialog); document.body.append(overlay);
     const state = { binding, overlay, dialog, video, status, urls: [], controller: new AbortController(), historyId: crypto.randomUUID() };

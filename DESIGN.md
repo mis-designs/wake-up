@@ -536,3 +536,5 @@ Video upload optimization (2026-11-16): default to clearly labelled high-quality
 Video discovery (2026-11-16): QuizBank accent #D91C37, white fixed play triangle with rotating scalloped backing. A matching action sits right of Study figures, centered vertically with a gap. Discovery motion finishes within four seconds, respects reduced-motion and native motion pause. Available quiz video uses a pink/red accent and brief pulse; upload/admin controls remain quiet.
 
 Video figure (16 novembre): il Play esterno alla finestra va allineato alla base della figura, a destra con spazio; sostituisce il precedente allineamento verticale centrale.
+
+I player video delle figure e dei quiz non mostrano Download e bloccano il menu contestuale sul video (clic destro/pressione prolungata). I normali controlli di riproduzione restano disponibili; non si tratta di DRM.

@@ -11,3 +11,5 @@ body.fvp-open{overflow:hidden}.fvp-overlay{position:fixed;inset:0;z-index:24000;
 @keyframes figure-play-discover{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.figure-video-play[data-available=true]::before{animation:none}}
 html[data-native-motion-paused] .figure-video-play[data-available=true]::before{animation:none}
+
+.fvp-card video{-webkit-touch-callout:none}

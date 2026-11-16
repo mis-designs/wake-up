@@ -40,8 +40,9 @@
  function open(options,value,trigger){
   if(active||returning)return;
   const overlay=document.createElement('div');overlay.className='fvp-overlay';
-  overlay.innerHTML='<section class="fvp-card" role="dialog" aria-modal="true" aria-labelledby="fvp-title"><header><h2 id="fvp-title"></h2><button type="button" class="fvp-action" aria-label="Chiudi video della figura"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></header><video controls playsinline preload="metadata"></video><p role="status"></p><button type="button" class="fvp-retry" hidden>Riprova video</button></section>';
+  overlay.innerHTML='<section class="fvp-card" role="dialog" aria-modal="true" aria-labelledby="fvp-title"><header><h2 id="fvp-title"></h2><button type="button" class="fvp-action" aria-label="Chiudi video della figura"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></header><video controls controlslist="nodownload" playsinline preload="metadata"></video><p role="status"></p><button type="button" class="fvp-retry" hidden>Riprova video</button></section>';
   overlay.querySelector('h2').textContent=options.title;const video=overlay.querySelector('video'),exit=overlay.querySelector('.fvp-action'),status=overlay.querySelector('[role=status]'),retry=overlay.querySelector('.fvp-retry');
+  video.addEventListener('contextmenu',event=>event.preventDefault());
   const s={video,trigger,controller:new AbortController(),key:crypto.randomUUID()};active=s;
   exit.onclick=()=>close();video.src=value.url;
   video.addEventListener('play',()=>{if(s.audioToken&&root.MagicAudioFocus?.isCurrent(s.audioToken))return;document.querySelectorAll('audio,video').forEach(media=>{if(media!==video)media.pause();});root.speechSynthesis?.cancel();s.audioToken=root.MagicAudioFocus?.beginTransient({key:'figure-video',stop:()=>video.pause()});});

@@ -1,15 +1,15 @@
-const CACHE_NAME = "magicbook-pwa-v306-video-align";
+const CACHE_NAME = "magicbook-pwa-v308-video-controls";
 const STATIC_ASSETS = [
-  "/figure-video-player.js?v=2",
-  "/figure-video-player.css?v=3-base",
+  "/figure-video-player.js?v=3-nodownload",
+  "/figure-video-player.css?v=4-nodownload",
   "/account-role.js?v=2",
   "/account-role.css?v=1",
   "/icons/video-upload.png",
   "/quiz-video-thumbnail.js?v=1",
-  "/quiz-video.js?v=12-discovery",
+  "/quiz-video.js?v=13-nodownload",
   "/video-gallery.js?v=5",
   "/video-gallery.css?v=5",
-  "/quiz-video.css?v=6-discovery",
+  "/quiz-video.css?v=7-nodownload",
   "/quiz-video-optimizer.js?v=3-reduction",
   "/quiz-theory-index.js?v=1-chapter1",
   "/quiz-theory.js?v=1-protected",

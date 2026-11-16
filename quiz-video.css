@@ -30,3 +30,5 @@
 @keyframes quiz-video-discover{0%,100%{box-shadow:0 0 0 0 #d91c3700}50%{box-shadow:0 0 0 5px #d91c371c}}
 @media(prefers-reduced-motion:reduce){.quiz-video-button.quiz-video-available{animation:none}}
 html[data-native-motion-paused] .quiz-video-button.quiz-video-available{animation:none}
+
+.quiz-video-dialog video{-webkit-touch-callout:none}
