@@ -538,3 +538,5 @@ Video discovery (2026-11-16): QuizBank accent #D91C37, white fixed play triangle
 Video figure (16 novembre): il Play esterno alla finestra va allineato alla base della figura, a destra con spazio; sostituisce il precedente allineamento verticale centrale.
 
 I player video delle figure e dei quiz non mostrano Download e bloccano il menu contestuale sul video (clic destro/pressione prolungata). I normali controlli di riproduzione restano disponibili; non si tratta di DRM.
+
+Figure video invitation: owner replaces the external red Play with supplied thinking person and Bangla meaning artwork, partially overlapping the lower-right figure edge. Gentle continuous vertical person movement and horizontal lettering movement; reduced-motion and native motion pause disable motion. Enlarged-dialog Play remains unchanged.

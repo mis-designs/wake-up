@@ -1,7 +1,9 @@
-const CACHE_NAME = "magicbook-pwa-v308-video-controls";
+const CACHE_NAME = "magicbook-pwa-v310-video-invitation";
 const STATIC_ASSETS = [
-  "/figure-video-player.js?v=3-nodownload",
-  "/figure-video-player.css?v=4-nodownload",
+  "/icons/figure-video-thinking.png",
+  "/icons/figure-video-meaning.svg",
+  "/figure-video-player.js?v=4-invitation",
+  "/figure-video-player.css?v=5-invitation",
   "/account-role.js?v=2",
   "/account-role.css?v=1",
   "/icons/video-upload.png",

@@ -13,3 +13,16 @@ body.fvp-open{overflow:hidden}.fvp-overlay{position:fixed;inset:0;z-index:24000;
 html[data-native-motion-paused] .figure-video-play[data-available=true]::before{animation:none}
 
 .fvp-card video{-webkit-touch-callout:none}
+
+/* Illustrated figure-video invitation; overlaps only the lower-right edge. */
+.study-figure-frame.figure-video-inline-frame{display:block;min-height:122px;border-radius:0}
+.figure-video-inline-frame>.figure-detail-trigger{width:calc(100% - 70px);max-width:300px;box-shadow:none;transform:none}
+.figure-video-inline-frame>.figure-video-inline{position:absolute;right:0;bottom:0;width:140px;height:118px;margin:0;padding:0;border-radius:10px;z-index:2}
+.figure-video-inline-frame>.figure-video-inline::before{display:none}
+.figure-video-inline img{position:absolute;display:block;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-select:none}
+.figure-video-inline .figure-video-person{left:0;bottom:0;width:80px;height:114px;animation:figure-person-float 2.8s ease-in-out infinite}
+.figure-video-inline .figure-video-meaning{left:66px;top:29px;width:78px;height:42px;animation:figure-meaning-drift 2.8s ease-in-out infinite}
+@keyframes figure-person-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes figure-meaning-drift{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+@media(prefers-reduced-motion:reduce){.figure-video-inline img{animation:none!important}}
+html[data-native-motion-paused] .figure-video-inline img{animation:none!important}
