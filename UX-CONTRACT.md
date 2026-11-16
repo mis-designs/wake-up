@@ -496,3 +496,5 @@ Gallery figures use the existing same-origin R2 asset resolver and shared figure
 Figure videos have their own canonical figure ID and R2 prefix, independent of quiz text/answers. Preserve existing quiz videos. Test master-only APIs, no-cover upload UI, replacement/removal, cache invalidation and reading the same object through AllBooks.
 
 Figure playback is authenticated and read-only for customers. One lazy metadata request on opening a figure, bounded per-account cache, no background polling; abort on close. Viewer owns nested focus/history, pauses audio and releases video on dismissal. Upload controls stay master-only.
+
+Inline figure-video discovery observes only visible Study figures. Deduplicate simultaneous lookups per account/product/figure, cache sixty seconds, abort only when all consumers leave. Dispose controls when the figure host is removed. Show availability-gated actions and reuse the existing player.

@@ -25,3 +25,8 @@
 .quiz-video-dialog summary:focus-visible,.quiz-video-dialog select:focus-visible{outline:3px solid #3159d7;outline-offset:3px}
 
 .quiz-video-thumbnail{margin-top:16px}.quiz-video-thumbnail img{display:block;width:auto;max-width:100%;height:auto;max-height:220px;object-fit:contain;border-radius:10px;margin:12px auto;background:#101714}.quiz-video-thumbnail img[hidden],.quiz-video-thumbnail button[hidden]{display:none}
+.quiz-video-button.quiz-video-available{color:#b8132c;background:#fff0f3;border-color:#edb5c0;box-shadow:0 2px 8px #d91c3712;animation:quiz-video-discover 2s ease-in-out 2}
+.quiz-video-button.quiz-video-available:hover{background:#ffe5eb;border-color:#d91c37}
+@keyframes quiz-video-discover{0%,100%{box-shadow:0 0 0 0 #d91c3700}50%{box-shadow:0 0 0 5px #d91c371c}}
+@media(prefers-reduced-motion:reduce){.quiz-video-button.quiz-video-available{animation:none}}
+html[data-native-motion-paused] .quiz-video-button.quiz-video-available{animation:none}

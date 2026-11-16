@@ -125,9 +125,12 @@ function enhance(image) {
   button.title = 'Ingrandisci figura';
   image.before(button);
   button.append(image);
+  let inlineId='',inlineDispose;
   const update = () => {
     const id = identity(image), detail = getFigureDetail(id);
     button.disabled = !id || !image.complete || !image.naturalWidth;
+    if(id!==inlineId){inlineDispose?.();inlineDispose=undefined;inlineId='';}
+    if(id&&!inlineId&&!button.disabled){inlineId=id;inlineDispose=window.MagicFigureVideo?.observeFigure(image,button,id,detail?.italian||'Video della figura');}
     button.setAttribute('aria-label', detail ? `Ingrandisci figura: ${detail.italian}` : 'Ingrandisci figura');
   };
   button.addEventListener('click', event => { event.stopPropagation(); open(image, button); });

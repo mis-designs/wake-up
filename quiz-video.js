@@ -433,7 +433,7 @@
         const result = await lookup(binding);
         if (!current(binding)) return; remember(binding, result);
         const available = result.available === true && typeof result.url === 'string' && /^https?:\/\//.test(result.url);
-        button.hidden = !available && !admin(binding);
+        button.hidden = !available && !admin(binding);button.classList.toggle('quiz-video-available',available);
         button.innerHTML = (available ? icon : uploadIcon) + `<span>${available ? 'Video' : 'Carica video'}</span>`;
         button.setAttribute('aria-label', available ? 'Spiegazione video' : 'Carica spiegazione video');
       } catch (_) { if (current(binding)) button.hidden = true; }
