@@ -30,7 +30,14 @@
   chapterHeading.setAttribute('aria-live', 'polite');
   chapterHeading.setAttribute('aria-atomic', 'true');
   chapterHeading.classList.add('web-chapter-heading');
-  doc.querySelector('#appHeader .header-center').append(chapterHeading);
+  const chapterHeader = doc.querySelector('#appHeader .header-center');
+  const chapterBoard = doc.querySelector('#chapters .lesson-board');
+  function placeChapterTitle() {
+    if (compactHome.matches) chapterBoard.before(chapterHeading);
+    else chapterHeader.append(chapterHeading);
+  }
+  compactHome.addEventListener('change', placeChapterTitle);
+  placeChapterTitle();
   const pagination = doc.createElement('nav');
   pagination.className = 'chapter-pagination';
   pagination.setAttribute('aria-label', 'Navigazione capitoli');

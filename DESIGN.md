@@ -544,3 +544,5 @@ Figure video invitation: owner replaces the external red Play with supplied thin
 Mobile browser/PWA home (2026-11-16): three compact tools in one row; existing Quiz | কুইজ and Quiz শিখুন controls move to the next row, followed by the existing Pial Sir Class artwork. Preserve chapter carousel and Start Engine; no duplicate mobile chapter shortcuts. Move original nodes at 820px breakpoint, keeping navigation ownership and desktop placement.
 
 Mobile refinement: book → Quiz / Quiz শিখুন → Pial Sir Class → compact 68px dictionary/statistics/errors row. Chapter title and carousel/dashboard sit lower; MiskatDesigns stays at the bottom in flow, with scrolling on short screens. Supersedes tools-before-learning order.
+
+Chapter thumb reach (2026-11-17): mobile Back stays at the original top position. Move the selected title immediately above the carousel, lowering title/cards/pagination/engine as a group toward mid-screen. Keep sponsor at the bottom; short screens scroll naturally.

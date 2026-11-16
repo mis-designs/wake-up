@@ -63,6 +63,8 @@ try {
    await page.locator('.member-open').click();await page.locator('#chapters:not(.hidden)').waitFor();
    assert.equal(await page.locator('#chapters .lesson-actions').isVisible(),false);
    assert.equal(await page.locator('#engineBtn').isVisible(),true);
+   assert.equal(await page.locator('#chapters>.web-chapter-heading').count(),1);
+   assert.ok(await page.evaluate(()=>document.querySelector('#backBtn').getBoundingClientRect().bottom < document.querySelector('#chapters>.web-chapter-heading').getBoundingClientRect().top));
    await page.screenshot({path:path.join(out,`chapters-${width}.png`),fullPage:true});
   }else{assert.equal(await page.locator('#chapters #quizButton').count(),1);assert.equal(await page.locator('.member-learning-actions').isVisible(),false);}
   assert.deepEqual(errors,[]);
