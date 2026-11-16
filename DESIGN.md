@@ -530,3 +530,5 @@ Gallery figure cards (2026-11-16): small bottom-right figure preview, shared fig
 Master-only tab beside Video quiz. Use existing figure artwork as the card image; no cover picker, quiz answer badge or chapter totals. Search by figure number/name; shared upload editor owns playback, replacement and deletion. Student-facing figure playback is a separate future step.
 
 Figure video playback (2026-11-16): place a play triangle beside the existing scalloped close control. Only show Play for an available video; open a portrait player with the figure title. Preserve the original bilingual figure and return focus on closing.
+
+Video upload optimization (2026-11-16): default to clearly labelled high-quality size reduction. Keep the mathematically lossless choice explicit and explain that it may not save bytes. Never label a re-encode lossless; show actual original/output sizes and preserve original-file choice.

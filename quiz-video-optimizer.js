@@ -43,7 +43,7 @@
       worker.postMessage({ file, mode });
     });
   }
-  async function optimize(file, { signal, progress = () => {}, mode = 'lossless' } = {}) {
+  async function optimize(file, { signal, progress = () => {}, mode = 'quality' } = {}) {
     signal?.throwIfAborted();
     if (file.size > 128 * 1024 * 1024 || file.size < 32) throw new Error('video_size_invalid');
     const signature = new Uint8Array(await file.slice(0, 12).arrayBuffer());

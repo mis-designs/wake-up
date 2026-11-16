@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v300-persistent-master";
+const CACHE_NAME = "magicbook-pwa-v302-video-reduction";
 const STATIC_ASSETS = [
   "/figure-video-player.js?v=1",
   "/figure-video-player.css?v=1",
@@ -6,11 +6,11 @@ const STATIC_ASSETS = [
   "/account-role.css?v=1",
   "/icons/video-upload.png",
   "/quiz-video-thumbnail.js?v=1",
-  "/quiz-video.js?v=10-figures",
+  "/quiz-video.js?v=11-reduction",
   "/video-gallery.js?v=5",
   "/video-gallery.css?v=5",
   "/quiz-video.css?v=5-thumbnail",
-  "/quiz-video-optimizer.js?v=2-management",
+  "/quiz-video-optimizer.js?v=3-reduction",
   "/quiz-theory-index.js?v=1-chapter1",
   "/quiz-theory.js?v=1-protected",
   "/quiz-theory.css?v=2-white-sticker",

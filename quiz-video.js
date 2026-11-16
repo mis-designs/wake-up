@@ -297,8 +297,8 @@
     const input = node('input'); input.type = 'file'; input.accept = 'video/mp4,.mp4'; label.append(input);
     const originalLabel = node('label', '', 'quiz-video-original'); const original = node('input'); original.type = 'checkbox'; originalLabel.append(original, node('span', 'Usa il file originale')); originalLabel.hidden = true;
     const qualityLabel = node('label', 'Ottimizzazione', 'quiz-video-quality');
-    const quality = node('select'); quality.append(new Option('Qualità originale — senza perdita', 'lossless'), new Option('File più piccolo — ricodifica ad alta qualità', 'quality')); qualityLabel.append(quality);
-    const qualityHint = node('p', 'Senza perdita mantiene identici immagini e audio. Un MP4 già compresso può restare della stessa dimensione.', 'quiz-video-hint');
+    const quality = node('select'); quality.append(new Option('Riduci MB — alta qualità', 'quality'), new Option('Qualità identica — solo ottimizzazione del file', 'lossless')); qualityLabel.append(quality);
+    const qualityHint = node('p', 'Riduce i MB mantenendo risoluzione, fotogrammi e audio. Il video viene ricodificato: controlla testi e cartelli nell’anteprima.', 'quiz-video-hint');
     const actions = node('div', '', 'quiz-video-actions'), save = node('button', replacing ? 'Sostituisci video' : 'Carica video', 'quiz-video-save'); save.disabled = true;
     const cancel = node('button', 'Annulla'); cancel.type = 'button'; cancel.onclick = () => renderVideoState(state, previous);
     actions.append(save); if (replacing) actions.append(cancel);
@@ -313,11 +313,12 @@
       for (const url of state.urls) URL.revokeObjectURL(url); state.urls.length = 0;
       const url = URL.createObjectURL(blob); state.urls.push(url); video.src = url; video.hidden = false;
       const percent = Math.max(0, 100 * (file.size - blob.size) / file.size);
+      const saving = percent > 0 ? `−${percent.toLocaleString('it-IT', { maximumFractionDigits: 1 })}%` : '0%';
       const reason = original.checked ? 'File originale selezionato.' : prepared.reason === 'compression_timeout' ? messages.compression_timeout
         : prepared.reason === 'compression_unavailable' ? 'Questo dispositivo non ha completato l’ottimizzazione: conservato l’originale.'
-        : !prepared.compressed ? 'Nessun risparmio utile con questa impostazione: conservato l’originale.'
+        : !prepared.compressed ? (quality.value === 'lossless' ? 'Qualità identica: questo file non si riduce senza ricodifica. Scegli “Riduci MB — alta qualità” per provare a ridurlo.' : 'La ricodifica non ha prodotto un file più piccolo: conservato l’originale.')
         : prepared.reason === 'lossless' ? 'Immagini e audio originali, senza ricodifica.' : 'Ricodifica ad alta qualità. Controlla testi, dettagli e audio nell’anteprima.';
-      report(state, `${bytes(file.size)} → ${bytes(blob.size)} (−${percent.toLocaleString('it-IT', { maximumFractionDigits: 1 })}%). ${reason}`);
+      report(state, `${bytes(file.size)} → ${bytes(blob.size)} (${saving}). ${reason}`);
     };
     original.onchange = showPreview;
     const prepare = async () => {
