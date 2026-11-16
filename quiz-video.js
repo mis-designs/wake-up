@@ -130,7 +130,7 @@
     if (!current(binding)) return;
     binding.options.onOpen?.();
     const overlay = node('div', '', 'quiz-video-overlay'), dialog = node('section', '', 'quiz-video-dialog');
-    const header = node('header'), title = node('h2', 'Spiegazione video'), exit = node('button', '×', 'quiz-video-close');
+    const header = node('header'), title = node('h2', binding.options.figureVideo ? 'Video della figura' : 'Spiegazione video'), exit = node('button', '×', 'quiz-video-close');
     exit.type = 'button'; exit.setAttribute('aria-label', 'Chiudi video'); exit.onclick = () => close();
     const titleId = 'quiz-video-title'; title.id = titleId; dialog.setAttribute('role', 'dialog'); dialog.setAttribute('aria-modal', 'true'); dialog.setAttribute('aria-labelledby', titleId);
     header.append(title, exit);
@@ -185,7 +185,7 @@
     state.video.hidden = !result.available;
     state.video.removeAttribute('poster');
     if (result.available) { state.video.src = result.url; if (result.thumbnail?.url) state.video.poster = result.thumbnail.url; }
-    report(state, message || (result.available ? 'Premi play per ascoltare la spiegazione.' : 'Nessun video disponibile per questa domanda.'));
+    report(state, message || (result.available ? 'Premi play per ascoltare la spiegazione.' : (state.binding.options.figureVideo ? 'Nessun video disponibile per questa figura.' : 'Nessun video disponibile per questa domanda.')));
     if (!admin(state.binding)) return;
     if (result.cleanupPending) {
       const cleanup = node('button', 'Completa rimozione', 'quiz-video-save');
@@ -208,7 +208,7 @@
       remove.onclick = () => removeVideo(state, result);
       const cover = node('button', result.thumbnail ? 'Modifica copertina' : 'Carica copertina');
       cover.onclick = () => thumbnailForm(state, result);
-      actions.append(replace, cover, remove); state.controls.append(actions);
+      actions.append(replace);if(!state.binding.options.figureVideo)actions.append(cover);actions.append(remove); state.controls.append(actions);
     } else uploadForm(state, result);
     if (result.archive) {
       const details = node('details', '', 'quiz-video-archive'), summary = node('summary', 'Trova questo video in R2');
@@ -220,7 +220,7 @@
         catch { path.focus(); path.select(); report(state, 'Seleziona e copia il percorso mostrato.'); }
       };
       details.append(summary, node('p', 'Bucket: ' + result.archive.bucket), label, copy);
-      details.append(node('p', 'current.json identifica la domanda, il video attuale e la copertina.'));
+      details.append(node('p', state.binding.options.figureVideo ? 'current.json identifica la figura e il video attuale.' : 'current.json identifica la domanda, il video attuale e la copertina.'));
       if (result.fileName) details.append(node('p', 'File caricato: ' + result.fileName));
       if (result.bytes) details.append(node('p', 'Dimensione salvata: ' + bytes(result.bytes) + (result.originalBytes ? ' · Originale: ' + bytes(result.originalBytes) : '')));
       state.controls.append(details);
@@ -230,7 +230,7 @@
   function removeVideo(state, previous) {
     state.video.pause(); state.controls.replaceChildren();
     const box = node('div', '', 'quiz-video-confirm');
-    const text = node('p', 'Rimuovere questo video? Sarà tolto da questa stessa domanda, risposta e figura in Magic Book, All Books e Quiz Bank.');
+    const text = node('p', state.binding.options.figureVideo ? 'Rimuovere il video di questa figura dai tre sistemi?' : 'Rimuovere questo video? Sarà tolto da questa stessa domanda, risposta e figura in Magic Book, All Books e Quiz Bank.');
     const actions = node('div', '', 'quiz-video-actions'), cancel = node('button', 'Annulla'), remove = node('button', 'Conferma rimozione', 'quiz-video-danger');
     const operationId = crypto.randomUUID();
     cancel.onclick = () => { renderVideoState(state, previous); state.controls.querySelector('button')?.focus(); };
@@ -303,10 +303,10 @@
     const cancel = node('button', 'Annulla'); cancel.type = 'button'; cancel.onclick = () => renderVideoState(state, previous);
     actions.append(save); if (replacing) actions.append(cancel);
     let prepared, file, busy = false, transfer = null, preferRelay = false;
-    const coverPicker = root.QuizVideoThumbnail.create({ signal: controller.signal, currentUrl: previous.thumbnail?.url || '', onChange: () => { save.disabled = busy || !prepared || Boolean(state.thumbnailPicker?.busy || state.thumbnailPicker?.invalid); } });
+    const coverPicker = binding.options.figureVideo ? {element:node('span'),selection:null,busy:false,invalid:false,setDisabled(){},destroy(){}} : root.QuizVideoThumbnail.create({ signal: controller.signal, currentUrl: previous.thumbnail?.url || '', onChange: () => { save.disabled = busy || !prepared || Boolean(state.thumbnailPicker?.busy || state.thumbnailPicker?.invalid); } });
     state.thumbnailPicker = coverPicker;
     state.controls.append(label, coverPicker.element, qualityLabel, qualityHint, originalLabel, actions);
-    report(state, replacing ? 'Il video attuale resterà disponibile finché il nuovo non sarà salvato. La sostituzione vale nei tre sistemi.' : 'Il video sarà condiviso con la stessa domanda, risposta e figura nei tre sistemi.');
+    report(state, replacing ? 'Il video attuale resterà disponibile finché il nuovo non sarà salvato. La sostituzione vale nei tre sistemi.' : (binding.options.figureVideo ? 'Il video sarà collegato a questa figura nei tre sistemi. Non serve una copertina.' : 'Il video sarà condiviso con la stessa domanda, risposta e figura nei tre sistemi.'));
     const showPreview = () => {
       if (active !== state || !prepared) return;
       video.pause(); const blob = original.checked ? new Blob([file], { type: 'video/mp4' }) : prepared.blob;

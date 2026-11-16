@@ -1,3 +1,4 @@
+import figureVideos from '../lib/figure-video.cjs';
 import crypto from "crypto";
 import { gallerySnapshot, resolveGalleryRow, invalidateGallery } from '../lib/video-gallery.mjs';
 import { isQuizTheoryAction, quizTheoryResponse } from "../lib/quiz-theory-response.mjs";
@@ -1280,25 +1281,26 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "invalid_request" });
     }
 
-    if (req.method === 'POST' && action === 'getVideoGallery') {
+    if (req.method === 'POST' && ['getVideoGallery','getFigureVideoGallery'].includes(action)) {
       if (!isQuizVideoMaster({ phone, deviceId, accessToken })) return res.status(403).json({ error: 'master_admin_required' });
       const { isAdmin, access } = await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });
       if (!isAdmin || !isQuizVideoMaster({ phone, deviceId, accessToken: access.accessToken || accessToken })) return res.status(403).json({ error: 'master_admin_required' });
       res.setHeader('Cache-Control', 'private, no-store');
-      return res.status(200).json({ ...(await gallerySnapshot()), ...(access.accessToken ? { accessToken: access.accessToken, accessTokenExpiresAt: access.accessTokenExpiresAt } : {}) });
+      return res.status(200).json({ ...(await (action==='getFigureVideoGallery'?figureVideos.figureVideoGallery():gallerySnapshot())), ...(access.accessToken ? { accessToken: access.accessToken, accessTokenExpiresAt: access.accessTokenExpiresAt } : {}) });
     }
     if (req.method === 'POST' && quizVideo.ACTIONS.has(action)) {
       const { isAdmin, access } = await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: action !== 'getQuizVideo' });
       const master = isAdmin && isQuizVideoMaster({ phone, deviceId, accessToken: access.accessToken || accessToken });
       if (action !== 'getQuizVideo' && !master) return res.status(403).json({ error: 'master_admin_required' });
-      const galleryRow = String(questionId).startsWith('vg_');
+      const figureRow=String(questionId).startsWith('fv_');
+      const galleryRow = figureRow || String(questionId).startsWith('vg_');
       if (galleryRow && !master) return res.status(403).json({ error: 'master_admin_required' });
-      const sourceRow = galleryRow ? await resolveGalleryRow(questionId) : LOCAL_MAGIC_BOOK_ROWS.find(item => String(item.id) === String(questionId)) || LOCAL_EXAM_ROWS.find(item => String(item.id) === String(questionId));
+      const sourceRow = figureRow ? figureVideos.resolveFigureVideoRow(questionId) : galleryRow ? await resolveGalleryRow(questionId) : LOCAL_MAGIC_BOOK_ROWS.find(item => String(item.id) === String(questionId)) || LOCAL_EXAM_ROWS.find(item => String(item.id) === String(questionId));
       if (!sourceRow) return res.status(404).json({ error: 'video_question_unavailable' });
       const row = galleryRow ? sourceRow : normalizeQuestionRow(sourceRow);
       if (getQuizAudioIdentity(row.question, row.figure).quizKey !== getQuizAudioIdentity(question, figure).quizKey) return res.status(409).json({ error: 'video_question_changed' });
       const result = await serveQuizVideo({ action, row, master, owner: normalizePhoneNumber(phone), video: getRequestData(req).video }, req, res);
-      if (action !== 'getQuizVideo') invalidateGallery();
+      if (action !== 'getQuizVideo') {if(figureRow)figureVideos.invalidateFigureVideos();else invalidateGallery();}
       return res.status(200).json({ ...result, ...(access.accessToken ? { accessToken: access.accessToken, accessTokenExpiresAt: access.accessTokenExpiresAt } : {}) });
     }
 

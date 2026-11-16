@@ -15,9 +15,11 @@
   if(data.accessToken)persistSession(s.phone,{...s,...data});return data;
  }
  function counts(items,source,chapter){let total=0,done=0;for(const row of items)for(const ref of row.refs)if(ref.source===source&&(!chapter||ref.chapter===chapter)){total++;if(row.available)done++;}return{total,done};}
- function meter(title,{total,done}){const box=el('div',null,'vg-meter');box.append(el('strong',title),el('b',String(done),'vg-count'),el('span',`su ${total.toLocaleString('it-IT')} quiz · ${total-done} da completare`));const bar=el('progress');bar.max=total||1;bar.value=done;bar.setAttribute('aria-label',`${title}: ${done} di ${total}`);box.append(bar);return box;}
+ function meter(title,{total,done},unit='quiz'){const box=el('div',null,'vg-meter');box.append(el('strong',title),el('b',String(done),'vg-count'),el('span',`su ${total.toLocaleString('it-IT')} ${unit} · ${total-done} da completare`));const bar=el('progress');bar.max=total||1;bar.value=done;bar.setAttribute('aria-label',`${title}: ${done} di ${total}`);box.append(bar);return box;}
  function render(){const s=state;if(!s?.data)return;s.buttons.forEach(b=>MagicQuizVideo.destroyButton(b));s.buttons=[];s.grid.replaceChildren();s.stats.replaceChildren();s.chapters.replaceChildren();
-  for(const [key,title]of [['magic','Magic Book'],['all','All Books'],['bank','Quiz Bank']])s.stats.append(meter(title,counts(s.data.items,key)));
+  for(const [key,title]of (s.kind==='figures'?[['figures','Video figure']]:[['magic','Magic Book'],['all','All Books'],['bank','Quiz Bank']]))s.stats.append(meter(title,counts(s.data.items,key),s.kind==='figures'?'figure':'quiz'));
+  s.search.placeholder=s.kind==='figures'?'Cerca numero o nome della figura':'Cerca quiz o figura';s.search.setAttribute('aria-label',s.search.placeholder);
+  s.quizKind.setAttribute('aria-pressed',String(s.kind==='quiz'));s.figureKind.setAttribute('aria-pressed',String(s.kind==='figures'));s.sourceControl.hidden=s.kind==='figures';s.chapterDetails.hidden=s.kind==='figures';s.layout.classList.toggle('vg-layout--figures',s.kind==='figures');s.add.textContent=s.kind==='figures'?'Aggiungi video alle figure':'Continua ad aggiungere video';
   s.videos.setAttribute('aria-pressed',String(s.mode==='videos'));s.add.setAttribute('aria-pressed',String(s.mode==='missing'));s.summary.textContent=`${s.data.uploaded} video caricati · aggiornato ${new Date(s.data.checkedAt).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}${s.data.unmatched?` · ${s.data.unmatched} fuori dai cataloghi attuali`:''}`;
   const groups=new Map();for(const row of s.data.items)for(const ref of row.refs)if(ref.source===s.source)groups.set(ref.chapter,ref.title);
   s.chapters.append(button('Tutti i capitoli',()=>{s.chapter='';s.limit=24;render();}));
@@ -27,11 +29,11 @@
   if(!rows.length)s.grid.append(el('p',s.query?'Nessun risultato. Modifica la ricerca.':s.mode==='missing'?'Tutti i quiz selezionati hanno un video.':'Nessun video in questa selezione. Usa Continua ad aggiungere video.','vg-empty'));
   for(const row of rows.slice(0,s.limit)){
    const card=el('article',null,'vg-card');const cover=button('',()=>manage.click());cover.className='vg-cover';cover.setAttribute('aria-label',`Apri video: ${row.question}`);
-   if(row.thumbnail){const img=el('img');img.src=row.thumbnail;img.alt='';img.loading='lazy';img.onerror=()=>{img.remove();cover.append(el('span','▶ Video'));};cover.append(img);}else cover.append(el('span',row.available?'▶ Video':'＋ Aggiungi video'));
-   const body=el('div',null,'vg-card-body');body.append(el('p',row.question,'vg-question'),el('strong',row.correct?'VERO':'FALSO',row.correct?'vg-true':'vg-false'));
-   const refs=row.refs.filter(r=>r.source===s.source);body.append(el('p',refs.map(r=>`${r.title} · ${r.id}`).join(' / '),'vg-ref'));
+   if(s.kind==='figures'){const img=el('img');img.src='/api/asset?'+new URLSearchParams({kind:'figure',figure:row.figure,presentation:'numberless-v2'});img.alt='Figura '+row.number;img.loading='lazy';img.onerror=()=>{img.remove();cover.append(el('span','Figura non disponibile'));};cover.classList.add('vg-cover--figure');cover.append(img);}else if(row.thumbnail){const img=el('img');img.src=row.thumbnail;img.alt='';img.loading='lazy';img.onerror=()=>{img.remove();cover.append(el('span','▶ Video'));};cover.append(img);}else cover.append(el('span',row.available?'▶ Video':'＋ Aggiungi video'));
+   const body=el('div',null,'vg-card-body');body.append(el('p',row.question,'vg-question'),...(s.kind==='figures'?[]:[el('strong',row.correct?'VERO':'FALSO',row.correct?'vg-true':'vg-false')]));
+   const refs=row.refs.filter(r=>r.source===s.source);if(s.kind!=='figures')body.append(el('p',refs.map(r=>`${r.title} · ${r.id}`).join(' / '),'vg-ref'));
    const number=String(row.figure||'').match(/(?:fig)?(\d+)(?:\.[a-z]+)?$/i)?.[1];if(number)body.append(el('p',`Figura ${number}`,'vg-ref'));
-   if(number){
+   if(number&&s.kind!=='figures'){
     const figureBox=el('div',null,'vg-figure-box'),image=el('img',null,'vg-figure-image');image.alt=`Figura ${number}`;image.loading='lazy';
     const url='/api/asset?'+new URLSearchParams({kind:'figure',figure:String(row.figure),presentation:'numberless-v2'});
     const zoom=button('',()=>window.MagicBookFigureDetail?.open(image,zoom));zoom.className='vg-figure-zoom';zoom.setAttribute('aria-label',`Ingrandisci figura ${number}`);zoom.setAttribute('aria-haspopup','dialog');zoom.disabled=true;zoom.append(image);
@@ -50,7 +52,7 @@
     const retry=button('Riprova figura',()=>{retry.hidden=true;note.textContent='';image.src=url;});retry.hidden=true;
     image.src=url;figureBox.append(zoom,copyImage,note,retry);body.append(figureBox);
    }
-   if(s.mode==='missing'){
+   if(s.mode==='missing'&&s.kind!=='figures'){
     const feedback=el('span',null,'vg-copy-feedback');feedback.setAttribute('role','status');
     const copy=button('Copia domanda e risposta',async()=>{
      const text=`${row.question}\nRisposta: ${row.correct?'VERO':'FALSO'}${number?'\nFigura '+number:''}`;
@@ -62,27 +64,30 @@
      }catch{feedback.textContent='Copia non riuscita. Riprova.';}finally{copy.disabled=false;}
     });copy.className='vg-copy';body.append(copy,feedback);
    }
-   const manage=MagicQuizVideo.createButton({gallery:true,question:row,cacheScope:s.scope,isCurrent:()=>state===s&&card.isConnected,isAdmin:()=>true,onClose:()=>{if(state===s)void load(s);},request:(action,video,signal)=>request(action,{questionId:row.id,question:row.question,figure:String(row.figure||''),video},signal)});
+   const manage=MagicQuizVideo.createButton({gallery:true,figureVideo:s.kind==='figures',question:row,cacheScope:s.scope,isCurrent:()=>state===s&&card.isConnected,isAdmin:()=>true,onClose:()=>{if(state===s)void load(s);},request:(action,video,signal)=>request(action,{questionId:row.id,question:row.question,figure:String(row.figure||''),video},signal)});
    s.buttons.push(manage);body.append(manage);card.append(cover,body);s.grid.append(card);
   }
   s.more.hidden=rows.length<=s.limit;
  }
- async function load(s){if(s.loading||state!==s)return;s.loading=true;s.refresh.disabled=true;s.status.replaceChildren();const loading=el('span',null,'magic-loading-indicator magic-loading-indicator--gallery');const media=el('span',null,'magic-loading-indicator__media');const image=el('img',null,'magic-loading-indicator__image');image.src='/icons/loading_backup.gif';image.alt='';media.append(image);loading.append(media,el('span','Caricamento della galleria…','magic-loading-indicator__label'));s.status.append(loading);s.status.setAttribute('role','status');
+ async function load(s){if(s.loading||state!==s)return;s.loading=true;s.refresh.disabled=true;s.quizKind.disabled=s.figureKind.disabled=true;s.status.replaceChildren();const loading=el('span',null,'magic-loading-indicator magic-loading-indicator--gallery');const media=el('span',null,'magic-loading-indicator__media');const image=el('img',null,'magic-loading-indicator__image');image.src='/icons/loading_backup.gif';image.alt='';media.append(image);loading.append(media,el('span','Caricamento della galleria…','magic-loading-indicator__label'));s.status.append(loading);s.status.setAttribute('role','status');
   const timer=setTimeout(()=>s.controller.abort(),35000);
-  try{const data=await request('getVideoGallery',{},s.controller.signal);if(state!==s)return;s.data=data;render();s.status.textContent='';}
+  try{const data=await request(s.kind==='figures'?'getFigureVideoGallery':'getVideoGallery',{},s.controller.signal);if(state!==s)return;s.data=data;render();s.status.textContent='';}
   catch(e){if(state!==s)return;if([401,403].includes(e.status)||['master_admin_required','unauthorized','invalid_token','expired_token'].includes(e.message)){close();sync();return;}s.status.textContent='Galleria non aggiornata. Controlla la connessione e premi Aggiorna.';s.controller=new AbortController();}
-  finally{clearTimeout(timer);s.loading=false;s.refresh.disabled=false;}
+  finally{clearTimeout(timer);s.loading=false;s.refresh.disabled=false;s.quizKind.disabled=s.figureKind.disabled=false;}
  }
  function open(){sync();if(entry.hidden||state)return;const overlay=el('div',null,'vg-overlay');overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','vg-title');
   const shell=el('section',null,'vg-shell'),head=el('header',null,'vg-header'),title=el('h1','Video Gallery');title.id='vg-title';const exit=button('Chiudi',close);const heading=el('div',null,'vg-heading');heading.append(el('span','MAGIC BOOK / MASTER ADMIN','vg-eyebrow'),title);exit.className='vg-close';head.append(heading,exit);
   const summary=el('p',null,'vg-summary'),stats=el('div',null,'vg-stats'),toolbar=el('div',null,'vg-toolbar'),status=el('p'),source=el('select');source.setAttribute('aria-label','Catalogo');for(const [v,t]of [['magic','Magic Book'],['all','All Books'],['bank','Quiz Bank']]){const o=el('option',t);o.value=v;source.append(o);}
-  const s={scope:crypto.randomUUID(),controller:new AbortController(),buttons:[],source:'magic',chapter:'',mode:'videos',query:'',limit:24,data:null};state=s;
+  const s={scope:crypto.randomUUID(),controller:new AbortController(),buttons:[],kind:'quiz',source:'magic',chapter:'',mode:'videos',query:'',limit:24,data:null};state=s;
+  const kinds=el('nav',null,'vg-kinds');kinds.setAttribute('aria-label','Tipo di video');
+  const changeKind=kind=>{if(s.loading||s.kind===kind)return;s.kind=kind;s.source=kind==='figures'?'figures':source.value;s.chapter='';s.query='';search.value='';s.mode=kind==='figures'?'missing':'videos';s.limit=24;s.data=null;s.buttons.forEach(b=>MagicQuizVideo.destroyButton(b));s.buttons=[];s.grid.replaceChildren();s.stats.replaceChildren();s.result.textContent='';s.summary.textContent='';void load(s);};
+  const quizKind=button('Video quiz',()=>changeKind('quiz')),figureKind=button('Video figure',()=>changeKind('figures'));kinds.append(quizKind,figureKind);
   const videos=button('Video caricati',()=>{s.mode='videos';s.limit=24;render();}),add=button('Continua ad aggiungere video',()=>{s.mode='missing';s.limit=24;render();s.chapterDetails.open=true;s.chapterDetails.focus();});
   videos.className='vg-tab';add.className='vg-add';const refresh=button('Aggiorna',()=>load(s));refresh.className='vg-refresh';refresh.title='Le modifiche dagli altri sistemi possono richiedere fino a un minuto';source.onchange=()=>{s.source=source.value;s.chapter='';s.limit=24;render();};
   const form=el('form'),search=el('input');search.type='search';search.placeholder='Cerca quiz o figura';search.setAttribute('aria-label','Cerca quiz o figura');const submit=el('button','Cerca');submit.type='submit';form.append(search,submit);form.onsubmit=e=>{e.preventDefault();s.query=search.value.trim().toLocaleLowerCase('it');s.limit=24;render();};
   toolbar.append(source,videos,add,refresh,form);const layout=el('div',null,'vg-layout'),chapters=el('details',null,'vg-chapters');chapters.open=innerWidth>800;chapters.tabIndex=-1;chapters.append(el('summary','Avanzamento per capitolo'));const chapterBody=el('div');chapters.append(chapterBody);
-  const main=el('main'),result=el('h2');result.tabIndex=-1;const grid=el('div',null,'vg-grid'),more=button('Mostra altri',()=>{s.limit+=24;render();});more.hidden=true;main.append(result,grid,more);layout.append(chapters,main);shell.append(head,summary,stats,toolbar,status,layout);overlay.append(shell);document.body.append(overlay);
-  Object.assign(s,{videos,add,summary,stats,status,refresh,grid,result,more,chapters:chapterBody,chapterDetails:chapters});s.unmount=MagicBookPopup.mount(overlay,{returnFocus:entry,bodyClass:'vg-open',onDismiss:close,initialFocus:exit,focusable:()=>overlay.querySelectorAll('button,input,select,summary,[tabindex]')});void load(s);
+  const main=el('main'),result=el('h2');result.tabIndex=-1;const grid=el('div',null,'vg-grid'),more=button('Mostra altri',()=>{s.limit+=24;render();});more.hidden=true;main.append(result,grid,more);layout.append(chapters,main);shell.append(head,kinds,summary,stats,toolbar,status,layout);overlay.append(shell);document.body.append(overlay);
+  Object.assign(s,{search,quizKind,figureKind,sourceControl:source,layout,videos,add,summary,stats,status,refresh,grid,result,more,chapters:chapterBody,chapterDetails:chapters});s.unmount=MagicBookPopup.mount(overlay,{returnFocus:entry,bodyClass:'vg-open',onDismiss:close,initialFocus:exit,focusable:()=>overlay.querySelectorAll('button,input,select,summary,[tabindex]')});void load(s);
  }
  entry.onclick=open;new MutationObserver(sync).observe(document.getElementById('profileRoleBadge'),{attributes:true,childList:true,subtree:true});window.addEventListener('storage',sync);window.addEventListener('magicbook:logout',()=>{close();sync();});window.addEventListener('pagehide',close);window.MagicBookPopup?.registerHistoryLayer(()=>{if(!state||document.querySelector('.quiz-video-overlay,.figure-detail-overlay'))return false;close();return true;});sync();
 })();

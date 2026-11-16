@@ -492,3 +492,5 @@ Native select owns source choice; semantic details/summary owns chapter disclosu
 Gallery browser fixtures must load the actual Home stylesheets. Verify compact close/add controls, no horizontal overflow, pagination, search, upload editor, failure recovery and master-only entry on desktop/mobile. Preserve the existing signed authorization and shared video editor.
 
 Gallery figures use the existing same-origin R2 asset resolver and shared figure viewer. Lazy image loads only for rendered cards; PNG copying reuses loaded pixels without another fetch. Clipboard failure is explicit; missing figures offer a manual retry and never substitute another figure.
+
+Figure videos have their own canonical figure ID and R2 prefix, independent of quiz text/answers. Preserve existing quiz videos. Test master-only APIs, no-cover upload UI, replacement/removal, cache invalidation and reading the same object through AllBooks.

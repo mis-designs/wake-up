@@ -1,0 +1,2872 @@
+[
+  {
+    "id": "fv_1",
+    "mediaType": "figure",
+    "figure": "fig1",
+    "question": "Strada deformata",
+    "number": 1
+  },
+  {
+    "id": "fv_2",
+    "mediaType": "figure",
+    "figure": "fig2",
+    "question": "Dosso",
+    "number": 2
+  },
+  {
+    "id": "fv_3",
+    "mediaType": "figure",
+    "figure": "fig3",
+    "question": "Cunetta",
+    "number": 3
+  },
+  {
+    "id": "fv_4",
+    "mediaType": "figure",
+    "figure": "fig4",
+    "question": "Curva pericolosa a destra",
+    "number": 4
+  },
+  {
+    "id": "fv_5",
+    "mediaType": "figure",
+    "figure": "fig5",
+    "question": "Curva pericolosa a sinistra",
+    "number": 5
+  },
+  {
+    "id": "fv_8",
+    "mediaType": "figure",
+    "figure": "fig8",
+    "question": "Passaggio a livello con barriere o semibarriere",
+    "number": 8
+  },
+  {
+    "id": "fv_9",
+    "mediaType": "figure",
+    "figure": "fig9",
+    "question": "Passaggio a livello senza barriere",
+    "number": 9
+  },
+  {
+    "id": "fv_10",
+    "mediaType": "figure",
+    "figure": "fig10",
+    "question": "Croce di Sant’Andrea",
+    "number": 10
+  },
+  {
+    "id": "fv_11",
+    "mediaType": "figure",
+    "figure": "fig11",
+    "question": "Doppia croce di Sant’Andrea",
+    "number": 11
+  },
+  {
+    "id": "fv_13",
+    "mediaType": "figure",
+    "figure": "fig13",
+    "question": "Pannelli distanziometrici dei passaggi a livello",
+    "number": 13
+  },
+  {
+    "id": "fv_14",
+    "mediaType": "figure",
+    "figure": "fig14",
+    "question": "Attraversamento tranviario",
+    "number": 14
+  },
+  {
+    "id": "fv_15",
+    "mediaType": "figure",
+    "figure": "fig15",
+    "question": "Pericolo: attraversamento pedonale",
+    "number": 15
+  },
+  {
+    "id": "fv_16",
+    "mediaType": "figure",
+    "figure": "fig16",
+    "question": "Pericolo: attraversamento ciclabile",
+    "number": 16
+  },
+  {
+    "id": "fv_17",
+    "mediaType": "figure",
+    "figure": "fig17",
+    "question": "Discesa pericolosa",
+    "number": 17
+  },
+  {
+    "id": "fv_18",
+    "mediaType": "figure",
+    "figure": "fig18",
+    "question": "Salita ripida",
+    "number": 18
+  },
+  {
+    "id": "fv_22",
+    "mediaType": "figure",
+    "figure": "fig22",
+    "question": "Ponte mobile",
+    "number": 22
+  },
+  {
+    "id": "fv_23",
+    "mediaType": "figure",
+    "figure": "fig23",
+    "question": "Banchina cedevole",
+    "number": 23
+  },
+  {
+    "id": "fv_24",
+    "mediaType": "figure",
+    "figure": "fig24",
+    "question": "Strada sdrucciolevole",
+    "number": 24
+  },
+  {
+    "id": "fv_28",
+    "mediaType": "figure",
+    "figure": "fig28",
+    "question": "Doppio senso di circolazione",
+    "number": 28
+  },
+  {
+    "id": "fv_30",
+    "mediaType": "figure",
+    "figure": "fig30",
+    "question": "Sbocco su molo o argine",
+    "number": 30
+  },
+  {
+    "id": "fv_31",
+    "mediaType": "figure",
+    "figure": "fig31",
+    "question": "Materiale instabile sulla strada",
+    "number": 31
+  },
+  {
+    "id": "fv_34",
+    "mediaType": "figure",
+    "figure": "fig34",
+    "question": "Preavviso di semaforo verticale",
+    "number": 34
+  },
+  {
+    "id": "fv_37",
+    "mediaType": "figure",
+    "figure": "fig37",
+    "question": "Forte vento laterale",
+    "number": 37
+  },
+  {
+    "id": "fv_38",
+    "mediaType": "figure",
+    "figure": "fig38",
+    "question": "Pericolo di incendio",
+    "number": 38
+  },
+  {
+    "id": "fv_40",
+    "mediaType": "figure",
+    "figure": "fig40",
+    "question": "Dare precedenza",
+    "number": 40
+  },
+  {
+    "id": "fv_41",
+    "mediaType": "figure",
+    "figure": "fig41",
+    "question": "Fermarsi e dare precedenza (STOP)",
+    "number": 41
+  },
+  {
+    "id": "fv_42",
+    "mediaType": "figure",
+    "figure": "fig42",
+    "question": "Preavviso di dare precedenza",
+    "number": 42
+  },
+  {
+    "id": "fv_43",
+    "mediaType": "figure",
+    "figure": "fig43",
+    "question": "Preavviso di fermarsi e dare precedenza",
+    "number": 43
+  },
+  {
+    "id": "fv_44",
+    "mediaType": "figure",
+    "figure": "fig44",
+    "question": "Intersezione con precedenza a destra",
+    "number": 44
+  },
+  {
+    "id": "fv_45",
+    "mediaType": "figure",
+    "figure": "fig45",
+    "question": "Dare precedenza nei sensi unici alternati",
+    "number": 45
+  },
+  {
+    "id": "fv_46",
+    "mediaType": "figure",
+    "figure": "fig46",
+    "question": "Fine del diritto di precedenza",
+    "number": 46
+  },
+  {
+    "id": "fv_47",
+    "mediaType": "figure",
+    "figure": "fig47",
+    "question": "Intersezione con diritto di precedenza",
+    "number": 47
+  },
+  {
+    "id": "fv_50",
+    "mediaType": "figure",
+    "figure": "fig50",
+    "question": "Confluenza a destra",
+    "number": 50
+  },
+  {
+    "id": "fv_51",
+    "mediaType": "figure",
+    "figure": "fig51",
+    "question": "Confluenza a sinistra",
+    "number": 51
+  },
+  {
+    "id": "fv_52",
+    "mediaType": "figure",
+    "figure": "fig52",
+    "question": "Diritto di precedenza",
+    "number": 52
+  },
+  {
+    "id": "fv_53",
+    "mediaType": "figure",
+    "figure": "fig53",
+    "question": "Diritto di precedenza nei sensi unici alternati",
+    "number": 53
+  },
+  {
+    "id": "fv_54",
+    "mediaType": "figure",
+    "figure": "fig54",
+    "question": "Divieto di transito",
+    "number": 54
+  },
+  {
+    "id": "fv_55",
+    "mediaType": "figure",
+    "figure": "fig55",
+    "question": "Senso vietato",
+    "number": 55
+  },
+  {
+    "id": "fv_56",
+    "mediaType": "figure",
+    "figure": "fig56",
+    "question": "Divieto di sorpasso",
+    "number": 56
+  },
+  {
+    "id": "fv_57",
+    "mediaType": "figure",
+    "figure": "fig57",
+    "question": "Distanziamento minimo obbligatorio",
+    "number": 57
+  },
+  {
+    "id": "fv_59",
+    "mediaType": "figure",
+    "figure": "fig59",
+    "question": "Divieto di segnalazioni acustiche",
+    "number": 59
+  },
+  {
+    "id": "fv_60",
+    "mediaType": "figure",
+    "figure": "fig60",
+    "question": "Divieto di sorpasso per veicoli merci oltre 3,5 t",
+    "number": 60
+  },
+  {
+    "id": "fv_63",
+    "mediaType": "figure",
+    "figure": "fig63",
+    "question": "Transito vietato alle biciclette",
+    "number": 63
+  },
+  {
+    "id": "fv_64",
+    "mediaType": "figure",
+    "figure": "fig64",
+    "question": "Transito vietato ai motocicli",
+    "number": 64
+  },
+  {
+    "id": "fv_66",
+    "mediaType": "figure",
+    "figure": "fig66",
+    "question": "Transito vietato a tutti gli autoveicoli",
+    "number": 66
+  },
+  {
+    "id": "fv_67",
+    "mediaType": "figure",
+    "figure": "fig67",
+    "question": "Transito vietato agli autobus",
+    "number": 67
+  },
+  {
+    "id": "fv_68",
+    "mediaType": "figure",
+    "figure": "fig68",
+    "question": "Transito vietato ai veicoli merci oltre 3,5 t",
+    "number": 68
+  },
+  {
+    "id": "fv_70",
+    "mediaType": "figure",
+    "figure": "fig70",
+    "question": "Transito vietato ai veicoli a motore trainanti un rimorchio",
+    "number": 70
+  },
+  {
+    "id": "fv_71",
+    "mediaType": "figure",
+    "figure": "fig71",
+    "question": "Transito vietato alle macchine agricole",
+    "number": 71
+  },
+  {
+    "id": "fv_72",
+    "mediaType": "figure",
+    "figure": "fig72",
+    "question": "Transito vietato ai veicoli che trasportano merci pericolose",
+    "number": 72
+  },
+  {
+    "id": "fv_73",
+    "mediaType": "figure",
+    "figure": "fig73",
+    "question": "Transito vietato ai veicoli che trasportano esplosivi o prodotti infiammabili",
+    "number": 73
+  },
+  {
+    "id": "fv_75",
+    "mediaType": "figure",
+    "figure": "fig75",
+    "question": "Larghezza massima: 2,30 m",
+    "number": 75
+  },
+  {
+    "id": "fv_76",
+    "mediaType": "figure",
+    "figure": "fig76",
+    "question": "Altezza massima: 3,50 m",
+    "number": 76
+  },
+  {
+    "id": "fv_77",
+    "mediaType": "figure",
+    "figure": "fig77",
+    "question": "Lunghezza massima: 10 m",
+    "number": 77
+  },
+  {
+    "id": "fv_78",
+    "mediaType": "figure",
+    "figure": "fig78",
+    "question": "Massa massima: 7 t",
+    "number": 78
+  },
+  {
+    "id": "fv_79",
+    "mediaType": "figure",
+    "figure": "fig79",
+    "question": "Massa massima per asse: 2,5 t",
+    "number": 79
+  },
+  {
+    "id": "fv_80",
+    "mediaType": "figure",
+    "figure": "fig80",
+    "question": "Via libera",
+    "number": 80
+  },
+  {
+    "id": "fv_81",
+    "mediaType": "figure",
+    "figure": "fig81",
+    "question": "Fine del limite massimo di velocità",
+    "number": 81
+  },
+  {
+    "id": "fv_82",
+    "mediaType": "figure",
+    "figure": "fig82",
+    "question": "Fine del divieto di sorpasso",
+    "number": 82
+  },
+  {
+    "id": "fv_83",
+    "mediaType": "figure",
+    "figure": "fig83",
+    "question": "Fine del divieto di sorpasso per veicoli merci oltre 3,5 t",
+    "number": 83
+  },
+  {
+    "id": "fv_84",
+    "mediaType": "figure",
+    "figure": "fig84",
+    "question": "Divieto di sosta",
+    "number": 84
+  },
+  {
+    "id": "fv_85",
+    "mediaType": "figure",
+    "figure": "fig85",
+    "question": "Divieto di fermata",
+    "number": 85
+  },
+  {
+    "id": "fv_86",
+    "mediaType": "figure",
+    "figure": "fig86",
+    "question": "Parcheggio",
+    "number": 86
+  },
+  {
+    "id": "fv_90",
+    "mediaType": "figure",
+    "figure": "fig90",
+    "question": "Passo carrabile",
+    "number": 90
+  },
+  {
+    "id": "fv_91",
+    "mediaType": "figure",
+    "figure": "fig91",
+    "question": "Sosta riservata alle persone con disabilità",
+    "number": 91
+  },
+  {
+    "id": "fv_92",
+    "mediaType": "figure",
+    "figure": "fig92",
+    "question": "Regolazione flessibile della sosta",
+    "number": 92
+  },
+  {
+    "id": "fv_96",
+    "mediaType": "figure",
+    "figure": "fig96",
+    "question": "Preavviso di direzione obbligatoria a destra",
+    "number": 96
+  },
+  {
+    "id": "fv_98",
+    "mediaType": "figure",
+    "figure": "fig98",
+    "question": "Direzioni consentite: destra e sinistra",
+    "number": 98
+  },
+  {
+    "id": "fv_101",
+    "mediaType": "figure",
+    "figure": "fig101",
+    "question": "Passaggio obbligatorio a sinistra",
+    "number": 101
+  },
+  {
+    "id": "fv_102",
+    "mediaType": "figure",
+    "figure": "fig102",
+    "question": "Passaggio obbligatorio a destra",
+    "number": 102
+  },
+  {
+    "id": "fv_103",
+    "mediaType": "figure",
+    "figure": "fig103",
+    "question": "Passaggi consentiti: destra e sinistra",
+    "number": 103
+  },
+  {
+    "id": "fv_104",
+    "mediaType": "figure",
+    "figure": "fig104",
+    "question": "Rotatoria",
+    "number": 104
+  },
+  {
+    "id": "fv_105",
+    "mediaType": "figure",
+    "figure": "fig105",
+    "question": "Limite minimo di velocità",
+    "number": 105
+  },
+  {
+    "id": "fv_106",
+    "mediaType": "figure",
+    "figure": "fig106",
+    "question": "Fine del limite minimo di velocità",
+    "number": 106
+  },
+  {
+    "id": "fv_107",
+    "mediaType": "figure",
+    "figure": "fig107",
+    "question": "Catene da neve obbligatorie",
+    "number": 107
+  },
+  {
+    "id": "fv_108",
+    "mediaType": "figure",
+    "figure": "fig108",
+    "question": "Percorso pedonale",
+    "number": 108
+  },
+  {
+    "id": "fv_112",
+    "mediaType": "figure",
+    "figure": "fig112",
+    "question": "Pista ciclabile contigua al marciapiede",
+    "number": 112
+  },
+  {
+    "id": "fv_113",
+    "mediaType": "figure",
+    "figure": "fig113",
+    "question": "Percorso pedonale e ciclabile",
+    "number": 113
+  },
+  {
+    "id": "fv_115",
+    "mediaType": "figure",
+    "figure": "fig115",
+    "question": "Fine del percorso pedonale e ciclabile",
+    "number": 115
+  },
+  {
+    "id": "fv_117",
+    "mediaType": "figure",
+    "figure": "fig117",
+    "question": "Fine del percorso per animali da soma e da sella",
+    "number": 117
+  },
+  {
+    "id": "fv_118",
+    "mediaType": "figure",
+    "figure": "fig118",
+    "question": "Alt — Dogana",
+    "number": 118
+  },
+  {
+    "id": "fv_119",
+    "mediaType": "figure",
+    "figure": "fig119",
+    "question": "Alt — Polizia",
+    "number": 119
+  },
+  {
+    "id": "fv_120",
+    "mediaType": "figure",
+    "figure": "fig120",
+    "question": "Alt — Stazione",
+    "number": 120
+  },
+  {
+    "id": "fv_121",
+    "mediaType": "figure",
+    "figure": "fig121",
+    "question": "Pannello integrativo: distanza",
+    "number": 121
+  },
+  {
+    "id": "fv_122",
+    "mediaType": "figure",
+    "figure": "fig122",
+    "question": "Pannello integrativo: estesa",
+    "number": 122
+  },
+  {
+    "id": "fv_125",
+    "mediaType": "figure",
+    "figure": "fig125",
+    "question": "Pannello integrativo: giorni lavorativi",
+    "number": 125
+  },
+  {
+    "id": "fv_126",
+    "mediaType": "figure",
+    "figure": "fig126",
+    "question": "Pannello integrativo: limitazione",
+    "number": 126
+  },
+  {
+    "id": "fv_138",
+    "mediaType": "figure",
+    "figure": "fig138",
+    "question": "Strada sdrucciolevole per ghiaccio",
+    "number": 138
+  },
+  {
+    "id": "fv_139",
+    "mediaType": "figure",
+    "figure": "fig139",
+    "question": "Strada sdrucciolevole per pioggia",
+    "number": 139
+  },
+  {
+    "id": "fv_150",
+    "mediaType": "figure",
+    "figure": "fig150",
+    "question": "Preavviso di percorso obbligatorio per autocarri",
+    "number": 150
+  },
+  {
+    "id": "fv_151",
+    "mediaType": "figure",
+    "figure": "fig151",
+    "question": "Divieto di transito per le categorie indicate",
+    "number": 151
+  },
+  {
+    "id": "fv_153",
+    "mediaType": "figure",
+    "figure": "fig153",
+    "question": "Senso unico frontale",
+    "number": 153
+  },
+  {
+    "id": "fv_154",
+    "mediaType": "figure",
+    "figure": "fig154",
+    "question": "Semaforo veicolare",
+    "number": 154
+  },
+  {
+    "id": "fv_155",
+    "mediaType": "figure",
+    "figure": "fig155",
+    "question": "Semafori veicolari di corsia",
+    "number": 155
+  },
+  {
+    "id": "fv_159",
+    "mediaType": "figure",
+    "figure": "fig159",
+    "question": "Semafori per corsie reversibili",
+    "number": 159
+  },
+  {
+    "id": "fv_160",
+    "mediaType": "figure",
+    "figure": "fig160",
+    "question": "Luci gialle lampeggianti",
+    "number": 160
+  },
+  {
+    "id": "fv_161",
+    "mediaType": "figure",
+    "figure": "fig161",
+    "question": "Semafori di onda verde",
+    "number": 161
+  },
+  {
+    "id": "fv_162",
+    "mediaType": "figure",
+    "figure": "fig162",
+    "question": "Luci rosse lampeggianti",
+    "number": 162
+  },
+  {
+    "id": "fv_166",
+    "mediaType": "figure",
+    "figure": "fig166",
+    "question": "Preavviso di incrocio urbano",
+    "number": 166
+  },
+  {
+    "id": "fv_167",
+    "mediaType": "figure",
+    "figure": "fig167",
+    "question": "Preavviso di incroci ravvicinati urbani",
+    "number": 167
+  },
+  {
+    "id": "fv_168",
+    "mediaType": "figure",
+    "figure": "fig168",
+    "question": "Preavviso di incrocio con rotatoria",
+    "number": 168
+  },
+  {
+    "id": "fv_172",
+    "mediaType": "figure",
+    "figure": "fig172",
+    "question": "Preselezione urbana",
+    "number": 172
+  },
+  {
+    "id": "fv_182",
+    "mediaType": "figure",
+    "figure": "fig182",
+    "question": "Itinerario extraurbano",
+    "number": 182
+  },
+  {
+    "id": "fv_183",
+    "mediaType": "figure",
+    "figure": "fig183",
+    "question": "Fine del centro abitato",
+    "number": 183
+  },
+  {
+    "id": "fv_184",
+    "mediaType": "figure",
+    "figure": "fig184",
+    "question": "Conferma autostradale",
+    "number": 184
+  },
+  {
+    "id": "fv_186",
+    "mediaType": "figure",
+    "figure": "fig186",
+    "question": "Area pedonale",
+    "number": 186
+  },
+  {
+    "id": "fv_189",
+    "mediaType": "figure",
+    "figure": "fig189",
+    "question": "Transitabilità della strada",
+    "number": 189
+  },
+  {
+    "id": "fv_193",
+    "mediaType": "figure",
+    "figure": "fig193",
+    "question": "Transitabilità della strada",
+    "number": 193
+  },
+  {
+    "id": "fv_194",
+    "mediaType": "figure",
+    "figure": "fig194",
+    "question": "Inizio di strada extraurbana principale",
+    "number": 194
+  },
+  {
+    "id": "fv_197",
+    "mediaType": "figure",
+    "figure": "fig197",
+    "question": "Limiti massimi generali di velocità",
+    "number": 197
+  },
+  {
+    "id": "fv_199",
+    "mediaType": "figure",
+    "figure": "fig199",
+    "question": "Itinerario internazionale",
+    "number": 199
+  },
+  {
+    "id": "fv_200",
+    "mediaType": "figure",
+    "figure": "fig200",
+    "question": "Identificazione di autostrada",
+    "number": 200
+  },
+  {
+    "id": "fv_201",
+    "mediaType": "figure",
+    "figure": "fig201",
+    "question": "Identificazione di strada statale",
+    "number": 201
+  },
+  {
+    "id": "fv_203",
+    "mediaType": "figure",
+    "figure": "fig203",
+    "question": "Identificazione di strada comunale",
+    "number": 203
+  },
+  {
+    "id": "fv_206",
+    "mediaType": "figure",
+    "figure": "fig206",
+    "question": "Progressiva distanziometrica autostradale",
+    "number": 206
+  },
+  {
+    "id": "fv_218",
+    "mediaType": "figure",
+    "figure": "fig218",
+    "question": "Attraversamento pedonale",
+    "number": 218
+  },
+  {
+    "id": "fv_219",
+    "mediaType": "figure",
+    "figure": "fig219",
+    "question": "Scuolabus",
+    "number": 219
+  },
+  {
+    "id": "fv_225",
+    "mediaType": "figure",
+    "figure": "fig225",
+    "question": "Preavviso di strada senza uscita",
+    "number": 225
+  },
+  {
+    "id": "fv_226",
+    "mediaType": "figure",
+    "figure": "fig226",
+    "question": "Velocità consigliata",
+    "number": 226
+  },
+  {
+    "id": "fv_228",
+    "mediaType": "figure",
+    "figure": "fig228",
+    "question": "Strada riservata ai veicoli a motore",
+    "number": 228
+  },
+  {
+    "id": "fv_230",
+    "mediaType": "figure",
+    "figure": "fig230",
+    "question": "Galleria",
+    "number": 230
+  },
+  {
+    "id": "fv_231",
+    "mediaType": "figure",
+    "figure": "fig231",
+    "question": "Ponte",
+    "number": 231
+  },
+  {
+    "id": "fv_236",
+    "mediaType": "figure",
+    "figure": "fig236",
+    "question": "Attraversamento ciclabile",
+    "number": 236
+  },
+  {
+    "id": "fv_238",
+    "mediaType": "figure",
+    "figure": "fig238",
+    "question": "Svolta a sinistra indiretta",
+    "number": 238
+  },
+  {
+    "id": "fv_239",
+    "mediaType": "figure",
+    "figure": "fig239",
+    "question": "Inversione di marcia",
+    "number": 239
+  },
+  {
+    "id": "fv_240",
+    "mediaType": "figure",
+    "figure": "fig240",
+    "question": "Piazzola di sosta",
+    "number": 240
+  },
+  {
+    "id": "fv_242",
+    "mediaType": "figure",
+    "figure": "fig242",
+    "question": "Uso delle corsie extraurbane",
+    "number": 242
+  },
+  {
+    "id": "fv_243",
+    "mediaType": "figure",
+    "figure": "fig243",
+    "question": "Velocità minime obbligatorie per corsia",
+    "number": 243
+  },
+  {
+    "id": "fv_250",
+    "mediaType": "figure",
+    "figure": "fig250",
+    "question": "Preavviso di deviazione per autocarri",
+    "number": 250
+  },
+  {
+    "id": "fv_251",
+    "mediaType": "figure",
+    "figure": "fig251",
+    "question": "Direzione consigliata agli autocarri",
+    "number": 251
+  },
+  {
+    "id": "fv_256",
+    "mediaType": "figure",
+    "figure": "fig256",
+    "question": "Fermata autobus extraurbana",
+    "number": 256
+  },
+  {
+    "id": "fv_270",
+    "mediaType": "figure",
+    "figure": "fig270",
+    "question": "Auto al seguito",
+    "number": 270
+  },
+  {
+    "id": "fv_273",
+    "mediaType": "figure",
+    "figure": "fig273",
+    "question": "Area attrezzata con impianti di scarico",
+    "number": 273
+  },
+  {
+    "id": "fv_278",
+    "mediaType": "figure",
+    "figure": "fig278",
+    "question": "Cono stradale",
+    "number": 278
+  },
+  {
+    "id": "fv_279",
+    "mediaType": "figure",
+    "figure": "fig279",
+    "question": "Passaggio obbligatorio per veicoli operativi",
+    "number": 279
+  },
+  {
+    "id": "fv_282",
+    "mediaType": "figure",
+    "figure": "fig282",
+    "question": "Limitazione di transito per cantiere stradale",
+    "number": 282
+  },
+  {
+    "id": "fv_283",
+    "mediaType": "figure",
+    "figure": "fig283",
+    "question": "Preavviso di deviazione",
+    "number": 283
+  },
+  {
+    "id": "fv_289",
+    "mediaType": "figure",
+    "figure": "fig289",
+    "question": "Delineatori di margine su strade a senso unico",
+    "number": 289
+  },
+  {
+    "id": "fv_291",
+    "mediaType": "figure",
+    "figure": "fig291",
+    "question": "Delineatori di margine per gallerie",
+    "number": 291
+  },
+  {
+    "id": "fv_297",
+    "mediaType": "figure",
+    "figure": "fig297",
+    "question": "Preavviso di semaforo per lavori stradali",
+    "number": 297
+  },
+  {
+    "id": "fv_301",
+    "mediaType": "figure",
+    "figure": "fig301",
+    "question": "Contrassegni posteriori dei limiti di velocità",
+    "number": 301
+  },
+  {
+    "id": "fv_302",
+    "mediaType": "figure",
+    "figure": "fig302",
+    "question": "Pannello per carichi sporgenti",
+    "number": 302
+  },
+  {
+    "id": "fv_303",
+    "mediaType": "figure",
+    "figure": "fig303",
+    "question": "Pannello per trasporto di merci pericolose",
+    "number": 303
+  },
+  {
+    "id": "fv_304",
+    "mediaType": "figure",
+    "figure": "fig304",
+    "question": "Pannelli posteriori per autocarri oltre 3,5 t",
+    "number": 304
+  },
+  {
+    "id": "fv_305",
+    "mediaType": "figure",
+    "figure": "fig305",
+    "question": "Pannelli posteriori per rimorchi e semirimorchi",
+    "number": 305
+  },
+  {
+    "id": "fv_385",
+    "mediaType": "figure",
+    "figure": "fig385",
+    "question": "Vigile con un braccio alzato",
+    "number": 385
+  },
+  {
+    "id": "fv_386",
+    "mediaType": "figure",
+    "figure": "fig386",
+    "question": "Vigile con le braccia ad angolo retto",
+    "number": 386
+  },
+  {
+    "id": "fv_501",
+    "mediaType": "figure",
+    "figure": "fig501",
+    "question": "Striscia bianca continua di mezzeria",
+    "number": 501
+  },
+  {
+    "id": "fv_502",
+    "mediaType": "figure",
+    "figure": "fig502",
+    "question": "Striscia bianca discontinua di mezzeria",
+    "number": 502
+  },
+  {
+    "id": "fv_505",
+    "mediaType": "figure",
+    "figure": "fig505",
+    "question": "Striscia laterale discontinua presso un passo carrabile",
+    "number": 505
+  },
+  {
+    "id": "fv_513",
+    "mediaType": "figure",
+    "figure": "fig513",
+    "question": "Striscia laterale discontinua presso una piazzola di sosta",
+    "number": 513
+  },
+  {
+    "id": "fv_531",
+    "mediaType": "figure",
+    "figure": "fig531",
+    "question": "Segnaletica orizzontale di passaggio a livello",
+    "number": 531
+  },
+  {
+    "id": "fv_535",
+    "mediaType": "figure",
+    "figure": "fig535",
+    "question": "Rallentatore di velocità",
+    "number": 535
+  },
+  {
+    "id": "fv_543",
+    "mediaType": "figure",
+    "figure": "fig543",
+    "question": "Strisce di guida negli incroci",
+    "number": 543
+  },
+  {
+    "id": "fv_546",
+    "mediaType": "figure",
+    "figure": "fig546",
+    "question": "Segnaletica di fermata autobus",
+    "number": 546
+  },
+  {
+    "id": "fv_547",
+    "mediaType": "figure",
+    "figure": "fig547",
+    "question": "Frecce direzionali",
+    "number": 547
+  },
+  {
+    "id": "fv_550",
+    "mediaType": "figure",
+    "figure": "fig550",
+    "question": "Carreggiata a doppio senso: uso delle corsie",
+    "number": 550
+  },
+  {
+    "id": "fv_552",
+    "mediaType": "figure",
+    "figure": "fig552",
+    "question": "Carreggiata a sei corsie, tre per senso di marcia",
+    "number": 552
+  },
+  {
+    "id": "fv_554",
+    "mediaType": "figure",
+    "figure": "fig554",
+    "question": "Schema di carreggiata: uso delle corsie",
+    "number": 554
+  },
+  {
+    "id": "fv_559",
+    "mediaType": "figure",
+    "figure": "fig559",
+    "question": "Schema stradale: uso delle carreggiate",
+    "number": 559
+  },
+  {
+    "id": "fv_562",
+    "mediaType": "figure",
+    "figure": "fig562",
+    "question": "Strada a tre carreggiate",
+    "number": 562
+  },
+  {
+    "id": "fv_563",
+    "mediaType": "figure",
+    "figure": "fig563",
+    "question": "Striscia di arresto",
+    "number": 563
+  },
+  {
+    "id": "fv_566",
+    "mediaType": "figure",
+    "figure": "fig566",
+    "question": "Striscia discontinua affiancata a una continua",
+    "number": 566
+  },
+  {
+    "id": "fv_567",
+    "mediaType": "figure",
+    "figure": "fig567",
+    "question": "Striscia continua affiancata a una discontinua",
+    "number": 567
+  },
+  {
+    "id": "fv_574",
+    "mediaType": "figure",
+    "figure": "fig574",
+    "question": "Corsie di preselezione",
+    "number": 574
+  },
+  {
+    "id": "fv_599",
+    "mediaType": "figure",
+    "figure": "fig599",
+    "question": "Svolta a sinistra su strada a doppio senso",
+    "number": 599
+  },
+  {
+    "id": "fv_617",
+    "mediaType": "figure",
+    "figure": "fig617",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 617
+  },
+  {
+    "id": "fv_638",
+    "mediaType": "figure",
+    "figure": "fig638",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 638
+  },
+  {
+    "id": "fv_642",
+    "mediaType": "figure",
+    "figure": "fig642",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 642
+  },
+  {
+    "id": "fv_667",
+    "mediaType": "figure",
+    "figure": "fig667",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 667
+  },
+  {
+    "id": "fv_669",
+    "mediaType": "figure",
+    "figure": "fig669",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 669
+  },
+  {
+    "id": "fv_670",
+    "mediaType": "figure",
+    "figure": "fig670",
+    "question": "Segnalazione di divieto di sosta: strisce gialle e nere",
+    "number": 670
+  },
+  {
+    "id": "fv_698",
+    "mediaType": "figure",
+    "figure": "fig698",
+    "question": "Comando della segnalazione luminosa di pericolo",
+    "number": 698
+  },
+  {
+    "id": "fv_704",
+    "mediaType": "figure",
+    "figure": "fig704",
+    "question": "Spia della temperatura del liquido di raffreddamento",
+    "number": 704
+  },
+  {
+    "id": "fv_706",
+    "mediaType": "figure",
+    "figure": "fig706",
+    "question": "Spia della pressione dell’olio",
+    "number": 706
+  },
+  {
+    "id": "fv_901",
+    "mediaType": "figure",
+    "figure": "fig901",
+    "question": "Strada deformata con pannello di estesa",
+    "number": 901
+  },
+  {
+    "id": "fv_902",
+    "mediaType": "figure",
+    "figure": "fig902",
+    "question": "Strada deformata con pannello di distanza",
+    "number": 902
+  },
+  {
+    "id": "fv_909",
+    "mediaType": "figure",
+    "figure": "fig909",
+    "question": "Doppia croce di Sant’Andrea in verticale",
+    "number": 909
+  },
+  {
+    "id": "fv_910",
+    "mediaType": "figure",
+    "figure": "fig910",
+    "question": "Passaggio a livello con pannelli distanziometrici",
+    "number": 910
+  },
+  {
+    "id": "fv_915",
+    "mediaType": "figure",
+    "figure": "fig915",
+    "question": "Segnale con pannello integrativo di fine",
+    "number": 915
+  },
+  {
+    "id": "fv_920",
+    "mediaType": "figure",
+    "figure": "fig920",
+    "question": "Altri pericoli con pannello integrativo",
+    "number": 920
+  },
+  {
+    "id": "fv_942",
+    "mediaType": "figure",
+    "figure": "fig942",
+    "question": "Divieto di sosta con rimozione coatta",
+    "number": 942
+  },
+  {
+    "id": "fv_945",
+    "mediaType": "figure",
+    "figure": "fig945",
+    "question": "Divieto di sosta con orario dei giorni lavorativi",
+    "number": 945
+  },
+  {
+    "id": "fv_949",
+    "mediaType": "figure",
+    "figure": "fig949",
+    "question": "Divieto di sosta con pannello integrativo",
+    "number": 949
+  },
+  {
+    "id": "fv_955",
+    "mediaType": "figure",
+    "figure": "fig955",
+    "question": "Divieto di fermata con pannello integrativo",
+    "number": 955
+  },
+  {
+    "id": "fv_957",
+    "mediaType": "figure",
+    "figure": "fig957",
+    "question": "Divieto di fermata: fine",
+    "number": 957
+  },
+  {
+    "id": "fv_6",
+    "mediaType": "figure",
+    "figure": "fig6",
+    "question": "Doppia curva pericolosa, la prima a destra",
+    "number": 6
+  },
+  {
+    "id": "fv_7",
+    "mediaType": "figure",
+    "figure": "fig7",
+    "question": "Doppia curva pericolosa, la prima a sinistra",
+    "number": 7
+  },
+  {
+    "id": "fv_19",
+    "mediaType": "figure",
+    "figure": "fig19",
+    "question": "Strettoia simmetrica",
+    "number": 19
+  },
+  {
+    "id": "fv_20",
+    "mediaType": "figure",
+    "figure": "fig20",
+    "question": "Strettoia asimmetrica a sinistra",
+    "number": 20
+  },
+  {
+    "id": "fv_21",
+    "mediaType": "figure",
+    "figure": "fig21",
+    "question": "Strettoia asimmetrica a destra",
+    "number": 21
+  },
+  {
+    "id": "fv_25",
+    "mediaType": "figure",
+    "figure": "fig25",
+    "question": "Bambini",
+    "number": 25
+  },
+  {
+    "id": "fv_26",
+    "mediaType": "figure",
+    "figure": "fig26",
+    "question": "Animali domestici vaganti",
+    "number": 26
+  },
+  {
+    "id": "fv_27",
+    "mediaType": "figure",
+    "figure": "fig27",
+    "question": "Animali selvatici vaganti",
+    "number": 27
+  },
+  {
+    "id": "fv_29",
+    "mediaType": "figure",
+    "figure": "fig29",
+    "question": "Preavviso di circolazione rotatoria",
+    "number": 29
+  },
+  {
+    "id": "fv_32",
+    "mediaType": "figure",
+    "figure": "fig32",
+    "question": "Caduta massi da sinistra",
+    "number": 32
+  },
+  {
+    "id": "fv_33",
+    "mediaType": "figure",
+    "figure": "fig33",
+    "question": "Caduta massi da destra",
+    "number": 33
+  },
+  {
+    "id": "fv_35",
+    "mediaType": "figure",
+    "figure": "fig35",
+    "question": "Preavviso di semaforo orizzontale",
+    "number": 35
+  },
+  {
+    "id": "fv_36",
+    "mediaType": "figure",
+    "figure": "fig36",
+    "question": "Aeromobili a bassa quota",
+    "number": 36
+  },
+  {
+    "id": "fv_39",
+    "mediaType": "figure",
+    "figure": "fig39",
+    "question": "Altri pericoli",
+    "number": 39
+  },
+  {
+    "id": "fv_48",
+    "mediaType": "figure",
+    "figure": "fig48",
+    "question": "Intersezione a T con diritto di precedenza: ramo a destra",
+    "number": 48
+  },
+  {
+    "id": "fv_49",
+    "mediaType": "figure",
+    "figure": "fig49",
+    "question": "Intersezione a T con diritto di precedenza: ramo a sinistra",
+    "number": 49
+  },
+  {
+    "id": "fv_58",
+    "mediaType": "figure",
+    "figure": "fig58",
+    "question": "Limite massimo di velocità: 80 km/h",
+    "number": 58
+  },
+  {
+    "id": "fv_61",
+    "mediaType": "figure",
+    "figure": "fig61",
+    "question": "Transito vietato ai veicoli a trazione animale",
+    "number": 61
+  },
+  {
+    "id": "fv_62",
+    "mediaType": "figure",
+    "figure": "fig62",
+    "question": "Transito vietato ai pedoni",
+    "number": 62
+  },
+  {
+    "id": "fv_65",
+    "mediaType": "figure",
+    "figure": "fig65",
+    "question": "Transito vietato ai veicoli a braccia",
+    "number": 65
+  },
+  {
+    "id": "fv_69",
+    "mediaType": "figure",
+    "figure": "fig69",
+    "question": "Transito vietato ai veicoli merci oltre 6,5 t",
+    "number": 69
+  },
+  {
+    "id": "fv_74",
+    "mediaType": "figure",
+    "figure": "fig74",
+    "question": "Transito vietato ai veicoli che trasportano prodotti contaminanti per l’acqua",
+    "number": 74
+  },
+  {
+    "id": "fv_89",
+    "mediaType": "figure",
+    "figure": "fig89",
+    "question": "Preavviso di parcheggio",
+    "number": 89
+  },
+  {
+    "id": "fv_93",
+    "mediaType": "figure",
+    "figure": "fig93",
+    "question": "Direzione obbligatoria diritto",
+    "number": 93
+  },
+  {
+    "id": "fv_94",
+    "mediaType": "figure",
+    "figure": "fig94",
+    "question": "Direzione obbligatoria a sinistra",
+    "number": 94
+  },
+  {
+    "id": "fv_95",
+    "mediaType": "figure",
+    "figure": "fig95",
+    "question": "Direzione obbligatoria a destra",
+    "number": 95
+  },
+  {
+    "id": "fv_97",
+    "mediaType": "figure",
+    "figure": "fig97",
+    "question": "Preavviso di direzione obbligatoria a sinistra",
+    "number": 97
+  },
+  {
+    "id": "fv_99",
+    "mediaType": "figure",
+    "figure": "fig99",
+    "question": "Direzioni consentite: diritto e destra",
+    "number": 99
+  },
+  {
+    "id": "fv_100",
+    "mediaType": "figure",
+    "figure": "fig100",
+    "question": "Direzioni consentite: diritto e sinistra",
+    "number": 100
+  },
+  {
+    "id": "fv_109",
+    "mediaType": "figure",
+    "figure": "fig109",
+    "question": "Fine del percorso pedonale",
+    "number": 109
+  },
+  {
+    "id": "fv_110",
+    "mediaType": "figure",
+    "figure": "fig110",
+    "question": "Pista ciclabile",
+    "number": 110
+  },
+  {
+    "id": "fv_111",
+    "mediaType": "figure",
+    "figure": "fig111",
+    "question": "Fine della pista ciclabile",
+    "number": 111
+  },
+  {
+    "id": "fv_114",
+    "mediaType": "figure",
+    "figure": "fig114",
+    "question": "Fine della pista ciclabile contigua al marciapiede",
+    "number": 114
+  },
+  {
+    "id": "fv_116",
+    "mediaType": "figure",
+    "figure": "fig116",
+    "question": "Percorso riservato ai quadrupedi da soma o da sella",
+    "number": 116
+  },
+  {
+    "id": "fv_123",
+    "mediaType": "figure",
+    "figure": "fig123",
+    "question": "Pannelli di validità: fasce orarie giornaliere",
+    "number": 123
+  },
+  {
+    "id": "fv_124",
+    "mediaType": "figure",
+    "figure": "fig124",
+    "question": "Pannello di validità nei giorni festivi",
+    "number": 124
+  },
+  {
+    "id": "fv_127",
+    "mediaType": "figure",
+    "figure": "fig127",
+    "question": "Pannello di eccezione per gli autobus",
+    "number": 127
+  },
+  {
+    "id": "fv_128",
+    "mediaType": "figure",
+    "figure": "fig128",
+    "question": "Pannelli di inizio",
+    "number": 128
+  },
+  {
+    "id": "fv_129",
+    "mediaType": "figure",
+    "figure": "fig129",
+    "question": "Pannelli di continuazione",
+    "number": 129
+  },
+  {
+    "id": "fv_130",
+    "mediaType": "figure",
+    "figure": "fig130",
+    "question": "Pannelli di fine",
+    "number": 130
+  },
+  {
+    "id": "fv_131",
+    "mediaType": "figure",
+    "figure": "fig131",
+    "question": "Segni orizzontali in rifacimento",
+    "number": 131
+  },
+  {
+    "id": "fv_132",
+    "mediaType": "figure",
+    "figure": "fig132",
+    "question": "Incidente",
+    "number": 132
+  },
+  {
+    "id": "fv_133",
+    "mediaType": "figure",
+    "figure": "fig133",
+    "question": "Attraversamento di binari",
+    "number": 133
+  },
+  {
+    "id": "fv_134",
+    "mediaType": "figure",
+    "figure": "fig134",
+    "question": "Sgombraneve in azione",
+    "number": 134
+  },
+  {
+    "id": "fv_135",
+    "mediaType": "figure",
+    "figure": "fig135",
+    "question": "Zona soggetta ad allagamento",
+    "number": 135
+  },
+  {
+    "id": "fv_136",
+    "mediaType": "figure",
+    "figure": "fig136",
+    "question": "Coda",
+    "number": 136
+  },
+  {
+    "id": "fv_137",
+    "mediaType": "figure",
+    "figure": "fig137",
+    "question": "Mezzi di lavoro in azione",
+    "number": 137
+  },
+  {
+    "id": "fv_140",
+    "mediaType": "figure",
+    "figure": "fig140",
+    "question": "Autocarri in rallentamento",
+    "number": 140
+  },
+  {
+    "id": "fv_141",
+    "mediaType": "figure",
+    "figure": "fig141",
+    "question": "Zona di rimozione coatta",
+    "number": 141
+  },
+  {
+    "id": "fv_142",
+    "mediaType": "figure",
+    "figure": "fig142",
+    "question": "Pannello di corsia",
+    "number": 142
+  },
+  {
+    "id": "fv_143",
+    "mediaType": "figure",
+    "figure": "fig143",
+    "question": "Tornante e serie di tornanti",
+    "number": 143
+  },
+  {
+    "id": "fv_144",
+    "mediaType": "figure",
+    "figure": "fig144",
+    "question": "Numero del tornante",
+    "number": 144
+  },
+  {
+    "id": "fv_145",
+    "mediaType": "figure",
+    "figure": "fig145",
+    "question": "Pulizia meccanica della strada",
+    "number": 145
+  },
+  {
+    "id": "fv_146",
+    "mediaType": "figure",
+    "figure": "fig146",
+    "question": "Andamento della strada principale",
+    "number": 146
+  },
+  {
+    "id": "fv_148",
+    "mediaType": "figure",
+    "figure": "fig148",
+    "question": "Divieto di sosta per pulizia della strada",
+    "number": 148
+  },
+  {
+    "id": "fv_152",
+    "mediaType": "figure",
+    "figure": "fig152",
+    "question": "Senso unico parallelo",
+    "number": 152
+  },
+  {
+    "id": "fv_156",
+    "mediaType": "figure",
+    "figure": "fig156",
+    "question": "Semaforo per veicoli di trasporto pubblico",
+    "number": 156
+  },
+  {
+    "id": "fv_157",
+    "mediaType": "figure",
+    "figure": "fig157",
+    "question": "Semaforo pedonale",
+    "number": 157
+  },
+  {
+    "id": "fv_158",
+    "mediaType": "figure",
+    "figure": "fig158",
+    "question": "Semaforo per velocipedi",
+    "number": 158
+  },
+  {
+    "id": "fv_163",
+    "mediaType": "figure",
+    "figure": "fig163",
+    "question": "Confine di Stato tra Paesi dell’Unione europea",
+    "number": 163
+  },
+  {
+    "id": "fv_164",
+    "mediaType": "figure",
+    "figure": "fig164",
+    "question": "Preavviso di confine di Stato tra Paesi dell’Unione europea",
+    "number": 164
+  },
+  {
+    "id": "fv_169",
+    "mediaType": "figure",
+    "figure": "fig169",
+    "question": "Preavviso di incrocio urbano con limitazione su un ramo",
+    "number": 169
+  },
+  {
+    "id": "fv_170",
+    "mediaType": "figure",
+    "figure": "fig170",
+    "question": "Preavviso di intersezione extraurbana con passaggio a livello",
+    "number": 170
+  },
+  {
+    "id": "fv_171",
+    "mediaType": "figure",
+    "figure": "fig171",
+    "question": "Preselezione su strada extraurbana",
+    "number": 171
+  },
+  {
+    "id": "fv_173",
+    "mediaType": "figure",
+    "figure": "fig173",
+    "question": "Preavviso di diramazione autostradale",
+    "number": 173
+  },
+  {
+    "id": "fv_174",
+    "mediaType": "figure",
+    "figure": "fig174",
+    "question": "Preavviso di incrocio urbano",
+    "number": 174
+  },
+  {
+    "id": "fv_187",
+    "mediaType": "figure",
+    "figure": "fig187",
+    "question": "Zona a traffico limitato",
+    "number": 187
+  },
+  {
+    "id": "fv_207",
+    "mediaType": "figure",
+    "figure": "fig207",
+    "question": "Inizio del centro abitato",
+    "number": 207
+  },
+  {
+    "id": "fv_210",
+    "mediaType": "figure",
+    "figure": "fig210",
+    "question": "Pronto soccorso",
+    "number": 210
+  },
+  {
+    "id": "fv_214",
+    "mediaType": "figure",
+    "figure": "fig214",
+    "question": "Ospedale",
+    "number": 214
+  },
+  {
+    "id": "fv_216",
+    "mediaType": "figure",
+    "figure": "fig216",
+    "question": "Localizzazione territoriale: fiume",
+    "number": 216
+  },
+  {
+    "id": "fv_217",
+    "mediaType": "figure",
+    "figure": "fig217",
+    "question": "Preavviso di informazioni turistico-alberghiere",
+    "number": 217
+  },
+  {
+    "id": "fv_220",
+    "mediaType": "figure",
+    "figure": "fig220",
+    "question": "S.O.S.",
+    "number": 220
+  },
+  {
+    "id": "fv_224",
+    "mediaType": "figure",
+    "figure": "fig224",
+    "question": "Strada senza uscita",
+    "number": 224
+  },
+  {
+    "id": "fv_245",
+    "mediaType": "figure",
+    "figure": "fig245",
+    "question": "Uso delle corsie su strada urbana",
+    "number": 245
+  },
+  {
+    "id": "fv_247",
+    "mediaType": "figure",
+    "figure": "fig247",
+    "question": "Aumento delle corsie disponibili",
+    "number": 247
+  },
+  {
+    "id": "fv_248",
+    "mediaType": "figure",
+    "figure": "fig248",
+    "question": "Diminuzione delle corsie disponibili",
+    "number": 248
+  },
+  {
+    "id": "fv_252",
+    "mediaType": "figure",
+    "figure": "fig252",
+    "question": "Assistenza meccanica",
+    "number": 252
+  },
+  {
+    "id": "fv_253",
+    "mediaType": "figure",
+    "figure": "fig253",
+    "question": "Telefono",
+    "number": 253
+  },
+  {
+    "id": "fv_254",
+    "mediaType": "figure",
+    "figure": "fig254",
+    "question": "Rifornimento di carburante",
+    "number": 254
+  },
+  {
+    "id": "fv_260",
+    "mediaType": "figure",
+    "figure": "fig260",
+    "question": "Campeggio",
+    "number": 260
+  },
+  {
+    "id": "fv_265",
+    "mediaType": "figure",
+    "figure": "fig265",
+    "question": "Parcheggio di scambio con linee di autobus",
+    "number": 265
+  },
+  {
+    "id": "fv_272",
+    "mediaType": "figure",
+    "figure": "fig272",
+    "question": "Posteggio per taxi",
+    "number": 272
+  },
+  {
+    "id": "fv_274",
+    "mediaType": "figure",
+    "figure": "fig274",
+    "question": "Polizia stradale",
+    "number": 274
+  },
+  {
+    "id": "fv_275",
+    "mediaType": "figure",
+    "figure": "fig275",
+    "question": "Lavori in corso",
+    "number": 275
+  },
+  {
+    "id": "fv_276",
+    "mediaType": "figure",
+    "figure": "fig276",
+    "question": "Barriera normale di cantiere",
+    "number": 276
+  },
+  {
+    "id": "fv_280",
+    "mediaType": "figure",
+    "figure": "fig280",
+    "question": "Preavviso di cantiere mobile",
+    "number": 280
+  },
+  {
+    "id": "fv_284",
+    "mediaType": "figure",
+    "figure": "fig284",
+    "question": "Direzione obbligatoria per autotreni e autoarticolati",
+    "number": 284
+  },
+  {
+    "id": "fv_285",
+    "mediaType": "figure",
+    "figure": "fig285",
+    "question": "Corsia chiusa per lavori",
+    "number": 285
+  },
+  {
+    "id": "fv_288",
+    "mediaType": "figure",
+    "figure": "fig288",
+    "question": "Uso delle corsie disponibili in presenza di lavori",
+    "number": 288
+  },
+  {
+    "id": "fv_290",
+    "mediaType": "figure",
+    "figure": "fig290",
+    "question": "Delineatori di margine su strada a doppio senso",
+    "number": 290
+  },
+  {
+    "id": "fv_292",
+    "mediaType": "figure",
+    "figure": "fig292",
+    "question": "Delineatore per strade di montagna",
+    "number": 292
+  },
+  {
+    "id": "fv_293",
+    "mediaType": "figure",
+    "figure": "fig293",
+    "question": "Delineatore di curva stretta o tornante",
+    "number": 293
+  },
+  {
+    "id": "fv_294",
+    "mediaType": "figure",
+    "figure": "fig294",
+    "question": "Delineatore di intersezione a T",
+    "number": 294
+  },
+  {
+    "id": "fv_295",
+    "mediaType": "figure",
+    "figure": "fig295",
+    "question": "Delineatore modulare di curva",
+    "number": 295
+  },
+  {
+    "id": "fv_299",
+    "mediaType": "figure",
+    "figure": "fig299",
+    "question": "Delineatore di ostacolo",
+    "number": 299
+  },
+  {
+    "id": "fv_383",
+    "mediaType": "figure",
+    "figure": "fig383",
+    "question": "Agente del traffico in posizione di arresto",
+    "number": 383
+  },
+  {
+    "id": "fv_384",
+    "mediaType": "figure",
+    "figure": "fig384",
+    "question": "Agente del traffico in posizione di via libera",
+    "number": 384
+  },
+  {
+    "id": "fv_506",
+    "mediaType": "figure",
+    "figure": "fig506",
+    "question": "Strisce di guida in un’intersezione",
+    "number": 506
+  },
+  {
+    "id": "fv_509",
+    "mediaType": "figure",
+    "figure": "fig509",
+    "question": "Doppia striscia continua",
+    "number": 509
+  },
+  {
+    "id": "fv_511",
+    "mediaType": "figure",
+    "figure": "fig511",
+    "question": "Carreggiata con piste ciclabili laterali",
+    "number": 511
+  },
+  {
+    "id": "fv_512",
+    "mediaType": "figure",
+    "figure": "fig512",
+    "question": "Striscia laterale discontinua in prossimità di un accesso",
+    "number": 512
+  },
+  {
+    "id": "fv_515",
+    "mediaType": "figure",
+    "figure": "fig515",
+    "question": "Linea di arresto con iscrizione STOP",
+    "number": 515
+  },
+  {
+    "id": "fv_517",
+    "mediaType": "figure",
+    "figure": "fig517",
+    "question": "Attraversamento pedonale (strisce pedonali)",
+    "number": 517
+  },
+  {
+    "id": "fv_528",
+    "mediaType": "figure",
+    "figure": "fig528",
+    "question": "Iscrizione del limite di velocità sulla carreggiata",
+    "number": 528
+  },
+  {
+    "id": "fv_534",
+    "mediaType": "figure",
+    "figure": "fig534",
+    "question": "Rallentatori ottici",
+    "number": 534
+  },
+  {
+    "id": "fv_536",
+    "mediaType": "figure",
+    "figure": "fig536",
+    "question": "Carreggiata a due corsie con doppia striscia continua",
+    "number": 536
+  },
+  {
+    "id": "fv_537",
+    "mediaType": "figure",
+    "figure": "fig537",
+    "question": "Segnaletica di intersezione con isole di traffico",
+    "number": 537
+  },
+  {
+    "id": "fv_545",
+    "mediaType": "figure",
+    "figure": "fig545",
+    "question": "Attraversamento pedonale con strisce gialle a zig-zag",
+    "number": 545
+  },
+  {
+    "id": "fv_553",
+    "mediaType": "figure",
+    "figure": "fig553",
+    "question": "Striscia laterale continua e corsia di emergenza",
+    "number": 553
+  },
+  {
+    "id": "fv_558",
+    "mediaType": "figure",
+    "figure": "fig558",
+    "question": "Carreggiate separate da spartitraffico",
+    "number": 558
+  },
+  {
+    "id": "fv_564",
+    "mediaType": "figure",
+    "figure": "fig564",
+    "question": "Corsie di preselezione con frecce direzionali",
+    "number": 564
+  },
+  {
+    "id": "fv_565",
+    "mediaType": "figure",
+    "figure": "fig565",
+    "question": "Corsie di preselezione con frecce direzionali",
+    "number": 565
+  },
+  {
+    "id": "fv_568",
+    "mediaType": "figure",
+    "figure": "fig568",
+    "question": "Corsie e linea di arresto prima di un incrocio",
+    "number": 568
+  },
+  {
+    "id": "fv_570",
+    "mediaType": "figure",
+    "figure": "fig570",
+    "question": "Posizione del veicolo prima di una svolta a destra",
+    "number": 570
+  },
+  {
+    "id": "fv_572",
+    "mediaType": "figure",
+    "figure": "fig572",
+    "question": "Posizione del veicolo prima di una svolta a sinistra",
+    "number": 572
+  },
+  {
+    "id": "fv_595",
+    "mediaType": "figure",
+    "figure": "fig595",
+    "question": "Isola di traffico in un’intersezione",
+    "number": 595
+  },
+  {
+    "id": "fv_596",
+    "mediaType": "figure",
+    "figure": "fig596",
+    "question": "Strisce di guida nelle svolte all’incrocio",
+    "number": 596
+  },
+  {
+    "id": "fv_601",
+    "mediaType": "figure",
+    "figure": "fig601",
+    "question": "Traiettorie dei veicoli in un’intersezione",
+    "number": 601
+  },
+  {
+    "id": "fv_602",
+    "mediaType": "figure",
+    "figure": "fig602",
+    "question": "Rotatoria con indicazioni di precedenza",
+    "number": 602
+  },
+  {
+    "id": "fv_604",
+    "mediaType": "figure",
+    "figure": "fig604",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 604
+  },
+  {
+    "id": "fv_606",
+    "mediaType": "figure",
+    "figure": "fig606",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 606
+  },
+  {
+    "id": "fv_607",
+    "mediaType": "figure",
+    "figure": "fig607",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 607
+  },
+  {
+    "id": "fv_608",
+    "mediaType": "figure",
+    "figure": "fig608",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 608
+  },
+  {
+    "id": "fv_610",
+    "mediaType": "figure",
+    "figure": "fig610",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 610
+  },
+  {
+    "id": "fv_613",
+    "mediaType": "figure",
+    "figure": "fig613",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 613
+  },
+  {
+    "id": "fv_614",
+    "mediaType": "figure",
+    "figure": "fig614",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 614
+  },
+  {
+    "id": "fv_615",
+    "mediaType": "figure",
+    "figure": "fig615",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 615
+  },
+  {
+    "id": "fv_616",
+    "mediaType": "figure",
+    "figure": "fig616",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 616
+  },
+  {
+    "id": "fv_618",
+    "mediaType": "figure",
+    "figure": "fig618",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 618
+  },
+  {
+    "id": "fv_620",
+    "mediaType": "figure",
+    "figure": "fig620",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 620
+  },
+  {
+    "id": "fv_631",
+    "mediaType": "figure",
+    "figure": "fig631",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 631
+  },
+  {
+    "id": "fv_632",
+    "mediaType": "figure",
+    "figure": "fig632",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 632
+  },
+  {
+    "id": "fv_633",
+    "mediaType": "figure",
+    "figure": "fig633",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 633
+  },
+  {
+    "id": "fv_634",
+    "mediaType": "figure",
+    "figure": "fig634",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 634
+  },
+  {
+    "id": "fv_636",
+    "mediaType": "figure",
+    "figure": "fig636",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 636
+  },
+  {
+    "id": "fv_637",
+    "mediaType": "figure",
+    "figure": "fig637",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 637
+  },
+  {
+    "id": "fv_639",
+    "mediaType": "figure",
+    "figure": "fig639",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 639
+  },
+  {
+    "id": "fv_640",
+    "mediaType": "figure",
+    "figure": "fig640",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 640
+  },
+  {
+    "id": "fv_643",
+    "mediaType": "figure",
+    "figure": "fig643",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 643
+  },
+  {
+    "id": "fv_644",
+    "mediaType": "figure",
+    "figure": "fig644",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 644
+  },
+  {
+    "id": "fv_646",
+    "mediaType": "figure",
+    "figure": "fig646",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 646
+  },
+  {
+    "id": "fv_647",
+    "mediaType": "figure",
+    "figure": "fig647",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 647
+  },
+  {
+    "id": "fv_648",
+    "mediaType": "figure",
+    "figure": "fig648",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 648
+  },
+  {
+    "id": "fv_650",
+    "mediaType": "figure",
+    "figure": "fig650",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 650
+  },
+  {
+    "id": "fv_651",
+    "mediaType": "figure",
+    "figure": "fig651",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 651
+  },
+  {
+    "id": "fv_652",
+    "mediaType": "figure",
+    "figure": "fig652",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 652
+  },
+  {
+    "id": "fv_654",
+    "mediaType": "figure",
+    "figure": "fig654",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 654
+  },
+  {
+    "id": "fv_655",
+    "mediaType": "figure",
+    "figure": "fig655",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 655
+  },
+  {
+    "id": "fv_657",
+    "mediaType": "figure",
+    "figure": "fig657",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 657
+  },
+  {
+    "id": "fv_659",
+    "mediaType": "figure",
+    "figure": "fig659",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 659
+  },
+  {
+    "id": "fv_660",
+    "mediaType": "figure",
+    "figure": "fig660",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 660
+  },
+  {
+    "id": "fv_661",
+    "mediaType": "figure",
+    "figure": "fig661",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 661
+  },
+  {
+    "id": "fv_662",
+    "mediaType": "figure",
+    "figure": "fig662",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 662
+  },
+  {
+    "id": "fv_663",
+    "mediaType": "figure",
+    "figure": "fig663",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 663
+  },
+  {
+    "id": "fv_664",
+    "mediaType": "figure",
+    "figure": "fig664",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 664
+  },
+  {
+    "id": "fv_665",
+    "mediaType": "figure",
+    "figure": "fig665",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 665
+  },
+  {
+    "id": "fv_668",
+    "mediaType": "figure",
+    "figure": "fig668",
+    "question": "Schema di precedenza all’incrocio",
+    "number": 668
+  },
+  {
+    "id": "fv_676",
+    "mediaType": "figure",
+    "figure": "fig676",
+    "question": "Uscita da un parcheggio",
+    "number": 676
+  },
+  {
+    "id": "fv_695",
+    "mediaType": "figure",
+    "figure": "fig695",
+    "question": "Simbolo dei proiettori abbaglianti",
+    "number": 695
+  },
+  {
+    "id": "fv_696",
+    "mediaType": "figure",
+    "figure": "fig696",
+    "question": "Simbolo dei proiettori anabbaglianti",
+    "number": 696
+  },
+  {
+    "id": "fv_697",
+    "mediaType": "figure",
+    "figure": "fig697",
+    "question": "Simbolo degli indicatori di direzione",
+    "number": 697
+  },
+  {
+    "id": "fv_705",
+    "mediaType": "figure",
+    "figure": "fig705",
+    "question": "Spia della batteria",
+    "number": 705
+  },
+  {
+    "id": "fv_707",
+    "mediaType": "figure",
+    "figure": "fig707",
+    "question": "Simbolo delle cinture di sicurezza",
+    "number": 707
+  },
+  {
+    "id": "fv_721",
+    "mediaType": "figure",
+    "figure": "fig721",
+    "question": "Spia di anomalia del sistema frenante",
+    "number": 721
+  },
+  {
+    "id": "fv_903",
+    "mediaType": "figure",
+    "figure": "fig903",
+    "question": "Strada deformata con pannello di fine",
+    "number": 903
+  },
+  {
+    "id": "fv_904",
+    "mediaType": "figure",
+    "figure": "fig904",
+    "question": "Cunetta con pannello di allagamento",
+    "number": 904
+  },
+  {
+    "id": "fv_905",
+    "mediaType": "figure",
+    "figure": "fig905",
+    "question": "Doppia curva con pannello di distanza",
+    "number": 905
+  },
+  {
+    "id": "fv_906",
+    "mediaType": "figure",
+    "figure": "fig906",
+    "question": "Doppia curva con pannello di estesa",
+    "number": 906
+  },
+  {
+    "id": "fv_907",
+    "mediaType": "figure",
+    "figure": "fig907",
+    "question": "Doppia curva con pannello di estesa",
+    "number": 907
+  },
+  {
+    "id": "fv_908",
+    "mediaType": "figure",
+    "figure": "fig908",
+    "question": "Doppia croce di Sant’Andrea e STOP",
+    "number": 908
+  },
+  {
+    "id": "fv_911",
+    "mediaType": "figure",
+    "figure": "fig911",
+    "question": "Pannelli distanziometrici e doppia croce di Sant’Andrea",
+    "number": 911
+  },
+  {
+    "id": "fv_912",
+    "mediaType": "figure",
+    "figure": "fig912",
+    "question": "Strettoia e dare precedenza nei sensi unici alternati",
+    "number": 912
+  },
+  {
+    "id": "fv_913",
+    "mediaType": "figure",
+    "figure": "fig913",
+    "question": "Strettoia e diritto di precedenza nei sensi unici alternati",
+    "number": 913
+  },
+  {
+    "id": "fv_914",
+    "mediaType": "figure",
+    "figure": "fig914",
+    "question": "Strada sdrucciolevole con pannello di continuazione",
+    "number": 914
+  },
+  {
+    "id": "fv_916",
+    "mediaType": "figure",
+    "figure": "fig916",
+    "question": "Strada sdrucciolevole per ghiaccio",
+    "number": 916
+  },
+  {
+    "id": "fv_917",
+    "mediaType": "figure",
+    "figure": "fig917",
+    "question": "Segnale di strada sdrucciolevole e pannello ghiaccio",
+    "number": 917
+  },
+  {
+    "id": "fv_918",
+    "mediaType": "figure",
+    "figure": "fig918",
+    "question": "Segnale di strada sdrucciolevole e pannello pioggia",
+    "number": 918
+  },
+  {
+    "id": "fv_919",
+    "mediaType": "figure",
+    "figure": "fig919",
+    "question": "Altri pericoli con pannello di attraversamento binari",
+    "number": 919
+  },
+  {
+    "id": "fv_921",
+    "mediaType": "figure",
+    "figure": "fig921",
+    "question": "Altri pericoli e pannello sgombraneve in azione",
+    "number": 921
+  },
+  {
+    "id": "fv_922",
+    "mediaType": "figure",
+    "figure": "fig922",
+    "question": "Altri pericoli con pannello mezzi di lavoro in azione",
+    "number": 922
+  },
+  {
+    "id": "fv_923",
+    "mediaType": "figure",
+    "figure": "fig923",
+    "question": "Altri pericoli e pannello ghiaccio",
+    "number": 923
+  },
+  {
+    "id": "fv_924",
+    "mediaType": "figure",
+    "figure": "fig924",
+    "question": "Divieto di transito con fascia oraria",
+    "number": 924
+  },
+  {
+    "id": "fv_925",
+    "mediaType": "figure",
+    "figure": "fig925",
+    "question": "Divieto di transito nei giorni festivi",
+    "number": 925
+  },
+  {
+    "id": "fv_926",
+    "mediaType": "figure",
+    "figure": "fig926",
+    "question": "Divieto di transito con pannello per veicoli merci",
+    "number": 926
+  },
+  {
+    "id": "fv_927",
+    "mediaType": "figure",
+    "figure": "fig927",
+    "question": "Divieto di transito con eccezione per autobus",
+    "number": 927
+  },
+  {
+    "id": "fv_928",
+    "mediaType": "figure",
+    "figure": "fig928",
+    "question": "Divieto di transito nei giorni lavorativi",
+    "number": 928
+  },
+  {
+    "id": "fv_929",
+    "mediaType": "figure",
+    "figure": "fig929",
+    "question": "Senso vietato con eccezione per autobus",
+    "number": 929
+  },
+  {
+    "id": "fv_930",
+    "mediaType": "figure",
+    "figure": "fig930",
+    "question": "Divieto di sorpasso con pannello di continuazione",
+    "number": 930
+  },
+  {
+    "id": "fv_932",
+    "mediaType": "figure",
+    "figure": "fig932",
+    "question": "Segnale di divieto di sorpasso e pannello di continuazione",
+    "number": 932
+  },
+  {
+    "id": "fv_933",
+    "mediaType": "figure",
+    "figure": "fig933",
+    "question": "Limite di velocità con pannello di continuazione",
+    "number": 933
+  },
+  {
+    "id": "fv_934",
+    "mediaType": "figure",
+    "figure": "fig934",
+    "question": "Divieto di segnalazioni acustiche con fascia oraria",
+    "number": 934
+  },
+  {
+    "id": "fv_935",
+    "mediaType": "figure",
+    "figure": "fig935",
+    "question": "Transito vietato ai motocicli con fascia oraria",
+    "number": 935
+  },
+  {
+    "id": "fv_936",
+    "mediaType": "figure",
+    "figure": "fig936",
+    "question": "Transito vietato ai motocicli nei giorni festivi",
+    "number": 936
+  },
+  {
+    "id": "fv_937",
+    "mediaType": "figure",
+    "figure": "fig937",
+    "question": "Transito vietato ai veicoli merci nei giorni lavorativi",
+    "number": 937
+  },
+  {
+    "id": "fv_938",
+    "mediaType": "figure",
+    "figure": "fig938",
+    "question": "Divieto di sosta nei giorni festivi",
+    "number": 938
+  },
+  {
+    "id": "fv_939",
+    "mediaType": "figure",
+    "figure": "fig939",
+    "question": "Divieto di sosta con pannello di continuazione",
+    "number": 939
+  },
+  {
+    "id": "fv_940",
+    "mediaType": "figure",
+    "figure": "fig940",
+    "question": "Divieto di sosta con pannello di inizio",
+    "number": 940
+  },
+  {
+    "id": "fv_941",
+    "mediaType": "figure",
+    "figure": "fig941",
+    "question": "Divieto di sosta con pannello per autobus",
+    "number": 941
+  },
+  {
+    "id": "fv_943",
+    "mediaType": "figure",
+    "figure": "fig943",
+    "question": "Divieto di sosta con fascia oraria",
+    "number": 943
+  },
+  {
+    "id": "fv_944",
+    "mediaType": "figure",
+    "figure": "fig944",
+    "question": "Divieto di sosta con pannello di fine",
+    "number": 944
+  },
+  {
+    "id": "fv_946",
+    "mediaType": "figure",
+    "figure": "fig946",
+    "question": "Segnale di divieto di sosta e pannello dei giorni festivi",
+    "number": 946
+  },
+  {
+    "id": "fv_947",
+    "mediaType": "figure",
+    "figure": "fig947",
+    "question": "Segnale di divieto di sosta e pannello dei giorni lavorativi",
+    "number": 947
+  },
+  {
+    "id": "fv_948",
+    "mediaType": "figure",
+    "figure": "fig948",
+    "question": "Divieto di sosta con eccezione per autobus",
+    "number": 948
+  },
+  {
+    "id": "fv_950",
+    "mediaType": "figure",
+    "figure": "fig950",
+    "question": "Segnale di divieto di sosta e pannello di rimozione coatta",
+    "number": 950
+  },
+  {
+    "id": "fv_951",
+    "mediaType": "figure",
+    "figure": "fig951",
+    "question": "Divieto di fermata con pannello di continuazione",
+    "number": 951
+  },
+  {
+    "id": "fv_952",
+    "mediaType": "figure",
+    "figure": "fig952",
+    "question": "Divieto di fermata con pannello di fine",
+    "number": 952
+  },
+  {
+    "id": "fv_953",
+    "mediaType": "figure",
+    "figure": "fig953",
+    "question": "Divieto di fermata con pannello di inizio",
+    "number": 953
+  },
+  {
+    "id": "fv_954",
+    "mediaType": "figure",
+    "figure": "fig954",
+    "question": "Divieto di fermata con pannello per autobus",
+    "number": 954
+  },
+  {
+    "id": "fv_956",
+    "mediaType": "figure",
+    "figure": "fig956",
+    "question": "Parcheggio con pannello di continuazione",
+    "number": 956
+  },
+  {
+    "id": "fv_958",
+    "mediaType": "figure",
+    "figure": "fig958",
+    "question": "Parcheggio con pannello di inizio",
+    "number": 958
+  },
+  {
+    "id": "fv_959",
+    "mediaType": "figure",
+    "figure": "fig959",
+    "question": "Parcheggio con pannello di fine",
+    "number": 959
+  },
+  {
+    "id": "fv_960",
+    "mediaType": "figure",
+    "figure": "fig960",
+    "question": "Parcheggio con fascia oraria nei giorni festivi",
+    "number": 960
+  },
+  {
+    "id": "fv_961",
+    "mediaType": "figure",
+    "figure": "fig961",
+    "question": "Parcheggio con fascia oraria nei giorni lavorativi",
+    "number": 961
+  },
+  {
+    "id": "fv_962",
+    "mediaType": "figure",
+    "figure": "fig962",
+    "question": "Parcheggio con eccezione per autobus",
+    "number": 962
+  },
+  {
+    "id": "fv_963",
+    "mediaType": "figure",
+    "figure": "fig963",
+    "question": "Percorso pedonale con pannello di inizio",
+    "number": 963
+  },
+  {
+    "id": "fv_964",
+    "mediaType": "figure",
+    "figure": "fig964",
+    "question": "Percorso pedonale con fascia oraria nei giorni festivi",
+    "number": 964
+  },
+  {
+    "id": "fv_965",
+    "mediaType": "figure",
+    "figure": "fig965",
+    "question": "Pista ciclabile con fascia oraria nei giorni festivi",
+    "number": 965
+  },
+  {
+    "id": "fv_966",
+    "mediaType": "figure",
+    "figure": "fig966",
+    "question": "Pannello di fascia oraria e divieto di transito ai pedoni",
+    "number": 966
+  },
+  {
+    "id": "fv_967",
+    "mediaType": "figure",
+    "figure": "fig967",
+    "question": "Senso vietato con eccezione per autobus",
+    "number": 967
+  },
+  {
+    "id": "fv_968",
+    "mediaType": "figure",
+    "figure": "fig968",
+    "question": "Discesa pericolosa con pannello autocarri in rallentamento",
+    "number": 968
+  },
+  {
+    "id": "fv_970",
+    "mediaType": "figure",
+    "figure": "fig970",
+    "question": "Lavori con pannello di fine",
+    "number": 970
+  },
+  {
+    "id": "fv_971",
+    "mediaType": "figure",
+    "figure": "fig971",
+    "question": "Obbligo di rotatoria e preavviso di rotatoria",
+    "number": 971
+  },
+  {
+    "id": "fv_972",
+    "mediaType": "figure",
+    "figure": "fig972",
+    "question": "Diritto di precedenza e andamento della strada principale",
+    "number": 972
+  }
+]
