@@ -542,3 +542,5 @@ I player video delle figure e dei quiz non mostrano Download e bloccano il menu 
 Figure video invitation: owner replaces the external red Play with supplied thinking person and Bangla meaning artwork, partially overlapping the lower-right figure edge. Gentle continuous vertical person movement and horizontal lettering movement; reduced-motion and native motion pause disable motion. Enlarged-dialog Play remains unchanged.
 
 Mobile browser/PWA home (2026-11-16): three compact tools in one row; existing Quiz | কুইজ and Quiz শিখুন controls move to the next row, followed by the existing Pial Sir Class artwork. Preserve chapter carousel and Start Engine; no duplicate mobile chapter shortcuts. Move original nodes at 820px breakpoint, keeping navigation ownership and desktop placement.
+
+Mobile refinement: book → Quiz / Quiz শিখুন → Pial Sir Class → compact 68px dictionary/statistics/errors row. Chapter title and carousel/dashboard sit lower; MiskatDesigns stays at the bottom in flow, with scrolling on short screens. Supersedes tools-before-learning order.

@@ -49,7 +49,7 @@ try {
   if(width<821){
    assert.equal(await page.locator('#home .member-learning-actions>.lesson-tool').count(),3);
    const ys=await page.locator('#home .member-link').evaluateAll(es=>es.map(e=>Math.round(e.getBoundingClientRect().top)));
-   assert.equal(new Set(ys).size,1);
+   assert.equal(new Set(ys).size,1);assert.ok(await page.evaluate(()=>document.querySelector('#webClassButton').getBoundingClientRect().bottom<=document.querySelector('.member-links').getBoundingClientRect().top));
    await page.locator('#webClassButton').scrollIntoViewIfNeeded();
    await page.screenshot({path:path.join(out,`home-${width}.png`),fullPage:true});
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);

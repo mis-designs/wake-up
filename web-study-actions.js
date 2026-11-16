@@ -5,12 +5,16 @@
 
   // Move the existing controls, preserving their IDs and navigation owners.
   const homeActions = doc.querySelector('.member-learning-actions');
+  const homeActionsSlot = doc.createComment('home learning actions');
+  homeActions.before(homeActionsSlot);
+  const homeTools = doc.querySelector('.member-links');
   const compactHome = root.matchMedia('(max-width: 820px)');
   const shortcuts = ['quizButton', 'webStudyButton', 'webClassButton'].map(id => {
     const button = doc.getElementById(id), slot = doc.createComment('chapter shortcut');
     button.before(slot); return {button, slot};
   });
   function placeShortcuts() {
+    if (compactHome.matches) homeTools.before(homeActions); else homeActionsSlot.after(homeActions);
     for (const {button, slot} of shortcuts) {
       if (compactHome.matches) homeActions.append(button); else slot.after(button);
     }

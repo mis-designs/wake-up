@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v314-home-shortcuts";
+const CACHE_NAME = "magicbook-pwa-v316-home-spacing";
 const STATIC_ASSETS = [
   "/icons/figure-video-thinking.png",
   "/icons/figure-video-meaning.svg",
@@ -43,8 +43,8 @@ const STATIC_ASSETS = [
   "/style.css?v=77-admin-editor",
   "/admin-user-editor.css?v=1",
   "/admin-panel.css?v=2-spacing",
-  "/web-study-actions.css?v=10-home-shortcuts",
-  "/web-study-actions.js?v=6-home-shortcuts",
+  "/web-study-actions.css?v=11-home-spacing",
+  "/web-study-actions.js?v=7-home-order",
   "/web-action-effects.js?v=4-lesson-cover",
   "/icons/easy_video.gif",
   "/assets/easy-video-still.png",

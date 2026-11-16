@@ -500,3 +500,5 @@ Figure playback is authenticated and read-only for customers. One lazy metadata 
 Inline figure-video discovery observes only visible Study figures. Deduplicate simultaneous lookups per account/product/figure, cache sixty seconds, abort only when all consumers leave. Dispose controls when the figure host is removed. Show availability-gated actions and reuse the existing player.
 
 Mobile browser/PWA home (2026-11-16): three compact tools in one row; existing Quiz | কুইজ and Quiz শিখুন controls move to the next row, followed by the existing Pial Sir Class artwork. Preserve chapter carousel and Start Engine; no duplicate mobile chapter shortcuts. Move original nodes at 820px breakpoint, keeping navigation ownership and desktop placement.
+
+Mobile refinement: book → Quiz / Quiz শিখুন → Pial Sir Class → compact 68px dictionary/statistics/errors row. Chapter title and carousel/dashboard sit lower; MiskatDesigns stays at the bottom in flow, with scrolling on short screens. Supersedes tools-before-learning order.
