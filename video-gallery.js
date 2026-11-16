@@ -31,6 +31,18 @@
    const body=el('div',null,'vg-card-body');body.append(el('p',row.question,'vg-question'),el('strong',row.correct?'VERO':'FALSO',row.correct?'vg-true':'vg-false'));
    const refs=row.refs.filter(r=>r.source===s.source);body.append(el('p',refs.map(r=>`${r.title} · ${r.id}`).join(' / '),'vg-ref'));
    const number=String(row.figure||'').match(/(?:fig)?(\d+)(?:\.[a-z]+)?$/i)?.[1];if(number)body.append(el('p',`Figura ${number}`,'vg-ref'));
+   if(s.mode==='missing'){
+    const feedback=el('span',null,'vg-copy-feedback');feedback.setAttribute('role','status');
+    const copy=button('Copia domanda e risposta',async()=>{
+     const text=`${row.question}\nRisposta: ${row.correct?'VERO':'FALSO'}`;
+     copy.disabled=true;feedback.textContent='';
+     try{
+      try{await navigator.clipboard.writeText(text);}
+      catch(error){const field=el('textarea');field.value=text;field.setAttribute('aria-label','Domanda e risposta da copiare');field.style.cssText='position:fixed;left:0;top:0;opacity:0;width:1px;height:1px';body.append(field);field.focus();field.select();try{if(!document.execCommand('copy'))throw error;}finally{field.remove();copy.focus({preventScroll:true});}}
+      feedback.textContent='Copiato!';
+     }catch{feedback.textContent='Copia non riuscita. Riprova.';}finally{copy.disabled=false;}
+    });copy.className='vg-copy';body.append(copy,feedback);
+   }
    const manage=MagicQuizVideo.createButton({gallery:true,question:row,cacheScope:s.scope,isCurrent:()=>state===s&&card.isConnected,isAdmin:()=>true,onClose:()=>{if(state===s)void load(s);},request:(action,video,signal)=>request(action,{questionId:row.id,question:row.question,figure:String(row.figure||''),video},signal)});
    s.buttons.push(manage);body.append(manage);card.append(cover,body);s.grid.append(card);
   }
