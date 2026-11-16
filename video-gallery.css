@@ -47,3 +47,5 @@
 @media(prefers-reduced-motion:reduce){.vg-overlay button{transition:none}}
 
 .vg-card .vg-copy{width:100%;margin-top:14px;font-size:12px;background:#edf5ef;border-color:#cddfd2;color:#174e35}.vg-copy-feedback{display:block;font-size:12px;color:#456353;margin-top:6px}.vg-copy-feedback:empty{display:none}
+
+.vg-figure-box{float:right;width:100px;margin:8px 0 12px 12px;text-align:center}.vg-card .vg-figure-zoom{display:grid;place-items:center;width:90px;height:76px;padding:6px;margin:auto;background:white;border:1px solid #dce5df;border-radius:9px;cursor:zoom-in}.vg-figure-box .vg-figure-image{display:block;max-width:100%;max-height:64px;object-fit:contain}.vg-card .vg-copy-image{font-size:11px;padding:8px 4px;min-height:36px;border:0;background:transparent;width:100%;margin-top:3px}.vg-figure-box .vg-copy-feedback{font-size:11px;overflow-wrap:anywhere}.vg-card .vg-copy,.vg-card .quiz-video-button{clear:both}.vg-card-body:after{content:"";display:block;clear:both}

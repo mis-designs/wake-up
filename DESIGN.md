@@ -523,3 +523,5 @@ Desktop uses a chapter-progress rail and three portrait columns; phone uses a ch
 
 ## Video Gallery refinement (2026-11-15)
 Owner rejected oversized full-width controls and heavy shadows. Use a compact toolbar, restrained forest-green actions, readable coverage cards, a chapter rail and portrait media grid. Isolate gallery controls from Home's global button styles; hover must preserve geometry.
+
+Gallery figure cards (2026-11-16): small bottom-right figure preview, shared figure enlargement, separate image-copy action. Text copy includes the figure number only when present; no placeholder for figure-free questions.

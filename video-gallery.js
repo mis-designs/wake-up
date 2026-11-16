@@ -7,7 +7,7 @@
  const button=(text,fn)=>{const n=el('button',text);n.type='button';n.onclick=fn;return n;};
  function session(){return readStoredSession();}
  function sync(){clearTimeout(expiryTimer);const role=window.AccountRole?.status(session()?.accessToken);entry.hidden=!role?.master;if(!role?.master)close();else expiryTimer=setTimeout(sync,Math.max(1,role.expires-Date.now()+20));}
- function close(){if(!state)return;const s=state;state=null;s.controller.abort();MagicQuizVideo.close();s.buttons.forEach(b=>MagicQuizVideo.destroyButton(b));s.unmount();s.data=null;}
+ function close(){if(!state)return;const s=state;state=null;s.controller.abort();window.MagicBookFigureDetail?.close();MagicQuizVideo.close();s.buttons.forEach(b=>MagicQuizVideo.destroyButton(b));s.unmount();s.data=null;}
  async function request(action,extra={},signal){
   const s=session();if(!window.AccountRole?.status(s?.accessToken).master)throw Error('master_admin_required');
   const response=await fetch('/api/quiz',{method:'POST',cache:'no-store',signal,headers:{'Content-Type':'application/json','Authorization':'Bearer '+s.accessToken},body:JSON.stringify({action,phone:s.phone,deviceId:s.deviceId,...extra})});
@@ -31,10 +31,29 @@
    const body=el('div',null,'vg-card-body');body.append(el('p',row.question,'vg-question'),el('strong',row.correct?'VERO':'FALSO',row.correct?'vg-true':'vg-false'));
    const refs=row.refs.filter(r=>r.source===s.source);body.append(el('p',refs.map(r=>`${r.title} · ${r.id}`).join(' / '),'vg-ref'));
    const number=String(row.figure||'').match(/(?:fig)?(\d+)(?:\.[a-z]+)?$/i)?.[1];if(number)body.append(el('p',`Figura ${number}`,'vg-ref'));
+   if(number){
+    const figureBox=el('div',null,'vg-figure-box'),image=el('img',null,'vg-figure-image');image.alt=`Figura ${number}`;image.loading='lazy';
+    const url='/api/asset?'+new URLSearchParams({kind:'figure',figure:String(row.figure),presentation:'numberless-v2'});
+    const zoom=button('',()=>window.MagicBookFigureDetail?.open(image,zoom));zoom.className='vg-figure-zoom';zoom.setAttribute('aria-label',`Ingrandisci figura ${number}`);zoom.setAttribute('aria-haspopup','dialog');zoom.disabled=true;zoom.append(image);
+    const note=el('span',null,'vg-copy-feedback');note.setAttribute('role','status');
+    const copyImage=button('Copia figura',async()=>{
+     copyImage.disabled=true;note.textContent='';
+     try{
+      if(!navigator.clipboard?.write||!window.ClipboardItem)throw Error('unsupported');
+      const png=new Promise((resolve,reject)=>{const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;canvas.getContext('2d').drawImage(image,0,0);canvas.toBlob(blob=>blob?resolve(blob):reject(Error('conversion')),'image/png');});
+      await navigator.clipboard.write([new ClipboardItem({'image/png':png})]);note.textContent='Figura copiata!';
+     }catch{note.textContent='Copia non disponibile. Apri la figura e tieni premuta l’immagine per copiarla o salvarla.';}
+     finally{copyImage.disabled=!image.naturalWidth;}
+    });copyImage.className='vg-copy-image';copyImage.disabled=true;
+    image.onload=()=>{zoom.disabled=false;copyImage.disabled=false;note.textContent='';};
+    image.onerror=()=>{zoom.disabled=true;copyImage.disabled=true;note.textContent='Figura non disponibile.';retry.hidden=false;};
+    const retry=button('Riprova figura',()=>{retry.hidden=true;note.textContent='';image.src=url;});retry.hidden=true;
+    image.src=url;figureBox.append(zoom,copyImage,note,retry);body.append(figureBox);
+   }
    if(s.mode==='missing'){
     const feedback=el('span',null,'vg-copy-feedback');feedback.setAttribute('role','status');
     const copy=button('Copia domanda e risposta',async()=>{
-     const text=`${row.question}\nRisposta: ${row.correct?'VERO':'FALSO'}`;
+     const text=`${row.question}\nRisposta: ${row.correct?'VERO':'FALSO'}${number?'\nFigura '+number:''}`;
      copy.disabled=true;feedback.textContent='';
      try{
       try{await navigator.clipboard.writeText(text);}
@@ -65,5 +84,5 @@
   const main=el('main'),result=el('h2');result.tabIndex=-1;const grid=el('div',null,'vg-grid'),more=button('Mostra altri',()=>{s.limit+=24;render();});more.hidden=true;main.append(result,grid,more);layout.append(chapters,main);shell.append(head,summary,stats,toolbar,status,layout);overlay.append(shell);document.body.append(overlay);
   Object.assign(s,{videos,add,summary,stats,status,refresh,grid,result,more,chapters:chapterBody,chapterDetails:chapters});s.unmount=MagicBookPopup.mount(overlay,{returnFocus:entry,bodyClass:'vg-open',onDismiss:close,initialFocus:exit,focusable:()=>overlay.querySelectorAll('button,input,select,summary,[tabindex]')});void load(s);
  }
- entry.onclick=open;new MutationObserver(sync).observe(document.getElementById('profileRoleBadge'),{attributes:true,childList:true,subtree:true});window.addEventListener('storage',sync);window.addEventListener('magicbook:logout',()=>{close();sync();});window.addEventListener('pagehide',close);window.MagicBookPopup?.registerHistoryLayer(()=>{if(!state||document.querySelector('.quiz-video-overlay'))return false;close();return true;});sync();
+ entry.onclick=open;new MutationObserver(sync).observe(document.getElementById('profileRoleBadge'),{attributes:true,childList:true,subtree:true});window.addEventListener('storage',sync);window.addEventListener('magicbook:logout',()=>{close();sync();});window.addEventListener('pagehide',close);window.MagicBookPopup?.registerHistoryLayer(()=>{if(!state||document.querySelector('.quiz-video-overlay,.figure-detail-overlay'))return false;close();return true;});sync();
 })();
