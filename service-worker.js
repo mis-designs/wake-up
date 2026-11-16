@@ -1,7 +1,7 @@
-const CACHE_NAME = "magicbook-pwa-v304-video-discovery";
+const CACHE_NAME = "magicbook-pwa-v306-video-align";
 const STATIC_ASSETS = [
   "/figure-video-player.js?v=2",
-  "/figure-video-player.css?v=2",
+  "/figure-video-player.css?v=3-base",
   "/account-role.js?v=2",
   "/account-role.css?v=1",
   "/icons/video-upload.png",

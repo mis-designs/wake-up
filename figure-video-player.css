@@ -4,7 +4,7 @@ body.fvp-open{overflow:hidden}.fvp-overlay{position:fixed;inset:0;z-index:24000;
 .figure-video-play[data-available=true]::before{background:#d91c37!important;animation:figure-play-discover 4s ease-in-out 1;transform-origin:center}
 .figure-video-play[data-available=true]:hover::before{background:#b8132c!important}
 .figure-video-play[data-available=true] svg{position:relative;z-index:1}
-.study-figure-frame.figure-video-inline-frame{display:flex;align-items:center;gap:14px;width:min(370px,100%);overflow:visible;background:transparent}
+.study-figure-frame.figure-video-inline-frame{display:flex;align-items:flex-end;gap:14px;width:min(370px,100%);overflow:visible;background:transparent}
 .figure-video-inline-frame>.figure-detail-trigger{flex:1 1 0;min-width:0;width:auto}
 .figure-video-inline-frame>.figure-video-inline{flex:0 0 48px;width:48px;height:48px;min-height:48px;margin:0 4px 0 0;padding:0}
 .figure-video-inline-anchor{display:none}
