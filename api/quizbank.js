@@ -1,4 +1,4 @@
-import { authorizeQuizBankPreview, quizBankSession, serveQuizBankMedia, saveQuizBankAudio, serveQuizTheory, serveQuizVideo, isQuizVideoMaster } from "./quiz.js";
+import { authorizeQuizBankPreview, quizBankSession, serveQuizBankMedia, saveQuizBankAudio, serveQuizTheory, serveQuizVideo, serveFigureVideo, isQuizVideoMaster } from "./quiz.js";
 import { loadQuizBank, quizBankStorageIdentity, quizBankContentToken, matchesQuizBankContentToken } from "./quizbank-catalog.mjs";
 import { isQuizTheoryAction } from "../lib/quiz-theory-response.mjs";
 import { decodeQuizAudioUpload } from "../lib/quiz-audio-upload.mjs";
@@ -6,7 +6,7 @@ import { buildQuizBankAttempt, gradeQuizBankAttempt, normalizeQuizBankSheet } fr
 
 const actions = {
   GET: new Set(["catalog", "getStudyQuiz", "getQuiz", "getItalianAudio", "getBengaliAudio", "getTTS"]),
-  POST: new Set(["getQuizVideo", "createQuizVideoUpload", "uploadQuizVideoChunk", "confirmQuizVideoUpload", "deleteQuizVideo", "cleanupQuizVideo", "saveQuizVideoThumbnail", "deleteQuizVideoThumbnail", "getQuizTheory", "getQuizTheoryAudio", "refreshQuizSession", "checkQuiz", "getQuizAudioStatus", "getQuizAudioBlob", "getQuizAudioPlayback", "saveQuizAudio"])
+  POST: new Set(["getFigureVideo","getQuizVideo", "createQuizVideoUpload", "uploadQuizVideoChunk", "confirmQuizVideoUpload", "deleteQuizVideo", "cleanupQuizVideo", "saveQuizVideoThumbnail", "deleteQuizVideoThumbnail", "getQuizTheory", "getQuizTheoryAudio", "refreshQuizSession", "checkQuiz", "getQuizAudioStatus", "getQuizAudioBlob", "getQuizAudioPlayback", "saveQuizAudio"])
 };
 
 const withContentTokens = rows => rows.map(row => ({ ...row, audioIdentityToken: quizBankContentToken(row) }));
@@ -30,6 +30,7 @@ export default async function handler(req, res) {
       res.setHeader("X-Access-Token", access.accessToken);
       res.setHeader("X-Access-Token-Expires", String(access.accessTokenExpiresAt));
     }
+    if(data.action==='getFigureVideo')return res.status(200).json({...await serveFigureVideo(data.figure,req,res),...renewed});
     if (data.action === "refreshQuizSession") return res.status(200).json({ ok: true, role, canUploadAudio,
       ...quizBankSession(data, { role }), ...renewed });
     // Standalone word TTS has no archive identity; question TTS must pass the row guard.

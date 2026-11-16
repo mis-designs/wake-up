@@ -15,6 +15,7 @@ test('figure upload, replacement and removal use the shared archive, without cov
  assert.equal(f.calls.length,0);await assert.rejects(run('saveQuizVideoThumbnail'),/master_admin_required/);
  const publish=async expectedRevision=>{const ticket=await run('createQuizVideoUpload',{bytes:64,duration:30,mime:'video/mp4',expectedRevision});const bytes=Buffer.alloc(64);bytes.write('ftyp',4);f.put(new URL(ticket.uploadUrl).pathname.slice(4),bytes);return run('confirmQuizVideoUpload',{uploadToken:ticket.uploadToken});};
  const first=await publish(null);assert.equal(first.archive.prefix,'xyz3d/figure-v1/fig1/');
+ const read=await service({action:'getQuizVideo',row,master:false,allowFigureRead:true});assert.equal(read.available,true);assert.equal(read.canUpload,false);assert.equal(read.archive,undefined);for(const action of [...ACTIONS].filter(a=>a!=='getQuizVideo'))await assert.rejects(service({action,row,master:false,allowFigureRead:true}),/master_admin_required/);
  const second=await publish(first.revision);assert.notEqual(second.url,first.url);assert.equal(f.objects.has(first.archive.objectKey),false);
  const record=JSON.parse(f.objects.get('xyz3d/figure-v1/fig1/current.json').body);assert.equal(record.mediaType,'figure');assert.equal(record.figureNumber,1);assert.equal(record.thumbnail,undefined);
  const removed=await run('deleteQuizVideo',{expectedRevision:second.revision,operationId:crypto.randomUUID()});assert.equal(removed.available,false);assert.equal((await run('getQuizVideo')).available,false);

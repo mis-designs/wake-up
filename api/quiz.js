@@ -47,15 +47,21 @@ export function isQuizVideoMaster(data) {
   const proof = verifySignedToken(data.accessToken, { phone: data.phone, deviceId: data.deviceId, purpose: 'access' });
   return proof.ok && isAdminPhone(data.phone) && masterAdmin.isMaster(proof.payload);
 }
-export async function serveQuizVideo({ action, row, master, owner, video }, req, res) {
+export async function serveQuizVideo({ action, row, master, owner, video, allowFigureRead = false }, req, res) {
   const controller = new AbortController();
   const abort = () => controller.abort();
   const onClose = () => { if (!res.writableEnded) abort(); };
   req.once?.('aborted', abort); res.once?.('close', onClose);
   const timer = setTimeout(abort, 20000);
   try {
-    return await quizVideo.runRequest({ action, row, master, owner, data: video, signal: controller.signal });
+    return await quizVideo.runRequest({ action, row, master, allowFigureRead, owner, data: video, signal: controller.signal });
   } finally { clearTimeout(timer); req.removeListener?.('aborted', abort); res.removeListener?.('close', onClose); }
+}
+export async function serveFigureVideo(figure, req, res) {
+  const match=/^(?:fig)?([1-9][0-9]{0,4})$/.exec(String(figure||''));
+  const row=match&&figureVideos.resolveFigureVideoRow('fv_'+match[1]);
+  if(!row)return {available:false};
+  return serveQuizVideo({action:'getQuizVideo',row,master:false,allowFigureRead:true},req,res);
 }
 const {
   QUIZ_AUDIO_IDENTITY_VERSION,
@@ -1281,6 +1287,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "invalid_request" });
     }
 
+    if(req.method==='POST'&&action==='getFigureVideo'){
+      const proof=verifySignedToken(accessToken,{phone,deviceId,purpose:'access'});
+      if(!proof.ok&&!(proof.signatureValid&&proof.error==='token_expired'))return res.status(401).json({error:'unauthorized'});
+      const {access}=await requireQuizAudioAccess({phone,deviceId,accessToken});
+      res.setHeader('Cache-Control','private, no-store');
+      return res.status(200).json({...await serveFigureVideo(figure,req,res),...(access.accessToken?{accessToken:access.accessToken,accessTokenExpiresAt:access.accessTokenExpiresAt}:{})});
+    }
     if (req.method === 'POST' && ['getVideoGallery','getFigureVideoGallery'].includes(action)) {
       if (!isQuizVideoMaster({ phone, deviceId, accessToken })) return res.status(403).json({ error: 'master_admin_required' });
       const { isAdmin, access } = await requireQuizAudioAccess({ phone, deviceId, accessToken, adminOnly: true });

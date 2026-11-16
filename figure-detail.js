@@ -34,6 +34,7 @@ function close({ fromHistory = false, restoreFocus = true } = {}) {
   if (!active) return false;
   const state = active;
   active = null;
+  state.videoDispose?.();
   state.observer.disconnect();
   // Restore the exact node: image requests, lazy-load/error listeners and pixels
   // stay with their original owner. The measured spacer kept its layout stable.
@@ -91,7 +92,7 @@ function open(image, trigger) {
   const closeButton = overlay.querySelector('.figure-detail-close');
   closeButton.addEventListener('click', () => close());
   const unmount = window.MagicBookPopup.mount(overlay, {
-    focusable: [closeButton], initialFocus: card, returnFocus: trigger,
+    focusable: () => overlay.querySelectorAll('button:not([hidden])'), initialFocus: card, returnFocus: trigger,
     bodyClass: 'figure-detail-open', onDismiss: () => close()
   });
   const historyKey = `${Date.now()}-${id}`;
@@ -107,6 +108,7 @@ function open(image, trigger) {
   });
   observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['src', 'hidden', 'class'] });
   active = { routeHref: location.href, image, trigger, spacer, unmount, observer, ownsHistory, historyKey, scroll };
+  active.videoDispose=window.MagicFigureVideo?.attach({figure:id,title:detail?.italian||'Video della figura',before:closeButton,buttonClass:'figure-detail-close'});
 }
 
 function enhance(image) {
@@ -155,6 +157,7 @@ observer.observe(document.body, { childList: true, subtree: true, attributes: tr
 // The early shared history owner consumes only this viewer's entries before
 // Quiz/Study/Home handlers. Do not reload data, render the route or reset audio.
 const unregisterHistory = window.MagicBookPopup.registerHistoryLayer(() => {
+  if(window.MagicFigureVideo?.ownsHistory())return false;
   const sameRoute = routeHref === location.href;
   routeHref = location.href;
   if (consumingBack) {

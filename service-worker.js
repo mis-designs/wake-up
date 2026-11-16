@@ -1,5 +1,7 @@
-const CACHE_NAME = "magicbook-pwa-v296-figure-videos";
+const CACHE_NAME = "magicbook-pwa-v298-figure-playback";
 const STATIC_ASSETS = [
+  "/figure-video-player.js?v=1",
+  "/figure-video-player.css?v=1",
   "/account-role.js?v=1",
   "/account-role.css?v=1",
   "/icons/video-upload.png",
@@ -122,8 +124,8 @@ const STATIC_ASSETS = [
   "/italian-display.js?v=1",
   "/audio-focus.js?v=1-resumable-tts",
   "/app-popup.js?v=2",
-  "/figure-detail.js?v=5-figure-names",
-  "/figure-detail.css?v=4-shared-bilingual",
+  "/figure-detail.js?v=6-video",
+  "/figure-detail.css?v=5-video",
   "/figure-catalog.mjs?v=2-complete",
   "/src/learning-insights.css?v=11-study-results&ui=10",
   "/src/learning-insights.js?v=14-home-icons&ui=9-intact-figures",

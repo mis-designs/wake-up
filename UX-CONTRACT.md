@@ -494,3 +494,5 @@ Gallery browser fixtures must load the actual Home stylesheets. Verify compact c
 Gallery figures use the existing same-origin R2 asset resolver and shared figure viewer. Lazy image loads only for rendered cards; PNG copying reuses loaded pixels without another fetch. Clipboard failure is explicit; missing figures offer a manual retry and never substitute another figure.
 
 Figure videos have their own canonical figure ID and R2 prefix, independent of quiz text/answers. Preserve existing quiz videos. Test master-only APIs, no-cover upload UI, replacement/removal, cache invalidation and reading the same object through AllBooks.
+
+Figure playback is authenticated and read-only for customers. One lazy metadata request on opening a figure, bounded per-account cache, no background polling; abort on close. Viewer owns nested focus/history, pauses audio and releases video on dismissal. Upload controls stay master-only.
