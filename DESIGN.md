@@ -540,3 +540,5 @@ Video figure (16 novembre): il Play esterno alla finestra va allineato alla base
 I player video delle figure e dei quiz non mostrano Download e bloccano il menu contestuale sul video (clic destro/pressione prolungata). I normali controlli di riproduzione restano disponibili; non si tratta di DRM.
 
 Figure video invitation: owner replaces the external red Play with supplied thinking person and Bangla meaning artwork, partially overlapping the lower-right figure edge. Gentle continuous vertical person movement and horizontal lettering movement; reduced-motion and native motion pause disable motion. Enlarged-dialog Play remains unchanged.
+
+Mobile browser/PWA home (2026-11-16): three compact tools in one row; existing Quiz | কুইজ and Quiz শিখুন controls move to the next row, followed by the existing Pial Sir Class artwork. Preserve chapter carousel and Start Engine; no duplicate mobile chapter shortcuts. Move original nodes at 820px breakpoint, keeping navigation ownership and desktop placement.

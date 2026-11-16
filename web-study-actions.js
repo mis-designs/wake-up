@@ -3,6 +3,21 @@
   const doc = root.document;
   if (doc.documentElement.classList.contains('android-webview')) return;
 
+  // Move the existing controls, preserving their IDs and navigation owners.
+  const homeActions = doc.querySelector('.member-learning-actions');
+  const compactHome = root.matchMedia('(max-width: 820px)');
+  const shortcuts = ['quizButton', 'webStudyButton', 'webClassButton'].map(id => {
+    const button = doc.getElementById(id), slot = doc.createComment('chapter shortcut');
+    button.before(slot); return {button, slot};
+  });
+  function placeShortcuts() {
+    for (const {button, slot} of shortcuts) {
+      if (compactHome.matches) homeActions.append(button); else slot.after(button);
+    }
+  }
+  compactHome.addEventListener('change', placeShortcuts);
+  placeShortcuts();
+
   // The carousel owns selection; this browser adapter only presents its title.
   const chapterHeading = doc.querySelector('#chapters .lesson-head h2');
   const chapterHeadingText = doc.createElement('span');

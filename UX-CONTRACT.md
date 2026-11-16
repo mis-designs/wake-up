@@ -498,3 +498,5 @@ Figure videos have their own canonical figure ID and R2 prefix, independent of q
 Figure playback is authenticated and read-only for customers. One lazy metadata request on opening a figure, bounded per-account cache, no background polling; abort on close. Viewer owns nested focus/history, pauses audio and releases video on dismissal. Upload controls stay master-only.
 
 Inline figure-video discovery observes only visible Study figures. Deduplicate simultaneous lookups per account/product/figure, cache sixty seconds, abort only when all consumers leave. Dispose controls when the figure host is removed. Show availability-gated actions and reuse the existing player.
+
+Mobile browser/PWA home (2026-11-16): three compact tools in one row; existing Quiz | কুইজ and Quiz শিখুন controls move to the next row, followed by the existing Pial Sir Class artwork. Preserve chapter carousel and Start Engine; no duplicate mobile chapter shortcuts. Move original nodes at 820px breakpoint, keeping navigation ownership and desktop placement.
