@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v310-video-invitation";
+const CACHE_NAME = "magicbook-pwa-v312-bangla-label";
 const STATIC_ASSETS = [
   "/icons/figure-video-thinking.png",
   "/icons/figure-video-meaning.svg",
@@ -8,7 +8,7 @@ const STATIC_ASSETS = [
   "/account-role.css?v=1",
   "/icons/video-upload.png",
   "/quiz-video-thumbnail.js?v=1",
-  "/quiz-video.js?v=13-nodownload",
+  "/quiz-video.js?v=14-bangla",
   "/video-gallery.js?v=5",
   "/video-gallery.css?v=5",
   "/quiz-video.css?v=7-nodownload",

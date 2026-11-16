@@ -171,7 +171,7 @@
       remember(other, result);
       const available = result.available === true;
       other.button.hidden = !available && !admin(other);
-      other.button.innerHTML = (available ? icon : uploadIcon) + `<span>${available ? 'Video' : 'Carica video'}</span>`;
+      other.button.innerHTML = (available ? icon : uploadIcon) + `<span>${available ? 'কুইজ ব্যাখ্যা' : 'Carica video'}</span>`;
       other.button.setAttribute('aria-label', available ? 'Spiegazione video' : 'Carica spiegazione video');
     }
   }
@@ -418,7 +418,7 @@
     };
   }
   function createButton(options) {
-    const button = node('button', '', 'quiz-video-button'); button.type = 'button'; button.hidden = true; button.innerHTML = icon + '<span>Video</span>';
+    const button = node('button', '', 'quiz-video-button'); button.type = 'button'; button.hidden = true; button.innerHTML = icon + '<span>কুইজ ব্যাখ্যা</span>';
     button.setAttribute('aria-label', 'Spiegazione video');
     const binding = { button, options, epoch, controllers: new Set() }; bindings.add(binding);
     if (options.initialVideo) remember(binding, options.initialVideo);
@@ -434,7 +434,7 @@
         if (!current(binding)) return; remember(binding, result);
         const available = result.available === true && typeof result.url === 'string' && /^https?:\/\//.test(result.url);
         button.hidden = !available && !admin(binding);button.classList.toggle('quiz-video-available',available);
-        button.innerHTML = (available ? icon : uploadIcon) + `<span>${available ? 'Video' : 'Carica video'}</span>`;
+        button.innerHTML = (available ? icon : uploadIcon) + `<span>${available ? 'কুইজ ব্যাখ্যা' : 'Carica video'}</span>`;
         button.setAttribute('aria-label', available ? 'Spiegazione video' : 'Carica spiegazione video');
       } catch (_) { if (current(binding)) button.hidden = true; }
     };
