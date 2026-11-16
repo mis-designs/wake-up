@@ -15,10 +15,13 @@ test('signed-token claims contain neither the secret nor an unkeyed credential d
  assert.equal(master.isMaster({role:'admin',masterAdmin:true},1001),false);
  assert.ok(!JSON.stringify(claims).includes(code));
 });
-test('renewal preserves deadline; expiry, rotation and removal revoke authorization',()=>{
+test('master persists over time and renewal; rotation and removal revoke authorization',()=>{
  const payload={role:'admin',...master.loginClaims({code,isAdmin:true,now:1000})};
- assert.deepEqual(master.preserveClaims(payload,2000),{masterAdminUntil:payload.masterAdminUntil,masterAdminRevision:payload.masterAdminRevision});
- assert.equal(master.isMaster(payload,payload.masterAdminUntil),false);
+ assert.deepEqual(master.preserveClaims(payload,2000),{masterAdmin:true,masterAdminRevision:payload.masterAdminRevision});
+ assert.equal(master.isMaster(payload,1000+365*24*3600000),true);
+ const legacy={role:'admin',masterAdminUntil:1000,masterAdminRevision:payload.masterAdminRevision};
+ assert.equal(master.isMaster(legacy,2000),true);
+ assert.deepEqual(master.preserveClaims(legacy,2000),master.preserveClaims(payload,2000));
  process.env.master_admin=code+'rotated';assert.equal(master.isMaster(payload,2000),false);assert.deepEqual(master.preserveClaims(payload,2000),{});
  delete process.env.master_admin;assert.equal(master.isMaster(payload,2000),false);assert.throws(()=>master.loginClaims({code,isAdmin:true}),/not_configured/);
  process.env.master_admin=code;

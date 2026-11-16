@@ -11,9 +11,9 @@
       const data = JSON.parse(atob(encoded));
       const expiry = Number(data.exp) * (parts.length === 3 ? 1000 : 1);
       if (data.role !== 'admin' || !Number.isFinite(expiry) || expiry <= now) return { label: '' };
-      const master = Number.isSafeInteger(data.masterAdminUntil) && data.masterAdminUntil > now
+      const master = (data.masterAdmin === true || (Number.isSafeInteger(data.masterAdminUntil) && data.masterAdminUntil > 0))
         && /^[a-f0-9]{64}$/.test(data.masterAdminRevision || '');
-      return { label: master ? 'Master admin' : 'Admin', master, expires: master ? Math.min(expiry, data.masterAdminUntil) : expiry };
+      return { label: master ? 'Master admin' : 'Admin', master, expires: expiry };
     } catch (_) { return { label: '' }; }
   }
   function render(element, token) {

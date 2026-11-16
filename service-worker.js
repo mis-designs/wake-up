@@ -1,8 +1,8 @@
-const CACHE_NAME = "magicbook-pwa-v298-figure-playback";
+const CACHE_NAME = "magicbook-pwa-v300-persistent-master";
 const STATIC_ASSETS = [
   "/figure-video-player.js?v=1",
   "/figure-video-player.css?v=1",
-  "/account-role.js?v=1",
+  "/account-role.js?v=2",
   "/account-role.css?v=1",
   "/icons/video-upload.png",
   "/quiz-video-thumbnail.js?v=1",

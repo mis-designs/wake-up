@@ -12,3 +12,5 @@ La lista delle figure viene richiesta solo aprendo Video figure o aggiornando do
 
 ## Riproduzione cliente (2026-11-16)
 Il lettore delle figure propone Play solo dopo una verifica positiva del video. La lettura richiede accesso valido; restituisce solo URL temporaneo e metadati di riproduzione, senza percorsi R2 o controlli amministrativi. Mutazioni e galleria rimangono master-only. Una richiesta per apertura, cache in memoria 60 secondi per account/figura (massimo 64), timeout 20 secondi, annullamento alla chiusura, nessun polling. Play apre il lettore verticale con nome della figura; X e Indietro fermano il video e ripristinano il contesto.
+
+Master admin (2026-11-16): il ruolo non ha una scadenza separata di otto ore. Il rinnovo autenticato conserva la qualifica; logout, rimozione dell'admin o rotazione della chiave restano efficaci. Le vecchie attestazioni firmate e con revisione valida migrano al rinnovo. La scadenza e la verifica dei token di accesso rimangono gestite dal sistema di sessione esistente.
