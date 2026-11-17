@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v318-thumb-reach";
+const CACHE_NAME = "magicbook-pwa-v320-figure-chapters";
 const STATIC_ASSETS = [
   "/icons/figure-video-thinking.png",
   "/icons/figure-video-meaning.svg",
@@ -9,11 +9,11 @@ const STATIC_ASSETS = [
   "/icons/video-upload.png",
   "/quiz-video-thumbnail.js?v=1",
   "/quiz-video.js?v=14-bangla",
-  "/video-gallery.js?v=5",
-  "/video-gallery.css?v=5",
+  "/video-gallery.js?v=6-chapters",
+  "/video-gallery.css?v=6-chapters",
   "/quiz-video.css?v=7-nodownload",
   "/quiz-video-optimizer.js?v=3-reduction",
-  "/quiz-theory-index.js?v=1-chapter1",
+  "/quiz-theory-index.js?v=3-all-figure-free",
   "/quiz-theory.js?v=1-protected",
   "/quiz-theory.css?v=2-white-sticker",
   "/icons/pial_sirr_sticker.png",

@@ -527,7 +527,7 @@ Owner rejected oversized full-width controls and heavy shadows. Use a compact to
 Gallery figure cards (2026-11-16): small bottom-right figure preview, shared figure enlargement, separate image-copy action. Text copy includes the figure number only when present; no placeholder for figure-free questions.
 
 ## Video figure (2026-11-16)
-Master-only tab beside Video quiz. Use existing figure artwork as the card image; no cover picker, quiz answer badge or chapter totals. Search by figure number/name; shared upload editor owns playback, replacement and deletion. Student-facing figure playback is a separate future step.
+Master-only tab beside Video quiz. Use existing figure artwork as the card image; no cover picker or quiz answer badge. Chapter totals and filtering now follow the All Books figure mapping (2026-11-17). Search by figure number/name; shared upload editor owns playback, replacement and deletion. Student-facing figure playback is a separate future step.
 
 Figure video playback (2026-11-16): place a play triangle beside the existing scalloped close control. Only show Play for an available video; open a portrait player with the figure title. Preserve the original bilingual figure and return focus on closing.
 
@@ -546,3 +546,7 @@ Mobile browser/PWA home (2026-11-16): three compact tools in one row; existing Q
 Mobile refinement: book → Quiz / Quiz শিখুন → Pial Sir Class → compact 68px dictionary/statistics/errors row. Chapter title and carousel/dashboard sit lower; MiskatDesigns stays at the bottom in flow, with scrolling on short screens. Supersedes tools-before-learning order.
 
 Chapter thumb reach (2026-11-17): mobile Back stays at the original top position. Move the selected title immediately above the carousel, lowering title/cards/pagination/engine as a group toward mid-screen. Keep sponsor at the bottom; short screens scroll naturally.
+
+
+## Video figure chapters (2026-11-17)
+Reuse the quiz-gallery chapter rail, compact forest-green controls and mobile details disclosure. Show All Books chapter number and title on each figure card and in the selected heading. Chapter progress counts figures, not question occurrences; the overall count is distinct figures. Keep existing figure artwork, media identities and upload editor. All 25 chapters remain discoverable, including an explicit no-figures state. Search clearing is immediate and local.

@@ -504,3 +504,8 @@ Mobile browser/PWA home (2026-11-16): three compact tools in one row; existing Q
 Mobile refinement: book → Quiz / Quiz শিখুন → Pial Sir Class → compact 68px dictionary/statistics/errors row. Chapter title and carousel/dashboard sit lower; MiskatDesigns stays at the bottom in flow, with scrolling on short screens. Supersedes tools-before-learning order.
 
 Chapter thumb reach (2026-11-17): mobile Back stays at the original top position. Move the selected title immediately above the carousel, lowering title/cards/pagination/engine as a group toward mid-screen. Keep sponsor at the bottom; short screens scroll naturally.
+
+
+## Figure video chapters — 2026-11-17
+Source: explicit owner request; authoritative All Books quizBookCompiled26Sections.json, chapters01–25 excluding Mix. lib/figure-video-chapters.json contains only figure-to-chapter associations and titles, identically copied to both products. All410 existing figure IDs are covered;17 figures belong to multiple chapters. A figure has one shared video and appears under each associated chapter. Chapter totals count distinct figures; overall total remains410, not the sum of chapter totals. No image remapping, video migration or upload-format changes.
+The existing video-gallery.js/css chapter rail and details disclosure own filtering. All25 chapter choices, search clear, uploaded/missing modes, no-figure/no-results states, and selected heading are local after the existing gallery request. Zero extra requests for chapter changes or search; cache60s, abort on close, explicit refresh and master-only authorization remain unchanged. Session-only modal state is intentionally not persisted in URLs.

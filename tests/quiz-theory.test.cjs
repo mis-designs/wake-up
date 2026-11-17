@@ -19,11 +19,11 @@ resolverModule._compile(fs.readFileSync(resolverPath, "utf8"), resolverPath);
 const { findQuizTheory } = resolverModule.exports;
 const canonical = r => ({ question: r.question_it, figure: "", correct: r.correct_answer });
 
-test("67 sanitized bilingual records, 69 unique keys, preserved answer split and TTS bounds", () => {
-  assert.equal(records.length, 67);
-  assert.equal(new Set(records.map(r => r.id)).size, 67);
-  assert.equal(records.filter(r => r.correct_answer).length, 26);
-  assert.equal(new Set(records.flatMap(r => r.keys)).size, 69);
+test("439 bilingual records, 441 keys, exact coverage and bounded TTS", () => {
+  assert.equal(records.length, 439);
+  assert.equal(new Set(records.map(r => r.id)).size, 439);
+  assert.equal(records.filter(r => r.correct_answer).length, 133);
+  assert.equal(new Set(records.flatMap(r => r.keys)).size, 441);
   for (const r of records) {
     assert.deepEqual(Object.keys(r), ["id", "keys", "question_it", "figure", "correct_answer", "focus_it", "explanation"]);
     assert.deepEqual(Object.keys(r.explanation), ["it", "bn"]);
@@ -116,7 +116,7 @@ test("browser index is frozen hashes only and covers every resolver key", () => 
   const keys = sandbox.window.MagicQuizTheoryKeys;
   assert.ok(Object.isFrozen(keys));
   assert.deepEqual(Array.from(keys), records.flatMap(r => r.keys));
-  assert.equal(keys.length, 69);
+  assert.equal(keys.length, 441);
   assert.ok(keys.every(key => /^q2_[a-f0-9]{64}$/.test(key)));
   for (const r of records) {
     assert.ok(!source.includes(r.question_it));
