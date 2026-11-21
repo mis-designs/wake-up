@@ -550,3 +550,11 @@ Chapter thumb reach (2026-11-17): mobile Back stays at the original top position
 
 ## Video figure chapters (2026-11-17)
 Reuse the quiz-gallery chapter rail, compact forest-green controls and mobile details disclosure. Show All Books chapter number and title on each figure card and in the selected heading. Chapter progress counts figures, not question occurrences; the overall count is distinct figures. Keep existing figure artwork, media identities and upload editor. All 25 chapters remain discoverable, including an explicit no-figures state. Search clearing is immediate and local.
+
+## Android home priority correction · 2026-11-21
+
+APK 1.4 receives this named web presentation variant through android-home-compact.js/css. Center the title and greeting. Hadi Rounded is explicit for Bangla greeting and home actions. Order the compact home as book, QuizBank, one Quiz action, Pial Sir Class, then Dictionary/Statistics/Errors. Fit ordinary portrait viewports down to 320×568 while retaining scrolling for landscape and enlarged text. The bottom dock uses a bespoke outlined home asset and visible label.
+
+The one Quiz button opens a two-choice dialog using MagicBookPopup.mount and its history-layer owner. Choices invoke the retained original quiz/study controls after dismissal. Preserve original role-controlled profile/admin controls, real progress and book behavior. AndroidStudyShell's existing inert owner recognizes android-home-quiz-open. Verify focus trap, close/back/selection once, restored background, repeat visits, portrait fit, font load and desktop-browser geometry.
+
+There are two static web assets at document load and one home icon. Existing font files are reused. Static asset versions are cached for the current service worker version. No polling or new API traffic is introduced. Popup artwork is read lazily only when opening it, using existing cacheable icon files.
