@@ -1,7 +1,7 @@
-const CACHE_NAME = "magicbook-pwa-v321-compact-home";
+const CACHE_NAME = "magicbook-pwa-v322-study-home";
 const STATIC_ASSETS = [
-  "/android-home-compact.css?v=1",
-  "/android-home-compact.js?v=1",
+  "/android-home-compact.css?v=2",
+  "/android-home-compact.js?v=2",
   "/icons/native-home-outline.svg?v=1",
   "/icons/figure-video-thinking.png",
   "/icons/figure-video-meaning.svg",
@@ -79,7 +79,7 @@ const STATIC_ASSETS = [
   "/android-app-theme.css?v=14-welcome-split",
   "/assets/fonts/magicbook-latin-fonts.css?v=1",
   "/android-study-shell.css?v=20-liquid",
-  "/android-study-shell.js?v=16-compact-home",
+  "/android-study-shell.js?v=17-study-home",
   "/native-liquid-progress.mjs?v=1",
   "/android-mode-screens.css?v=3-headlight",
   "/android-mode-screens.js?v=2-thumb",

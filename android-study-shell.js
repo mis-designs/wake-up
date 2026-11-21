@@ -456,7 +456,7 @@ function initialize() {
         progress.removeAttribute("aria-valuetext");
         dock.style.setProperty("--native-progress", "0%");
         liquid.setValue(null);
-        progressLabel.textContent = "Studio · —";
+        progressLabel.textContent = "Il mio studio";
         progressButton.setAttribute("aria-label", "Dati studio non disponibili. Apri Statistiche per riprovare");
         progressStatus.textContent = "Avanzamento non disponibile. Apri Statistiche per riprovare.";
       }

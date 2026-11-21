@@ -20,6 +20,49 @@
     image.setAttribute('aria-hidden', 'true');
     return image;
   }
+  // One set of line drawings for the Android study actions.
+  const drawings = {
+    dictionary: 'M3 5c3-1 6-.5 9 1.5C15 4.5 18 4 21 5v14c-3-1-6-.5-9 1.5C9 18.5 6 18 3 19z M12 6.5v14',
+    statistics: 'M3 20h18 M5 16v-4 M11 16V8 M17 16V4',
+    errors: 'M4 8h9a6 6 0 0 1 0 12h-3 M8 3.5 3.5 8 8 12.5',
+    video: 'M8 5.5 18 12 8 18.5z'
+  };
+  function artwork(viewBox) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', viewBox);
+    svg.setAttribute('aria-hidden', 'true');
+    return svg;
+  }
+  function drawing(name) {
+    const svg = artwork('0 0 24 24');
+    const path = document.createElementNS(svg.namespaceURI, 'path');
+    path.setAttribute('d', drawings[name]);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', 'currentColor');
+    path.setAttribute('stroke-width', '1.65');
+    path.setAttribute('stroke-linejoin', 'round');
+    path.setAttribute('stroke-linecap', 'round');
+    svg.append(path);
+    return svg;
+  }
+  function quizPaper() {
+    const svg = artwork('0 0 90 70');
+    svg.classList.add('quiz-paper');
+    const names = [
+      ['M12 17 59 7l10 46-47 10z', '#dfab52', '#bb842e'],
+      ['M20 9 68 6l3 48-48 3z', '#fff7de', '#a6742d'],
+      ['M29 21l3 3 5-7m7 3 15-1m-29 14 3 3 5-7m7 2 15-1m-29 14 28-2', 'none', '#865b26'],
+      ['M46 51l2-8 25-28 5 5-25 28z', '#7c4d85', '#55385e'],
+      ['M48 43l5 5-7 3z', '#fff1cf', '#55385e']
+    ];
+    svg.replaceChildren(...names.map(([d, fill, stroke]) => {
+      const line = document.createElementNS(svg.namespaceURI, 'path');
+      Object.entries({d, fill, stroke, 'stroke-width':1.6, 'stroke-linecap':'round', 'stroke-linejoin':'round'})
+        .forEach(([key, value]) => line.setAttribute(key, value));
+      return line;
+    }));
+    return svg;
+  }
   function finishPopup({ restoreFocus = true, launch = null } = {}) {
     if (!popup) return;
     const current = popup;
@@ -103,20 +146,36 @@
     home.dataset.androidHomeCompact = 'true';
     home.classList.add('android-home-compact');
     book.after(bank);
+    const bookCopy = book.querySelector('.vivid-book-copy');
+    if (bookCopy) {
+      bookCopy.querySelector('strong').textContent = 'Scegli il capitolo';
+      bookCopy.querySelector('small')?.remove();
+    }
     const launcher = element('button', '', 'android-home-quiz-launcher');
     launcher.type = 'button';
     launcher.setAttribute('aria-haspopup', 'dialog');
     const label = element('span', 'Quiz');
     const bangla = element('span', 'কুইজ');
     bangla.lang = 'bn';
-    launcher.append(icon('/icons/do_quiz.svg'), label, bangla);
+    launcher.append(quizPaper(), label, bangla);
     launcher.onclick = () => openQuiz(launcher, originals);
     const actions = element('div', '', 'android-home-original-actions');
     actions.hidden = true;
     actions.append(...originals);
     learning.replaceChildren(launcher, actions);
     const tools = home.querySelector('.vivid-tools');
-    home.querySelector('.vivid-video')?.after(tools);
+    const lesson = home.querySelector('.vivid-video');
+    if (lesson && tools) {
+      const pair = element('div', '', 'android-study-pair');
+      learning.before(pair);
+      pair.append(learning, lesson);
+      lesson.prepend(drawing('video'));
+      pair.after(tools);
+      tools.querySelectorAll('button[data-native-action]').forEach(button => {
+        const name = button.dataset.nativeAction;
+        if (drawings[name]) button.querySelector('img')?.replaceWith(drawing(name));
+      });
+    }
   }
   function update() {
     frame = 0;

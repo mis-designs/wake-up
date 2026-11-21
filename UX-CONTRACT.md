@@ -517,3 +517,5 @@ APK 1.4 receives this named web presentation variant through android-home-compac
 The one Quiz button opens a two-choice dialog using MagicBookPopup.mount and its history-layer owner. Choices invoke the retained original quiz/study controls after dismissal. Preserve original role-controlled profile/admin controls, real progress and book behavior. AndroidStudyShell's existing inert owner recognizes android-home-quiz-open. Verify focus trap, close/back/selection once, restored background, repeat visits, portrait fit, font load and desktop-browser geometry.
 
 There are two static web assets at document load and one home icon. Existing font files are reused. Static asset versions are cached for the current service worker version. No polling or new API traffic is introduced. Popup artwork is read lazily only when opening it, using existing cacheable icon files.
+
+The Android home exposes both quiz modes from the single Quiz tile. The adjacent class tile opens Video Class directly. When coverage is unavailable, the dock reads “Il mio studio” and still opens statistics.
