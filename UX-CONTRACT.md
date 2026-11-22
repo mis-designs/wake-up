@@ -553,3 +553,5 @@ Le figure e i quiz caricati sono sorgenti riutilizzabili per gli spezzoni. Ogni 
 In Aula, usare il capitolo di origine della lezione per le parole e il numero condiviso per i video delle figure. Controllare la sola figura visualizzata, riutilizzare la lettura per un minuto e offrire un nuovo tentativo se fallisce.
 
 Il numero di catalogo della figura è visibile soltanto nella vista privata del Master admin. In Presenta la didascalia numerata scompare e il pulsante mostra «Guarda il video».
+
+Nelle lezioni rivolgersi alla persona con আপনি e i verbi di cortesia. Nel dizionario distinguere la forma selezionata (carreggiata / carreggiate) mantenendo lo stesso collegamento alla parola, alla foto e al video.

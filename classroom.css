@@ -75,6 +75,9 @@ video{-webkit-touch-callout:none;user-select:none}#detail[data-media=true] #clos
 .source-credit{font-size:.85rem;color:var(--muted);margin:3px 0 11px}
 #sourceText{font:1.19rem/1.6 Georgia,serif;overflow-wrap:anywhere}
 #sourceText p+p{margin-top:.6em}
+.manual-bangla{margin:1rem 0;padding-inline-start:1rem;border-inline-start:3px solid #699476;line-height:1.8}
+.manual-bangla h3{font:inherit;font-weight:700;font-size:.87em;color:#245541;margin:0 0 .25em}
+.manual-bangla p{margin:0}
 #sourcePages{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 #sourcePages button{min-height:40px;background:#fff}
 #exampleHeading{margin-bottom:6px;color:var(--accent)}

@@ -223,8 +223,9 @@
     button.addEventListener('click',()=>{stopViewer();detail.close();},{capture:true});
     wordVideoButton=button;actions.append(button);
   }
-  function openTerm(word, from) {
-    inspect(word.it,word.bn,from);
+  function openTerm(word, from, label=word.it) {
+    const formBn=word.formsBn?.[label.toLocaleLowerCase('it')];
+    inspect(formBn ? label : word.it,formBn || word.bn,from);
     detail.dataset.word='true';
     showWordPhoto(word,from);
     for(const entry of [word.definition,...(word.examples || [])]){
@@ -262,7 +263,7 @@
     if(comparisons.childElementCount)$('related').append(comparisons);
   }
   function termControl(word, label, card) {
-    const button=control(label,()=>openTerm(word,button),card?'word':'inline');
+    const button=control(label,()=>openTerm(word,button,label),card?'word':'inline');
     button.dataset.wordId=word.id;button.dataset.wordLabel=label;
     button.setAttribute('aria-haspopup','dialog');
     styleWord(button);
@@ -272,7 +273,7 @@
   function richText(node,text) {
     const focus=new Set(lesson().focus), spans=[];
     for (const {word,re} of state.terms) {
-      if (!word.lessonId && !word.figureNumber && !focus.has(word.it) && !knownPhoto(word.id) && !state.lookupOnClick) continue;
+      if (!word.formsBn && !word.lessonId && !word.figureNumber && !focus.has(word.it) && !knownPhoto(word.id) && !state.lookupOnClick) continue;
       for (const m of text.matchAll(re)) spans.push({start:m.index,end:m.index+m[0].length,word});
     }
     const chosen=[];
@@ -398,8 +399,15 @@
     source.replaceChildren();pages.replaceChildren();
     $('manual').hidden=!item.sourceText?.length;
     if($('manual').hidden)return;
-    for(const paragraph of item.sourceText){
-      const p=el('p');richText(p,paragraph);source.append(p);
+    for(const [index,paragraph] of item.sourceText.entries()){
+      const p=el('p');p.lang='it';richText(p,paragraph);source.append(p);
+      const translated=item.sourceTextBn?.[index];
+      if(translated){
+        const block=el('div',null,'manual-bangla');block.lang='bn';
+        const label=el('h3','বাংলা অনুবাদ');
+        const body=el('p');richText(body,translated);
+        block.append(label,body);source.append(block);
+      }
     }
     for(let page=item.pdfPage;page<=(item.pdfEnd || item.pdfPage);page++){
       const button=control('Vedi pagina '+(page-3),()=>openPage(page,button),'quiet');
