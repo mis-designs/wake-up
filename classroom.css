@@ -30,6 +30,26 @@ dialog[data-media=true] .dictionary-line{color:#fff;background:#153d32;padding:.
 .featured-video small{color:#d2e8d9}
 .featured-video strong{font-size:clamp(1.25rem,2.4vw,1.7rem)}
 .featured-video .video-play{display:grid;place-items:center;flex:0 0 44px;height:44px;padding-left:2px;border-radius:50%;background:white;color:#143d31}
+.presenting #sceneTools,#sceneTools[hidden]{display:none}
+#sceneTools{padding:8px 16px}
+.scene-editor{color:var(--ink);text-align:left}
+.scene-editor fieldset{border:0;margin:0;padding:0;min-width:0}
+.scene-editor label{display:grid;gap:4px;font-weight:650}
+.scene-editor select,.scene-editor input[type=number]{width:100%;min-height:44px;padding:6px 10px;color:var(--ink);background:#fff;border:1px solid #aabcb4;border-radius:8px}
+.scene-editor output{display:block;font-size:.9rem;margin:4px 0 10px}
+.scene-editor video{width:100%;max-height:38vh;background:#10241e;display:block;border-radius:8px}
+.scene-times{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.scene-times button{width:100%;margin-top:4px}
+.scene-editor .scene-audio{display:flex;align-items:center;gap:8px;min-height:44px}
+.scene-editor .scene-audio input{width:20px;height:20px}
+.scene-editor .scene-actions{display:flex;flex-wrap:wrap;gap:8px}
+.scene-actions button,.scene-times button{min-height:44px}
+.scene-editor [type=submit]{background:#163e32;color:white}
+.scene-editor [role=status]{margin:8px 0}
+#detail[data-editing=true] .detail-inner{display:grid;gap:8px}
+#detail[data-editing=true] #detailTitle{grid-row:1;align-self:center;margin:0 50px 4px 0}
+#detail[data-editing=true] #detailBn:empty,#detail[data-editing=true] #related:empty{display:none}
+#detail[data-editing=true] .scene-editor video{max-height:34dvh;object-fit:contain}
 #uploadDesk{margin:2rem 0;max-width:44rem}#uploadDesk h1{font-size:2.3rem}#uploadDeskControls{margin:1rem 0 1.5rem}#uploadTopic{font-size:1.3rem}
 
 .chapter{display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,3vw,40px)}

@@ -13,7 +13,8 @@
       if (data.role !== 'admin' || !Number.isFinite(expiry) || expiry <= now) return { label: '' };
       const master = (data.masterAdmin === true || (Number.isSafeInteger(data.masterAdminUntil) && data.masterAdminUntil > 0))
         && /^[a-f0-9]{64}$/.test(data.masterAdminRevision || '');
-      return { label: master ? 'Master admin' : 'Admin', master, expires: expiry };
+      const principal=master ? JSON.stringify([data.phone,data.deviceId,data.masterAdminRevision,data.credentialRevision]) : '';
+      return { label: master ? 'Master admin' : 'Admin', master, expires: expiry, principal };
     } catch (_) { return { label: '' }; }
   }
   function render(element, token) {

@@ -533,3 +533,7 @@ In Aula il Master admin sceglie capitolo e argomento. Il cambio di capitolo cari
 Magic Book gestisce il caricamento, la sostituzione e la lettura dei video teoria per entrambe le Aule con le credenziali già configurate per i video quiz. All Books fornisce i titoli delle lezioni e inoltra le operazioni del Master admin a Magic Book. La cartella per le lezioni è xyz3d/theory-v1/ nel bucket video esistente.
 
 La scheda video della lezione dà precedenza al filmato caricato per l’argomento, anche in modalità Presenta. Mostra il titolo della lezione e apre il lettore protetto. Il filmato di esempio compare solo dopo la conferma che manca un video caricato.
+
+Il docente master imposta per ogni lezione il filmato originale, i secondi di inizio e fine e la preferenza audio. Presenta riproduce lo spezzone salvato. Il video dedicato ha priorità e conserva separatamente le impostazioni dello spezzone.
+
+Durante una lezione visibile il server rinnova la sessione master prima della scadenza. Un rinnovo dello stesso account conserva lezione, video e modifiche aperte. Il logout o la perdita dei permessi chiudono l’Aula.

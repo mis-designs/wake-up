@@ -572,3 +572,5 @@ Nel pannello caricamenti il docente sceglie un argomento dell’aula. La stessa 
 La lezione apre con il brano italiano del manuale e il riferimento alla pagina illustrata. Seguono la spiegazione TMM e il Bangla.
 
 La scheda video della lezione dà precedenza al filmato caricato per l’argomento, anche in modalità Presenta. Mostra il titolo della lezione e apre il lettore protetto. Il filmato di esempio compare solo dopo la conferma che manca un video caricato.
+
+Il docente master imposta per ogni lezione il filmato originale, i secondi di inizio e fine e la preferenza audio. Presenta riproduce lo spezzone salvato. Il video dedicato ha priorità e conserva separatamente le impostazioni dello spezzone.

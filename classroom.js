@@ -12,9 +12,11 @@
   }
   const state = {chapter:null, photos:{}, lookupOnClick:false, index:0, quiz:0, mode:'lesson', terms:[], responses:new Map()};
   const discoveredPhotos = new Map();
-  let viewerRequest, loadRequest, expiryTimer, activeToken = '', mediaUrl, trigger;
+  let viewerRequest, loadRequest, mediaUrl, trigger;
+  const session=preview?null:window.ClassroomSession.create({allBooks,credentials,lock:clear});
   let clipCache = null;
   let theoryButton;
+  let sceneCuts={}, sceneCutsReady=true, theoryStatus;
   let requestedChapter=1;
   const localTheory = new Map();
   function el(tag, text, className) {
@@ -42,47 +44,48 @@
     if (detail.open) detail.close();
     $('detailContent').replaceChildren(); $('related').replaceChildren();
   }
-  function clear() {
-    clearTimeout(expiryTimer); loadRequest?.abort(); closeDetail();
+  function clear(temporary=false) {
+    session?.stop();loadRequest?.abort();closeDetail();
     releaseTheoryButton();window.MagicQuizVideo?.reset();
+    sceneCuts={};sceneCutsReady=true;theoryStatus=null;
     for(const url of localTheory.values()) URL.revokeObjectURL(url);
     localTheory.clear();
     clipCache = null; state.chapter=null; state.photos={}; state.terms=[]; state.responses.clear(); discoveredPhotos.clear();
-    activeToken=''; studio.hidden=true; $('present').hidden=true; $('retry').hidden=true;
+    studio.hidden=true; $('present').hidden=true; $('retry').hidden=temporary!==true;
     $('present').textContent='Presenta';$('present').setAttribute('aria-pressed','false');
-    $('status').hidden=false; $('status').textContent='Accedi come Master admin per aprire l’aula.';
+    $('status').hidden=false; $('status').textContent=temporary===true?'Impossibile verificare l’accesso. Controlla la connessione e riprova.':'Accedi come Master admin per aprire l’aula.';
     for (const id of ['italian','bangla','tip','words','title','question','topics','chapters','folio','sourceText','sourcePages','signPlate','quizPlate','detailTitle','detailBn','sceneCaption','prompt','feedback','quizTitle','references','quizWords','uploadTopic']) $(id).replaceChildren();
     requestedChapter=1;state.index=0;state.quiz=0;state.mode='lesson';
     $('poster').removeAttribute('src'); document.body.classList.remove('presenting');
   }
-  function authorize() {
-    if (preview) return true;
-    const token=credentials().accessToken, role=window.AccountRole?.status(token);
-    if (!role?.master || (activeToken && activeToken !== token)) { clear(); return false; }
-    clearTimeout(expiryTimer); activeToken=token;
-    expiryTimer=setTimeout(authorize, Math.min(role.expires-Date.now()+20,2147483647));
-    return true;
-  }
   async function api(action, fields, signal) {
     if (preview) return preview(action,fields);
-    if (!authorize()) throw new Error('access');
-    const auth=credentials();
-    const res=await fetch('/api/quiz',{method:'POST',cache:'no-store',signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+auth.accessToken},body:JSON.stringify({action,...auth,...fields})});
-    if ([401,403].includes(res.status)) {clear();throw new Error('access');}
-    if (!res.ok) {
-      const body=await res.json().catch(()=>({}));
-      throw new Error(body.error || 'unavailable');
+    if (!await session.ensure()) throw new Error('access');
+    const scope=session.key;
+    for(let attempt=0;attempt<2;attempt++){
+      signal.throwIfAborted();
+      const auth=credentials();
+      const res=await fetch('/api/quiz',{method:'POST',cache:'no-store',signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+auth.accessToken},body:JSON.stringify({action,...auth,...fields})});
+      const result=await res.json().catch(()=>({}));signal.throwIfAborted();
+      if(!session.matches(scope))throw new Error('access');
+      if(res.ok)return result;
+      if([401,403].includes(res.status)){
+        // Only read operations can be replayed automatically.
+        if(!attempt && action.startsWith('get')){
+          if(await session.ensure(auth.accessToken===credentials().accessToken))continue;
+          throw new Error('access');
+        }
+        if(auth.accessToken===credentials().accessToken)clear();
+        throw new Error('access');
+      }
+      throw new Error(result.error || 'unavailable');
     }
-    const result = await res.json();
-    if (signal.aborted) throw new DOMException('Annullato','AbortError');
-    if (!authorize()) throw new Error('access');
-    return result;
   }
   function inspect(title,bn,from) {
     stopViewer(); trigger=from;
     $('detailContent').replaceChildren(); $('related').replaceChildren();
     $('detailTitle').textContent=title; $('detailBn').textContent=bn || '';
-    detail.dataset.media='false';delete detail.dataset.page;if (!detail.open) detail.showModal();detail.scrollTop=0;$('close').focus();
+    detail.dataset.media='false';delete detail.dataset.page;delete detail.dataset.editing;if (!detail.open) detail.showModal();detail.scrollTop=0;$('close').focus();
   }
   function showLessonStill(word) {
     if (lesson().scene && lesson().focus.includes(word.it)) {
@@ -145,7 +148,7 @@
     if (target>=0) {
       const item=state.chapter.lessons[target], links=$('related');
       if (target!==state.index) links.append(control('Apri la lezione · '+item.title_it,()=>selectTopic(target,true)));
-      if (item.scene) links.append(control('Video · '+item.scene.caption,()=>showFilm('scene',from,item)));
+      if (item.scene || sceneCuts[item.id]) links.append(control('Video · '+(sceneCuts[item.id]?item.title_it:item.scene.caption),()=>showFilm('scene',from,item)));
       if (item.figureExercise) links.append(control('Figura '+item.figureExercise.figure,()=>openFigure(item.figureExercise,from)));
       if(item.quizzes.length) links.append(control('Quiz · '+item.title_it,()=>{selectTopic(target);renderQuiz();}));
     }
@@ -191,10 +194,13 @@
   function renderLessonVideo(item, status) {
     const host = $('theoryVideo'), button = host.firstElementChild;
     if (!button) return;
+    theoryStatus=status;
+    const cut=sceneCuts[item.id];
     const available = status?.available === true;
     const missing = status?.available === false && !status.error && status.availability !== 'unknown';
-    const sample = missing && item.scene;
-    $('scene').hidden = !sample;
+    const sample = missing && !cut && sceneCutsReady && item.scene;
+    $('scene').hidden = !sample && !(missing && (cut || !sceneCutsReady));
+    $('scene').querySelector('small').textContent=cut ? 'Estratto · '+(cut.end-cut.start)+' s' : sample ? 'Filmato TMM · 7 s' : 'Estratto';
     if (sample) {
       $('poster').src = sample.poster;
       $('poster').alt = sample.alt;
@@ -202,7 +208,7 @@
     } else {
       $('poster').removeAttribute('src');
       $('poster').alt = '';
-      $('sceneCaption').replaceChildren();
+      $('sceneCaption').textContent=cut || !sceneCutsReady ? item.title_it : '';
     }
     host.classList.toggle('featured-video', available);
     if (!available) {
@@ -246,17 +252,18 @@
     if(preview){
       theoryButton=control('Video teoria',()=>previewTheory(item,theoryButton));
     }else{
-      const id='tv_'+state.chapter.chapter+'_'+item.id,token=activeToken;
+      const id='tv_'+state.chapter.chapter+'_'+item.id,scope=session.key;
       theoryButton=window.MagicQuizVideo.createButton({
-        theoryVideo:true,question:{id,question:item.title_it},cacheScope:token,
+        theoryVideo:true,question:{id,question:item.title_it},cacheScope:scope,
         onTheoryStatus:uploads ? undefined : status=>renderLessonVideo(item,status),
-        isCurrent:()=>state.chapter && lesson().id===item.id && credentials().accessToken===token,
+        isCurrent:()=>state.chapter && lesson().id===item.id && session.matches(scope),
         isPresenting:()=>document.body.classList.contains('presenting'),
         request:(action,video,signal)=>api(action,{questionId:id,video},signal)
       });
     }
     $(uploads?'uploadDeskControls':'theoryVideo').append(theoryButton);
     if (!uploads) renderLessonVideo(item,preview ? {available:localTheory.has(item.id)} : null);
+    $('sceneTools').hidden=Boolean(preview) || uploads;
   }
   async function openPage(page,from) {
     inspect('Manuale · pagina '+(page-3),'',from);
@@ -351,30 +358,63 @@
     $('prev').disabled=state.quiz===0;$('next').textContent=state.quiz===l.quizzes.length-1?'Torna alla lezione':'Successiva →';
     if(focus)focusTitle('quizTitle');
   }
+  function editScene(item,from) {
+    if(preview || document.body.classList.contains('presenting'))return;
+    inspect('Spezzone · '+item.title_it,'',from);
+    detail.dataset.editing='true';
+    const box=$('detailContent'),controller=viewerRequest=new AbortController();
+    box.textContent='Apertura delle impostazioni…';
+    const reopen=()=>editScene(item,from);
+    window.ClassroomSceneEditor.edit({api,item,box,signal:controller.signal,reopen,onSaved:cut=>{
+      sceneCuts[item.id]=cut;clipCache=null;
+      if(item===lesson())renderLessonVideo(item,theoryStatus);
+    }}).catch(()=>{if(!controller.signal.aborted)box.replaceChildren(el('p','Impossibile aprire le impostazioni.'),control('Riprova',reopen));});
+  }
   async function showFilm(kind,from,l=lesson(),figure) {
     const scene=kind==='scene', isFigure=kind==='figure';
-    const title=scene?l.scene.caption:isFigure?'Video della figura '+figure:'Video del quiz';
+    const title=scene?(sceneCuts[l.id]?l.title_it:l.scene?.caption || l.title_it):isFigure?'Video della figura '+figure:'Video del quiz';
     inspect(title,'',from);const box=$('detailContent');box.textContent='Apertura del video…';
     const controller=viewerRequest=new AbortController();
     try {
       const action=scene?'getClassroomScene':isFigure?'getFigureVideo':'getClassroomQuizVideo';
       const fields=isFigure?{figure:String(figure)}:scene?{entryId:l.id}:{entryId:l.id,questionId:String(question().id)};
-      const data=scene && clipCache?.id===l.id ? clipCache.data : await api(action,fields,controller.signal);
+      let cut=sceneCuts[l.id];
+      if(scene && !preview) {
+        const settings=await api('getClassroomSceneSettings',fields,controller.signal);
+        cut=settings.cut;
+        if(cut)sceneCuts[l.id]=cut;else delete sceneCuts[l.id];
+        if(l===lesson())renderLessonVideo(l,theoryStatus);
+        if(!cut && !l.scene){
+          box.textContent='Nessuno spezzone per questa lezione.';
+          if(!document.body.classList.contains('presenting'))$('related').append(control('Imposta spezzone',()=>editScene(l,from)));
+          return;
+        }
+        $('detailTitle').textContent=cut?l.title_it:l.scene.caption;
+      }
+      const data=scene && cut ? null : scene && clipCache?.id===l.id ? clipCache.data : await api(action,fields,controller.signal);
       if(controller.signal.aborted || !detail.open)return;
       if(!scene && !data.available){box.textContent=preview?'I video caricati si consultano nell’aula connessa.':isFigure?'Per questa figura non è stato caricato un video.':'Per questa domanda non è stato caricato un video.';return;}
-      let src=data.url;
-      if(scene){
+      let src=data?.url;
+      if(scene && cut){
+        const blob=await window.ClassroomSceneEditor.movie(api,l.id,cut,controller.signal);
+        controller.signal.throwIfAborted();
+        src=mediaUrl=URL.createObjectURL(blob);
+      } else if(scene){
         clipCache={id:l.id,data};const bytes=Uint8Array.from(atob(data.mp4),c=>c.charCodeAt(0));
         src=mediaUrl=URL.createObjectURL(new Blob([bytes],{type:'video/mp4'}));
       }
-      const video=el('video');video.controls=true;video.playsInline=true;video.autoplay=true;video.muted=scene;
+      const video=el('video');video.controls=true;video.playsInline=true;video.autoplay=true;video.muted=scene && !cut?.audio;
       video.setAttribute('controlslist','nodownload');video.setAttribute('disablepictureinpicture','');video.oncontextmenu=e=>e.preventDefault();
       video.onerror=()=>{if(!controller.signal.aborted){detail.dataset.media='false';box.replaceChildren(el('p','Video non disponibile.'),control('Riprova',()=>showFilm(kind,from,l,figure)));}};
       detail.dataset.media='true';video.src=src;box.replaceChildren(video);video.play().catch(()=>{});
+      if(scene && !preview && !document.body.classList.contains('presenting')) {
+        if(cut)$('related').append(el('p','Da '+cut.start+' a '+cut.end+' secondi'));
+        $('related').append(control('Modifica spezzone',()=>editScene(l,from)));
+      }
     }catch(err){if(!controller.signal.aborted && err.message!=='access')box.replaceChildren(el('p','Impossibile aprire il video.'),control('Riprova',()=>showFilm(kind,from,l,figure)));}
   }
   async function load(number=1) {
-    if (!authorize()) return;
+    if (!preview && !await session.ensure()) return;
     loadRequest?.abort();const ctl=loadRequest=new AbortController();
     requestedChapter=number;
     const switching=number!==state.chapter?.chapter;
@@ -387,8 +427,9 @@
     $('retry').hidden=true;$('reloadPhotos').disabled=true;
     if (!state.chapter){$('status').hidden=false;$('status').textContent='Apertura dell’aula…';}
     try {
-      const {catalogue,chapter,photos,photosReady}=await api('getClassroom',{entryId:'chapter-'+number},ctl.signal);
+      const {catalogue,chapter,photos,photosReady,sceneCuts:storedCuts,sceneCutsReady:cutsReady}=await api('getClassroom',{entryId:'chapter-'+number},ctl.signal);
       if(ctl.signal.aborted)return;
+      sceneCuts=storedCuts || {};sceneCutsReady=cutsReady!==false;
       state.chapter=chapter;state.photos=photos || {};state.terms=[];state.lookupOnClick=Boolean(preview) || !allBooks || !photosReady;
       for (const word of chapter.words) for(const name of new Set([word.it,...word.aliases.map(a=>a.it),...(word.forms || [])])) {
         const escaped=name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
@@ -424,6 +465,7 @@
   $('topics').onchange=()=>selectTopic(Number($('topics').value));
   $('chapters').onchange=()=>load(Number($('chapters').value));
   $('scene').onclick=()=>showFilm('scene',$('scene'));$('quizFilm').onclick=()=>showFilm('quiz',$('quizFilm'));
+  $('editScene').onclick=()=>editScene(lesson(),$('editScene'));
   $('startQuiz').onclick=()=>renderQuiz();$('toLesson').onclick=()=>selectTopic(state.index,true);
   $('prev').onclick=()=>{if(state.quiz>0){state.quiz--;renderQuiz();}};
   $('next').onclick=()=>{if(state.quiz+1<lesson().quizzes.length){state.quiz++;renderQuiz();}else selectTopic(state.index,true);};
@@ -436,6 +478,18 @@
   if(preview)$('exit').hidden=true;
   window.addEventListener('pagehide',clear);
   window.addEventListener('pageshow',e=>{if(e.persisted)load();});
-  window.addEventListener('storage',()=>{if(!preview && credentials().accessToken!==activeToken){clear();load();}});
+  function resumeSession(){
+    if(!session || document.hidden)return;
+    if(session.key && !session.matches(session.key))clear();
+    if(state.chapter)void session.ensure();else void load(requestedChapter);
+  }
+  window.addEventListener('storage',event=>{
+    if(!event.key || event.key===(allBooks?'allBooks.':'')+'accessToken'){
+      if(session?.key && !session.matches(session.key))clear();
+      resumeSession();
+    }
+  });
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)session?.suspend();else resumeSession();});
+  window.addEventListener('online',resumeSession);
   load();
 })();
