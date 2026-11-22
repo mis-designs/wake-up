@@ -529,3 +529,5 @@ La modalità Presenta ingrandisce italiano e Bangla per la condivisione dello sc
 Il server risolve capitolo e argomento dal catalogo e verifica Master admin su tutte le operazioni, inclusa la lettura. Il caricatore MP4 conserva sostituzione con controllo di revisione, ripresa e rimozione. I file cifrati stanno in xyz3d/theory-v1 per capitolo e argomento, nello stesso archivio dei quiz. All Books conserva in database la revisione e i dati di apertura del video. Magic Book delega ogni richiesta dell’aula dopo aver verificato il ruolo.
 
 In Aula il Master admin sceglie capitolo e argomento. Il cambio di capitolo carica una sezione su richiesta. Aprire una pagina illustrata fa una sola richiesta privata, annullata alla chiusura del lettore; il docente può riprovare in caso di errore.
+
+Magic Book gestisce il caricamento, la sostituzione e la lettura dei video teoria per entrambe le Aule con le credenziali già configurate per i video quiz. All Books fornisce i titoli delle lezioni e inoltra le operazioni del Master admin a Magic Book. La cartella per le lezioni è xyz3d/theory-v1/ nel bucket video esistente.

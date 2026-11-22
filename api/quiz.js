@@ -42,6 +42,7 @@ import {
 
 const require = createRequire(import.meta.url);
 const classroom = require('../lib/classroom.cjs');
+const classroomTopics = createWorkCache({maxEntries:128,ttlMs:5*60*1000});
 const quizVideo = require('../lib/quiz-video.cjs');
 const masterAdmin = require('../lib/master-admin.cjs');
 export function isQuizVideoMaster(data) {
@@ -1276,6 +1277,14 @@ export default async function handler(req, res) {
     if (req.method === 'POST' && action === 'verifyClassroomRequest') {
       return res.status(200).json({verified:classroom.verify(entryId, questionId)});
     }
+    const booksProof = req.headers?.['x-tmm-theory-video-proof'];
+    if (booksProof !== undefined) {
+      if (req.method !== 'POST' || !classroom.isTheoryVideo(action,questionId)) {
+        return res.status(403).json({error:'master_admin_required'});
+      }
+      return res.status(200).json(await classroom.request(action,
+        {questionId,question,owner:phone,video:getRequestData(req).video},req,res,classroomTopics,booksProof));
+    }
     if (!hasValidRequestShape({
       phone,
       deviceId,
@@ -1297,7 +1306,7 @@ export default async function handler(req, res) {
       const {isAdmin, access} = await requireQuizAudioAccess({phone, deviceId, accessToken, adminOnly:true});
       if (!isAdmin || !isQuizVideoMaster({phone, deviceId, accessToken:access.accessToken || accessToken})) return res.status(403).json({error:'master_admin_required'});
       res.setHeader('Cache-Control','private, no-store');
-      return res.status(200).json(await classroom.request(action, {entryId,questionId,video:getRequestData(req).video,owner:normalizePhoneNumber(phone)}, req, res));
+      return res.status(200).json(await classroom.request(action, {entryId,questionId,video:getRequestData(req).video,owner:normalizePhoneNumber(phone)}, req, res,classroomTopics));
     }
     if(req.method==='POST'&&action==='getFigureVideo'){
       const proof=verifySignedToken(accessToken,{phone,deviceId,purpose:'access'});
