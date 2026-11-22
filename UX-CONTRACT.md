@@ -538,6 +538,10 @@ Il docente master imposta per ogni lezione il filmato originale, i secondi di in
 
 Durante una lezione visibile il server rinnova la sessione master prima della scadenza. Un rinnovo dello stesso account conserva lezione, video e modifiche aperte. Il logout o la perdita dei permessi chiudono l’Aula.
 
+Nella scheda di una parola in Aula compare soltanto la sua foto caricata nel dizionario. Quando manca, la scheda si apre direttamente sul testo. Titolo, traduzione, definizioni e gruppi di azioni condividono il margine sinistro. Guarda il video apre il filmato disponibile per la lezione associata.
+
+- 2026-11-22 · Aprendo l’editor, leggere una sola volta l’elenco dei video caricati. Salvare sorgente, versione, intervallo e audio per argomento. Per un file locale inviare soltanto il taglio confermato. La chiusura annulla le letture e la preparazione.
+
 ## Studia quiz · Trucchi
 
 Nella scelta dei capitoli di Magic Book, la copertina Trucchi precede il Capitolo 01. La serie contiene un’introduzione e sette episodi nell’ordine fornito da TMM. La card di ingresso e tutte le miniature usano la stessa copertina Trucchi. Il badge bianco in basso a destra mostra in grassetto Guarda gli episodi, Introduzione oppure Episodio seguito dal numero. La riproduzione usa il lettore Video Class e la freccia riporta alla schermata di provenienza.

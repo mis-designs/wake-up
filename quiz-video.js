@@ -501,5 +501,5 @@
   root.addEventListener('magicbook:logout', reset);
   root.addEventListener('storage', () => { if ([...bindings].some(binding => !current(binding))) reset(); });
   root.addEventListener('magicbook:quiz-question-change', () => { close({ restoreFocus: false }); for (const binding of [...bindings]) { if (!current(binding)) destroyButton(binding.button); } });
-  root.MagicQuizVideo = Object.freeze({ createButton, destroyButton, close, reset });
+  root.MagicQuizVideo = Object.freeze({ createButton, destroyButton, close, reset, directUpload, encodeChunk });
 })(window);

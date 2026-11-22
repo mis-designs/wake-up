@@ -47,5 +47,55 @@
     if(video.size !== meta.plainBytes) throw new Error('video_unreadable');
     return video;
   }
-  root.ClassroomVideoFile={seal,load};
+  async function reader(info,readPart,signal) {
+    const meta=info.protection, stride=block+tag, stored=meta.plainBytes+Math.ceil(meta.plainBytes/block)*tag;
+    const key=await crypto.subtle.importKey('raw',unhex(meta.key),'AES-GCM',false,['decrypt']);
+    const blocks=new Map(), parts=new Map();
+    let relay=false,whole;
+    function cached(cache,index,make) {
+      if(!cache.has(index)){
+        if(cache.size>=6)cache.delete(cache.keys().next().value);
+        cache.set(index,make());
+      }
+      return cache.get(index);
+    }
+    async function encrypted(start,end) {
+      signal.throwIfAborted();
+      if(whole)return whole.slice(start,end).arrayBuffer();
+      if(!relay)try {
+        const res=await fetch(info.url,{headers:{Range:'bytes='+start+'-'+(end-1)},signal,
+          credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer'});
+        if(res.status===206){
+          const data=await res.arrayBuffer();if(data.byteLength!==end-start)throw Error('video_unreadable');
+          return data;
+        }
+        if(res.status===200){
+          const blob=await res.blob();if(blob.size!==stored)throw Error('video_unreadable');
+          whole=blob;return blob.slice(start,end).arrayBuffer();
+        }
+        throw Error('video_unreadable');
+      } catch {signal.throwIfAborted();relay=true;}
+      const pieces=[],size=2*block;
+      for(let offset=start;offset<end;){
+        const i=Math.floor(offset/size);
+        const data=await cached(parts,i,async()=>Uint8Array.from(atob((await readPart(i)).base64),c=>c.charCodeAt(0)));
+        const next=Math.min(end,(i+1)*size);
+        pieces.push(data.subarray(offset-i*size,next-i*size));offset=next;
+      }
+      return new Blob(pieces).arrayBuffer();
+    }
+    return async (start,end)=>{
+      const out=new Uint8Array(end-start);
+      for(let pos=start;pos<end;){
+        signal.throwIfAborted();
+        const i=Math.floor(pos/block);
+        const data=await cached(blocks,i,async()=>new Uint8Array(await crypto.subtle.decrypt(
+          {name:'AES-GCM',iv:iv(meta.nonce,i)},key,await encrypted(i*stride,Math.min(stored,(i+1)*stride)))));
+        const next=Math.min(end,(i+1)*block);
+        out.set(data.subarray(pos-i*block,next-i*block),pos-start);pos=next;
+      }
+      return out;
+    };
+  }
+  root.ClassroomVideoFile={seal,load,reader};
 })(globalThis);

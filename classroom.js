@@ -15,7 +15,7 @@
   let viewerRequest, loadRequest, mediaUrl, trigger;
   const session=preview?null:window.ClassroomSession.create({allBooks,credentials,lock:clear});
   let clipCache = null;
-  let theoryButton;
+  let theoryButton, wordVideoButton;
   let sceneCuts={}, sceneCutsReady=true, theoryStatus;
   let requestedChapter=1;
   const localTheory = new Map();
@@ -40,6 +40,7 @@
     mediaUrl = null;
   }
   function closeDetail() {
+    releaseWordVideo();
     stopViewer();
     if (detail.open) detail.close();
     $('detailContent').replaceChildren(); $('related').replaceChildren();
@@ -82,17 +83,11 @@
     }
   }
   function inspect(title,bn,from) {
+    releaseWordVideo();delete detail.dataset.word;
     stopViewer(); trigger=from;
     $('detailContent').replaceChildren(); $('related').replaceChildren();
     $('detailTitle').textContent=title; $('detailBn').textContent=bn || '';
     detail.dataset.media='false';delete detail.dataset.page;delete detail.dataset.editing;if (!detail.open) detail.showModal();detail.scrollTop=0;$('close').focus();
-  }
-  function showLessonStill(word) {
-    if (lesson().scene && lesson().focus.includes(word.it)) {
-      const still=el('img');still.src=lesson().scene.poster;still.alt=lesson().scene.alt;still.className='context-still';
-      const caption=el('small','Dalla scena della lezione · '+lesson().scene.caption,'context-caption');
-      $('detailContent').append(still,caption);
-    }
   }
   function knownPhoto(id) {
     return Boolean(state.photos[id] || discoveredPhotos.get(id) === Math.floor(Date.now()/photoVersionMs));
@@ -104,25 +99,22 @@
   }
   function showWordPhoto(word, from) {
     const photo=state.photos[word.id];
-    if (!photo && !state.lookupOnClick) {showLessonStill(word);return;}
     const box=$('detailContent'), img=el('img');
     const version=Math.floor(Date.now()/photoVersionMs);
     const origin=allBooks && !preview ? location.origin : libraryOrigin;
     const params=new URLSearchParams({action:'serve',wordKey:word.id,italian:word.it,concept:'1',v:String(version)});
     const publicUrl=origin+'/api/dictionary-images?'+params;
     const fallback=photo?.proxy ? new URL(photo.proxy,origin).href : '';
-    const pending=el('p','Apertura della foto da All Books…');
-    pending.setAttribute('role','status'); img.hidden=true;img.alt=photo?.alt || word.it;
+    img.alt=photo?.alt || word.it;
     img.referrerPolicy='no-referrer';
     const cancel=viewerRequest=new AbortController();
     cancel.signal.addEventListener('abort',()=>{
       img.onload=img.onerror=null;img.removeAttribute('src');from?.removeAttribute('aria-busy');
     },{once:true});
     from?.setAttribute('aria-busy','true');
-    box.append(pending,img);
     img.onload=()=>{
       if(cancel.signal.aborted)return;
-      pending.remove();img.hidden=false;detail.dataset.media='true';from?.removeAttribute('aria-busy');
+      box.replaceChildren(img);detail.dataset.media='true';from?.removeAttribute('aria-busy');
       if (!photo) discoveredPhotos.set(word.id,version);
       for(const button of document.querySelectorAll('[data-word-id]')) if(button.dataset.wordId===word.id)styleWord(button);
     };
@@ -131,31 +123,85 @@
       if(fallback && img.src!==fallback){img.src=fallback;return;}
       from?.removeAttribute('aria-busy');discoveredPhotos.delete(word.id);
       for(const button of document.querySelectorAll('[data-word-id]')) if(button.dataset.wordId===word.id)styleWord(button);
-      detail.dataset.media='false';box.replaceChildren(el('p','Foto del dizionario non disponibile.'),control('Riprova foto',()=>openTerm(word,from)));
-      showLessonStill(word);
+      detail.dataset.media='false';box.replaceChildren();
     };
     img.src=photo?.url || publicUrl;
   }
+  function releaseWordVideo(){
+    if(wordVideoButton)window.MagicQuizVideo?.destroyButton(wordVideoButton);
+    wordVideoButton=null;
+  }
+  function appendWordVideo(actions,item,from,confirmed=false){
+    if(!preview && !sceneCutsReady && !confirmed){
+      // A temporarily unavailable chapter index cannot establish which clip belongs to this word.
+      const ctl=viewerRequest || (viewerRequest=new AbortController());
+      api('getClassroomSceneSettings',{entryId:item.id},ctl.signal).then(({cut})=>{
+        if(ctl.signal.aborted || !actions.isConnected)return;
+        if(cut)sceneCuts[item.id]=cut;else delete sceneCuts[item.id];
+        appendWordVideo(actions,item,from,true);
+      }).catch(()=>{
+        if(ctl.signal.aborted || !actions.isConnected)return;
+        const retry=control('Riprova video',()=>{retry.remove();appendWordVideo(actions,item,from);});
+        actions.append(retry);
+      });
+      return;
+    }
+    const saved=sceneCuts[item.id];
+    const hasScene=Boolean(saved || (item.scene && item.id!=='strada'));
+    const scene=control('Guarda il video',()=>showFilm('scene',from,item));
+    scene.hidden=true;
+    if(hasScene)actions.append(scene);
+    if(preview){
+      if(localTheory.has(item.id))actions.append(control('Guarda il video',()=>previewTheory(item,from)));
+      else scene.hidden=!hasScene;
+      return;
+    }
+    if(!document.body.classList.contains('presenting')){
+      actions.append(control(saved?'Modifica spezzone':'Imposta spezzone',()=>editScene(item,from)));
+    }
+    if(saved){
+      scene.hidden=false;return;
+    }
+    const button=createTheoryButton(item,{
+      isCurrent:()=>wordVideoButton===button,
+      isPresenting:()=>true,
+      onTheoryStatus:status=>{
+        button.hidden=status?.available!==true;
+        scene.hidden=!hasScene || status?.available!==false || Boolean(status.error) || status.availability==='unknown';
+      },
+      onClose:()=>{if(from?.isConnected)from.focus({preventScroll:true});}
+    });
+    button.textContent='Guarda il video';button.setAttribute('aria-label','Guarda il video');
+    button.setAttribute('aria-haspopup','dialog');button.hidden=true;
+    button.addEventListener('click',()=>{stopViewer();detail.close();},{capture:true});
+    wordVideoButton=button;actions.append(button);
+  }
   function openTerm(word, from) {
     inspect(word.it,word.bn,from);
+    detail.dataset.word='true';
     showWordPhoto(word,from);
     for(const entry of [word.definition,...(word.examples || [])]){
-      if(!entry?.it || !entry.bn)continue;
-      const line=el('div',null,'dictionary-line'), bn=el('p',entry.bn);
-      bn.lang='bn';line.append(el('p',entry.it),bn);$('related').append(line);
+      if(!entry?.it && !entry?.bn)continue;
+      const line=el('div',null,'dictionary-line');
+      if(entry.it)line.append(el('p',entry.it));
+      if(entry.bn){const bn=el('p',entry.bn);bn.lang='bn';line.append(bn);}
+      $('related').append(line);
     }
-    const target=state.chapter.lessons.findIndex(l=>l.id===word.lessonId);
+    const target=state.chapter.lessons.findIndex(l=>word.lessonId ? l.id===word.lessonId : l.title_it.toLocaleLowerCase('it')===word.it.toLocaleLowerCase('it'));
     if (target>=0) {
-      const item=state.chapter.lessons[target], links=$('related');
+      const item=state.chapter.lessons[target], links=el('div',null,'word-actions');
+      $('related').append(links);
       if (target!==state.index) links.append(control('Apri la lezione · '+item.title_it,()=>selectTopic(target,true)));
-      if (item.scene || sceneCuts[item.id]) links.append(control('Video · '+(sceneCuts[item.id]?item.title_it:item.scene.caption),()=>showFilm('scene',from,item)));
+      appendWordVideo(links,item,from);
       if (item.figureExercise) links.append(control('Figura '+item.figureExercise.figure,()=>openFigure(item.figureExercise,from)));
       if(item.quizzes.length) links.append(control('Quiz · '+item.title_it,()=>{selectTopic(target);renderQuiz();}));
     }
     const relatedIds=new Set(state.chapter.comparisons.filter(ids=>ids.includes(word.id)).flat());
+    const comparisons=el('div',null,'word-actions word-comparisons');
     for(const other of state.chapter.words){
-      if(other.id!==word.id && relatedIds.has(other.id)) $('related').append(control('Confronta con '+other.it,()=>openTerm(other,from)));
+      if(other.id!==word.id && relatedIds.has(other.id)) comparisons.append(control('Confronta con '+other.it,()=>openTerm(other,from)));
     }
+    if(comparisons.childElementCount)$('related').append(comparisons);
   }
   function termControl(word, label, card) {
     const button=control(label,()=>openTerm(word,button),card?'word':'inline');
@@ -246,19 +292,24 @@
       if(previous) URL.revokeObjectURL(previous);
     };
   }
+  function createTheoryButton(item,{isCurrent,...options}){
+    const id='tv_'+state.chapter.chapter+'_'+item.id,scope=session.key;
+    return window.MagicQuizVideo.createButton({
+      theoryVideo:true,question:{id,question:item.title_it},cacheScope:scope,
+      isCurrent:()=>session.matches(scope) && isCurrent(),
+      request:(action,video,signal)=>api(action,{questionId:id,video},signal),...options
+    });
+  }
   function bindTheoryVideo(item){
     releaseTheoryButton();
     const uploads=location.hash==='#caricamenti';
     if(preview){
       theoryButton=control('Video teoria',()=>previewTheory(item,theoryButton));
     }else{
-      const id='tv_'+state.chapter.chapter+'_'+item.id,scope=session.key;
-      theoryButton=window.MagicQuizVideo.createButton({
-        theoryVideo:true,question:{id,question:item.title_it},cacheScope:scope,
+      theoryButton=createTheoryButton(item,{
         onTheoryStatus:uploads ? undefined : status=>renderLessonVideo(item,status),
-        isCurrent:()=>state.chapter && lesson().id===item.id && session.matches(scope),
-        isPresenting:()=>document.body.classList.contains('presenting'),
-        request:(action,video,signal)=>api(action,{questionId:id,video},signal)
+        isCurrent:()=>state.chapter && lesson().id===item.id,
+        isPresenting:()=>document.body.classList.contains('presenting')
       });
     }
     $(uploads?'uploadDeskControls':'theoryVideo').append(theoryButton);
@@ -365,7 +416,7 @@
     const box=$('detailContent'),controller=viewerRequest=new AbortController();
     box.textContent='Apertura delle impostazioni…';
     const reopen=()=>editScene(item,from);
-    window.ClassroomSceneEditor.edit({api,item,box,signal:controller.signal,reopen,onSaved:cut=>{
+    window.ClassroomSceneEditor.edit({api,item,parent:'tv_'+state.chapter.chapter+'_'+item.id,box,signal:controller.signal,reopen,onSaved:cut=>{
       sceneCuts[item.id]=cut;clipCache=null;
       if(item===lesson())renderLessonVideo(item,theoryStatus);
     }}).catch(()=>{if(!controller.signal.aborted)box.replaceChildren(el('p','Impossibile aprire le impostazioni.'),control('Riprova',reopen));});
@@ -411,7 +462,10 @@
         if(cut)$('related').append(el('p','Da '+cut.start+' a '+cut.end+' secondi'));
         $('related').append(control('Modifica spezzone',()=>editScene(l,from)));
       }
-    }catch(err){if(!controller.signal.aborted && err.message!=='access')box.replaceChildren(el('p','Impossibile aprire il video.'),control('Riprova',()=>showFilm(kind,from,l,figure)));}
+    }catch(err){if(!controller.signal.aborted && err.message!=='access'){
+      box.replaceChildren(el('p',err.message==='scene_source_changed'?'Il filmato originale è stato rimosso o sostituito.':'Impossibile aprire il video.'),control('Riprova',()=>showFilm(kind,from,l,figure)));
+      if(scene && !preview && !document.body.classList.contains('presenting'))box.append(control('Modifica spezzone',()=>editScene(l,from)));
+    }}
   }
   async function load(number=1) {
     if (!preview && !await session.ensure()) return;
@@ -472,7 +526,7 @@
   for(const [id,value] of [['yes',true],['no',false]]) $(id).onclick=()=>{state.responses.set(question().id,value);renderQuiz(false);};
   $('close').onclick=closeDetail; detail.addEventListener('cancel',e=>{e.preventDefault();closeDetail();});
   detail.addEventListener('click',e=>{if(e.target===detail)closeDetail();});
-  detail.addEventListener('close',()=>{if(!detail.open && trigger?.isConnected)trigger.focus({preventScroll:true});});
+  detail.addEventListener('close',()=>{if(!detail.open && trigger?.isConnected && !document.querySelector('.quiz-video-overlay'))trigger.focus({preventScroll:true});});
   $('present').onclick=()=>{const on=document.body.classList.toggle('presenting');$('present').textContent=on?'Termina presentazione':'Presenta';$('present').setAttribute('aria-pressed',String(on));};
   $('retry').onclick=()=>load(requestedChapter);$('reloadPhotos').onclick=()=>load(state.chapter.chapter);
   if(preview)$('exit').hidden=true;
