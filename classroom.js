@@ -36,9 +36,14 @@
     }).finally(()=>{if(pendingFigures.get(key)===read)pendingFigures.delete(key);});
     pendingFigures.set(key,read);return read;
   }
+  function addFigureNumber(host,number,prefix=' · Figura '){
+    if(number && session?.key && session.matches(session.key) && window.AccountRole.status(credentials().accessToken).master){
+      host.append(el('span',prefix+number,'master-figure-number'));
+    }
+  }
   function appendFigureVideo(box,number,onStatus){
     if(!number || preview)return;
-    const button=control('Video figura '+number,()=>{
+    const button=control('Guarda il video',()=>{
       if(button.dataset.retry){void check();return;}
       void showFilm('figure',button,lesson(),number);
     },'quiet');
@@ -48,11 +53,11 @@
       try{
         const result=await figureVideo(number);
         if(scope.signal.aborted || !button.isConnected)return;
-        delete button.dataset.retry;button.textContent='Guarda il video · Figura '+number;
+        delete button.dataset.retry;button.textContent='Guarda il video';addFigureNumber(button,number);
         button.hidden=!result.available;onStatus?.(result.available);
       }catch{
         if(scope.signal.aborted || !button.isConnected)return;
-        button.hidden=false;button.dataset.retry='true';button.textContent='Riprova video · Figura '+number;
+        button.hidden=false;button.dataset.retry='true';button.textContent='Riprova video';addFigureNumber(button,number);
         onStatus?.(undefined);
       }
     }
@@ -241,7 +246,10 @@
         };
         if (target!==state.index) links.append(control('Apri la lezione · '+item.title_it,()=>visit(false)));
         appendWordVideo(links,item,from);
-        if (item.figureExercise) links.append(control('Figura '+item.figureExercise.figure,()=>openFigure(item.figureExercise,from)));
+        if (item.figureExercise) {
+          const button=control('Mostra figura',()=>openFigure(item.figureExercise,from));
+          addFigureNumber(button,item.figureExercise.figure);links.append(button);
+        }
         if(item.quizzes?.length || item.hasQuizzes) links.append(control('Quiz · '+item.title_it,()=>visit(true)));
       }
       appendFigureVideo(links,item?.figureNumber || word.figureNumber);
@@ -406,10 +414,10 @@
   function renderPlate(id,number) {
     const box=$(id);box.replaceChildren();box.hidden=!number;
     if(!number)return;
-    const img=el('img'),label='Figura '+number;
-    img.alt=label;img.src=figureUrl(number);
-    img.onerror=()=>{img.replaceWith(control(label+' · Riprova immagine',()=>renderPlate(id,number),'quiet'));};
-    box.append(img,el('span',label));
+    const img=el('img');
+    img.alt=id==='signPlate'?lesson().title_it:'Figura della domanda';img.src=figureUrl(number);
+    img.onerror=()=>{img.replaceWith(control('Riprova immagine',()=>renderPlate(id,number),'quiet'));};
+    box.append(img);addFigureNumber(box,number,'Figura ');
     appendFigureVideo(box,number,id==='signPlate' ? available=>{
       lessonFigureReady=available;renderLessonVideo(lesson(),theoryStatus);
     } : undefined);
@@ -481,8 +489,9 @@
   }
   async function showFilm(kind,from,l=lesson(),figure) {
     const scene=kind==='scene', isFigure=kind==='figure';
-    const title=scene?(sceneCuts[l.id]?l.title_it:l.scene?.caption || l.title_it):isFigure?'Video della figura '+figure:'Video del quiz';
-    inspect(title,'',from);const box=$('detailContent');box.textContent='Apertura del video…';
+    const title=scene?(sceneCuts[l.id]?l.title_it:l.scene?.caption || l.title_it):isFigure?'Video della figura':'Video del quiz';
+    inspect(title,'',from);if(isFigure)addFigureNumber($('detailTitle'),figure,' ');
+    const box=$('detailContent');box.textContent='Apertura del video…';
     const controller=viewerRequest=new AbortController();
     try {
       const action=scene?'getClassroomScene':isFigure?'getFigureVideo':'getClassroomQuizVideo';
@@ -561,8 +570,8 @@
     }finally{if(!ctl.signal.aborted)$('reloadPhotos').disabled=false;}
   }
   function openFigure(f,from) {
-    inspect('Figura '+f.figure,'',from);
-    const img=el('img');img.alt='Figura '+f.figure+' · '+f.question;
+    inspect('Figura','',from);addFigureNumber($('detailTitle'),f.figure,' ');
+    const img=el('img');img.alt=f.question || 'Figura dell’esercizio';
     $('detailContent').append(img);
     const prompt=el('p',f.question);
     const reveal=control('Mostra risposta',()=>{reveal.replaceWith(el('strong',f.answer?'Vero':'Falso'));});

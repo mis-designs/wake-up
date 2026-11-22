@@ -88,3 +88,5 @@ video{-webkit-touch-callout:none;user-select:none}#detail[data-media=true] #clos
 #quizPlate{width:fit-content;margin-top:1rem;border-radius:10px}
 .presenting #sourceText{font-size:clamp(1.2rem,1.85vw,1.7rem)}
 @media(max-width:600px){.chapter{grid-template-columns:minmax(0,1fr)}#sourceText{font-size:1.11rem}.lesson h1{letter-spacing:-.035em}}
+
+.presenting .master-figure-number{display:none!important}

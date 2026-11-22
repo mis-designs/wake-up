@@ -551,3 +551,5 @@ Il popup Trucchi usa il dialogo della Home e il limite di tre visualizzazioni gi
 Le figure e i quiz caricati sono sorgenti riutilizzabili per gli spezzoni. Ogni lezione salva la versione e il proprio intervallo. La lista legge i metadati all’apertura, segnala eventuali sezioni indisponibili e apre solo il filmato scelto.
 
 In Aula, usare il capitolo di origine della lezione per le parole e il numero condiviso per i video delle figure. Controllare la sola figura visualizzata, riutilizzare la lettura per un minuto e offrire un nuovo tentativo se fallisce.
+
+Il numero di catalogo della figura è visibile soltanto nella vista privata del Master admin. In Presenta la didascalia numerata scompare e il pulsante mostra «Guarda il video».

@@ -587,4 +587,6 @@ La Home presenta la serie Trucchi con il titolo in bangla, la copertina della ra
 
 Il selettore Filmato originale mostra la sezione in ogni voce: Teoria, Figure, Quiz o Biblioteca. La figura riporta anche il suo numero.
 
-Le parole aprono la stessa lezione e lo stesso video in ogni capitolo. Accanto al cartello compare «Guarda il video» con il numero della figura disponibile.
+Le parole aprono la stessa lezione e lo stesso video in ogni capitolo. Accanto al cartello compare «Guarda il video».
+
+Il numero di catalogo della figura è visibile soltanto nella vista privata del Master admin. In Presenta la didascalia numerata scompare e il pulsante mostra «Guarda il video».
