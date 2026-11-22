@@ -66,10 +66,19 @@ const sections = [
     ['uxra5oJQ_FU','Parole del capitolo 1 · Parte 1'], ['0kQ-Hu3K7yI','Parole del capitolo 1 · Parte 2'], ['gFmosJd1PiM','Parole del capitolo 1 · Parte 3'], ['pvx2lY1_Q_4','Parole del capitolo 1 · Parte 4'], ['55EauZ6dN0U','Parole del capitolo 1 · Parte 5'],
     ['E80fZL2QygY','Parole · video 1'], ['uxra5oJQ_FU','Parole · video 2'], ['54cU8yBFDto','Parole · video 3'], ['ea_X0VrkXck','Parole · video 4'], ['1YxLLIltlT0','Parole · video 5'], ['FMJRX8G8MS0','Parole · video 6'], ['NZh9eP66HCU','Parole · video 7'], ['3-mG_RGvSVo','Parole · video 8'], ['5CEwyZbaEZg','Parole · video 9'], ['2hCt1As2AZI','Parole · video 10']]],
   ['guide', 'Guide alle app', [
-    ['kfbS2Zs-PR0','Usare l’app TMM sul computer'], ['F7ok5glmFZQ','Attivare Magic Book'], ['avh28KYy_AE','Usare Magic Book']]]
+    ['kfbS2Zs-PR0','Usare l’app TMM sul computer'], ['F7ok5glmFZQ','Attivare Magic Book'], ['avh28KYy_AE','Usare Magic Book']]],
+  ['trucchi', 'Trucchi', [
+    ['NeEAaRAPQxI','Introduzione'],
+    ['JxWKvUxam70','Episodio 1'],
+    ['htcsZVBk0YU','Episodio 2'],
+    ['Oeaqw5NVmkM','Episodio 3'],
+    ['MhmUqSHHB7s','Episodio 4'],
+    ['8EIYE6RQXtU','Episodio 5'],
+    ['P2ql-7Evni0','Episodio 6'],
+    ['UCX7ENWD0FQ','Episodio 7']]]
 ];
 
-export const VIDEO_SOURCE_ENTRIES = sections.flatMap(([group, , rows]) => rows.map(([id, title, minutes]) => ({ group, id, title, ...(minutes ? { minutes } : {}) })));
+export const VIDEO_SOURCE_ENTRIES = sections.flatMap(([group, , rows]) => rows.map(([id, title, minutes], index) => ({ group, id, title, ...(group === 'trucchi' ? { episode: index } : {}), ...(minutes ? { minutes } : {}) })));
 
 // Editorial cover examples, not a transcript or a claim about an individual video.
 // The handout associates only the first five vocabulary videos with chapter 01.
@@ -117,7 +126,7 @@ export function getVideoClassCatalog() {
   for (const entry of VIDEO_SOURCE_ENTRIES) {
     if (byId.has(entry.id)) { byId.get(entry.id).aliases.push(entry.title); continue; }
     const provider = entry.id === '76N4jRgx-Vo' || entry.id.startsWith('facebook-') ? 'facebook' : 'youtube';
-    const lesson = { ...entry, provider, aliases: [], cover: entry.id === 'LFeD_CfkVNA' ? 'road' : entry.id === 'YhISuYsEYC0' ? 'danger' : '', kind: entry.group === 'parole' ? 'parole' : entry.group === 'guide' ? 'guide' : /^Quiz/i.test(entry.title) ? 'quiz' : /Teoria e quiz/i.test(entry.title) ? 'misto' : 'teoria',
+    const lesson = { ...entry, provider, aliases: [], cover: entry.id === 'LFeD_CfkVNA' ? 'road' : entry.id === 'YhISuYsEYC0' ? 'danger' : '', kind: ['parole','guide','trucchi'].includes(entry.group) ? entry.group : /^Quiz/i.test(entry.title) ? 'quiz' : /Teoria e quiz/i.test(entry.title) ? 'misto' : 'teoria',
       progressId: entry.id === '76N4jRgx-Vo' ? 'facebook-28632349289755090' : entry.id,
       url: entry.id === '76N4jRgx-Vo' ? 'https://www.facebook.com/TMMBanglaPatente/videos/28632349289755090/' : provider === 'youtube' ? `https://www.youtube.com/watch?v=${entry.id}` : 'https://www.facebook.com/share/v/SaV7bhTHu4JyUnQ2/' };
     lessons.push(lesson); byId.set(entry.id, lesson);
@@ -133,7 +142,7 @@ export function getVideoClassCatalog() {
       if (chapter) lesson.relatedChapter = chapter[1].padStart(2, '0');
     }
   }
-  return { version: '2026-11-13.1', groups: sections.map(([id, title]) => ({ id, title })), lessons,
+  return { version: '2026-11-22.trucchi', groups: sections.map(([id, title]) => ({ id, title })), lessons,
     resources: [
       { id: 'tmm-webapp', title: 'TMM · app sul computer', url: 'https://www.tmmpatente.it/webapp/#/', description: 'Apri la pagina e segui le istruzioni per il codice QR.' },
       { id: 'quiz-rmastri', title: 'Quiz misti · sito esterno', url: 'http://www.rmastri.it/quiz-patente-b/', description: 'Collegamento presente nel documento studenti.' }

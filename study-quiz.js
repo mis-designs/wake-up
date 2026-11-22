@@ -528,6 +528,25 @@
 
   function buildChapterPicker() {
     const fragment = document.createDocumentFragment();
+    if (!QUIZBANK_MODE && !TRIAL_MODE) {
+      const series = document.createElement("a");
+      series.className = "study-trucchi";
+      series.href = "/studia-quiz?view=videos&group=trucchi&from=chapters";
+      series.setAttribute("aria-label", "Trucchi · Guarda l’introduzione e i sette episodi");
+      const image = document.createElement("img");
+      image.src = "/assets/video-class/trucchi.webp?v=c4caf955a2e8";
+      image.alt = "Trucchi"; image.width = 1200; image.height = 675;
+      image.loading = "lazy"; image.decoding = "async";
+      const action = document.createElement("span");
+      action.className = "study-series-badge";
+      action.textContent = "Guarda gli episodi";
+      series.append(image, action);
+      series.addEventListener("click", event => {
+        if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        event.preventDefault(); navigateStudy(series.getAttribute("href"));
+      });
+      fragment.append(series);
+    }
     CHAPTERS.forEach((name, index) => {
       const chapter = index + 1;
       const button = document.createElement("button");
@@ -2150,7 +2169,7 @@
     try {
       if (!videoClass) {
         root.textContent = 'Apro Video Class…';
-        videoClassModule ||= import('./video-class.js?v=9-embedded&art=2e0d6787e201').catch(error => { videoClassModule = null; throw error; });
+        videoClassModule ||= import('./video-class.js?v=11-trucchi&art=2e0d6787e201').catch(error => { videoClassModule = null; throw error; });
         const module = await videoClassModule;
         if (ownRequest !== loadRequestId || !videoView) return;
         videoClass = module.createVideoClass({ root, identity: studyVideoIdentity, toast: showToast,

@@ -54,6 +54,23 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .study-intro p { width: fit-content; max-width: 680px; margin: 0; border: 1px solid rgba(120, 255, 56, .28); border-radius: 999px; padding: 8px 13px; background: rgba(1, 24, 8, .62); color: rgba(255, 255, 255, .95); font-family: inherit; font-size: clamp(1rem, 2vw, 1.2rem); font-weight: 400; line-height: 1.45; text-shadow: 0 2px 4px rgba(0, 0, 0, .9), 0 7px 20px rgba(0, 0, 0, .72); backdrop-filter: blur(7px); }
 #study-last-chapter { font-family: var(--font-bangla); }
 
+.study-trucchi { position: relative; display: block; align-self: start; overflow: hidden; border-radius: 18px; background: var(--forest); color: white; }
+.study-trucchi img { display: block; width: 100%; height: auto; aspect-ratio: 1672 / 941; }
+.study-series-badge {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: .5em;
+  padding: .45em .85em;
+  border-radius: 999px;
+  background: #fff;
+  color: #15291e;
+  font: 800 .875rem/1.25 var(--font-ui);
+}
+.study-series-badge::before { content: ""; border-block: .33em solid transparent; border-left: .5em solid currentColor; }
+.study-trucchi:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; color: var(--ink); }
 .study-chapter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 15px; }
 .study-chapter { position: relative; isolation: isolate; display: grid; grid-template-columns: 54px minmax(0, 1fr) 26px; gap: 13px; align-items: center; min-height: 112px; padding: 17px; overflow: hidden; border: 1px solid rgba(31, 100, 49, .15); border-radius: 22px; background: radial-gradient(circle at 100% 0, rgba(103, 245, 40, .075), transparent 43%), linear-gradient(145deg, rgba(255, 255, 255, .98), rgba(246, 251, 247, .96)); color: var(--ink); text-align: left; cursor: pointer; box-shadow: 0 8px 27px rgba(15, 67, 31, .065); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease; }
 .study-chapter::before { content: ""; position: absolute; z-index: -1; top: 0; left: 16px; right: 16px; height: 2px; background: linear-gradient(90deg, transparent, rgba(103, 245, 40, .62), transparent); opacity: .32; }

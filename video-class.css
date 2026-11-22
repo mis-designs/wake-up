@@ -122,6 +122,7 @@
 .vc-group-number > img { width: 32px; height: 32px; }
 .vc-cover--sample > img { width: 100%; object-fit: contain; }
 .vc-cover--sample::after { display: none; }
+.vc-track-number svg { width: 1.1em; height: 1.1em; }
 .vc-duration { position: absolute; z-index: 2; bottom: 10px; right: 10px; border-radius: 6px; padding: 5px 8px; background: var(--forest); color: var(--surface); font: 600 .72rem/1 var(--font-ui); }
 .vc-cover--fallback::before { content: 'VIDEO CLASS'; position: absolute; inset: 0; display: grid; place-items: center; font-family: Norwester, var(--font-ui); font-size: 2rem; }
 .vc-more { display: flex; margin: 28px auto 0; }
@@ -138,6 +139,7 @@
 .vc-play .vc-cover { height: 100%; }
 .vc-play-label { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: 10px; width: max-content; max-width: calc(100% - 30px); min-height: 48px; padding: 10px 22px; border: 1px solid var(--surface); border-radius: 99px; background: var(--surface); color: var(--ink); font: 700 .9rem/1.4 var(--font-ui); box-shadow: 0 4px 24px #0003; }
 .vc-play-label img { width: 24px; height: 24px; }
+.vc-cover--trucchi + .vc-play-label { top: 50%; bottom: auto; transform: translate(-50%, -50%); }
 .vc-play:hover .vc-play-label { background: var(--vc-soft); }
 .vc-lesson-info { padding: 14px 0; }
 .vc-lesson-info h2 { font-size: clamp(1.45rem, 2.4vw, 2rem); line-height: 1.22; letter-spacing: -.03em; margin: 12px 0; }

@@ -3,9 +3,10 @@ export const PAGE_SIZE = 12;
 export function supportsVideoEmbed(userAgent = '') {
   return true; // Always attempt playback here; never force an external navigation.
 }
-export function videoPath({ group = '', saved = false, lesson = '', kind = '' } = {}) {
+export function videoPath({ group = '', saved = false, lesson = '', kind = '', from = '' } = {}) {
   const p = new URLSearchParams({ view: 'videos' });
-  if (/^(0[1-9]|1\d|2[0-5]|parole|guide)$/.test(group)) p.set('group', group);
+  if (/^(0[1-9]|1\d|2[0-5]|parole|guide|trucchi)$/.test(group)) p.set('group', group);
+  if (group === 'trucchi' && from === 'chapters') p.set('from', from);
   if (saved) p.set('saved', '1');
   if (VIDEO_ID.test(lesson) || /^facebook-[a-zA-Z0-9]+$/.test(lesson)) p.set('lesson', lesson);
   if (['teoria','quiz','misto','parole','guide'].includes(kind)) p.set('kind', kind);

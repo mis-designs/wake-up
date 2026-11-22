@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v330-spezzoni";
+const CACHE_NAME = "magicbook-pwa-v334-trucchi";
 const STATIC_ASSETS = [
   "/android-home-compact.css?v=2",
   "/android-home-compact.js?v=2",
@@ -27,7 +27,7 @@ const STATIC_ASSETS = [
   "/quizbank.html",
   "/quizbank.css?v=9-figure-zoom",
   "/quizbank-sheet.js?v=4-practice",
-  "/study-quiz.js?v=57-video-class",
+  "/study-quiz.js?v=59-trucchi&art=2e0d6787e201",
   "/quiz-audio-recorder.js?v=1",
   "/quiz-audio-recorder.css?v=2-add-voice",
   "/icons/add_voice.png",
@@ -96,9 +96,9 @@ const STATIC_ASSETS = [
   "/icons/native/lines_right_side.svg",
   "/icons/native/roudabout.svg",
   "/icons/study_quiz.svg",
-  "/video-class.css?v=fb1-7",
-  "/video-class.js?v=9-embedded&art=2e0d6787e201",
-  "/video-class-model.mjs?v=4",
+  "/video-class.css?v=9-trucchi",
+  "/video-class.js?v=11-trucchi&art=2e0d6787e201",
+  "/video-class-model.mjs?v=5-trucchi",
   "/car-indicator.mjs?v=1",
   "/car-indicator.css?v=1",
   "/video-progress.mjs?v=3",
@@ -140,8 +140,8 @@ const STATIC_ASSETS = [
   "/audio-player-ui.css?v=10-web-quiz-slim",
   "/script.js?v=20261112-master-key",
   "/study-quiz.html",
-  "/study-quiz.css?v=28-compact",
-  "/study-quiz.js?v=57-video-class",
+  "/study-quiz.css?v=30-trucchi",
+  "/study-quiz.js?v=59-trucchi&art=2e0d6787e201",
   "/figure-study.css?v=2",
   "/figure-study.js?v=3-headlight",
   "/figure-study-catalog.mjs?v=2",

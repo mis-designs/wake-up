@@ -16,12 +16,12 @@ test('all browser and native versions attempt playback inside the page', () => {
 
 test('source audit: all 174 YouTube occurrences retain exact identity and source order; eight duplicates become aliases', () => {
   const expected = JSON.parse(read('docs/video-class-source-ids.json')).youtubeIds;
-  assert.deepEqual(VIDEO_SOURCE_ENTRIES.filter(x => !x.id.startsWith('facebook-')).map(x => x.id), expected);
-  assert.equal(catalog.lessons.length, 167);
-  assert.equal(catalog.lessons.filter(x => x.provider === 'youtube').length, 165);
+  assert.deepEqual(VIDEO_SOURCE_ENTRIES.filter(x => x.group !== 'trucchi' && !x.id.startsWith('facebook-')).map(x => x.id), expected);
+  assert.equal(catalog.lessons.length, 175);
+  assert.equal(catalog.lessons.filter(x => x.provider === 'youtube').length, 173);
   assert.equal(catalog.lessons.reduce((n,x) => n + x.aliases.length, 0), 8);
   assert.equal(catalog.resources.length, 2);
-  assert.equal(catalog.groups.length, 27);
+  assert.equal(catalog.groups.length, 28);
   assert.equal(catalog.groups.find(x => x.id === '22').title, 'Primo soccorso');
   assert.equal(catalog.lessons.find(x => x.id === 'Sa4oMMmQ3EU').minutes, undefined, 'ambiguous trailing duration is not assigned');
   for (const lesson of catalog.lessons) {
@@ -29,6 +29,12 @@ test('source audit: all 174 YouTube occurrences retain exact identity and source
     if (lesson.provider === 'youtube') assert.match(lesson.id, /^[a-zA-Z0-9_-]{11}$/);
     assert.doesNotMatch(lesson.url, /\s|\?si=/);
   }
+});
+test('Trucchi keeps the supplied episode order, with the introduction outside the numbering', () => {
+  const series = selectVideoLessons(catalog, { group: 'trucchi' });
+  assert.deepEqual(series.map(x => x.id), ['NeEAaRAPQxI', 'JxWKvUxam70', 'htcsZVBk0YU', 'Oeaqw5NVmkM', 'MhmUqSHHB7s', '8EIYE6RQXtU', 'P2ql-7Evni0', 'UCX7ENWD0FQ']);
+  assert.deepEqual(series.map(x => x.title), ['Introduzione', ...Array.from({ length: 7 }, (_, i) => 'Episodio ' + (i + 1))]);
+  assert.equal(videoPath({ group: 'trucchi', from: 'chapters' }), '/studia-quiz?view=videos&group=trucchi&from=chapters');
 });
 test('routes, filters and provider isolation reject unsupported player sources', () => {
   assert.equal(embedSource({ id: '../bad', provider: 'youtube' }, 'https://test.invalid'), '');
@@ -100,9 +106,9 @@ test('Video Class binds a nonempty route identity before loading, independently 
   assert.match(render, /const loadedCatalog = await data\.read\(\);\s*if \(!active \|\| own !== version \|\| !guardIdentity\(\)\) return;\s*catalog = loadedCatalog/);
   assert.match(render, /favoriteScope = activeScope/);
   assert.doesNotMatch(render, /catalog = await data\.read/);
-  assert.match(read('study-quiz.js'), /video-class\.js\?v=9-embedded/);
-  assert.match(read('study-quiz.html'), /study-quiz\.js\?v=57-video-class/);
-  assert.match(read('service-worker.js'), /video-class\.js\?v=9-embedded/);
+  assert.match(read('study-quiz.js'), /video-class\.js\?v=11-trucchi/);
+  assert.match(read('study-quiz.html'), /study-quiz\.js\?v=59-trucchi/);
+  assert.match(read('service-worker.js'), /video-class\.js\?v=11-trucchi/);
 });
 test('server catalogue uses established device-bound authorization, is never publicly cacheable and adds zero upstream reads for signed users', async t => {
   const env={SESSION_SECRET:'video-catalog-test',GAS_ACCESS_URL:'https://fixture.invalid',GAS_SECRET:'fixture',QUIZ_GAS_URL:'https://fixture.invalid',QUIZ_PROXY_SECRET:'fixture'};
@@ -114,7 +120,7 @@ test('server catalogue uses established device-bound authorization, is never pub
   const token=`${payload}.${crypto.createHmac('sha256',env.SESSION_SECRET).update(payload).digest('base64url')}`;
   const response=()=>({headers:{},setHeader(k,v){this.headers[k]=v;},status(v){this.code=v;return this;},json(v){this.body=v;return this;},end(){return this;}});
   const res=response();await handler({method:'GET',query:{action:'getVideoClasses',phone,deviceId},headers:{authorization:`Bearer ${token}`}},res);
-  assert.equal(res.code,200);assert.equal(res.body.catalog.lessons.length,167);assert.match(res.headers['Cache-Control'],/no-store/);
+  assert.equal(res.code,200);assert.equal(res.body.catalog.lessons.length,175);assert.match(res.headers['Cache-Control'],/no-store/);
   assert.equal(res.headers['Vercel-CDN-Cache-Control'],'no-store');
   t.mock.method(globalThis,'fetch',async()=>Response.json({success:false,error:'device_mismatch'}));
   const denied=response(); await handler({method:'GET',query:{action:'getVideoClasses',phone,deviceId:'another-device'},headers:{authorization:`Bearer ${token}`}},denied);

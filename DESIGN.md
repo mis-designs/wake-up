@@ -574,3 +574,7 @@ La lezione apre con il brano italiano del manuale e il riferimento alla pagina i
 La scheda video della lezione dà precedenza al filmato caricato per l’argomento, anche in modalità Presenta. Mostra il titolo della lezione e apre il lettore protetto. Il filmato di esempio compare solo dopo la conferma che manca un video caricato.
 
 Il docente master imposta per ogni lezione il filmato originale, i secondi di inizio e fine e la preferenza audio. Presenta riproduce lo spezzone salvato. Il video dedicato ha priorità e conserva separatamente le impostazioni dello spezzone.
+
+## Studia quiz · Trucchi
+
+Nella scelta dei capitoli di Magic Book, la copertina Trucchi precede il Capitolo 01. La serie contiene un’introduzione e sette episodi nell’ordine fornito da TMM. La card di ingresso e tutte le miniature usano la stessa copertina Trucchi. Il badge bianco in basso a destra mostra in grassetto Guarda gli episodi, Introduzione oppure Episodio seguito dal numero. La riproduzione usa il lettore Video Class e la freccia riporta alla schermata di provenienza.

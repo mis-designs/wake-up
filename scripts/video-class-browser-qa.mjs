@@ -56,7 +56,7 @@ try {
       });
       await checkWidth(); await page.screenshot({path:path.join(out,`${native?'android':'web'}-${width}-${label}.png`),fullPage:true});
     };
-    await page.goto('http://video.local/studia-quiz',{waitUntil:'networkidle'});
+    await page.goto('https://video.local/studia-quiz',{waitUntil:'networkidle'});
     await page.locator('#study-hub').waitFor({state:'visible'});
     assert.equal(await page.locator('.vc-hub-card').count(),2);assert.equal(reads,0);
     assert.equal(await page.locator('#study-hub-figures').isVisible(),native);
@@ -120,12 +120,12 @@ try {
     assert.equal(await page.locator('.vc-loading img').evaluate(el=>getComputedStyle(el).visibility),'hidden');
     assert.equal(reads,1); releaseCatalog(); catalogGate=null;
     await page.locator('.vc-group').first().waitFor();
-    assert.equal(reads,1);assert.equal(frames,0);assert.equal(await page.locator('.vc-group').count(),27);
+    assert.equal(reads,1);assert.equal(frames,0);assert.equal(await page.locator('.vc-group').count(),28);
     assert.equal(await page.locator('#vc-heading').count(),1);
     assert.equal(await page.locator('#vc-chapters-heading').textContent(),'Capitoli');
     assert.equal(await page.getByText('Capitoli nell’ordine del documento studenti.').count(),0);
     await shot('catalog');
-    assert.equal(await page.locator('.vc-group .car-indicator-outline').count(),27);
+    assert.equal(await page.locator('.vc-group .car-indicator-outline').count(),28);
     assert.equal(indicatorReads,0,'no sound download before an explicit chapter action');
     if(width===375 && !process.env.QA_SKIP_INDICATOR_TIMING) {
       await page.emulateMedia({reducedMotion:'no-preference'});
@@ -174,7 +174,7 @@ try {
       await page.locator('.vc-group').first().click();await page.waitForFunction(()=>!!document.querySelector('[data-car-lit="true"]'));
       await page.locator('.vc-group').first().screenshot({path:path.join(out,`${native?'android':'web'}-${width}-indicator-on.png`)});
       await page.keyboard.press('Escape');await page.waitForTimeout(1500);
-      assert.equal(await page.locator('.vc-group').count(),27);assert.equal(await page.locator('[data-car-pending]').count(),0);assert.equal(indicatorReads,1,'replay reuses decoded audio');
+      assert.equal(await page.locator('.vc-group').count(),28);assert.equal(await page.locator('[data-car-pending]').count(),0);assert.equal(indicatorReads,1,'replay reuses decoded audio');
       // A real browser Back during the cue must not redirect again later.
       await page.locator('.vc-group').first().click();await page.goBack();await page.waitForTimeout(1500);
       assert.equal(await page.locator('[data-car-pending]').count(),0);
@@ -325,7 +325,7 @@ try {
     }
     if(width===375){
       indicatorBlocked=true;
-      await page.goto('http://video.local/studia-quiz?view=videos',{waitUntil:'networkidle'});
+      await page.goto('https://video.local/studia-quiz?view=videos',{waitUntil:'networkidle'});
       await page.locator('.vc-group').first().waitFor();await page.emulateMedia({reducedMotion:'no-preference'});
       const beforeSound=indicatorReads;
       await page.locator('.vc-group').first().click();await page.locator('.vc-lesson').first().waitFor();
@@ -335,7 +335,35 @@ try {
       assert.equal(indicatorReads,beforeSound+1,'no retry loop for unavailable decorative audio');
       await page.emulateMedia({reducedMotion:'reduce'});indicatorBlocked=false;
     }
-    if(!native){await page.goto('http://video.local/studia-quiz?view=figures',{waitUntil:'networkidle'});assert.equal(await page.locator('#study-figures').isVisible(),false);}
+    await page.goto('https://video.local/studia-quiz?view=chapters');
+    const series=page.locator('#study-chapter-grid > .study-trucchi:first-child');
+    await series.waitFor();
+    assert.equal(await series.locator('xpath=following-sibling::*[1]').locator('.study-chapter-number').innerText(),'01');
+    await series.locator('img').evaluate(image=>image.decode());
+    const seriesCover=await series.locator('img').getAttribute('src');
+    assert.equal(await series.locator('.study-series-badge').innerText(),'Guarda gli episodi');
+    const beforeSeries={reads,frames};
+    await series.focus();await page.keyboard.press('Enter');
+    const labels=page.locator('.vc-lesson-link .vc-episode-label');
+    await labels.first().waitFor();assert.equal(reads,beforeSeries.reads+1);
+    assert.deepEqual(await labels.allTextContents(),['Introduzione',...Array.from({length:7},(_,i)=>'Episodio '+(i+1))]);
+    const covers=page.locator('.vc-lesson-link .vc-cover--trucchi > img');
+    assert.deepEqual(await covers.evaluateAll(images=>images.map(img=>img.getAttribute('src'))),Array(8).fill(seriesCover));
+    assert.ok(await labels.evaluateAll(badges=>badges.every(badge=>{
+      const bounds=badge.getBoundingClientRect(), cover=badge.parentElement.getBoundingClientRect();
+      const style=getComputedStyle(badge);
+      return Math.abs(cover.right-bounds.right-10)<1 && Math.abs(cover.bottom-bounds.bottom-10)<1
+        && Number(style.fontWeight)>=700 && style.backgroundColor==='rgb(255, 255, 255)';
+    })));
+    assert.equal(frames,beforeSeries.frames);
+    await shot('trucchi');
+    await page.locator('.vc-lesson-link').last().click();await page.locator('.vc-play').click();
+    assert.match(await page.locator('#vc-stage iframe').getAttribute('src'),/youtube-nocookie\.com\/embed\/UCX7ENWD0FQ/);
+    await page.locator('#study-back').click();await labels.first().waitFor();
+    assert.equal(await page.locator('#vc-stage iframe').count(),0);
+    await page.locator('#study-back').click();await series.waitFor();
+    assert.equal(new URL(page.url()).searchParams.get('view'),'chapters');assert.equal(reads,beforeSeries.reads+1);
+    if(!native){await page.goto('https://video.local/studia-quiz?view=figures',{waitUntil:'networkidle'});assert.equal(await page.locator('#study-figures').isVisible(),false);}
     assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);
     report.push({native,width,height,reads,frames,apiLoads,indicatorReads,indicatorTimingChecked:width===375 && !process.env.QA_SKIP_INDICATOR_TIMING,watchedPercent:30,pass:true}); console.log('PASS',native?'Android':'web',width);
     await context.close();
