@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v328-manuale";
+const CACHE_NAME = "magicbook-pwa-v329-video-lezione";
 const STATIC_ASSETS = [
   "/android-home-compact.css?v=2",
   "/android-home-compact.js?v=2",

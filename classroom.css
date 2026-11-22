@@ -22,6 +22,14 @@ dialog{border:0;background:transparent;color:var(--ink);padding:10px;max-width:m
 dialog[data-media=true] .dictionary-line{color:#fff;background:#153d32;padding:.5rem .75rem;border-radius:8px}
 
 .lesson-video{padding:12px 16px;border-bottom:1px solid var(--rule)}.lesson-video button{min-height:44px;font-weight:650}.lesson-video:empty{display:none}
+.lesson-video.featured-video{padding:0}
+.featured-video button{display:flex;align-items:center;justify-content:space-between;gap:1rem;width:100%;min-height:8rem;padding:clamp(1.25rem,3vw,2rem);text-align:left;border:0;border-radius:0;background:var(--ink);color:white;cursor:pointer}
+.featured-video button:hover{background:#215344}
+.featured-video button:focus-visible{outline:3px solid white;outline-offset:-5px}
+.featured-video .video-caption{min-width:0;overflow-wrap:anywhere}
+.featured-video small{color:#d2e8d9}
+.featured-video strong{font-size:clamp(1.25rem,2.4vw,1.7rem)}
+.featured-video .video-play{display:grid;place-items:center;flex:0 0 44px;height:44px;padding-left:2px;border-radius:50%;background:white;color:#143d31}
 #uploadDesk{margin:2rem 0;max-width:44rem}#uploadDesk h1{font-size:2.3rem}#uploadDeskControls{margin:1rem 0 1.5rem}#uploadTopic{font-size:1.3rem}
 
 .chapter{display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,3vw,40px)}

@@ -570,3 +570,5 @@ La modalità Presenta ingrandisce italiano e Bangla per la condivisione dello sc
 Nel pannello caricamenti il docente sceglie un argomento dell’aula. La stessa lezione apre il video e in modalità Presenta mostra solo la riproduzione.
 
 La lezione apre con il brano italiano del manuale e il riferimento alla pagina illustrata. Seguono la spiegazione TMM e il Bangla.
+
+La scheda video della lezione dà precedenza al filmato caricato per l’argomento, anche in modalità Presenta. Mostra il titolo della lezione e apre il lettore protetto. Il filmato di esempio compare solo dopo la conferma che manca un video caricato.

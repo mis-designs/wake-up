@@ -188,6 +188,38 @@
     if(theoryButton) window.MagicQuizVideo?.destroyButton(theoryButton);
     theoryButton=null;$('theoryVideo').replaceChildren();$('uploadDeskControls').replaceChildren();
   }
+  function renderLessonVideo(item, status) {
+    const host = $('theoryVideo'), button = host.firstElementChild;
+    if (!button) return;
+    const available = status?.available === true;
+    const missing = status?.available === false && !status.error && status.availability !== 'unknown';
+    const sample = missing && item.scene;
+    $('scene').hidden = !sample;
+    if (sample) {
+      $('poster').src = sample.poster;
+      $('poster').alt = sample.alt;
+      $('sceneCaption').textContent = sample.caption;
+    } else {
+      $('poster').removeAttribute('src');
+      $('poster').alt = '';
+      $('sceneCaption').replaceChildren();
+    }
+    host.classList.toggle('featured-video', available);
+    if (!available) {
+      button.textContent = missing ? 'Carica video teoria' : 'Apri video teoria';
+      button.setAttribute('aria-label', button.textContent + ' · ' + item.title_it);
+      return;
+    }
+    const seconds = Math.round(status.duration);
+    const duration = Number.isFinite(seconds) && seconds > 0
+      ? ' · ' + Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0') : '';
+    const caption = el('span', null, 'video-caption');
+    caption.append(el('small', 'Video teoria' + duration), el('strong', item.title_it));
+    const play = el('span', '▶', 'video-play');
+    play.setAttribute('aria-hidden', 'true');
+    button.replaceChildren(caption, play);
+    button.setAttribute('aria-label', 'Riproduci il video di ' + item.title_it);
+  }
   function previewTheory(item,from){
     inspect(item.title_it,item.title_bn,from);
     const box=$('detailContent'), previous=localTheory.get(item.id);
@@ -204,25 +236,27 @@
     box.append(label,el('p','Prova sul computer. Il video resta in questa anteprima fino alla chiusura o al ricaricamento.'));
     input.onchange=()=>{
       const file=input.files[0];if(!file)return;
-      localTheory.set(item.id,URL.createObjectURL(file));previewTheory(item,from);
+      localTheory.set(item.id,URL.createObjectURL(file));renderLessonVideo(item,{available:true});previewTheory(item,from);
       if(previous) URL.revokeObjectURL(previous);
     };
   }
   function bindTheoryVideo(item){
     releaseTheoryButton();
+    const uploads=location.hash==='#caricamenti';
     if(preview){
       theoryButton=control('Video teoria',()=>previewTheory(item,theoryButton));
     }else{
       const id='tv_'+state.chapter.chapter+'_'+item.id,token=activeToken;
       theoryButton=window.MagicQuizVideo.createButton({
         theoryVideo:true,question:{id,question:item.title_it},cacheScope:token,
+        onTheoryStatus:uploads ? undefined : status=>renderLessonVideo(item,status),
         isCurrent:()=>state.chapter && lesson().id===item.id && credentials().accessToken===token,
         isPresenting:()=>document.body.classList.contains('presenting'),
         request:(action,video,signal)=>api(action,{questionId:id,video},signal)
       });
     }
-    const uploads=location.hash==='#caricamenti';
     $(uploads?'uploadDeskControls':'theoryVideo').append(theoryButton);
+    if (!uploads) renderLessonVideo(item,preview ? {available:localTheory.has(item.id)} : null);
   }
   async function openPage(page,from) {
     inspect('Manuale · pagina '+(page-3),'',from);
@@ -280,9 +314,6 @@
     renderPlate('signPlate',l.figureNumber);
     richText($('italian'),l.theory_it);richText($('bangla'),l.theory_bn);richText($('tip'),l.memory_tip_bn);
     $('words').replaceChildren(...l.focus.map(name=>state.chapter.words.find(w=>w.it===name || w.aliases.some(a=>a.it===name))).filter(Boolean).map(w=>termControl(w,w.it,true)));
-    $('scene').hidden=!l.scene;
-    if(l.scene){$('poster').src=l.scene.poster;$('poster').alt=l.scene.alt;$('sceneCaption').textContent=l.scene.caption;}
-    else {$('poster').removeAttribute('src');$('poster').alt='';$('sceneCaption').replaceChildren();}
     richText($('prompt'),l.prompt);
     $('figureExercise').hidden=!l.figureExercise;
     $('prompt').previousElementSibling.hidden=!l.prompt;

@@ -51,6 +51,14 @@
   }
   function remember(binding, value) {
     if (typeof value.canUpload === 'boolean') binding.canUpload = value.canUpload;
+    if (binding.options.theoryVideo) {
+      if (typeof value.available !== 'boolean' || value.error || value.availability === 'unknown') {
+        cache.delete(cacheKey(binding));
+        return;
+      }
+      // Only the card summary is reusable. Playback always obtains fresh private credentials.
+      value = {available:value.available, duration:value.duration};
+    }
     cache.set(cacheKey(binding), { value, expires: Date.now() + 60000 });
     while (cache.size > 80) cache.delete(cache.keys().next().value);
   }
@@ -155,6 +163,10 @@
       renderVideoState(state, result);
     } catch (error) {
       if (active !== state) return;
+      if (binding.options.theoryVideo) {
+        cache.delete(cacheKey(binding));
+        binding.options.onTheoryStatus?.(null);
+      }
       report(state, failMessage(error));
       const retry = node('button', 'Riprova'); retry.onclick = async () => {
         retry.disabled = true;
@@ -173,6 +185,10 @@
       if (!current(other) || cacheKey(other) !== cacheKey(binding)) continue;
       remember(other, result);
       if (other.options.theoryVideo) {
+        if (other.options.onTheoryStatus) {
+          other.options.onTheoryStatus(result);
+          continue;
+        }
         other.button.textContent=result.available ? 'Apri video teoria' : 'Carica video teoria';
         other.button.setAttribute('aria-label',other.button.textContent);
         continue;
@@ -442,6 +458,15 @@
     binding.click = () => { if (!button.hidden && active?.binding !== binding && current(binding)) void open(binding); }; button.addEventListener('click', binding.click);
     if (options.theoryVideo) {
       button.hidden=false; button.textContent='Video teoria';button.setAttribute('aria-label','Video teoria');
+      if (options.onTheoryStatus) queueMicrotask(async () => {
+        if (!current(binding)) return;
+        try {
+          const status = getCached(binding) || await lookup(binding);
+          if (current(binding)) options.onTheoryStatus(status);
+        } catch {
+          if (current(binding)) options.onTheoryStatus(null);
+        }
+      });
       return button;
     }
     if (options.gallery === true) {
