@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v322-study-home";
+const CACHE_NAME = "magicbook-pwa-v327-classroom";
 const STATIC_ASSETS = [
   "/android-home-compact.css?v=2",
   "/android-home-compact.js?v=2",
@@ -12,7 +12,7 @@ const STATIC_ASSETS = [
   "/icons/video-upload.png",
   "/quiz-video-thumbnail.js?v=1",
   "/quiz-video.js?v=14-bangla",
-  "/video-gallery.js?v=6-chapters",
+  "/video-gallery.js?v=7-teoria",
   "/video-gallery.css?v=6-chapters",
   "/quiz-video.css?v=7-nodownload",
   "/quiz-video-optimizer.js?v=3-reduction",

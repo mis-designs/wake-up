@@ -19,6 +19,7 @@
     video_size_invalid: 'Scegli un video MP4 fino a 128 MB.', video_mp4_required: 'Scegli un video in formato MP4.',
     video_unreadable: 'Il video non si apre oppure supera 10 minuti. Prova un MP4 compatibile.',
     video_already_exists: 'Un video è già stato salvato per questa domanda. Riapri per visualizzarlo.',
+    theory_storage_not_configured: 'Configura l’archivio privato dei video teoria nel progetto per abilitare i caricamenti.',
     video_storage_not_configured: 'Archivio video non configurato. Collega le credenziali R2 al bucket magicbook-assets.',
     video_storage_denied: 'Accesso all’archivio video negato. Verifica i permessi di lettura e scrittura del bucket magicbook-assets.',
     video_storage_credentials_invalid: 'Le credenziali del collegamento video non sono valide. Il video non è stato salvato.',
@@ -40,7 +41,9 @@
   }
   function scope(binding) { return typeof binding.options.cacheScope === 'function' ? binding.options.cacheScope() : binding.options.cacheScope; }
   function admin(binding) { return binding.canUpload === true; }
-  function cacheKey(binding) { return `${scope(binding) || ''}:${binding.options.question.question}:${binding.options.question.figure || ''}`; }
+  function cacheKey(binding) {
+    if(binding.options.theoryVideo) return JSON.stringify([scope(binding),'theory',binding.options.question.id]);
+    return `${scope(binding) || ''}:${binding.options.question.question}:${binding.options.question.figure || ''}`; }
   function getCached(binding) {
     const key = cacheKey(binding), entry = cache.get(key);
     if (!entry || entry.expires <= Date.now()) { cache.delete(key); return null; }
@@ -52,7 +55,7 @@
     while (cache.size > 80) cache.delete(cache.keys().next().value);
   }
   async function lookup(binding) {
-    const cached = getCached(binding); if (cached) return cached;
+    const cached = !binding.options.theoryVideo && getCached(binding); if (cached) return cached;
     if (!binding.lookup) binding.lookup = request(binding, 'getQuizVideo').then(result => {
       if (current(binding)) remember(binding, result); return result;
     }).finally(() => { binding.lookup = null; });
@@ -130,7 +133,7 @@
     if (!current(binding)) return;
     binding.options.onOpen?.();
     const overlay = node('div', '', 'quiz-video-overlay'), dialog = node('section', '', 'quiz-video-dialog');
-    const header = node('header'), title = node('h2', binding.options.figureVideo ? 'Video della figura' : 'Spiegazione video'), exit = node('button', '×', 'quiz-video-close');
+    const header = node('header'), title = node('h2', binding.options.theoryVideo ? 'Video teoria' : binding.options.figureVideo ? 'Video della figura' : 'Spiegazione video'), exit = node('button', '×', 'quiz-video-close');
     exit.type = 'button'; exit.setAttribute('aria-label', 'Chiudi video'); exit.onclick = () => close();
     const titleId = 'quiz-video-title'; title.id = titleId; dialog.setAttribute('role', 'dialog'); dialog.setAttribute('aria-modal', 'true'); dialog.setAttribute('aria-labelledby', titleId);
     header.append(title, exit);
@@ -169,6 +172,11 @@
     for (const other of bindings) {
       if (!current(other) || cacheKey(other) !== cacheKey(binding)) continue;
       remember(other, result);
+      if (other.options.theoryVideo) {
+        other.button.textContent=result.available ? 'Apri video teoria' : 'Carica video teoria';
+        other.button.setAttribute('aria-label',other.button.textContent);
+        continue;
+      }
       const available = result.available === true;
       other.button.hidden = !available && !admin(other);
       other.button.innerHTML = (available ? icon : uploadIcon) + `<span>${available ? 'কুইজ ব্যাখ্যা' : 'Carica video'}</span>`;
@@ -184,9 +192,16 @@
     for (const url of state.urls) URL.revokeObjectURL(url); state.urls.length = 0;
     state.video.hidden = !result.available;
     state.video.removeAttribute('poster');
-    if (result.available) { state.video.src = result.url; if (result.thumbnail?.url) state.video.poster = result.thumbnail.url; }
-    report(state, message || (result.available ? 'Premi play per ascoltare la spiegazione.' : (state.binding.options.figureVideo ? 'Nessun video disponibile per questa figura.' : 'Nessun video disponibile per questa domanda.')));
-    if (!admin(state.binding)) return;
+    const render = state.renderId = Symbol();
+    if (result.available && result.protection) {
+      root.ClassroomVideoFile.load(result,index => request(state.binding,'getTheoryVideoPart',{index,revision:result.revision},state.controller.signal),state.controller.signal)
+        .then(blob => {
+          if (active !== state || state.renderId !== render) return;
+          const url = URL.createObjectURL(blob); state.urls.push(url); state.video.src = url;
+        }).catch(() => { if (active === state && state.renderId === render) report(state,'Impossibile aprire il filmato. Chiudi e riapri per riprovare.'); });
+    } else if (result.available) { state.video.src = result.url; if (result.thumbnail?.url) state.video.poster = result.thumbnail.url; }
+    report(state, message || (result.available ? 'Premi play per ascoltare la spiegazione.' : (state.binding.options.figureVideo ? 'Nessun video disponibile per questa figura.' : (state.binding.options.theoryVideo ? 'Nessun video caricato per questo argomento.' : 'Nessun video disponibile per questa domanda.'))));
+    if (!admin(state.binding) || state.binding.options.isPresenting?.()) return;
     if (result.cleanupPending) {
       const cleanup = node('button', 'Completa rimozione', 'quiz-video-save');
       report(state, result.available ? 'Nuovo video salvato. Completa la rimozione del vecchio file.' : 'Video nascosto agli utenti. Completa la rimozione del file dall’archivio.');
@@ -208,7 +223,7 @@
       remove.onclick = () => removeVideo(state, result);
       const cover = node('button', result.thumbnail ? 'Modifica copertina' : 'Carica copertina');
       cover.onclick = () => thumbnailForm(state, result);
-      actions.append(replace);if(!state.binding.options.figureVideo)actions.append(cover);actions.append(remove); state.controls.append(actions);
+      actions.append(replace);if(!state.binding.options.figureVideo && !state.binding.options.theoryVideo)actions.append(cover);actions.append(remove); state.controls.append(actions);
     } else uploadForm(state, result);
     if (result.archive) {
       const details = node('details', '', 'quiz-video-archive'), summary = node('summary', 'Trova questo video in R2');
@@ -220,7 +235,7 @@
         catch { path.focus(); path.select(); report(state, 'Seleziona e copia il percorso mostrato.'); }
       };
       details.append(summary, node('p', 'Bucket: ' + result.archive.bucket), label, copy);
-      details.append(node('p', state.binding.options.figureVideo ? 'current.json identifica la figura e il video attuale.' : 'current.json identifica la domanda, il video attuale e la copertina.'));
+      details.append(node('p', state.binding.options.figureVideo ? 'current.json identifica la figura e il video attuale.' : (state.binding.options.theoryVideo ? 'Il video è collegato all’argomento selezionato nell’aula.' : 'current.json identifica la domanda, il video attuale e la copertina.')));
       if (result.fileName) details.append(node('p', 'File caricato: ' + result.fileName));
       if (result.bytes) details.append(node('p', 'Dimensione salvata: ' + bytes(result.bytes) + (result.originalBytes ? ' · Originale: ' + bytes(result.originalBytes) : '')));
       state.controls.append(details);
@@ -230,7 +245,7 @@
   function removeVideo(state, previous) {
     state.video.pause(); state.controls.replaceChildren();
     const box = node('div', '', 'quiz-video-confirm');
-    const text = node('p', state.binding.options.figureVideo ? 'Rimuovere il video di questa figura dai tre sistemi?' : 'Rimuovere questo video? Sarà tolto da questa stessa domanda, risposta e figura in Magic Book, All Books e Quiz Bank.');
+    const text = node('p', state.binding.options.figureVideo ? 'Rimuovere il video di questa figura dai tre sistemi?' : (state.binding.options.theoryVideo ? 'Rimuovere il video di questo argomento da entrambe le aule?' : 'Rimuovere questo video? Sarà tolto da questa stessa domanda, risposta e figura in Magic Book, All Books e Quiz Bank.'));
     const actions = node('div', '', 'quiz-video-actions'), cancel = node('button', 'Annulla'), remove = node('button', 'Conferma rimozione', 'quiz-video-danger');
     const operationId = crypto.randomUUID();
     cancel.onclick = () => { renderVideoState(state, previous); state.controls.querySelector('button')?.focus(); };
@@ -239,7 +254,7 @@
       try {
         const value = await request(state.binding, 'deleteQuizVideo', { expectedRevision: previous.revision, operationId }, state.controller.signal);
         if (value.removed !== true || value.available !== false) throw new Error('video_storage_unavailable');
-        renderVideoState(state, value, 'Video rimosso dai tre sistemi. Puoi caricarne un altro.');
+        renderVideoState(state, value, state.binding.options.theoryVideo ? 'Video rimosso dalla lezione.' : 'Video rimosso dai tre sistemi. Puoi caricarne un altro.');
         state.controls.querySelector('input')?.focus();
       } catch (error) {
         report(state, failMessage(error)); remove.textContent = 'Verifica rimozione'; remove.disabled = false;
@@ -289,6 +304,7 @@
   }
 
   function uploadForm(state, previous) {
+    state.renderId = null;
     const { dialog, binding, controller, video } = state;
     state.thumbnailPicker?.destroy();
     state.controls.replaceChildren();
@@ -303,10 +319,10 @@
     const cancel = node('button', 'Annulla'); cancel.type = 'button'; cancel.onclick = () => renderVideoState(state, previous);
     actions.append(save); if (replacing) actions.append(cancel);
     let prepared, file, busy = false, transfer = null, preferRelay = false;
-    const coverPicker = binding.options.figureVideo ? {element:node('span'),selection:null,busy:false,invalid:false,setDisabled(){},destroy(){}} : root.QuizVideoThumbnail.create({ signal: controller.signal, currentUrl: previous.thumbnail?.url || '', onChange: () => { save.disabled = busy || !prepared || Boolean(state.thumbnailPicker?.busy || state.thumbnailPicker?.invalid); } });
+    const coverPicker = (binding.options.figureVideo || binding.options.theoryVideo) ? {element:node('span'),selection:null,busy:false,invalid:false,setDisabled(){},destroy(){}} : root.QuizVideoThumbnail.create({ signal: controller.signal, currentUrl: previous.thumbnail?.url || '', onChange: () => { save.disabled = busy || !prepared || Boolean(state.thumbnailPicker?.busy || state.thumbnailPicker?.invalid); } });
     state.thumbnailPicker = coverPicker;
     state.controls.append(label, coverPicker.element, qualityLabel, qualityHint, originalLabel, actions);
-    report(state, replacing ? 'Il video attuale resterà disponibile finché il nuovo non sarà salvato. La sostituzione vale nei tre sistemi.' : (binding.options.figureVideo ? 'Il video sarà collegato a questa figura nei tre sistemi. Non serve una copertina.' : 'Il video sarà condiviso con la stessa domanda, risposta e figura nei tre sistemi.'));
+    report(state, binding.options.theoryVideo ? (replacing ? 'Il video attuale resta disponibile fino al salvataggio del nuovo.' : 'Il video sarà disponibile in questo argomento dell’aula.') : replacing ? 'Il video attuale resterà disponibile finché il nuovo non sarà salvato. La sostituzione vale nei tre sistemi.' : (binding.options.figureVideo ? 'Il video sarà collegato a questa figura nei tre sistemi. Non serve una copertina.' : 'Il video sarà condiviso con la stessa domanda, risposta e figura nei tre sistemi.'));
     const showPreview = () => {
       if (active !== state || !prepared) return;
       video.pause(); const blob = original.checked ? new Blob([file], { type: 'video/mp4' }) : prepared.blob;
@@ -346,9 +362,10 @@
           cache.delete(cacheKey(binding));
           const blob = original.checked ? new Blob([file], { type: 'video/mp4' }) : prepared.blob;
           report(state, 'Preparazione del caricamento…');
-          const created = await request(binding, 'createQuizVideoUpload', { bytes: blob.size, mime: 'video/mp4', duration: prepared.duration, expectedRevision: previous.revision ?? null, fileName: file.name, originalBytes: file.size, compression: original.checked ? 'original_selected' : prepared.reason || (prepared.compressed ? 'compressed' : 'original_better'), ...(relay ? { transport: 'relay' } : {}) }, controller.signal);
+          const sealed = binding.options.theoryVideo ? await root.ClassroomVideoFile.seal(blob,controller.signal) : null;
+          const created = await request(binding, 'createQuizVideoUpload', { ...(sealed ? {protection:sealed.protection} : {}), bytes: blob.size, mime: 'video/mp4', duration: prepared.duration, expectedRevision: previous.revision ?? null, fileName: file.name, originalBytes: file.size, compression: original.checked ? 'original_selected' : prepared.reason || (prepared.compressed ? 'compressed' : 'original_better'), ...(relay ? { transport: 'relay' } : {}) }, controller.signal);
           if (!created.uploadToken || (relay && (created.transport !== 'relay' || created.chunkBytes !== 2621440))) throw new Error('video_upload_invalid');
-          transfer = { ...created, blob, nextChunk: 0 };
+          transfer = { ...created, blob:sealed?.blob || blob, nextChunk: 0 };
         };
         const relayUpload = async () => {
           const count = Math.ceil(transfer.blob.size / transfer.chunkBytes);
@@ -403,7 +420,7 @@
           renderVideoState(state, saved, 'Video salvato. Completa la rimozione del vecchio file, poi aggiungi la copertina.');
           return;
         }
-        renderVideoState(state, saved, saved.cleanupPending ? 'Nuovo video salvato. Completa la rimozione del vecchio file.' : (selectedCover ? 'Video e copertina salvati.' : 'Video salvato. Disponibile per la stessa domanda, risposta e figura.'));
+        renderVideoState(state, saved, saved.cleanupPending ? 'Nuovo video salvato. Completa la rimozione del vecchio file.' : (selectedCover ? 'Video e copertina salvati.' : (binding.options.theoryVideo ? 'Video salvato per questa lezione.' : 'Video salvato. Disponibile per la stessa domanda, risposta e figura.')));
         state.controls.querySelector('button')?.focus();
       } catch (error) {
         if (active !== state) return;
@@ -423,6 +440,10 @@
     const binding = { button, options, epoch, controllers: new Set() }; bindings.add(binding);
     if (options.initialVideo) remember(binding, options.initialVideo);
     binding.click = () => { if (!button.hidden && active?.binding !== binding && current(binding)) void open(binding); }; button.addEventListener('click', binding.click);
+    if (options.theoryVideo) {
+      button.hidden=false; button.textContent='Video teoria';button.setAttribute('aria-label','Video teoria');
+      return button;
+    }
     if (options.gallery === true) {
       button.hidden = false; button.textContent = '⋯ Gestisci'; button.setAttribute('aria-label', 'Apri video e opzioni di modifica');
       return button;

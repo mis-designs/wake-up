@@ -519,3 +519,11 @@ The one Quiz button opens a two-choice dialog using MagicBookPopup.mount and its
 There are two static web assets at document load and one home icon. Existing font files are reused. Static asset versions are cached for the current service worker version. No polling or new API traffic is introduced. Popup artwork is read lazily only when opening it, using existing cacheable icon files.
 
 The Android home exposes both quiz modes from the single Quiz tile. The adjacent class tile opens Video Class directly. When coverage is unavailable, the dock reads “Il mio studio” and still opens statistics.
+
+## Aula di teoria · lezioni condivise
+
+La modalità Presenta ingrandisce italiano e Bangla per la condivisione dello schermo. Le parole illustrate usano il viola del dizionario e aprono la foto originale. Per gli altri termini la scena didattica reca una didascalia distinta. Il docente può mostrare la figura e rivelare la soluzione al momento della discussione. Solo una sessione Master admin verificata dal server riceve lezioni e filmati.
+
+## Video teoria
+
+Il server risolve capitolo e argomento dal catalogo e verifica Master admin su tutte le operazioni, inclusa la lettura. Il caricatore MP4 conserva sostituzione con controllo di revisione, ripresa e rimozione. I file cifrati stanno in xyz3d/theory-v1 per capitolo e argomento, nello stesso archivio dei quiz. All Books conserva in database la revisione e i dati di apertura del video. Magic Book delega ogni richiesta dell’aula dopo aver verificato il ruolo.

@@ -41,6 +41,7 @@ import {
 } from "./local-quiz-bank.mjs";
 
 const require = createRequire(import.meta.url);
+const classroom = require('../lib/classroom.cjs');
 const quizVideo = require('../lib/quiz-video.cjs');
 const masterAdmin = require('../lib/master-admin.cjs');
 export function isQuizVideoMaster(data) {
@@ -1272,6 +1273,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "missing_action" });
     }
 
+    if (req.method === 'POST' && action === 'verifyClassroomRequest') {
+      return res.status(200).json({verified:classroom.verify(entryId, questionId)});
+    }
     if (!hasValidRequestShape({
       phone,
       deviceId,
@@ -1287,6 +1291,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "invalid_request" });
     }
 
+
+    if (req.method === 'POST' && (classroom.actions.has(action) || classroom.isTheoryVideo(action,questionId))) {
+      if (!isQuizVideoMaster({phone, deviceId, accessToken})) return res.status(403).json({error:'master_admin_required'});
+      const {isAdmin, access} = await requireQuizAudioAccess({phone, deviceId, accessToken, adminOnly:true});
+      if (!isAdmin || !isQuizVideoMaster({phone, deviceId, accessToken:access.accessToken || accessToken})) return res.status(403).json({error:'master_admin_required'});
+      res.setHeader('Cache-Control','private, no-store');
+      return res.status(200).json(await classroom.request(action, {entryId,questionId,video:getRequestData(req).video,owner:normalizePhoneNumber(phone)}, req, res));
+    }
     if(req.method==='POST'&&action==='getFigureVideo'){
       const proof=verifySignedToken(accessToken,{phone,deviceId,purpose:'access'});
       if(!proof.ok&&!(proof.signatureValid&&proof.error==='token_expired'))return res.status(401).json({error:'unauthorized'});

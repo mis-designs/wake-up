@@ -560,3 +560,11 @@ The one Quiz button opens a two-choice dialog using MagicBookPopup.mount and its
 There are two static web assets at document load and one home icon. Existing font files are reused. Static asset versions are cached for the current service worker version. No polling or new API traffic is introduced. Popup artwork is read lazily only when opening it, using existing cacheable icon files.
 
 The Android home pairs the illustrated Quiz action with the Pial Sir Class photograph under the chapter cover and Quiz Bank. Place the three study tools on one divided surface above the floating dock.
+
+## Aula di teoria · lezioni condivise
+
+La modalità Presenta ingrandisce italiano e Bangla per la condivisione dello schermo. Le parole illustrate usano il viola del dizionario e aprono la foto originale. Per gli altri termini la scena didattica reca una didascalia distinta. Il docente può mostrare la figura e rivelare la soluzione al momento della discussione. Solo una sessione Master admin verificata dal server riceve lezioni e filmati.
+
+## Video teoria
+
+Nel pannello caricamenti il docente sceglie un argomento dell’aula. La stessa lezione apre il video e in modalità Presenta mostra solo la riproduzione.
