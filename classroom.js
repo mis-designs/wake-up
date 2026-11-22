@@ -15,6 +15,7 @@
   let viewerRequest, loadRequest, expiryTimer, activeToken = '', mediaUrl, trigger;
   let clipCache = null;
   let theoryButton;
+  let requestedChapter=1;
   const localTheory = new Map();
   function el(tag, text, className) {
     const element = document.createElement(tag);
@@ -50,7 +51,8 @@
     activeToken=''; studio.hidden=true; $('present').hidden=true; $('retry').hidden=true;
     $('present').textContent='Presenta';$('present').setAttribute('aria-pressed','false');
     $('status').hidden=false; $('status').textContent='Accedi come Master admin per aprire l’aula.';
-    for (const id of ['italian','bangla','tip','words','title','question','topics','detailTitle','detailBn','sceneCaption','prompt','feedback','quizTitle','references','quizWords','uploadTopic']) $(id).replaceChildren();
+    for (const id of ['italian','bangla','tip','words','title','question','topics','chapters','folio','sourceText','sourcePages','signPlate','quizPlate','detailTitle','detailBn','sceneCaption','prompt','feedback','quizTitle','references','quizWords','uploadTopic']) $(id).replaceChildren();
+    requestedChapter=1;state.index=0;state.quiz=0;state.mode='lesson';
     $('poster').removeAttribute('src'); document.body.classList.remove('presenting');
   }
   function authorize() {
@@ -80,7 +82,7 @@
     stopViewer(); trigger=from;
     $('detailContent').replaceChildren(); $('related').replaceChildren();
     $('detailTitle').textContent=title; $('detailBn').textContent=bn || '';
-    detail.dataset.media='false'; if (!detail.open) detail.showModal(); $('close').focus();
+    detail.dataset.media='false';delete detail.dataset.page;if (!detail.open) detail.showModal();detail.scrollTop=0;$('close').focus();
   }
   function showLessonStill(word) {
     if (lesson().scene && lesson().focus.includes(word.it)) {
@@ -145,7 +147,7 @@
       if (target!==state.index) links.append(control('Apri la lezione · '+item.title_it,()=>selectTopic(target,true)));
       if (item.scene) links.append(control('Video · '+item.scene.caption,()=>showFilm('scene',from,item)));
       if (item.figureExercise) links.append(control('Figura '+item.figureExercise.figure,()=>openFigure(item.figureExercise,from)));
-      links.append(control('Quiz · '+item.title_it,()=>{selectTopic(target);renderQuiz();}));
+      if(item.quizzes.length) links.append(control('Quiz · '+item.title_it,()=>{selectTopic(target);renderQuiz();}));
     }
     const relatedIds=new Set(state.chapter.comparisons.filter(ids=>ids.includes(word.id)).flat());
     for(const other of state.chapter.words){
@@ -222,13 +224,60 @@
     const uploads=location.hash==='#caricamenti';
     $(uploads?'uploadDeskControls':'theoryVideo').append(theoryButton);
   }
+  async function openPage(page,from) {
+    inspect('Manuale · pagina '+(page-3),'',from);
+    detail.dataset.page='true';
+    const box=$('detailContent'), controller=viewerRequest=new AbortController();
+    const entryId='page-'+state.chapter.chapter+'-'+page;
+    box.textContent='Apertura della pagina illustrata…';
+    try {
+      const {webp}=await api('getClassroomPage',{entryId},controller.signal);
+      if(controller.signal.aborted)return;
+      const img=el('img');
+      img.alt='Pagina '+(page-3)+' del manuale di Platia e Mastri, edizione 2008';
+      img.src='data:image/webp;base64,'+webp;
+      await img.decode();
+      if(!controller.signal.aborted)box.replaceChildren(img);
+    } catch(err){
+      if(!controller.signal.aborted && err.message!=='access')box.replaceChildren(el('p','La pagina non si è aperta.'),control('Riprova',()=>openPage(page,from)));
+    }
+  }
+  function renderManual(item) {
+    const source=$('sourceText'),pages=$('sourcePages');
+    source.replaceChildren();pages.replaceChildren();
+    $('manual').hidden=!item.sourceText?.length;
+    if($('manual').hidden)return;
+    for(const paragraph of item.sourceText){
+      const p=el('p');richText(p,paragraph);source.append(p);
+    }
+    for(let page=item.pdfPage;page<=(item.pdfEnd || item.pdfPage);page++){
+      const button=control('Vedi pagina '+(page-3),()=>openPage(page,button),'quiet');
+      button.setAttribute('aria-haspopup','dialog');button.title='Pagina '+page+' del PDF';
+      pages.append(button);
+    }
+  }
+  function figureUrl(number){
+    if(preview)return window.classroomLocalFigures?.[number];
+    return (allBooks?'/api/figure-asset?kind=figure&figure=':'/api/asset?kind=figure&presentation=numberless-v2&figure=')+number;
+  }
+  function renderPlate(id,number) {
+    const box=$(id);box.replaceChildren();box.hidden=!number;
+    if(!number)return;
+    const img=el('img'),label='Figura '+number;
+    img.alt=label;img.src=figureUrl(number);
+    img.onerror=()=>{box.replaceChildren(el('span',label+' · Immagine non disponibile'),control('Riprova',()=>renderPlate(id,number),'quiet'));};
+    box.append(img,el('span',label));
+  }
   function selectTopic(index, focus=false) {
     closeDetail(); state.index=index;state.quiz=0;state.mode='lesson';
     const l=lesson();
     bindTheoryVideo(l);
     $('topics').value=String(index);
-    $('folio').textContent='Lezione '+String(index+1).padStart(2,'0')+' / '+String(state.chapter.lessons.length).padStart(2,'0');
+    $('folio').textContent='Capitolo '+String(state.chapter.chapter).padStart(2,'0')+' · '+state.chapter.title_it;
     const bn=el('span',l.title_bn);bn.lang='bn';$('title').replaceChildren(l.title_it,bn);
+    renderManual(l);
+    $('exampleHeading').textContent=l.chapterNote?'Il capitolo in pratica':l.exampleFromQuiz?'Esempio dal quiz':'Esempio pratico';
+    renderPlate('signPlate',l.figureNumber);
     richText($('italian'),l.theory_it);richText($('bangla'),l.theory_bn);richText($('tip'),l.memory_tip_bn);
     $('words').replaceChildren(...l.focus.map(name=>state.chapter.words.find(w=>w.it===name || w.aliases.some(a=>a.it===name))).filter(Boolean).map(w=>termControl(w,w.it,true)));
     $('scene').hidden=!l.scene;
@@ -236,12 +285,22 @@
     else {$('poster').removeAttribute('src');$('poster').alt='';$('sceneCaption').replaceChildren();}
     richText($('prompt'),l.prompt);
     $('figureExercise').hidden=!l.figureExercise;
-    $('references').replaceChildren(el('span','Manuale 2008 · p. '+(l.pdfPage-3)+' (PDF p. '+l.pdfPage+')'));
+    $('prompt').previousElementSibling.hidden=!l.prompt;
+    $('prompt').parentElement.hidden=!l.prompt && !l.figureExercise;
+    $('words').parentElement.hidden=!$('words').childElementCount;
+    $('tip').parentElement.hidden=!l.memory_tip_bn;
+    $('words').closest('.resources').hidden=$('words').parentElement.hidden && $('tip').parentElement.hidden;
+    $('references').replaceChildren();
+    if(!l.articles.length){
+      const code=el('a','Consulta il Codice della strada in vigore ↗');
+      code.href='https://aci.gov.it/approfondimento/il-codice-della-strada/';code.target='_blank';code.rel='noopener';$('references').append(code);
+    }
     for(const article of l.articles){
       const a=el('a','Codice della strada · art. '+article+' ↗');
       a.href='https://aci.gov.it/codice-della-strada/art-'+article+'/';a.target='_blank';a.rel='noopener';$('references').append(a);
     }
     $('startQuiz').textContent='Quiz sull’argomento · '+l.quizzes.length+' →';
+    $('startQuiz').hidden=!l.quizzes.length;
     const uploads=location.hash==='#caricamenti';
     $('uploadDesk').hidden=!uploads;$('uploadTopic').textContent=l.title_it;
     $('reading').hidden=uploads;$('practice').hidden=true;$('present').hidden=uploads;
@@ -249,9 +308,11 @@
   }
   function focusTitle(id) { const node=$(id);node.tabIndex=-1;node.focus({preventScroll:true});node.scrollIntoView({block:'nearest'}); }
   function renderQuiz(focus=true) {
+    if(!question())return;
     closeDetail(); state.mode='quiz';$('reading').hidden=true;$('practice').hidden=false;
     const l=lesson(),q=question();$('quizTitle').textContent=l.title_it;$('position').textContent='Domanda '+(state.quiz+1)+' / '+l.quizzes.length;
     richText($('question'),q.question);$('filmStatus').textContent='';
+    renderPlate('quizPlate',/^\/img_sign\/(\d+)\.png$/i.exec(q.figure || '')?.[1]);
     $('quizWords').replaceChildren(...q.wordIds.map(id=>state.chapter.words.find(w=>w.id===id)).filter(Boolean).map(w=>termControl(w,w.it,true)));
     const answer=state.responses.get(q.id);
     $('feedback').textContent=answer===undefined?'':(answer===q.answer?'Risposta corretta.':'La risposta corretta è '+(q.answer?'vero.':'falso.'));
@@ -266,7 +327,7 @@
     const controller=viewerRequest=new AbortController();
     try {
       const action=scene?'getClassroomScene':isFigure?'getFigureVideo':'getClassroomQuizVideo';
-      const fields=isFigure?{figure:String(figure)}:{entryId:l.id,questionId:String(question().id)};
+      const fields=isFigure?{figure:String(figure)}:scene?{entryId:l.id}:{entryId:l.id,questionId:String(question().id)};
       const data=scene && clipCache?.id===l.id ? clipCache.data : await api(action,fields,controller.signal);
       if(controller.signal.aborted || !detail.open)return;
       if(!scene && !data.available){box.textContent=preview?'I video caricati si consultano nell’aula connessa.':isFigure?'Per questa figura non è stato caricato un video.':'Per questa domanda non è stato caricato un video.';return;}
@@ -281,21 +342,29 @@
       detail.dataset.media='true';video.src=src;box.replaceChildren(video);video.play().catch(()=>{});
     }catch(err){if(!controller.signal.aborted && err.message!=='access')box.replaceChildren(el('p','Impossibile aprire il video.'),control('Riprova',()=>showFilm(kind,from,l,figure)));}
   }
-  async function load() {
+  async function load(number=1) {
     if (!authorize()) return;
     loadRequest?.abort();const ctl=loadRequest=new AbortController();
-    const index=state.index, oldMode=state.mode, oldQuiz=state.quiz;
+    requestedChapter=number;
+    const switching=number!==state.chapter?.chapter;
+    const index=switching?0:state.index, oldMode=switching?'lesson':state.mode, oldQuiz=switching?0:state.quiz;
+    if(switching){
+      closeDetail();releaseTheoryButton();window.MagicQuizVideo?.reset();clipCache=null;state.responses.clear();
+      studio.hidden=true;$('present').hidden=true;
+      $('status').hidden=false;$('status').textContent='Apertura del capitolo…';
+    }
     $('retry').hidden=true;$('reloadPhotos').disabled=true;
     if (!state.chapter){$('status').hidden=false;$('status').textContent='Apertura dell’aula…';}
     try {
-      const {chapter,photos,photosReady}=await api('getClassroom',{},ctl.signal);
+      const {catalogue,chapter,photos,photosReady}=await api('getClassroom',{entryId:'chapter-'+number},ctl.signal);
       if(ctl.signal.aborted)return;
       state.chapter=chapter;state.photos=photos || {};state.terms=[];state.lookupOnClick=Boolean(preview) || !allBooks || !photosReady;
       for (const word of chapter.words) for(const name of new Set([word.it,...word.aliases.map(a=>a.it),...(word.forms || [])])) {
         const escaped=name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
         state.terms.push({word,re:new RegExp('(?<![\\p{L}\\p{M}\\p{N}_])'+escaped+'(?![\\p{L}\\p{M}\\p{N}_])','giu')});
       }
-      $('chapterName').textContent=chapter.title_it;$('chapterNo').textContent=String(chapter.chapter).padStart(2,'0');
+      $('chapters').replaceChildren(...(catalogue || [chapter]).map(c=>new Option(String(c.chapter).padStart(2,'0')+' · '+c.title_it,String(c.chapter))));
+      $('chapters').value=String(chapter.chapter);
       $('topics').replaceChildren(...chapter.lessons.map((item,i)=>new Option(item.title_it,String(i))));
       $('photoStatus').hidden=photosReady;$('photoStatus').textContent='Tocca una parola per aprire la foto del dizionario All Books, quando disponibile.';
       $('reloadPhotos').hidden=photosReady || Boolean(preview);
@@ -304,7 +373,7 @@
     }catch(err){
       if(ctl.signal.aborted || err.message==='access')return;
       $('status').textContent='Impossibile caricare l’aula.';$('status').hidden=false;$('retry').hidden=false;
-    }finally{$('reloadPhotos').disabled=false;}
+    }finally{if(!ctl.signal.aborted)$('reloadPhotos').disabled=false;}
   }
   function openFigure(f,from) {
     inspect('Figura '+f.figure,'',from);
@@ -315,13 +384,14 @@
     $('related').append(prompt,reveal);reveal.disabled=true;
     if(!preview) $('related').append(control('Cerca video della figura',()=>showFilm('figure',from,lesson(),f.figure)));
     img.onload=()=>{reveal.disabled=false;};
-    const src=preview ? window.classroomLocalFigures[f.figure] : (allBooks?'/api/figure-asset?kind=figure&figure=':'/api/asset?kind=figure&presentation=numberless-v2&figure=')+f.figure;
+    const src=figureUrl(f.figure);
     img.onerror=()=>{img.hidden=true;const retry=control('Figura non disponibile · Riprova',()=>{retry.remove();img.hidden=false;img.src=src;});$('detailContent').append(retry);};
     img.src=src;
   }
   $('figureExercise').onclick=()=>openFigure(lesson().figureExercise,$('figureExercise'));
   window.addEventListener('hashchange',()=>{if(state.chapter)selectTopic(state.index,true);});
   $('topics').onchange=()=>selectTopic(Number($('topics').value));
+  $('chapters').onchange=()=>load(Number($('chapters').value));
   $('scene').onclick=()=>showFilm('scene',$('scene'));$('quizFilm').onclick=()=>showFilm('quiz',$('quizFilm'));
   $('startQuiz').onclick=()=>renderQuiz();$('toLesson').onclick=()=>selectTopic(state.index,true);
   $('prev').onclick=()=>{if(state.quiz>0){state.quiz--;renderQuiz();}};
@@ -331,7 +401,7 @@
   detail.addEventListener('click',e=>{if(e.target===detail)closeDetail();});
   detail.addEventListener('close',()=>{if(!detail.open && trigger?.isConnected)trigger.focus({preventScroll:true});});
   $('present').onclick=()=>{const on=document.body.classList.toggle('presenting');$('present').textContent=on?'Termina presentazione':'Presenta';$('present').setAttribute('aria-pressed',String(on));};
-  $('retry').onclick=load;$('reloadPhotos').onclick=load;
+  $('retry').onclick=()=>load(requestedChapter);$('reloadPhotos').onclick=()=>load(state.chapter.chapter);
   if(preview)$('exit').hidden=true;
   window.addEventListener('pagehide',clear);
   window.addEventListener('pageshow',e=>{if(e.persisted)load();});

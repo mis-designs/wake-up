@@ -568,3 +568,5 @@ La modalità Presenta ingrandisce italiano e Bangla per la condivisione dello sc
 ## Video teoria
 
 Nel pannello caricamenti il docente sceglie un argomento dell’aula. La stessa lezione apre il video e in modalità Presenta mostra solo la riproduzione.
+
+La lezione apre con il brano italiano del manuale e il riferimento alla pagina illustrata. Seguono la spiegazione TMM e il Bangla.

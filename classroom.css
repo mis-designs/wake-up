@@ -23,3 +23,26 @@ dialog[data-media=true] .dictionary-line{color:#fff;background:#153d32;padding:.
 
 .lesson-video{padding:12px 16px;border-bottom:1px solid var(--rule)}.lesson-video button{min-height:44px;font-weight:650}.lesson-video:empty{display:none}
 #uploadDesk{margin:2rem 0;max-width:44rem}#uploadDesk h1{font-size:2.3rem}#uploadDeskControls{margin:1rem 0 1.5rem}#uploadTopic{font-size:1.3rem}
+
+.chapter{display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,3vw,40px)}
+.topic-picker,.topic-picker select,.lesson{min-width:0}
+.topic-picker select{width:100%;text-overflow:ellipsis}
+.lesson h1{font-size:clamp(2rem,4.2vw,3.9rem);overflow-wrap:anywhere}
+#manual{padding:0 0 20px;border-bottom:1px solid var(--rule);margin-bottom:20px}
+#manualHeading,#exampleHeading{font-size:1.08rem;font-weight:700;line-height:1.35}
+.source-credit{font-size:.85rem;color:var(--muted);margin:3px 0 11px}
+#sourceText{font:1.19rem/1.6 Georgia,serif;overflow-wrap:anywhere}
+#sourceText p+p{margin-top:.6em}
+#sourcePages{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+#sourcePages button{min-height:40px;background:#fff}
+#exampleHeading{margin-bottom:6px;color:var(--accent)}
+#detail[data-page=true]{width:min(95vw,960px);max-width:none}
+#detail[data-page=true] .detail-inner{padding:55px 10px 14px}
+#detail[data-page=true] #detailContent img{width:100%;max-height:none;height:auto;border-radius:0}
+#detail[data-page=true] #close{position:sticky;float:right;margin-top:-48px;top:0}
+#detail[data-page=true] #detailTitle{font-size:1rem;text-align:center;margin:0}
+#signPlate,#quizPlate{display:grid;justify-items:center;gap:.3rem;padding:16px;color:var(--muted);font-size:.85rem;background:white}
+#signPlate img,#quizPlate img{width:min(100%,200px);height:150px;object-fit:contain;position:static}
+#quizPlate{width:fit-content;margin-top:1rem;border-radius:10px}
+.presenting #sourceText{font-size:clamp(1.2rem,1.85vw,1.7rem)}
+@media(max-width:600px){.chapter{grid-template-columns:minmax(0,1fr)}#sourceText{font-size:1.11rem}.lesson h1{letter-spacing:-.035em}}
