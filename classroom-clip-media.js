@@ -19,12 +19,17 @@
     if(Math.abs(meta.duration-(end-start))>.15 || blob.size>128*1024*1024)throw Error('clip_export_failed');
     return {blob,duration:meta.duration};
   }
+  const archiveId=id=>id.startsWith('fv_') || id.startsWith('vg_');
   async function descriptor(api,source,version,signal) {
-    const info=await api('getQuizVideo',{questionId:source,video:{}},signal);
+    const info=archiveId(source)
+      ? await api('getArchiveVideo',{questionId:source,video:{version}},signal)
+      : await api('getQuizVideo',{questionId:source,video:{}},signal);
     if(!info.available || !version || info.sourceVersion!==version)throw Error('scene_source_changed');
     return info;
   }
-  const readPart=(api,id,info,signal)=>index=>api('getTheoryVideoPart',{questionId:id,video:{revision:info.revision,index}},signal);
+  const readPart=(api,id,info,signal)=>index=>archiveId(id)
+    ? api('getArchiveVideoPart',{questionId:id,video:{version:info.sourceVersion,index}},signal)
+    : api('getTheoryVideoPart',{questionId:id,video:{revision:info.revision,index}},signal);
   async function original(api,source,version,signal) {
     const info=await descriptor(api,source,version,signal);
     return ClassroomVideoFile.load(info,readPart(api,source,info,signal),signal);

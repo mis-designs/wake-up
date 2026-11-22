@@ -1282,6 +1282,7 @@ export default async function handler(req, res) {
       if (req.method !== 'POST' || !classroom.isTheoryVideo(action,questionId)) {
         return res.status(403).json({error:'master_admin_required'});
       }
+      res.setHeader('Cache-Control','private, no-store');
       return res.status(200).json(await classroom.request(action,
         {questionId,question,owner:phone,video:getRequestData(req).video},req,res,classroomTopics,booksProof));
     }

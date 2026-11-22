@@ -18,10 +18,10 @@
   async function edit({api,item,parent,box,signal,onSaved,reopen}) {
     const [settings,archive]=await Promise.all([
       api('getClassroomSceneSettings',{entryId:item.id},signal),
-      api('getTheorySources',{questionId:parent,video:{}},signal).catch(()=>null)
+      api('getTheorySources',{questionId:parent,video:{includeSections:true}},signal).catch(()=>null)
     ]);
     const {cut}=settings;
-    const uploaded=[...(archive?.sources || [])].sort((a,b)=>Number(b.id===parent)-Number(a.id===parent));
+    const uploaded=[...(archive?.sources || [])].sort((a,b)=>Number(b.id===parent)-Number(a.id===parent) || a.title.localeCompare(b.title,'it',{numeric:true}));
     const sources=[...uploaded,...settings.sources];
     signal.throwIfAborted();
     const form=document.getElementById('sceneEditor').content.firstElementChild.cloneNode(true);
@@ -33,23 +33,30 @@
     const fileInput=field('file'),note=form.querySelector('.source-note');
     let file,prepared,chosenLocal;
     const local={id:'local',title:'File dal dispositivo',duration:0};
-    const savedGroup=document.createElement('optgroup');savedGroup.label='Video teoria caricati';source.append(savedGroup);
+    const sectionNames={theory:'Teoria',figure:'Figure',quiz:'Quiz'};
+    const groups={};
+    for(const [id,title] of Object.entries(sectionNames)){
+      const group=document.createElement('optgroup');
+      group.label=title;groups[id]=group;source.append(group);
+    }
     function addUploaded(s){
-      const label=s.title+(s.id===parent?' · Questa lezione':'');
-      savedGroup.append(new Option(label,s.id));
+      const section=s.section || 'theory';
+      const label=sectionNames[section]+' · '+s.title+(s.id===parent?' · Questa lezione':'');
+      groups[section].append(new Option(label,s.id));
     }
     uploaded.forEach(addUploaded);
     const stock=document.createElement('optgroup');stock.label='Filmati della biblioteca';source.append(stock);
-    for(const s of settings.sources)stock.append(new Option(s.title,s.id));
+    for(const s of settings.sources)stock.append(new Option('Biblioteca · '+s.title,s.id));
     if(cut && !sources.some(s=>s.id===cut.source)){
       sources.unshift({id:cut.source,missing:true,duration:cut.end});
       source.add(new Option('Sorgente salvata non disponibile',cut.source));
     }
-    const libraryDefault=archive && item.id!=='strada' ? item.scene?.id : null;
+    const libraryDefault=archive && !archive.unavailable?.includes('theory') && item.id!=='strada' ? item.scene?.id : null;
     const defaultSource=cut?.source || uploaded.find(s=>s.id===parent)?.id || libraryDefault;
     if(!defaultSource)source.prepend(new Option('Scegli un filmato',''));
     source.value=defaultSource || '';
-    if(!archive){
+    if(!archive || archive.unavailable?.length){
+      if(archive?.unavailable?.length)note.textContent='Video temporaneamente non disponibili · '+archive.unavailable.map(id=>sectionNames[id]).join(', ');
       note.hidden=false;field('refresh').hidden=false;field('refresh').onclick=reopen;
     }
     fileInput.onchange=()=>{
@@ -104,9 +111,14 @@
         const blob=s===local ? file : s.version ? await ClassroomClipMedia.original(api,s.id,s.version,active)
           : await movie(api,item.id,{source:s.id,start:0,end:s.duration},active);
         active.throwIfAborted();url=URL.createObjectURL(blob);player.src=url;
-      } catch {
+      } catch(error) {
         if(active.aborted)return;
-        status.textContent='Il filmato non si è aperto.';retry.hidden=false;
+        if(error.message==='scene_source_changed'){
+          status.textContent='Il filmato originale è stato rimosso o sostituito.';
+          field('refresh').hidden=false;field('refresh').onclick=reopen;
+        }else{
+          status.textContent='Il filmato non si è aperto.';retry.hidden=false;
+        }
       }
     }
     player.onloadedmetadata=()=>{

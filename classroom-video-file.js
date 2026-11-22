@@ -25,6 +25,10 @@
   }
   async function load(result,readPart,signal) {
     const meta = result.protection;
+    if (!meta) {
+      const read=await reader(result,readPart,signal);
+      return new Blob([await read(0,result.bytes)],{type:'video/mp4'});
+    }
     const expected = meta.plainBytes + Math.ceil(meta.plainBytes/block) * tag;
     let encrypted;
     try {
@@ -48,8 +52,8 @@
     return video;
   }
   async function reader(info,readPart,signal) {
-    const meta=info.protection, stride=block+tag, stored=meta.plainBytes+Math.ceil(meta.plainBytes/block)*tag;
-    const key=await crypto.subtle.importKey('raw',unhex(meta.key),'AES-GCM',false,['decrypt']);
+    const meta=info.protection, stride=block+tag, stored=meta ? meta.plainBytes+Math.ceil(meta.plainBytes/block)*tag : info.bytes;
+    const key=meta && await crypto.subtle.importKey('raw',unhex(meta.key),'AES-GCM',false,['decrypt']);
     const blocks=new Map(), parts=new Map();
     let relay=false,whole;
     function cached(cache,index,make) {
@@ -59,7 +63,7 @@
       }
       return cache.get(index);
     }
-    async function encrypted(start,end) {
+    async function storedRange(start,end) {
       signal.throwIfAborted();
       if(whole)return whole.slice(start,end).arrayBuffer();
       if(!relay)try {
@@ -79,18 +83,20 @@
       for(let offset=start;offset<end;){
         const i=Math.floor(offset/size);
         const data=await cached(parts,i,async()=>Uint8Array.from(atob((await readPart(i)).base64),c=>c.charCodeAt(0)));
+        if(data.length!==Math.min(size,stored-i*size))throw Error('video_unreadable');
         const next=Math.min(end,(i+1)*size);
         pieces.push(data.subarray(offset-i*size,next-i*size));offset=next;
       }
       return new Blob(pieces).arrayBuffer();
     }
+    if(!meta)return async (start,end)=>new Uint8Array(await storedRange(start,end));
     return async (start,end)=>{
       const out=new Uint8Array(end-start);
       for(let pos=start;pos<end;){
         signal.throwIfAborted();
         const i=Math.floor(pos/block);
         const data=await cached(blocks,i,async()=>new Uint8Array(await crypto.subtle.decrypt(
-          {name:'AES-GCM',iv:iv(meta.nonce,i)},key,await encrypted(i*stride,Math.min(stored,(i+1)*stride)))));
+          {name:'AES-GCM',iv:iv(meta.nonce,i)},key,await storedRange(i*stride,Math.min(stored,(i+1)*stride)))));
         const next=Math.min(end,(i+1)*block);
         out.set(data.subarray(pos-i*block,next-i*block),pos-start);pos=next;
       }
