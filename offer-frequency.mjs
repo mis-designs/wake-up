@@ -1,5 +1,5 @@
 // One small device-local counter, without account identifiers or analytics.
-export const OFFER_KEY = 'magicbook.offerNotice.v1';
+export const OFFER_KEY = 'magicbook.trucchiNotice.v1';
 export const OFFER_DAILY_LIMIT = 3;
 export function localDay(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;

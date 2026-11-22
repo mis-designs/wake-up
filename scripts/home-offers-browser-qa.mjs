@@ -4,6 +4,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { getVideoClassCatalog } from '../api/video-class-catalog.mjs';
 const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_PATH || 'playwright');
 const repo = fileURLToPath(new URL('../', import.meta.url));
 const out = path.resolve(process.argv[2]);
@@ -29,13 +30,15 @@ async function fixture(width, height, native = false, mode = '', role = 'user') 
     if (u.pathname.includes('home-animations/') || u.pathname.includes('Home%20Page%20Animation/')) assets.push(u.pathname);
     if (u.pathname.startsWith('/api/')) {
       reads.push(u.pathname + u.search);
+      if (u.pathname === '/api/quiz' && u.searchParams.get('action') === 'getVideoClasses') return route.fulfill({ json: { ok: true, catalog: getVideoClassCatalog() } });
       if (u.pathname === '/api/getPages') return route.fulfill({ json: { success: true, role, accessToken: token, accessTokenExpiresAt: Date.now() + 86400000, expiry: '2035-01-01', pages: [], totalPages: 0 } });
       if (u.pathname === '/api/admin') return route.fulfill({ json: { success: true, list: [], total: 0 } });
       return route.fulfill({ json: { success: true, items: [], words: [], figures: [] } });
     }
     if (mode === 'book-error' && u.pathname === '/icons/mg_book.svg') return route.fulfill({ status: 404, body: '' });
+    if (mode === 'cover-error' && u.pathname === '/assets/video-class/trucchi.webp') return route.fulfill({ status: 404, body: '' });
     let name = decodeURIComponent(u.pathname).replace(/^\//, '');
-    if (!path.extname(name)) name = 'index.html';
+    if (!path.extname(name)) name = name === 'studia-quiz' ? 'study-quiz.html' : 'index.html';
     const file = path.join(repo, name);
     if (name.includes('..') || !fs.existsSync(file) || !mime[path.extname(file)]) return route.fulfill({ status: 404, body: '' });
     return route.fulfill({ body: fs.readFileSync(file), contentType: mime[path.extname(file)] });
@@ -49,14 +52,14 @@ async function fixture(width, height, native = false, mode = '', role = 'user') 
     let hash = 2166136261;
     for (const c of phone) { hash ^= c.codePointAt(0); hash = Math.imul(hash, 16777619); }
     localStorage.setItem('magicbook.wordLearning.v1.' + (hash >>> 0).toString(36), JSON.stringify({ lastCompletedAt: Date.now() }));
-    if (mode === 'blocked') localStorage.setItem('magicbook.offerNotice.v1', 'invalid');
+    if (mode === 'blocked') localStorage.setItem('magicbook.trucchiNotice.v1', 'invalid');
     if (mode === 'priority') localStorage.removeItem('whatsapp_group_joined_or_clicked');
   }, { phone, token, mode, role });
   const page = await ctx.newPage();
   page.on('pageerror', error => errors.push(error.message));
   return { ctx, page, reads, errors, assets, frames: () => frames, release: () => held?.() };
 }
-const count = page => page.evaluate(() => JSON.parse(localStorage.getItem('magicbook.offerNotice.v1')).count);
+const count = page => page.evaluate(() => JSON.parse(localStorage.getItem('magicbook.trucchiNotice.v1')).count);
 async function checkHomeLayout(page, width, height) {
   const result = await page.evaluate(() => {
     const box = selector => { const r = document.querySelector(selector).getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height, bottom: r.bottom }; };
@@ -85,21 +88,22 @@ try {
     const f = await fixture(width, height, native), { page } = f;
     await page.goto('http://home.local/home', { waitUntil: 'networkidle' });
     await page.locator('#offerPopupOverlay').waitFor({ timeout: 6000 }).catch(async error => {
-      console.log(JSON.stringify({ errors: f.errors, state: await page.evaluate(() => ({ route: location.pathname, home: document.getElementById('home').className, module: !!window.MagicBookOffers, hidden: document.hidden, phone: !!window.getCurrentSessionPhone?.(), blocking: window.hasVisibleBlockingPopup?.(), news: window.isWhatsNewPopupAllowed?.(), whatsapp: window.isWhatsAppGroupPopupAllowed?.(), dialogs: [...document.querySelectorAll('[role=dialog]')].filter(el => el.getClientRects().length).map(el => el.id), storage: localStorage.getItem('magicbook.offerNotice.v1') })) }));
+      console.log(JSON.stringify({ errors: f.errors, state: await page.evaluate(() => ({ route: location.pathname, home: document.getElementById('home').className, module: !!window.MagicBookOffers, hidden: document.hidden, phone: !!window.getCurrentSessionPhone?.(), blocking: window.hasVisibleBlockingPopup?.(), news: window.isWhatsNewPopupAllowed?.(), whatsapp: window.isWhatsAppGroupPopupAllowed?.(), dialogs: [...document.querySelectorAll('[role=dialog]')].filter(el => el.getClientRects().length).map(el => el.id), storage: localStorage.getItem('magicbook.trucchiNotice.v1') })) }));
       throw error;
     });
     assert.equal(await count(page), 1);
-    assert.equal(await page.locator('#offerPopupTitle').innerText(), 'Prodotti per Te!');
+    assert.equal(await page.locator('#offerPopupTitle').innerText(), 'বিশেষ আপডেট');
     assert.equal(await page.locator('.offer-source').count(), 0);
-    assert.equal(f.frames(), 1, 'one provider document per offer opening');
+    assert.equal(f.frames(), 0, 'the series announcement uses the local cover');
     assert.equal(await page.locator('#home iframe').count(), 0);
     const box = await page.locator('.offer-dialog').boundingBox();
     assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= width + 1 && box.y + box.height <= height + 1, JSON.stringify(box));
-    assert.ok((await page.locator('.offer-dialog .offer-embed').boundingBox()).width >= 260, 'poster stays readable; short screens scroll inside the dialog');
+    await page.locator('.offer-series-cover').evaluate(image => image.decode());
+    assert.ok((await page.locator('.offer-series-cover').boundingBox()).width >= 260, 'the series artwork is legible on a phone');
     assert.equal(await page.evaluate(() => document.activeElement.className), 'offer-close');
     assert.equal(await page.locator('#home').evaluate(el => el.inert), true);
     await page.keyboard.press('Shift+Tab');
-    assert.equal(await page.evaluate(() => document.activeElement.className), 'offer-join');
+    assert.equal(await page.evaluate(() => document.activeElement.className), 'offer-series-link');
     await page.keyboard.press('Tab');
     assert.equal(await page.evaluate(() => document.activeElement.className), 'offer-close');
     await page.screenshot({ path: path.join(out, `${native ? 'native' : 'web'}-${width}-offer.png`) });
@@ -258,7 +262,7 @@ try {
       assert.ok(!f.assets.some(url => /trophy/i.test(url)), 'returning Home never loads another decoration');
       assert.equal(f.assets.filter(url => url.endsWith('/catalog.mjs')).length, 1, 'catalog imported once through repeat navigation');
       assert.equal(await page.locator('#offerPopupOverlay').count(), 0);
-      assert.equal(f.frames(), 1);
+      assert.equal(f.frames(), 0);
       await page.locator('.member-products').click();
     } else {
       assert.equal(await page.locator('.member-utilities #profileBtn, .member-utilities #whatsappBtn').count(), 0, 'native dock ownership unchanged');
@@ -269,7 +273,7 @@ try {
     await page.locator('#joinOfferHost iframe').waitFor();
     await page.locator('#joinOfferHost .offer-loading').waitFor({ state: 'detached' });
     assert.equal(await page.locator('#joinOfferTitle').innerText(), 'Prodotti per Te!');
-    assert.equal(f.frames(), 2, 'Join creates one fresh embed, no hidden second iframe');
+    assert.equal(f.frames(), 1, 'only Join creates a product embed');
     assert.equal(await count(page), 1, 'manual Join never consumes the automatic quota');
     assert.deepEqual(await page.locator('.join-package-price strong').allTextContents(), ['10€','20€','40€']);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
@@ -289,8 +293,9 @@ try {
       await page.reload({ waitUntil: 'networkidle' });
       await page.locator('#offerPopupOverlay').waitFor();
       assert.equal(await count(page), 3);
-      await page.locator('[data-offer-join]').click();
-      await page.waitForURL('**/join');
+      await page.locator('.offer-series-link').click();
+      await page.waitForURL('**/studia-quiz?view=videos&group=trucchi&from=chapters');
+      await page.getByRole('link', { name: 'Episodio 1', exact: true }).waitFor();
       assert.equal(await page.locator('#offerPopupOverlay').count(), 0);
       await page.goBack();
       await page.reload({ waitUntil: 'networkidle' });
@@ -365,7 +370,7 @@ try {
     console.log(`PASS admin ${width}x${height}: footer, real action, Join/reload/resume, logout`);
     await f.ctx.close();
   }
-  for (const mode of ['slow', 'error', 'book-error', 'blocked', 'priority']) {
+  for (const mode of ['slow', 'error', 'cover-error', 'book-error', 'blocked', 'priority']) {
     if (process.env.QA_ENTRY_ONLY) continue;
     const f = await fixture(375, 812, false, mode), { page } = f;
     await page.goto('http://home.local/home', { waitUntil: 'domcontentloaded' });
@@ -377,6 +382,18 @@ try {
       assert.equal(f.frames(), 0);
     } else {
       await page.locator('#offerPopupOverlay').waitFor();
+      assert.equal(f.frames(), 0);
+      assert.ok(await page.locator('.offer-series-link').isVisible());
+      if (mode === 'cover-error') {
+        await page.locator('.offer-series-cover').waitFor({ state: 'hidden' });
+        assert.match(await page.locator('.offer-dialog-body p').innerText(), /Trucchi/);
+      }
+      await page.locator('.offer-close').click();
+      await page.locator('#offerPopupOverlay').waitFor({ state: 'detached' });
+      if (mode === 'slow' || mode === 'error') {
+        await page.locator('.member-products').click();
+        await page.waitForURL('**/join');
+      }
       if (mode === 'slow') {
         await page.locator('.offer-loading .magic-loading-indicator__image').waitFor();
         const size = await page.locator('.offer-loading .magic-loading-indicator__image').boundingBox();
@@ -394,16 +411,12 @@ try {
         assert.equal(f.frames(), 2);
         assert.equal(await page.evaluate(() => document.activeElement.tagName), 'IFRAME', 'retry success retains keyboard focus');
       }
-      assert.equal(await page.locator('.offer-dialog .offer-source').count(), 0);
-      assert.ok(await page.locator('.offer-dialog .offer-join').isVisible());
       if (mode === 'slow') {
         f.release();
         await page.locator('.offer-retry').click();
         await page.waitForFunction(() => !!document.querySelector('.offer-embed iframe'));
         assert.equal(f.frames(), 2, 'one explicit retry creates one new provider document');
       }
-      await page.locator('.offer-close').click();
-      await page.locator('#offerPopupOverlay').waitFor({ state: 'detached' });
       f.release();
       if (mode === 'book-error') {
         await page.locator('.member-book-fallback:not([hidden])').waitFor();

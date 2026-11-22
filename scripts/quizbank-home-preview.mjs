@@ -41,7 +41,7 @@ http.createServer((req,res) => {
       for(const [k,v] of Object.entries({client_auth_reset_version:'2026-04-device-reset-1',user_session:JSON.stringify(session),session:JSON.stringify(session),loggedIn:'true',phone,deviceId:session.deviceId,accessToken:token,accessTokenExpiresAt:session.accessTokenExpiresAt,whatsapp_group_joined_or_clicked:'true',['whats_new_popup_show_count:mobile-ui-2026-08:'+phone]:'3'}))localStorage.setItem(k,String(v));
       let hash=2166136261;for(const c of phone){hash^=c.charCodeAt(0);hash=Math.imul(hash,16777619)}
       localStorage.setItem('magicbook.wordLearning.v1.'+(hash>>>0).toString(36),JSON.stringify({lastCompletedAt:Date.now()}));
-      localStorage.setItem('magicbook.offerNotice.v1','invalid');
+      localStorage.setItem('magicbook.trucchiNotice.v1','invalid');
       const qa=new URLSearchParams(location.search),key='magicbook.quizbankIntro.v1.'+(hash>>>0).toString(36);
       if(qa.get('qa_reset')==='1')localStorage.removeItem(key);
       if(qa.get('qa_intro')==='ack')localStorage.setItem(key,JSON.stringify({firstSeen:null,count:0,acknowledged:true}));

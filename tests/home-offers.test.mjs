@@ -28,7 +28,7 @@ test('invalid, unavailable and non-persistent storage suppress automatic ads', (
   assert.equal(reserveImpression(storage, today), true);
   assert.equal(reserveImpression(storage, today), false);
 });
-test('Home owns study actions, not an embedded advert; Join and popup share one embed owner', () => {
+test('Home announces Trucchi with the series cover and a direct link; Join owns the product embed', () => {
   const page = read('index.html');
   const home = page.split('<div class="card hidden" id="home">')[1].split('<template id="offerPopupTemplate">')[0];
   assert.doesNotMatch(home, /iframe|home-promo|startbtn|premium-new-badge/);
@@ -36,6 +36,12 @@ test('Home owns study actions, not an embedded advert; Join and popup share one 
   assert.match(home, /member-sponsor[^]*facebook.com\/share\/14aaeMyWJGw/);
   assert.match(home, /icons\/mg_book.svg/);
   assert.match(page, /id="joinOfferHost"/);
+  const notice = page.split('<template id="offerPopupTemplate">')[1].split('</template>')[0];
+  const cover = read('study-quiz.js').match(/image\.src = "(\/assets\/video-class\/trucchi\.webp[^"]*)"/)[1];
+  assert.ok(notice.includes(cover));
+  assert.match(notice, /বিশেষ আপডেট/);
+  assert.match(notice, /href="\/studia-quiz\?view=videos&amp;group=trucchi&amp;from=chapters" lang="bn">পর্বগুলো দেখুন/);
+  assert.doesNotMatch(notice, /iframe|offer-embed|\/join/);
   assert.match(page, /role="dialog" aria-modal="true" aria-labelledby="offerPopupTitle"/);
   assert.equal((read('home-offers.js').match(/createElement\('iframe'\)/g) || []).length, 1);
   assert.doesNotMatch(read('home-offers.js'), /setInterval|fetch\(/);
@@ -67,7 +73,7 @@ test('Home actions use clean labels without arrows or redundant result descripti
   assert.ok(home.indexOf('member-cover') < home.indexOf('member-entry'));
   assert.ok(home.indexOf('member-animation') < home.indexOf('class="member-open"'));
   assert.doesNotMatch(page, /Le offerte TMM|Apri l’offerta su Canva|class="offer-source"/);
-  assert.equal((page.match(/Prodotti per Te!/g) || []).length, 2);
+  assert.equal((page.match(/Prodotti per Te!/g) || []).length, 1);
   assert.match(home, /<span><strong>Statistiche<\/strong><\/span>/);
   assert.match(home, /<span><strong>Errori<\/strong><\/span>/);
   assert.match(home, /<strong>Dizionario<\/strong><small>Italiano · <span lang="bn">বাংলা<\/span><\/small>/);
@@ -75,10 +81,10 @@ test('Home actions use clean labels without arrows or redundant result descripti
 });
 test('new owners are versioned and cached without caching Canva or account data', () => {
   const page = read('index.html'), worker = read('service-worker.js');
-  for (const asset of ['home-offers.css?v=10-brand-type', 'home-offers.js?v=10-direct-entry']) {
+  for (const asset of ['home-offers.css?v=11-trucchi-notice', 'home-offers.js?v=11-trucchi-notice']) {
     assert.ok(page.includes(asset)); assert.ok(worker.includes(asset));
   }
-  assert.ok(worker.includes('/offer-frequency.mjs?v=1'));
+  assert.ok(worker.includes('/offer-frequency.mjs?v=2-trucchi'));
   assert.match(worker, /const CACHE_NAME = "magicbook-pwa-v\d+-[^"]+"/);
 });
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v334-trucchi";
+const CACHE_NAME = "magicbook-pwa-v335-trucchi-notice";
 const STATIC_ASSETS = [
   "/android-home-compact.css?v=2",
   "/android-home-compact.js?v=2",
@@ -57,8 +57,8 @@ const STATIC_ASSETS = [
   "/login-experience.js?v=3-clean",
   "/welcome-page.css?v=4-login-home",
   "/welcome-page.js?v=2-clean",
-  "/home-offers.css?v=10-brand-type",
-  "/home-offers.js?v=10-direct-entry&art=fbda23c8df0e",
+  "/home-offers.css?v=11-trucchi-notice",
+  "/home-offers.js?v=11-trucchi-notice&art=fbda23c8df0e",
   "/home-animation.js?v=4-hat&art=fbda23c8df0e",
   "/home-utilities.js?v=2-admin",
   // HOME_ANIMATION_ASSETS_START
@@ -66,7 +66,7 @@ const STATIC_ASSETS = [
   "/icons/Home%20Page%20Animation/Graduation_Hat.svg?v=bf38809e3e4c",
   "/assets/home-animations/40f2b1238323.png?v=6406120541f0",
   // HOME_ANIMATION_ASSETS_END
-  "/offer-frequency.mjs?v=1",
+  "/offer-frequency.mjs?v=2-trucchi",
   "/icons/New%20tag%20button.svg?v=26186f6f0240",
   "/quizbank-home.css?v=4-inside-intro",
   "/quizbank-home.js?v=4-direct-entry",

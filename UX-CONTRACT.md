@@ -541,3 +541,5 @@ Durante una lezione visibile il server rinnova la sessione master prima della sc
 ## Studia quiz · Trucchi
 
 Nella scelta dei capitoli di Magic Book, la copertina Trucchi precede il Capitolo 01. La serie contiene un’introduzione e sette episodi nell’ordine fornito da TMM. La card di ingresso e tutte le miniature usano la stessa copertina Trucchi. Il badge bianco in basso a destra mostra in grassetto Guarda gli episodi, Introduzione oppure Episodio seguito dal numero. La riproduzione usa il lettore Video Class e la freccia riporta alla schermata di provenienza.
+
+Il popup Trucchi usa il dialogo della Home e il limite di tre visualizzazioni giornaliere per dispositivo, con un contatore dedicato alla serie. Il pulsante apre la raccolta. La copertina si carica quando appare il dialogo. I prodotti restano accessibili dalla Home.

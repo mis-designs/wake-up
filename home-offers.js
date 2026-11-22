@@ -1,5 +1,5 @@
 import { mountQuizBankHome } from './quizbank-home.js?v=4-direct-entry';
-import { OFFER_KEY, reserveImpression } from './offer-frequency.mjs?v=1';
+import { OFFER_KEY, reserveImpression } from './offer-frequency.mjs?v=2-trucchi';
 import { mountHomeAnimation } from './home-animation.js?v=4-hat&art=fbda23c8df0e';
 import { mountHomeUtilities } from './home-utilities.js?v=2-admin';
 
@@ -11,7 +11,7 @@ const joinHost = doc.getElementById('joinOfferHost');
 const source = 'https://www.canva.com/design/DAHLyZHWUYo/qHS9sfdQAw2ku5raxvnX6Q/view';
 const historyKey = 'magicBookOffer';
 let shown = false, scheduled = 0, stopped = false;
-let overlay = null, unmount = null, releaseEmbed = null, joinEmbed = null;
+let overlay = null, unmount = null, joinEmbed = null;
 let baseState, baseUrl, closing = false, afterClose = null;
 const visible = node => node && !node.classList.contains('hidden');
 
@@ -88,7 +88,6 @@ function eligible() {
 }
 
 function dispose({ restoreFocus = false } = {}) {
-  releaseEmbed?.(); releaseEmbed = null;
   unmount?.({ restoreFocus }); unmount = null;
   overlay = null; closing = false;
 }
@@ -116,20 +115,22 @@ function open() {
   overlay = doc.getElementById('offerPopupTemplate').content.firstElementChild.cloneNode(true);
   const closeButton = overlay.querySelector('.offer-close');
   closeButton.addEventListener('click', () => close());
-  overlay.querySelector('[data-offer-join]').addEventListener('click', event => {
+  const seriesLink = overlay.querySelector('.offer-series-link');
+  const cover = overlay.querySelector('.offer-series-cover');
+  cover.addEventListener('error', () => { cover.hidden = true; }, { once: true });
+  seriesLink.addEventListener('click', event => {
     if (event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
     event.preventDefault();
-    close(() => window.showJoinScreen());
+    close(() => location.assign(seriesLink.href));
   });
   doc.body.append(overlay);
   history.pushState({ ...baseState, [historyKey]: true }, '', baseUrl);
   unmount = window.MagicBookPopup.mount(overlay, {
     bodyClass: 'offer-popup-open', returnFocus, initialFocus: closeButton,
-    focusable: () => overlay.querySelectorAll('button, a[href], iframe'),
+    focusable: () => overlay.querySelectorAll('button, a[href]'),
     onDismiss: () => close()
   });
   shown = true;
-  releaseEmbed = embed(overlay.querySelector('.offer-embed'));
 }
 
 async function attempt() {
