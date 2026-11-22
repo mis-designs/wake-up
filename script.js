@@ -2197,7 +2197,8 @@ function buildTrialHubChapters() {
     if (unlocked) {
       const quizButton = document.createElement("button");
       quizButton.type = "button";
-      quizButton.textContent = "Quiz →";
+      quizButton.textContent = "Quiz";
+      quizButton.classList.add("tmm-nav");
       quizButton.addEventListener("click", event => { event.stopPropagation(); startFreeTrial(chapter); });
       card.appendChild(quizButton);
     }

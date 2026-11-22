@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v335-trucchi-notice";
+const CACHE_NAME = "magicbook-pwa-v336-tmm-controls";
 const STATIC_ASSETS = [
   "/android-home-compact.css?v=2",
   "/android-home-compact.js?v=2",
@@ -11,8 +11,10 @@ const STATIC_ASSETS = [
   "/account-role.css?v=1",
   "/icons/video-upload.png",
   "/quiz-video-thumbnail.js?v=1",
-  "/quiz-video.js?v=14-bangla",
-  "/video-gallery.js?v=7-teoria",
+  "/tmm-controls.css?v=1",
+  "/tmm-controls.js?v=1",
+  "/quiz-video.js?v=19-controls",
+  "/video-gallery.js?v=8-controls",
   "/video-gallery.css?v=6-chapters",
   "/quiz-video.css?v=7-nodownload",
   "/quiz-video-optimizer.js?v=3-reduction",
@@ -138,7 +140,7 @@ const STATIC_ASSETS = [
   "/mystyle.css?v=61-shared-recorder",
   "/quiz-chrome.css?v=1-outline",
   "/audio-player-ui.css?v=10-web-quiz-slim",
-  "/script.js?v=20261112-master-key",
+  "/script.js?v=20261122-controls",
   "/study-quiz.html",
   "/study-quiz.css?v=30-trucchi",
   "/study-quiz.js?v=59-trucchi&art=2e0d6787e201",

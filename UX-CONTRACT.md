@@ -555,3 +555,5 @@ In Aula, usare il capitolo di origine della lezione per le parole e il numero co
 Il numero di catalogo della figura è visibile soltanto nella vista privata del Master admin. In Presenta la didascalia numerata scompare e il pulsante mostra «Guarda il video».
 
 Nelle lezioni rivolgersi alla persona con আপনি e i verbi di cortesia. Nel dizionario distinguere la forma selezionata (carreggiata / carreggiate) mantenendo lo stesso collegamento alla parola, alla foto e al video.
+
+Il selettore TMM conserva il valore del modulo e invia change alla conferma. Le frecce da tastiera esplorano la lista. Invio sceglie, Esc chiude. Indietro, precedente e successiva riutilizzano rispettivamente go-back.png, back.png e next.png.

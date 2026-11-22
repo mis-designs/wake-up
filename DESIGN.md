@@ -592,3 +592,5 @@ Le parole aprono la stessa lezione e lo stesso video in ogni capitolo. Accanto a
 Il numero di catalogo della figura è visibile soltanto nella vista privata del Master admin. In Presenta la didascalia numerata scompare e il pulsante mostra «Guarda il video».
 
 Nell’Aula il paragrafo italiano del manuale precede la sua traduzione bangla, riconoscibile dal titolo «বাংলা অনুবাদ» e leggibile anche in Presenta.
+
+Menu e navigazione usano le frecce originali di TMM. Nel selettore mantenere almeno 14 px tra freccia e bordo, testo leggibile, stato selezionato distinto e righe da almeno 44 px.

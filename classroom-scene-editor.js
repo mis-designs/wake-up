@@ -64,7 +64,7 @@
       file=next;prepared=null;chosenLocal=null;
       if(!sources.includes(local)){sources.push(local);source.add(new Option('',local.id));}
       Array.from(source.options).find(o=>o.value==='local').textContent=file.name;
-      source.value=local.id;void loadSource(true);
+      source.value=local.id;window.TmmPicker?.refresh(source);void loadSource(true);
     };
     const selected=()=>sources.find(s=>s.id===source.value);
     function values(){
@@ -179,7 +179,7 @@
         const result=await api('saveClassroomSceneSettings',{entryId:item.id,video:{...range,revision}},signal);
         if(selected()===local && !signal.aborted){
           if(!sources.some(s=>s.id===chosenLocal.id)){sources.push(chosenLocal);addUploaded(chosenLocal);}
-          source.value=chosenLocal.id;start.value='0';end.value=String(chosenLocal.duration);
+          source.value=chosenLocal.id;window.TmmPicker?.refresh(source);start.value='0';end.value=String(chosenLocal.duration);
           start.max=end.max=String(chosenLocal.duration);
           dispose();url=URL.createObjectURL(prepared.blob);player.src=url;ready=true;
         }
@@ -201,7 +201,7 @@
         if(!signal.aborted && field('reload').hidden){saving=false;form.querySelector('fieldset').disabled=false;update();}
       }
     };
-    box.replaceChildren(form);await loadSource(true);
+    box.replaceChildren(form);window.TmmPicker?.attach(source,'Filmato originale');await loadSource(true);
   }
   window.ClassroomSceneEditor={movie,edit};
 })();

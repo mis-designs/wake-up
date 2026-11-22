@@ -123,7 +123,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <link rel="stylesheet" href="/video-gallery.css?v=6-chapters">
 <link rel="stylesheet" href="/quiz-video.css?v=7-nodownload">
 <link rel="stylesheet" href="figure-video-player.css?v=5-invitation">
-</head>
+<link rel="stylesheet" href="/tmm-controls.css?v=1"><script defer src="/tmm-controls.js?v=1"></script></head>
 <body>
 
 <!-- WHATSAPP FLOATING BUTTON -->
@@ -249,7 +249,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 
 <main id="trialHub" class="trial-hub hidden" aria-labelledby="trialHubTitle">
   <header class="trial-hub-header">
-    <button type="button" onclick="showLandingScreen()" aria-label="Torna alla home">←</button>
+    <button type="button" onclick="showLandingScreen()" aria-label="Torna alla home" class="tmm-nav-back"></button>
     <div><small>FREE EXPERIENCE</small><h1 id="trialHubTitle">MagicBook Trial</h1></div>
     <span class="trial-hub-timer"><b data-trial-countdown>168:00:00</b><small>ORE · MIN · SEC</small></span>
   </header>
@@ -285,8 +285,8 @@ gtag('config', 'G-C5JPY9HFHD', {
     <h2 id="trialModalTitle">Scegli il tuo capitolo</h2>
     <p>Entra subito nel quiz. Nessun account e nessun accesso alle aree riservate.</p>
     <div class="trial-chapter-grid">
-      <article><small>PROVA GRATIS · 7 GIORNI</small><strong>Capitolo 1</strong><div><button type="button" onclick="startTrialBook(1)">Apri il libro</button><button type="button" onclick="startFreeTrial(1)">Fai il quiz →</button></div></article>
-      <article><small>PROVA GRATIS · 7 GIORNI</small><strong>Capitolo 3</strong><div><button type="button" onclick="startTrialBook(3)">Apri il libro</button><button type="button" onclick="startFreeTrial(3)">Fai il quiz →</button></div></article>
+      <article><small>PROVA GRATIS · 7 GIORNI</small><strong>Capitolo 1</strong><div><button type="button" onclick="startTrialBook(1)">Apri il libro</button><button type="button" onclick="startFreeTrial(1)" class="tmm-nav">Fai il quiz</button></div></article>
+      <article><small>PROVA GRATIS · 7 GIORNI</small><strong>Capitolo 3</strong><div><button type="button" onclick="startTrialBook(3)">Apri il libro</button><button type="button" onclick="startFreeTrial(3)" class="tmm-nav">Fai il quiz</button></div></article>
     </div>
     <div class="trial-locked-options" aria-label="Funzioni premium">
       <button type="button" onclick="openLockedTrialFeature('Quiz Mix')"><span>🔒</span> Quiz Mix</button>
@@ -328,7 +328,7 @@ gtag('config', 'G-C5JPY9HFHD', {
     <p id="trialOnboardingText">I capitoli 1 e 3 sono aperti: li riconosci dal badge verde FREE.</p>
     <div class="trial-onboarding-actions">
       <button type="button" class="trial-onboarding-skip" onclick="skipTrialOnboarding()">Ignora</button>
-      <button type="button" class="trial-onboarding-next" onclick="nextTrialOnboarding()">Avanti <span aria-hidden="true">→</span></button>
+      <button type="button" class="trial-onboarding-next tmm-nav" onclick="nextTrialOnboarding()">Avanti</button>
     </div>
     <label class="trial-onboarding-never"><input id="trialOnboardingNever" type="checkbox"> Non mostrare più</label>
   </div>
@@ -1435,12 +1435,12 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script src="web-study-actions.js?v=8-title-placement"></script>
 <script src="web-action-effects.js?v=4-lesson-cover"></script>
 <script src="/account-role.js?v=2"></script>
-<script src="script.js?v=20261112-master-key"></script>
+<script src="script.js?v=20261122-controls"></script>
 <script src="/quiz-video-optimizer.js?v=3-reduction"></script>
 <script src="/audio-focus.js?v=1-resumable-tts"></script>
 <script src="/quiz-video-thumbnail.js?v=1"></script>
-<script src="/video-gallery.js?v=7-teoria"></script>
-<script src="/quiz-video.js?v=14-bangla"></script>
+<script src="/video-gallery.js?v=8-controls"></script>
+<script src="/quiz-video.js?v=19-controls"></script>
 <script type="module" src="login-experience.js?v=3-clean"></script>
 <script type="module" src="welcome-page.js?v=2-clean"></script>
   <script type="module" src="home-offers.js?v=11-trucchi-notice&art=fbda23c8df0e"></script>

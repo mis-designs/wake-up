@@ -434,7 +434,7 @@
     closeDetail();resetFigureReads();state.index=index;state.quiz=0;state.mode='lesson';
     const l=lesson();
     bindTheoryVideo(l);
-    $('topics').value=String(index);
+    $('topics').value=String(index);window.TmmPicker?.refresh($('topics'));
     $('folio').textContent='Capitolo '+String(state.chapter.chapter).padStart(2,'0')+' · '+state.chapter.title_it;
     const bn=el('span',l.title_bn);bn.lang='bn';$('title').replaceChildren(l.title_it,bn);
     renderManual(l);
@@ -456,14 +456,14 @@
     $('words').closest('.resources').hidden=$('words').parentElement.hidden && $('tip').parentElement.hidden;
     $('references').replaceChildren();
     if(!l.articles.length){
-      const code=el('a','Consulta il Codice della strada in vigore ↗');
+      const code=el('a','Consulta il Codice della strada in vigore','tmm-nav tmm-nav-external');
       code.href='https://aci.gov.it/approfondimento/il-codice-della-strada/';code.target='_blank';code.rel='noopener';$('references').append(code);
     }
     for(const article of l.articles){
-      const a=el('a','Codice della strada · art. '+article+' ↗');
+      const a=el('a','Codice della strada · art. '+article,'tmm-nav tmm-nav-external');
       a.href='https://aci.gov.it/codice-della-strada/art-'+article+'/';a.target='_blank';a.rel='noopener';$('references').append(a);
     }
-    $('startQuiz').textContent='Quiz sull’argomento · '+l.quizzes.length+' →';
+    $('startQuiz').textContent='Quiz sull’argomento · '+l.quizzes.length;
     $('startQuiz').hidden=!l.quizzes.length;
     $('uploadDesk').hidden=!uploads;$('uploadTopic').textContent=l.title_it;
     $('reading').hidden=uploads;$('practice').hidden=true;$('present').hidden=uploads;
@@ -480,7 +480,9 @@
     const answer=state.responses.get(q.id);
     $('feedback').textContent=answer===undefined?'':(answer===q.answer?'Risposta corretta.':'La risposta corretta è '+(q.answer?'vero.':'falso.'));
     for (const [id,value] of [['yes',true],['no',false]]) {$(id).classList.toggle('selected',answer===value);$(id).setAttribute('aria-pressed',String(answer===value));}
-    $('prev').disabled=state.quiz===0;$('next').textContent=state.quiz===l.quizzes.length-1?'Torna alla lezione':'Successiva →';
+    $('prev').disabled=state.quiz===0;$('next').textContent=state.quiz===l.quizzes.length-1?'Torna alla lezione':'Successiva';
+    $('next').classList.toggle('tmm-nav',state.quiz<l.quizzes.length-1);
+    $('next').classList.toggle('tmm-nav-back',state.quiz===l.quizzes.length-1);
     if(focus)focusTitle('quizTitle');
   }
   function editScene(item,from) {
@@ -547,6 +549,7 @@
     loadRequest?.abort();const ctl=loadRequest=new AbortController();
     requestedChapter=number;
     const switching=number!==state.chapter?.chapter;
+    const chapterTrigger=document.activeElement?.closest('tmm-picker')?.select===$('chapters') ? document.activeElement : null;
     const index=switching?0:state.index, oldMode=switching?'lesson':state.mode, oldQuiz=switching?0:state.quiz;
     if(switching){
       closeDetail();resetFigureReads();releaseTheoryButton();window.MagicQuizVideo?.reset();clipCache=null;state.responses.clear();
@@ -565,13 +568,14 @@
         state.terms.push({word,re:new RegExp('(?<![\\p{L}\\p{M}\\p{N}_])'+escaped+'(?![\\p{L}\\p{M}\\p{N}_])','giu')});
       }
       $('chapters').replaceChildren(...(catalogue || [chapter]).map(c=>new Option(String(c.chapter).padStart(2,'0')+' · '+c.title_it,String(c.chapter))));
-      $('chapters').value=String(chapter.chapter);
+      $('chapters').value=String(chapter.chapter);window.TmmPicker?.refresh($('chapters'));
       $('topics').replaceChildren(...chapter.lessons.map((item,i)=>new Option(item.title_it,String(i))));
       $('photoStatus').hidden=photosReady;$('photoStatus').textContent='Tocca una parola per aprire la foto del dizionario All Books, quando disponibile.';
       $('reloadPhotos').hidden=photosReady || Boolean(preview);
       $('status').hidden=true;studio.hidden=false;$('present').hidden=false;
       selectTopic(destination?Math.max(0,chapter.lessons.findIndex(l=>l.id===destination.id)):index,Boolean(destination));
       if(destination?.quiz || oldMode==='quiz'){state.quiz=destination?0:oldQuiz;renderQuiz(false);}
+      if(chapterTrigger && document.activeElement===document.body)chapterTrigger.focus({preventScroll:true});
     }catch(err){
       if(ctl.signal.aborted || err.message==='access')return;
       $('status').textContent='Impossibile caricare l’aula.';$('status').hidden=false;$('retry').hidden=false;

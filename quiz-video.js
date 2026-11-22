@@ -153,7 +153,7 @@
     active = state;
     history.pushState({ ...(history.state || {}), quizVideo: state.historyId }, '');
     state.unmount = root.MagicBookPopup.mount(overlay, { returnFocus: binding.button, bodyClass: 'quiz-video-open', onDismiss: () => close(), initialFocus: exit,
-      focusable: () => dialog.querySelectorAll('button, input, select, summary, video') });
+      focusable: () => dialog.querySelectorAll('button, input, select:not([inert]), summary, video') });
     video.addEventListener('play', () => stopForPlayback(state));
     video.addEventListener('error', () => { cache.delete(cacheKey(binding)); report(state, 'Video non disponibile. Chiudi e riapri per riprovare.'); });
     try {
@@ -242,7 +242,7 @@
       actions.append(replace);if(!state.binding.options.figureVideo && !state.binding.options.theoryVideo)actions.append(cover);actions.append(remove); state.controls.append(actions);
     } else uploadForm(state, result);
     if (result.archive) {
-      const details = node('details', '', 'quiz-video-archive'), summary = node('summary', 'Trova questo video in R2');
+      const details = node('details', '', 'quiz-video-archive'), summary = node('summary', 'Trova questo video in R2', 'tmm-disclosure');
       const label = node('label', 'Percorso della cartella'), path = node('input'); path.readOnly = true; path.value = result.archive.prefix;
       label.append(path);
       const copy = node('button', 'Copia percorso R2');
@@ -338,6 +338,7 @@
     const coverPicker = (binding.options.figureVideo || binding.options.theoryVideo) ? {element:node('span'),selection:null,busy:false,invalid:false,setDisabled(){},destroy(){}} : root.QuizVideoThumbnail.create({ signal: controller.signal, currentUrl: previous.thumbnail?.url || '', onChange: () => { save.disabled = busy || !prepared || Boolean(state.thumbnailPicker?.busy || state.thumbnailPicker?.invalid); } });
     state.thumbnailPicker = coverPicker;
     state.controls.append(label, coverPicker.element, qualityLabel, qualityHint, originalLabel, actions);
+    root.TmmPicker?.attach(quality, 'Ottimizzazione');
     report(state, binding.options.theoryVideo ? (replacing ? 'Il video attuale resta disponibile fino al salvataggio del nuovo.' : 'Il video sarà disponibile in questo argomento dell’aula.') : replacing ? 'Il video attuale resterà disponibile finché il nuovo non sarà salvato. La sostituzione vale nei tre sistemi.' : (binding.options.figureVideo ? 'Il video sarà collegato a questa figura nei tre sistemi. Non serve una copertina.' : 'Il video sarà condiviso con la stessa domanda, risposta e figura nei tre sistemi.'));
     const showPreview = () => {
       if (active !== state || !prepared) return;

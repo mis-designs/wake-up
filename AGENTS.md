@@ -33,3 +33,5 @@
 - Verify the actual drawing before changing a question-to-image mapping. A missing reviewed R2 object must show an unavailable/retry state, never an unverified substitute.
 
 - For QuizBank PDF/JSON corrections, keep the existing R2 figure archive and resolver unchanged. Update numero_figura only; do not propose new figure folders, catalogues, copies or uploads unless the owner explicitly requests them.
+
+Per menu a scelta singola e navigazione usare il controllo condiviso TmmPicker, le classi tmm-nav e gli asset TMM in icons. Verificare elenco aperto, margine della freccia e navigazione con tocco e tastiera.
