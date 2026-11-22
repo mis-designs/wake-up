@@ -17,6 +17,47 @@
   let clipCache = null;
   let theoryButton, wordVideoButton;
   let sceneCuts={}, sceneCutsReady=true, theoryStatus;
+  let figureRequest=new AbortController(), lessonFigureReady;
+  const figureMedia=new Map(), pendingFigures=new Map();
+  function resetFigureReads(){
+    figureRequest.abort();figureRequest=new AbortController();pendingFigures.clear();lessonFigureReady=undefined;
+  }
+  function figureVideo(number){
+    const key=String(number),cached=figureMedia.get(key);
+    if(cached && cached.expires>Date.now())return Promise.resolve(cached.value);
+    if(pendingFigures.has(key))return pendingFigures.get(key);
+    const {signal}=figureRequest;
+    const read=api('getClassroomFigureVideo',{questionId:'fv_'+key},signal).then(value=>{
+      signal.throwIfAborted();
+      if(typeof value.available!=='boolean' || value.error || (value.available && !value.url))throw Error('video_unavailable');
+      figureMedia.set(key,{value,expires:Date.now()+60000});
+      if(figureMedia.size>64)figureMedia.delete(figureMedia.keys().next().value);
+      return value;
+    }).finally(()=>{if(pendingFigures.get(key)===read)pendingFigures.delete(key);});
+    pendingFigures.set(key,read);return read;
+  }
+  function appendFigureVideo(box,number,onStatus){
+    if(!number || preview)return;
+    const button=control('Video figura '+number,()=>{
+      if(button.dataset.retry){void check();return;}
+      void showFilm('figure',button,lesson(),number);
+    },'quiet');
+    button.hidden=true;box.append(button);
+    async function check(){
+      const scope=figureRequest;
+      try{
+        const result=await figureVideo(number);
+        if(scope.signal.aborted || !button.isConnected)return;
+        delete button.dataset.retry;button.textContent='Guarda il video · Figura '+number;
+        button.hidden=!result.available;onStatus?.(result.available);
+      }catch{
+        if(scope.signal.aborted || !button.isConnected)return;
+        button.hidden=false;button.dataset.retry='true';button.textContent='Riprova video · Figura '+number;
+        onStatus?.(undefined);
+      }
+    }
+    void check();
+  }
   let requestedChapter=1;
   const localTheory = new Map();
   function el(tag, text, className) {
@@ -47,6 +88,7 @@
   }
   function clear(temporary=false) {
     session?.stop();loadRequest?.abort();closeDetail();
+    resetFigureReads();figureMedia.clear();
     releaseTheoryButton();window.MagicQuizVideo?.reset();
     sceneCuts={};sceneCutsReady=true;theoryStatus=null;
     for(const url of localTheory.values()) URL.revokeObjectURL(url);
@@ -188,13 +230,21 @@
       $('related').append(line);
     }
     const target=state.chapter.lessons.findIndex(l=>word.lessonId ? l.id===word.lessonId : l.title_it.toLocaleLowerCase('it')===word.it.toLocaleLowerCase('it'));
-    if (target>=0) {
-      const item=state.chapter.lessons[target], links=el('div',null,'word-actions');
+    const item=state.chapter.lessons[target] || state.chapter.linkedLessons?.[word.lessonId];
+    if (item || word.figureNumber) {
+      const links=el('div',null,'word-actions');
       $('related').append(links);
-      if (target!==state.index) links.append(control('Apri la lezione · '+item.title_it,()=>selectTopic(target,true)));
-      appendWordVideo(links,item,from);
-      if (item.figureExercise) links.append(control('Figura '+item.figureExercise.figure,()=>openFigure(item.figureExercise,from)));
-      if(item.quizzes.length) links.append(control('Quiz · '+item.title_it,()=>{selectTopic(target);renderQuiz();}));
+      if(item){
+        const visit=quiz=>{
+          if(target<0)return load(item.chapter,{id:item.id,quiz});
+          selectTopic(target,true);if(quiz)renderQuiz();
+        };
+        if (target!==state.index) links.append(control('Apri la lezione · '+item.title_it,()=>visit(false)));
+        appendWordVideo(links,item,from);
+        if (item.figureExercise) links.append(control('Figura '+item.figureExercise.figure,()=>openFigure(item.figureExercise,from)));
+        if(item.quizzes?.length || item.hasQuizzes) links.append(control('Quiz · '+item.title_it,()=>visit(true)));
+      }
+      appendFigureVideo(links,item?.figureNumber || word.figureNumber);
     }
     const relatedIds=new Set(state.chapter.comparisons.filter(ids=>ids.includes(word.id)).flat());
     const comparisons=el('div',null,'word-actions word-comparisons');
@@ -214,7 +264,7 @@
   function richText(node,text) {
     const focus=new Set(lesson().focus), spans=[];
     for (const {word,re} of state.terms) {
-      if (!word.lessonId && !focus.has(word.it) && !knownPhoto(word.id) && !state.lookupOnClick) continue;
+      if (!word.lessonId && !word.figureNumber && !focus.has(word.it) && !knownPhoto(word.id) && !state.lookupOnClick) continue;
       for (const m of text.matchAll(re)) spans.push({start:m.index,end:m.index+m[0].length,word});
     }
     const chosen=[];
@@ -244,6 +294,7 @@
     const cut=sceneCuts[item.id];
     const available = status?.available === true;
     const missing = status?.available === false && !status.error && status.availability !== 'unknown';
+    host.hidden=Boolean(item.figureNumber && !preview && missing && lessonFigureReady!==false);
     const sample = missing && !cut && sceneCutsReady && item.scene;
     $('scene').hidden = !sample && !(missing && (cut || !sceneCutsReady));
     $('scene').querySelector('small').textContent=cut ? 'Estratto · '+(cut.end-cut.start)+' s' : sample ? 'Filmato TMM · 7 s' : 'Estratto';
@@ -293,7 +344,7 @@
     };
   }
   function createTheoryButton(item,{isCurrent,...options}){
-    const id='tv_'+state.chapter.chapter+'_'+item.id,scope=session.key;
+    const id='tv_'+(item.chapter || state.chapter.chapter)+'_'+item.id,scope=session.key;
     return window.MagicQuizVideo.createButton({
       theoryVideo:true,question:{id,question:item.title_it},cacheScope:scope,
       isCurrent:()=>session.matches(scope) && isCurrent(),
@@ -357,11 +408,14 @@
     if(!number)return;
     const img=el('img'),label='Figura '+number;
     img.alt=label;img.src=figureUrl(number);
-    img.onerror=()=>{box.replaceChildren(el('span',label+' · Immagine non disponibile'),control('Riprova',()=>renderPlate(id,number),'quiet'));};
+    img.onerror=()=>{img.replaceWith(control(label+' · Riprova immagine',()=>renderPlate(id,number),'quiet'));};
     box.append(img,el('span',label));
+    appendFigureVideo(box,number,id==='signPlate' ? available=>{
+      lessonFigureReady=available;renderLessonVideo(lesson(),theoryStatus);
+    } : undefined);
   }
   function selectTopic(index, focus=false) {
-    closeDetail(); state.index=index;state.quiz=0;state.mode='lesson';
+    closeDetail();resetFigureReads();state.index=index;state.quiz=0;state.mode='lesson';
     const l=lesson();
     bindTheoryVideo(l);
     $('topics').value=String(index);
@@ -369,9 +423,14 @@
     const bn=el('span',l.title_bn);bn.lang='bn';$('title').replaceChildren(l.title_it,bn);
     renderManual(l);
     $('exampleHeading').textContent=l.chapterNote?'Il capitolo in pratica':l.exampleFromQuiz?'Esempio dal quiz':'Esempio pratico';
-    renderPlate('signPlate',l.figureNumber);
+    const uploads=location.hash==='#caricamenti';
+    renderPlate('signPlate',uploads?null:l.figureNumber);
+    if(uploads)appendFigureVideo($('uploadDeskControls'),l.figureNumber);
     richText($('italian'),l.theory_it);richText($('bangla'),l.theory_bn);richText($('tip'),l.memory_tip_bn);
-    $('words').replaceChildren(...l.focus.map(name=>state.chapter.words.find(w=>w.it===name || w.aliases.some(a=>a.it===name))).filter(Boolean).map(w=>termControl(w,w.it,true)));
+    const inText=new Set([...$('reading').querySelectorAll('#sourceText [data-word-id],#italian [data-word-id],#bangla [data-word-id]')].map(b=>b.dataset.wordId));
+    const focusWords=l.focus.length ? l.focus.map(name=>state.chapter.words.find(w=>w.it===name || w.aliases.some(a=>a.it===name))).filter(Boolean)
+      : state.chapter.words.filter(w=>inText.has(w.id) && (w.lessonId || w.figureNumber || knownPhoto(w.id))).slice(0,10);
+    $('words').replaceChildren(...focusWords.map(w=>termControl(w,w.it,true)));
     richText($('prompt'),l.prompt);
     $('figureExercise').hidden=!l.figureExercise;
     $('prompt').previousElementSibling.hidden=!l.prompt;
@@ -390,7 +449,6 @@
     }
     $('startQuiz').textContent='Quiz sull’argomento · '+l.quizzes.length+' →';
     $('startQuiz').hidden=!l.quizzes.length;
-    const uploads=location.hash==='#caricamenti';
     $('uploadDesk').hidden=!uploads;$('uploadTopic').textContent=l.title_it;
     $('reading').hidden=uploads;$('practice').hidden=true;$('present').hidden=uploads;
     if(focus)focusTitle(uploads?'uploadTitle':'title');
@@ -416,7 +474,7 @@
     const box=$('detailContent'),controller=viewerRequest=new AbortController();
     box.textContent='Apertura delle impostazioni…';
     const reopen=()=>editScene(item,from);
-    window.ClassroomSceneEditor.edit({api,item,parent:'tv_'+state.chapter.chapter+'_'+item.id,box,signal:controller.signal,reopen,onSaved:cut=>{
+    window.ClassroomSceneEditor.edit({api,item,parent:'tv_'+(item.chapter || state.chapter.chapter)+'_'+item.id,box,signal:controller.signal,reopen,onSaved:cut=>{
       sceneCuts[item.id]=cut;clipCache=null;
       if(item===lesson())renderLessonVideo(item,theoryStatus);
     }}).catch(()=>{if(!controller.signal.aborted)box.replaceChildren(el('p','Impossibile aprire le impostazioni.'),control('Riprova',reopen));});
@@ -442,7 +500,7 @@
         }
         $('detailTitle').textContent=cut?l.title_it:l.scene.caption;
       }
-      const data=scene && cut ? null : scene && clipCache?.id===l.id ? clipCache.data : await api(action,fields,controller.signal);
+      const data=isFigure && !preview ? await figureVideo(figure) : scene && cut ? null : scene && clipCache?.id===l.id ? clipCache.data : await api(action,fields,controller.signal);
       if(controller.signal.aborted || !detail.open)return;
       if(!scene && !data.available){box.textContent=preview?'I video caricati si consultano nell’aula connessa.':isFigure?'Per questa figura non è stato caricato un video.':'Per questa domanda non è stato caricato un video.';return;}
       let src=data?.url;
@@ -456,7 +514,7 @@
       }
       const video=el('video');video.controls=true;video.playsInline=true;video.autoplay=true;video.muted=scene && !cut?.audio;
       video.setAttribute('controlslist','nodownload');video.setAttribute('disablepictureinpicture','');video.oncontextmenu=e=>e.preventDefault();
-      video.onerror=()=>{if(!controller.signal.aborted){detail.dataset.media='false';box.replaceChildren(el('p','Video non disponibile.'),control('Riprova',()=>showFilm(kind,from,l,figure)));}};
+      video.onerror=()=>{if(!controller.signal.aborted){if(isFigure)figureMedia.delete(String(figure));detail.dataset.media='false';box.replaceChildren(el('p','Video non disponibile.'),control('Riprova',()=>showFilm(kind,from,l,figure)));}};
       detail.dataset.media='true';video.src=src;box.replaceChildren(video);video.play().catch(()=>{});
       if(scene && !preview && !document.body.classList.contains('presenting')) {
         if(cut)$('related').append(el('p','Da '+cut.start+' a '+cut.end+' secondi'));
@@ -467,14 +525,14 @@
       if(scene && !preview && !document.body.classList.contains('presenting'))box.append(control('Modifica spezzone',()=>editScene(l,from)));
     }}
   }
-  async function load(number=1) {
+  async function load(number=1,destination) {
     if (!preview && !await session.ensure()) return;
     loadRequest?.abort();const ctl=loadRequest=new AbortController();
     requestedChapter=number;
     const switching=number!==state.chapter?.chapter;
     const index=switching?0:state.index, oldMode=switching?'lesson':state.mode, oldQuiz=switching?0:state.quiz;
     if(switching){
-      closeDetail();releaseTheoryButton();window.MagicQuizVideo?.reset();clipCache=null;state.responses.clear();
+      closeDetail();resetFigureReads();releaseTheoryButton();window.MagicQuizVideo?.reset();clipCache=null;state.responses.clear();
       studio.hidden=true;$('present').hidden=true;
       $('status').hidden=false;$('status').textContent='Apertura del capitolo…';
     }
@@ -495,7 +553,8 @@
       $('photoStatus').hidden=photosReady;$('photoStatus').textContent='Tocca una parola per aprire la foto del dizionario All Books, quando disponibile.';
       $('reloadPhotos').hidden=photosReady || Boolean(preview);
       $('status').hidden=true;studio.hidden=false;$('present').hidden=false;
-      selectTopic(index);if(oldMode==='quiz'){state.quiz=oldQuiz;renderQuiz(false);}
+      selectTopic(destination?Math.max(0,chapter.lessons.findIndex(l=>l.id===destination.id)):index,Boolean(destination));
+      if(destination?.quiz || oldMode==='quiz'){state.quiz=destination?0:oldQuiz;renderQuiz(false);}
     }catch(err){
       if(ctl.signal.aborted || err.message==='access')return;
       $('status').textContent='Impossibile caricare l’aula.';$('status').hidden=false;$('retry').hidden=false;
@@ -508,7 +567,7 @@
     const prompt=el('p',f.question);
     const reveal=control('Mostra risposta',()=>{reveal.replaceWith(el('strong',f.answer?'Vero':'Falso'));});
     $('related').append(prompt,reveal);reveal.disabled=true;
-    if(!preview) $('related').append(control('Cerca video della figura',()=>showFilm('figure',from,lesson(),f.figure)));
+    appendFigureVideo($('related'),f.figure);
     img.onload=()=>{reveal.disabled=false;};
     const src=figureUrl(f.figure);
     img.onerror=()=>{img.hidden=true;const retry=control('Figura non disponibile · Riprova',()=>{retry.remove();img.hidden=false;img.src=src;});$('detailContent').append(retry);};

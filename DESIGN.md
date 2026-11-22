@@ -586,3 +586,5 @@ Nella scelta dei capitoli di Magic Book, la copertina Trucchi precede il Capitol
 La Home presenta la serie Trucchi con il titolo in bangla, la copertina della raccolta e un solo pulsante per vedere gli episodi.
 
 Il selettore Filmato originale mostra la sezione in ogni voce: Teoria, Figure, Quiz o Biblioteca. La figura riporta anche il suo numero.
+
+Le parole aprono la stessa lezione e lo stesso video in ogni capitolo. Accanto al cartello compare «Guarda il video» con il numero della figura disponibile.

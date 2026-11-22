@@ -44,3 +44,13 @@ test('one metadata read lists the available recordings; a custom clip has its ow
   assert.notEqual(custom.key,identity(item.id).key);assert.match(custom.prefix,/\/clips\/b{24}$/);
   assert.throws(()=>identity(item.id+'~invalid'),/lesson_not_found/);
 });
+test('classroom figures read the gallery original by number without a dedicated theory upload',async t=>{
+  const calls=[];
+  t.mock.method(video,'runRequest',async input=>{
+    calls.push([input.action,input.row.figure,input.allowFigureRead]);
+    return {available:true,url:'https://example.invalid/fig1.mp4',duration:8};
+  });
+  const result=await classroom.request('getClassroomFigureVideo',{questionId:'fv_1',owner:'teacher'},new EventEmitter(),new EventEmitter());
+  assert.deepEqual(result,{available:true,url:'https://example.invalid/fig1.mp4',duration:8});
+  assert.deepEqual(calls,[['getQuizVideo','fig1',true]]);
+});
