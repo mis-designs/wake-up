@@ -704,23 +704,27 @@
     if (meter) meter.style.width = `${(completed / REQUIRED_CORRECT) * 100}%`;
 
     content.innerHTML = `
-      <div class="magic-word-topline"><span class="magic-word-kicker">5 PAROLE OGNI 12 ORE</span><strong>${completed + 1} / ${REQUIRED_CORRECT}</strong></div>
+      <header class="word-review-cover">
+        <div class="magic-word-topline"><span class="magic-word-kicker">5 PAROLE OGNI 12 ORE</span><strong>${completed + 1} / ${REQUIRED_CORRECT}</strong></div>
+        <h2 id="magicWordGateTitle" class="magic-word-prompt" lang="it" tabindex="-1">${escapeHtml(word.it)}</h2>
+      </header>
+      <div class="word-review-page">
       <p class="magic-word-question-label">Qual è il significato corretto?</p>
-      <h2 id="magicWordGateTitle" class="magic-word-prompt" lang="it">${escapeHtml(word.it)}</h2>
       <div class="magic-word-options" role="group" aria-label="Scegli il significato">
         ${options.map(option => `<button type="button" data-word-id="${escapeHtml(option.id)}" lang="bn"><span>${escapeHtml(option.bn)}</span></button>`).join("")}
       </div>
       <p id="magicWordFeedback" class="magic-word-feedback" role="status"></p>
       ${activeQuiz.manual
         ? '<button id="magicWordManualClose" class="magic-word-optout" type="button">Chiudi allenamento</button>'
-        : '<button id="magicWordOptOut" class="magic-word-optout" type="button"><span lang="bn">শব্দচর্চা বন্ধ করুন</span> <span lang="it">Disattiva il ripasso</span></button>'}`;
+        : '<button id="magicWordOptOut" class="magic-word-optout" type="button"><span lang="bn">শব্দচর্চা বন্ধ করুন</span> <span lang="it">Disattiva il ripasso</span></button>'}
+      </div>`;
 
     content.querySelectorAll("[data-word-id]").forEach(button => {
       button.addEventListener("click", () => answerGateQuestion(button, button.dataset.wordId, word.id));
     });
     root.document.getElementById("magicWordOptOut")?.addEventListener("click", renderOptOutConfirmation);
     root.document.getElementById("magicWordManualClose")?.addEventListener("click", closeManualPractice);
-    content.querySelector("[data-word-id]")?.focus();
+    content.querySelector(".magic-word-prompt")?.focus();
     speakItalian(word.it, { delayMs: WORD_ARRIVAL_SPEECH_DELAY_MS });
   }
 
