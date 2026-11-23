@@ -113,6 +113,7 @@ gtag('config', 'G-C5JPY9HFHD', {
 <link rel="stylesheet" href="web-study-actions.css?v=12-thumb-reach">
 <link rel="stylesheet" href="/admin-user-editor.css?v=1">
 <link rel="stylesheet" href="/admin-panel.css?v=2-spacing">
+<link rel="stylesheet" href="/android-study-atlas.css?v=4">
 <link rel="stylesheet" href="/android-app-theme.css?v=14-welcome-split">
 <link rel="stylesheet" href="/android-study-shell.css?v=20-liquid">
 <link rel="stylesheet" href="/welcome-page.css?v=4-login-home">
@@ -739,6 +740,18 @@ gtag('config', 'G-C5JPY9HFHD', {
       <h1 id="nativeChaptersTitle" tabindex="-1">Scegli capitolo</h1>
     </header>
     <div class="native-chapter-workspace">
+      <section class="chapter-ring" aria-label="Galleria dei capitoli" aria-roledescription="carosello" hidden>
+        <div class="chapter-ring-stage"></div>
+        <nav class="chapter-ring-controls" aria-label="Seleziona un capitolo">
+          <button type="button" data-ring-step="-1" aria-label="Capitolo precedente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+          <label class="chapter-ring-index">
+            <span aria-hidden="true">Capitolo <b></b><i></i><span class="chapter-ring-total"></span></span>
+            <select aria-label="Vai al capitolo"></select>
+          </label>
+          <button type="button" data-ring-step="1" aria-label="Capitolo successivo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+        </nav>
+        <h2 class="chapter-ring-title"></h2>
+      </section>
       <div class="native-orbit-stage">
         <div id="nativeChapterDial" class="native-dial" role="slider" tabindex="0" aria-label="Capitolo" aria-valuemin="1" aria-valuemax="25" aria-valuenow="1" aria-orientation="vertical" aria-describedby="nativeDialHint">
           <svg class="native-dial-face" viewBox="0 0 300 300" aria-hidden="true"><circle class="native-dial-orbit" cx="150" cy="150" r="100"/><g id="nativeDialNumbers"></g><circle id="nativeDialMarker" cx="50" cy="150" r="3"/></svg>
@@ -1444,9 +1457,9 @@ gtag('config', 'G-C5JPY9HFHD', {
 <script type="module" src="login-experience.js?v=3-clean"></script>
 <script type="module" src="welcome-page.js?v=2-clean"></script>
   <script type="module" src="home-offers.js?v=11-trucchi-notice&art=fbda23c8df0e"></script>
-<script type="module" src="android-study-shell.js?v=17-study-home"></script>
-<link rel="stylesheet" href="/android-home-compact.css?v=2">
-<script src="/android-home-compact.js?v=2" defer></script>
+<script type="module" src="android-study-shell.js?v=20-home-motion"></script>
+<link rel="stylesheet" href="/android-home-compact.css?v=3">
+<script src="/android-home-compact.js?v=4" defer></script>
 <script src="/classroom-entry.js?v=2" defer></script>
 </body>
 </html>

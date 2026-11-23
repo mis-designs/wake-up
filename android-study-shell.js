@@ -1,6 +1,7 @@
-import { ChapterDial, clampChapter, chapterAtAngle, dialLabelPosition, homeGreetings, progressValue } from "./android-rotary-model.mjs?v=8-bangla-greetings";
+import { ChapterDial, clampChapter, chapterAtAngle, dialLabelPosition, homeGreetings, progressValue } from "./android-rotary-model.mjs?v=9-local-greetings";
 import { renderGreeting } from "./greeting-view.mjs?v=1-shared-login";
 import { createLiquidProgress } from "./native-liquid-progress.mjs?v=1";
+import { createChapterRing } from "./android-chapter-ring.mjs?v=1";
 
 // Runtime gate is the native shell marker, not screen size or standalone/PWA mode.
 const doc = document;
@@ -53,6 +54,7 @@ function initialize() {
   const titleSizes = new Map();
   let pointerStart = null;
   let screen = "";
+  let greetingTimer = 0;
   let frame = 0;
   let pendingPreview = model.selected;
   let controller = null;
@@ -82,6 +84,23 @@ function initialize() {
   // Selection is local: accept the first touch while the already-visible chapter
   // screen finishes its entry animation, but never bypass the launch action gate.
   const canRotate = () => screen === "chapters" && surfaceAvailable() && (!app.busy() || html.dataset.appTransition === "show-chapters");
+  const ringRoot = chapters.querySelector(".chapter-ring");
+  const ring = ringRoot && createChapterRing(ringRoot, {
+    titles: app.titles, selected: app.selected, enabled: canRotate,
+    select(number) {
+      app.select(number);
+      if (model.selected !== number) refreshSelected(number);
+      feedback("selection");
+      status.textContent = "Capitolo " + number + ", " + app.titles[number - 1];
+    },
+    open: () => runAction("open")
+  });
+  if (ring) {
+    ringRoot.hidden = false;
+    chapters.classList.add("has-chapter-ring");
+    chapters.querySelector(".native-orbit-stage").hidden = true;
+    doc.getElementById("nativeDialHint").hidden = true;
+  }
   // One fixed label rail per action. Both languages stay in the accessible name;
   // only the decorative visual copy moves, never the target or its event owner.
   chapters.querySelectorAll("[data-native-bn]").forEach(button => {
@@ -138,10 +157,28 @@ function initialize() {
   }
 
   // Explicit per-chapter mapping: never infer the photo from a quiz figure or a protected book page.
-  fetch("/assets/native-chapter-covers.json", { cache: "no-cache" })
-    .then(response => response.ok ? response.json() : {})
-    .then(data => { covers = data.covers || {}; imageChapter = 0; if (screen === "chapters") updateImage(); })
-    .catch(() => {});
+  let coverRequest = null;
+  let coversLoaded = false;
+  async function loadCovers() {
+    if (coversLoaded || coverRequest || doc.hidden) return;
+    const request = new AbortController();
+    coverRequest = request;
+    try {
+      const response = await fetch("/assets/native-chapter-covers.json?v=2", { signal: request.signal });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (request.signal.aborted) return;
+      covers = (ring && data.ring) || data.covers || {};
+      coversLoaded = true;
+      if (screen === "chapters") updateImage(true);
+    } catch { /* Number and title remain usable even offline. */ }
+    finally { if (coverRequest === request) coverRequest = null; }
+  }
+  function leaveGallery() {
+    coverRequest?.abort();
+    coverRequest = null;
+    ring?.suspend();
+  }
 
   function feedback(kind) {
     const now = performance.now();
@@ -154,6 +191,7 @@ function initialize() {
   }
 
   function draw(value = model.selected) {
+    if (ring) return;
     drawnPreview = value;
     const point = dialLabelPosition(model.selected, value, 100);
     marker.setAttribute("cx", point.x.toFixed(2));
@@ -195,6 +233,10 @@ function initialize() {
   }
 
   function updateImage(force = false) {
+    if (ring) {
+      if (screen === "chapters" && !doc.hidden) ring.render(model.selected, covers);
+      return;
+    }
     if (!force && imageChapter === model.selected) return;
     cancelImagePresentation();
     imageChapter = model.selected;
@@ -226,6 +268,7 @@ function initialize() {
 
   function refreshSelected(value, { force = false } = {}) {
     model.selected = clampChapter(value);
+    if (ring) { updateImage(force); return; }
     const changed = renderedChapter !== model.selected;
     if (changed) {
       renderedChapter = model.selected;
@@ -262,8 +305,15 @@ function initialize() {
   }
 
   function showGreeting() {
-    const greetings = homeGreetings(new Date().getHours());
-    renderGreeting(doc.getElementById("nativeHomeTitle"), greetings, "native-greeting-rail", `${greetings[1]}. Benvenuto in Magic Book`);
+    clearTimeout(greetingTimer);
+    if (screen !== "home" || doc.hidden) return;
+    const now = new Date();
+    const hour = now.getHours();
+    const greetings = homeGreetings(hour);
+    renderGreeting(doc.getElementById("nativeHomeTitle"), greetings, "native-greeting-rail", greetings[0] + ". Magic Book");
+    const next = new Date(now);
+    next.setHours([5, 12, 15, 18, 22, 24].find(boundary => boundary > hour), 0, 0, 0);
+    greetingTimer = setTimeout(showGreeting, next.getTime() - now.getTime());
   }
 
   function applySelection(result) {
@@ -401,6 +451,9 @@ function initialize() {
     if (!screen || dock.hidden) return;
     const reserve = Math.ceil(window.innerHeight - dock.getBoundingClientRect().top + 12);
     html.style.setProperty("--native-dock-reserve", `${reserve}px`);
+    // The installed theme sets a fixed reserve on the root. Give the home
+    // scroller its own measurement so the final row sits just above the dock.
+    (screen === "chapters" ? chapters : home).parentElement.style.setProperty("--native-dock-reserve", `${reserve}px`);
   }
   new ResizeObserver(syncDockSpace).observe(dock);
   new ResizeObserver(fitChapterTitle).observe(chapterTitle);
@@ -465,6 +518,7 @@ function initialize() {
 
   function show(nextScreen) {
     if (!["home", "chapters"].includes(nextScreen)) return;
+    if (screen === "chapters" && nextScreen !== screen) leaveGallery();
     clearActionPress();
     screen = nextScreen;
     html.dataset.nativeStudyScreen = screen;
@@ -482,8 +536,8 @@ function initialize() {
     dock.hidden = false;
     syncLiquid();
     syncDockSpace();
-    if (screen === "home") showGreeting();
-    if (screen === "chapters") delete chapters.dataset.rotaryUsed;
+    showGreeting();
+    if (screen === "chapters") { delete chapters.dataset.rotaryUsed; void loadCovers(); }
     refreshSelected(app.selected(), { force: true });
     void refreshProgress();
     requestAnimationFrame(() => {
@@ -493,6 +547,8 @@ function initialize() {
   }
   function hide() {
     clearActionPress();
+    clearTimeout(greetingTimer);
+    leaveGallery();
     screen = "";
     finishGesture(model.gesture?.pointerId);
     cancelAnimationFrame(frame);
@@ -512,13 +568,16 @@ function initialize() {
     syncLiquid();
     if (doc.hidden) {
       clearActionPress();
+      clearTimeout(greetingTimer);
+      leaveGallery();
       finishGesture(model.gesture?.pointerId);
       titleAnimation?.cancel();
       cancelAnimationFrame(frame);
       frame = 0;
       cancelImagePresentation();
       clearTimeout(cueTimer);
-    } else if (screen === "chapters") { updateImage(true); scheduleCues(); }
+    } else if (screen === "chapters") { void loadCovers(); updateImage(true); if (!ring) scheduleCues(); }
+    else if (screen === "home") showGreeting();
   });
   const syncModalIsolation = () => {
     const modal = doc.body.classList.contains("qms-open") || doc.body.classList.contains("magic-word-gate-open") || doc.body.classList.contains("qb-intro-open") || doc.body.classList.contains("android-home-quiz-open");

@@ -2357,6 +2357,12 @@ function loadQuizImage(q) {
   const noFigure = figVal === "" || figVal === "0" || figVal === "false" ||
                    figVal === "null" || figVal === "undefined";
 
+  if (noFigure && document.documentElement.classList.contains("android-webview")) {
+    figureWrap.classList.add("hidden");
+    skeleton?.classList.add("hidden");
+    return;
+  }
+
   figureWrap.classList.remove("hidden");
   skeleton?.classList.remove("hidden");
   if (QUIZBANK_MODE && !noFigure) {
@@ -3624,6 +3630,11 @@ function showQuestion() {
   const veroBtn = document.getElementById("vero");
   const falsoBtn = document.getElementById("falso");
   document.getElementById("question").innerText = q.question;
+  const position = document.getElementById("atlas-question-position");
+  if (position && document.documentElement.classList.contains("android-webview")) {
+    position.hidden = false;
+    position.textContent = "Domanda " + (current + 1) + " di " + quiz.length;
+  }
   updateProgressBar();
   updateTrialAudioButtons(q);
 

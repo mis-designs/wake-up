@@ -594,3 +594,12 @@ Il numero di catalogo della figura è visibile soltanto nella vista privata del 
 Nell’Aula il paragrafo italiano del manuale precede la sua traduzione bangla, riconoscibile dal titolo «বাংলা অনুবাদ» e leggibile anche in Presenta.
 
 Menu e navigazione usano le frecce originali di TMM. Nel selettore mantenere almeno 14 px tra freccia e bordo, testo leggibile, stato selezionato distinto e righe da almeno 44 px.
+
+## Android study interface · 2026-11-21
+
+The Android study surfaces use warm paper, indigo ink and jade controls. The original Magic Book cover illustrates the home entry. Hadi Rounded remains the Bangla home face. The full individual chapter covers and teacher photography retain their original owners.
+
+Extra portrait height belongs to the chapter and study actions.
+
+The Android book entry has a white surface with a soft violet shade, a rounded outline and a shadow following the actual cover. Inside, the chapter cards sit on an elliptical track. The selected jacket faces forward. The previous and next jackets sit farther back and stay entirely within the stage at rest. Show the complete printed face and its original title, art and footer.
+On the installed Android Home, omit the MiskatDesigns watermark. The floating Home control uses the outlined house alone. The book sways gently over a white surface and the quiz pencil makes a short writing gesture. Decorative motion belongs to the visible Home.

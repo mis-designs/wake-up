@@ -12,7 +12,9 @@ test("ordinary browser initialization performs no native DOM mutation", () => {
   const window = { document: { documentElement: { classList: { contains: () => false } } } };
   vm.runInNewContext(native, { window });
   assert.equal(window.MagicBookModeScreens, undefined);
-  assert.ok(read("index.html").indexOf('android-mode-screens.js?v=2-thumb') < read("index.html").indexOf('script.js?v=89-admin-valid-users'));
+  const html = read("index.html");
+  const modes = html.indexOf('src="android-mode-screens.js?');
+  assert.ok(modes >= 0 && modes < html.indexOf('src="script.js?'));
 });
 
 test("native mode URLs are recognizable only when the presentation owner is active", () => {

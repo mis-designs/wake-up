@@ -557,3 +557,12 @@ Il numero di catalogo della figura è visibile soltanto nella vista privata del 
 Nelle lezioni rivolgersi alla persona con আপনি e i verbi di cortesia. Nel dizionario distinguere la forma selezionata (carreggiata / carreggiate) mantenendo lo stesso collegamento alla parola, alla foto e al video.
 
 Il selettore TMM conserva il valore del modulo e invia change alla conferma. Le frecce da tastiera esplorano la lista. Invio sceglie, Esc chiude. Indietro, precedente e successiva riutilizzano rispettivamente go-back.png, back.png e next.png.
+
+## Android study interface · 2026-11-21
+
+Installed Android has an in-memory chapter-title and number filter (Italian names, Latin and Bengali digits). Filter the original authorized chapter buttons and retain their click owners. Live quizzes display the actual question position and omit the no-figure placeholder. Reader font sizing, real figures, help, timers and answer handling retain their existing owners.
+
+On Android Home, the original Magic Book cover uses contain. The tool row sits directly above the measured floating dock; extra portrait space expands the illustrated actions. The home scroller still handles short or magnified layouts.
+
+Android chapter selection wraps from 25 to 1 in both directions. Swiping, tapping a neighboring card, keyboard navigation and the chapter index update the canonical selection. Tapping the focused jacket opens the existing reader with its normal access checks. Reduced motion keeps chapter selection immediate. The gallery requests three public jackets on first entry and reuses visited jackets for the lifetime of the page. Navigation remains available by number and title when artwork fails.
+Show the local time greeting in Italian and Bangla on Android Home. With motion enabled, briefly show a second salutation before returning to the time greeting. Refresh when the time period changes or the app resumes. Reduced motion and the profile pause setting keep the time greeting and both illustrations still.

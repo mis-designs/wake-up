@@ -591,6 +591,25 @@
       fragment.appendChild(button);
     });
     elements.chapterGrid.replaceChildren(fragment);
+    const input = document.getElementById("atlas-chapter-query");
+    if (input && document.documentElement.classList.contains("android-webview")) {
+      input.parentElement.hidden = false;
+      input.oninput = () => {
+        const query = normalize(input.value.trim()).replace(/[০-৯]/g, digit => String(digit.charCodeAt(0) - 0x09e6));
+        const byNumber = /^\d+$/.test(query);
+        let matches = 0;
+        for (const card of elements.chapterGrid.children) {
+          const chapter = Number(card.dataset.chapter);
+          const visible = byNumber ? chapter === Number(query) : normalize(CHAPTERS[chapter - 1]).includes(query);
+          card.hidden = !visible;
+          if (visible) matches++;
+        }
+        const status = document.getElementById("atlas-search-result");
+        status.textContent = matches ? (matches === 1 ? "1 capitolo" : matches + " capitoli") : "Nessun capitolo trovato. Prova un altro titolo o numero.";
+        status.hidden = !query;
+      };
+      input.oninput();
+    }
   }
 
   function showPicker({ updateHistory = false, scroll = true } = {}) {

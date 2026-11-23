@@ -55,12 +55,16 @@
       ['M46 51l2-8 25-28 5 5-25 28z', '#7c4d85', '#55385e'],
       ['M48 43l5 5-7 3z', '#fff1cf', '#55385e']
     ];
-    svg.replaceChildren(...names.map(([d, fill, stroke]) => {
+    const paths = names.map(([d, fill, stroke]) => {
       const line = document.createElementNS(svg.namespaceURI, 'path');
       Object.entries({d, fill, stroke, 'stroke-width':1.6, 'stroke-linecap':'round', 'stroke-linejoin':'round'})
         .forEach(([key, value]) => line.setAttribute(key, value));
       return line;
-    }));
+    });
+    const pencil = document.createElementNS(svg.namespaceURI, 'g');
+    pencil.classList.add('quiz-pencil');
+    pencil.append(...paths.slice(3));
+    svg.append(...paths.slice(0, 3), pencil);
     return svg;
   }
   function finishPopup({ restoreFocus = true, launch = null } = {}) {
@@ -145,6 +149,9 @@
     if (!book || !bank || !originals?.every(Boolean)) return;
     home.dataset.androidHomeCompact = 'true';
     home.classList.add('android-home-compact');
+    home.querySelector('.vivid-sponsor')?.remove();
+    const wordmark = home.querySelector('.vivid-wordmark');
+    if (wordmark) wordmark.textContent = 'Magic Book';
     book.after(bank);
     const bookCopy = book.querySelector('.vivid-book-copy');
     if (bookCopy) {
@@ -184,7 +191,8 @@
     document.querySelectorAll('.native-dock .vivid-dock-home').forEach(button => {
       if (button.dataset.androidHomeIcon) return;
       button.dataset.androidHomeIcon = 'true';
-      button.replaceChildren(icon('/icons/native-home-outline.svg?v=1'), element('span', 'Home'));
+      button.replaceChildren(icon('/icons/native-home-outline.svg?v=1'));
+      button.setAttribute('aria-label', 'Torna alla Home');
     });
     if (popup && root.dataset.nativeStudyScreen !== 'home') finishPopup({ restoreFocus: false });
     observe();

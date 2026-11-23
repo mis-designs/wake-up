@@ -34,7 +34,8 @@
   <link rel="stylesheet" href="/offline-notice.css?v=1.0.0">
   <link rel="stylesheet" href="figure-detail.css?v=5-video">
   <link rel="stylesheet" href="quiz-theory.css?v=2-white-sticker">
-  <link rel="stylesheet" href="/android-app-theme.css?v=14-welcome-split">
+  <link rel="stylesheet" href="/android-study-atlas.css?v=4">
+<link rel="stylesheet" href="/android-app-theme.css?v=14-welcome-split">
   <script src="/offline-notice.js?v=1.1.0" defer></script>
   <link rel="stylesheet" href="/quiz-video.css?v=7-nodownload">
 <link rel="stylesheet" href="figure-video-player.css?v=5-invitation">
@@ -80,6 +81,11 @@
           <p id="study-last-chapter" class="hidden" aria-live="polite"></p>
         </div>
       </div>
+      <label class="atlas-index-search" hidden>
+        <span>Cerca capitolo</span>
+        <input id="atlas-chapter-query" type="search" placeholder="Titolo o numero" autocomplete="off" aria-controls="study-chapter-grid">
+      </label>
+      <p id="atlas-search-result" role="status" hidden></p>
       <div id="study-chapter-grid" class="study-chapter-grid"></div>
     </section>
 
@@ -138,6 +144,6 @@
   <script src="/quiz-video-optimizer.js?v=3-reduction"></script>
   <script src="/quiz-video-thumbnail.js?v=1"></script>
   <script src="/quiz-video.js?v=19-controls"></script>
-  <script src="study-quiz.js?v=59-trucchi&art=2e0d6787e201"></script>
+  <script src="study-quiz.js?v=60-trucchi-android&art=2e0d6787e201"></script>
 </body>
 </html>

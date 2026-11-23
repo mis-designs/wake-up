@@ -20,8 +20,11 @@ export function chapterAtAngle(selected, angle) {
 }
 
 export function homeGreetings(hour) {
-  const greeting = hour >= 5 && hour < 12 ? "Buongiorno" : hour >= 12 && hour < 18 ? "Buon pomeriggio" : "Buonasera";
-  return ["আসসালামু আলাইকুম", greeting, "Ciao!"];
+  if (hour < 5) return ["Benvenuto", "স্বাগতম", "Salve!"];
+  if (hour < 12) return ["Buongiorno", "শুভ সকাল", "Ciao!"];
+  if (hour < 15) return ["Buon pomeriggio", "শুভ দুপুর", "Salve!"];
+  if (hour < 18) return ["Buon pomeriggio", "শুভ বিকেল", "Ciao!"];
+  return ["Buonasera", hour < 22 ? "শুভ সন্ধ্যা" : "স্বাগতম", "Salve!"];
 }
 
 // One pointer owns a gesture. No wrapping, inertia, timers, or navigation side effects.

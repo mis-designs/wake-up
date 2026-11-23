@@ -59,7 +59,18 @@ test("the app marker precedes styles; only named route variants may follow the t
     const markerIndex = html.indexOf("/android-webview-mode.js?v=7-native-only");
     const firstStylesheetIndex = html.indexOf('rel="stylesheet"');
     const themeIndex = html.indexOf(page === "quiz.html" ? "/android-app-theme.css?v=14-welcome-split" : "/android-app-theme.css?v=14-welcome-split");
-    const lastStylesheetIndex = html.lastIndexOf('rel="stylesheet"');
+    const stylesAfterTheme = [...html.slice(themeIndex).matchAll(/rel="stylesheet" href="([^"?]+)(?:\?[^"]+)?"/g)].map(match => match[1]);
+    const routeStyles = {
+      "index.html": ["/android-study-shell.css", "/welcome-page.css", "/home-offers.css", "/android-mode-screens.css", "/quizbank-home.css", "/account-role.css", "/video-gallery.css", "/quiz-video.css", "figure-video-player.css", "/tmm-controls.css", "/android-home-compact.css"],
+      "quiz.html": ["quiz-chrome.css", "/quiz-video.css", "figure-video-player.css", "/tmm-controls.css"],
+      "study-quiz.html": ["/quiz-video.css", "figure-video-player.css", "/tmm-controls.css"],
+      "aggiungi-spiegazioni.html": ["figure-video-player.css", "/tmm-controls.css"]
+    };
+    assert.deepEqual(stylesAfterTheme, routeStyles[page] || []);
+    if (["index.html", "quiz.html", "study-quiz.html"].includes(page)) {
+      const atlasIndex = html.indexOf("/android-study-atlas.css?v=4");
+      assert.ok(atlasIndex > markerIndex && atlasIndex < themeIndex);
+    }
 
     assert.ok(markerIndex >= 0, `${page} must load the WebView marker`);
     assert.ok(markerIndex < firstStylesheetIndex, `${page} must mark the app before CSS`);
@@ -70,20 +81,18 @@ test("the app marker precedes styles; only named route variants may follow the t
       assert.ok(modesIndex > studyIndex);
       const introIndex = html.indexOf('/quizbank-home.css?v=4-inside-intro');
       assert.ok(introIndex > modesIndex);
-      assert.equal(introIndex, lastStylesheetIndex + 'rel="stylesheet" href="'.length);
     } else if (page === "quiz.html") {
       const chromeIndex = html.indexOf("quiz-chrome.css?v=1-outline");
       assert.ok(chromeIndex > themeIndex);
-      assert.equal(chromeIndex, lastStylesheetIndex + 'rel="stylesheet" href="'.length);
       assert.equal(studyIndex, -1);
     } else {
       assert.equal(studyIndex, -1);
-      assert.equal(themeIndex, lastStylesheetIndex + 'rel="stylesheet" href="'.length, `${page} must load the app theme last`);
     }
   }
 });
 
 test("the app theme assets are available offline", () => {
+  assert.match(worker, /\/android-study-atlas\.css\?v=4/);
   assert.match(worker, /\/android-webview-mode\.js\?v=7-native-only/);
   assert.match(worker, /\/android-app-theme\.css\?v=14-welcome-split/);
 });
