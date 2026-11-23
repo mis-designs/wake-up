@@ -292,6 +292,40 @@ body.magic-word-gate-open {
   color: var(--magic-purple);
 }
 
+#magicWordGate #magicWordOptOut {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 46px;
+  padding: 8px 22px;
+  border: 1px solid #bfb2d3;
+  border-radius: 999px;
+  background: #f6f2fb;
+  color: #493261;
+  box-shadow: none;
+  font: 600 13px/1.35 Inter, sans-serif;
+  letter-spacing: normal;
+  text-decoration: none;
+}
+
+#magicWordGate #magicWordOptOut [lang="bn"] {
+  font: 400 19px/1.4 var(--font-bn-adorsho);
+}
+
+#magicWordGate #magicWordOptOut:is(:hover, :active) {
+  background: #ece3f5;
+  border-color: #896fa5;
+}
+
+#magicWordGate #magicWordOptOut:focus-visible {
+  outline: 3px solid var(--magic-purple);
+  outline-offset: 3px;
+}
+
 .magic-word-primary,
 .magic-word-danger {
   min-height: 48px;

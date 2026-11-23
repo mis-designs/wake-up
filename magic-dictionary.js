@@ -713,7 +713,7 @@
       <p id="magicWordFeedback" class="magic-word-feedback" role="status"></p>
       ${activeQuiz.manual
         ? '<button id="magicWordManualClose" class="magic-word-optout" type="button">Chiudi allenamento</button>'
-        : '<button id="magicWordOptOut" class="magic-word-optout" type="button">Non voglio imparare</button>'}`;
+        : '<button id="magicWordOptOut" class="magic-word-optout" type="button"><span lang="bn">শব্দচর্চা বন্ধ করুন</span> <span lang="it">Disattiva il ripasso</span></button>'}`;
 
     content.querySelectorAll("[data-word-id]").forEach(button => {
       button.addEventListener("click", () => answerGateQuestion(button, button.dataset.wordId, word.id));

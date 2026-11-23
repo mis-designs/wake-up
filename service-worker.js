@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbook-pwa-v337-android-home-ring";
+const CACHE_NAME = "magicbook-pwa-v343-bilingual-review";
 const STATIC_ASSETS = [
   "/android-home-compact.css?v=3",
   "/android-home-compact.js?v=4",
@@ -125,7 +125,7 @@ const STATIC_ASSETS = [
   "/icons/exam.svg",
   "/icons/Statistics.png",
   "/icons/errors.png",
-  "/magic-dictionary.css?v=1.4.1-dictionary-cleanup",
+  "/magic-dictionary.css?v=1.4.1-dictionary-cleanup&button=bilingual",
   "/screen-protection.css?v=1.1.0",
   "/offline-notice.css?v=1.0.0",
   "/offline-notice.js?v=1.1.0",
@@ -160,7 +160,7 @@ const STATIC_ASSETS = [
   "/patenteContextResolverV3.js?v=4.0.0-glossary-display",
   "/quizHelpRuntimeV3Loader.js?v=3.0.2-translation-integrity",
   "/quiz-help-preview.js?v=1-personal-bangla-preview",
-  "/magic-dictionary.js?v=1.4.2-headlight",
+  "/magic-dictionary.js?v=1.4.2-headlight&button=bilingual",
   "/screen-protection.js?v=1.2.0",
   "/icons/no-internet.gif",
   "/icons/explain_quiz.svg",

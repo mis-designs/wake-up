@@ -170,7 +170,7 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(dictionaryCss, /\.magic-dictionary-settings button\s*\{[\s\S]*width:\s*auto;[\s\S]*justify-self:\s*end;[\s\S]*white-space:\s*nowrap;/u);
   assert.match(script, /state\.screen === "dictionary"/u);
   assert.match(script, /MagicDictionaryFeature\?\.onAuthenticated/u);
-  assert.match(worker, /magicbook-pwa-v242-desktop-help/u);
+  assert.ok(worker.includes(index.match(/href="(magic-dictionary\.css\?[^"]+)"/u)[1]));
   assert.match(worker, /magic-dictionary\.js\?v=1\.4\.2-headlight/u);
   assert.match(worker, /magic-dictionary\.css\?v=1\.4\.1-dictionary-cleanup/u);
   assert.ok(vercel.rewrites.some(route => route.source === "/dizionario" && route.destination === "/"));
@@ -182,7 +182,7 @@ test("Magic Book exposes the dictionary from home and the chapter menu", () => {
   assert.match(source, /magicDictionaryProgressRing/u);
   assert.match(source, /<h1 id="magicDictionaryTitle">Dizionario<\/h1>/u);
   assert.doesNotMatch(source, /magic-dictionary-term"><span/u);
-  assert.match(source, /Non voglio imparare/u);
+  assert.match(source, /id="magicWordOptOut"[^>]*><span lang="bn">শব্দচর্চা বন্ধ করুন<\/span> <span lang="it">Disattiva il ripasso/u);
   assert.match(source, /Sei sicuro\?/u);
   assert.match(source, /gate\.className = "magic-word-gate hidden notranslate"/u);
   assert.match(source, /gate\.lang = "it"/u);
@@ -220,7 +220,7 @@ test("the word exercise remains Italian regardless of the browser language", () 
 
   assert.match(source, /5 PAROLE OGNI 12 ORE/u);
   assert.match(source, /Qual è il significato corretto\?/u);
-  assert.match(source, /Non voglio imparare/u);
+  assert.match(source, /id="magicWordOptOut"[^>]*><span lang="bn"/u);
   assert.match(source, /class="magic-word-prompt" lang="it"/u);
   assert.match(source, /data-word-id="\$\{escapeHtml\(option\.id\)\}" lang="bn"/u);
   assert.doesNotMatch(source, /navigator\.(?:language|languages)/u);
