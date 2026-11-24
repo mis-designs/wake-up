@@ -23,7 +23,8 @@ function harness({ values = new Map(), offline = false } = {}) {
     clearTimeout(timer) { timers.delete(timer); clearTimeout(timer); },
     fetch: async (...args) => { calls.push(args); return { ok: false, status: 503, json: async () => ({ error: "unavailable" }) }; }
   };
-  const context = vm.createContext({ window: root, document: root.document, AbortController, DOMException, URL, Date: ClockDate });
+  const context = vm.createContext({ window: root, document: root.document, AbortController, DOMException, URL, URLSearchParams, Date: ClockDate });
+  vm.runInContext(readFileSync(new URL("../quiz-audio-identity.js", import.meta.url), "utf8"), context);
   vm.runInContext(syncSource, context);
   const sync = root.MagicBookLearningSync;
   // Local fixture, no scheduler and no live database/network.
@@ -249,14 +250,14 @@ test("screen deadline keeps local data and leaves no timeout or repeated automat
 });
 
 test("finishing a real quiz stores only server-graded answered items, never trial or another account", async () => {
-  const source = readFileSync(new URL("../quiz.js", import.meta.url), "utf8");
+  const source = readFileSync(new URL("../quiz.js", import.meta.url), "utf8").replace(/\r\n/g, "\n");
   const start = source.indexOf("async function finishQuiz(");
   const finish = source.slice(start, source.indexOf("\n}\n", start) + 2);
   for (const trial of [false, true]) {
     const h = harness();
     const context = vm.createContext({
       window: { MagicBookLearningSync: h.sync }, isFinishing: false, TRIAL_MODE: trial, QUIZBANK_MODE: false, QUIZ_API: "/api/quiz",
-      learningSessionId: owner.sessionId, quiz: [1, 2, 3, 4].map(id => ({ id, question: `Question ${id}` })),
+      learningSessionId: owner.sessionId, quiz: [1, 2, 3, 4].map(id => ({ id, question: `Question ${id}`, figure: id === 2 ? "Figure/fig012.jpg" : null })),
       answers: [{ answer: 1 }, { answer: 0 }, { answer: null }, { answer: 1 }],
       getQuizPhone: () => owner.userId, getQuizDeviceId: () => owner.deviceId, getQuizSessionToken: () => "trial-token",
       getElapsedQuizSeconds: () => 50, showLoading() {}, hideLoading() {}, lastQuizSet: [],
@@ -269,6 +270,16 @@ test("finishing a real quiz stores only server-graded answered items, never tria
     vm.runInContext(finish, context);
     await vm.runInContext("finishQuiz(true)", context);
     assert.equal(h.sync.getLocalReview().entries.length, trial ? 0 : 2);
+    if (!trial) {
+      const reopened = harness({ values: h.values });
+      reopened.state.mode = "errors";
+      const report = reopened.sync.getLocalReview();
+      assert.equal(report.entries[1].figureId, "fig12");
+      assert.equal(report.entries[0].figureId, undefined);
+      const html = reopened.ui.__testing.renderLocalReport(report);
+      assert.match(html, /kind=figure&figure=fig12&presentation=numberless-v2/);
+      assert.equal(reopened.calls.length, 0);
+    }
     if (!trial) assert.deepEqual(Array.from(h.sync.getLocalReview().entries, row => row.correct), [true, false]);
   }
 });

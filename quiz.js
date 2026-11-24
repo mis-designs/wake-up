@@ -1214,7 +1214,7 @@ function clearReviewAudioStatus(button) {
 
 function showReviewAudioFailure(button, error) {
   const code = String(error?.message || error || "quiz_audio_unknown_error").toLowerCase();
-  const unavailable = /quiz_audio_(not_found|requires_review|legacy_not_found|legacy_not_ambiguous|not_configured)/.test(code);
+  const unavailable = /quiz_audio_(not_found|requires_review|legacy_not_found|legacy_not_ambiguous)/.test(code);
   setReviewAudioStatus(
     button,
     code === "quizbank_content_changed_refresh_required"
@@ -1264,25 +1264,15 @@ function cancelPendingQuizExplanationAudio({ preserveStartedPlayback = false } =
 
 window.cancelPendingQuizExplanationAudio = cancelPendingQuizExplanationAudio;
 
-function waitForReviewAudioReady() {
-  if (reviewAudio.readyState >= HTMLMediaElement.HAVE_METADATA) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      cleanup();
-      reject(new Error("review_audio_metadata_timeout"));
-    }, 10000);
-    const cleanup = () => {
-      clearTimeout(timeout);
-      reviewAudio.removeEventListener("loadedmetadata", ready);
-      reviewAudio.removeEventListener("canplay", ready);
-      reviewAudio.removeEventListener("error", failed);
-    };
-    const ready = () => { cleanup(); resolve(); };
-    const failed = () => { cleanup(); reject(new Error("review_audio_media_error")); };
-    reviewAudio.addEventListener("loadedmetadata", ready);
-    reviewAudio.addEventListener("canplay", ready);
-    reviewAudio.addEventListener("error", failed);
-  });
+function handleReviewPlaybackFailure(button, error) {
+  if (error?.name === "NotAllowedError" && reviewAudio.src) {
+    reviewAudioPending = false;
+    reviewAudioController = null;
+    setReviewAudioStatus(button, "Audio pronto. Tocca di nuovo Play per ascoltare.");
+    return;
+  }
+  resetReviewAudioPlayer();
+  showReviewAudioFailure(button, error);
 }
 
 async function toggleReviewAudio(button, question) {
@@ -1294,6 +1284,7 @@ async function toggleReviewAudio(button, question) {
     return;
   }
   if (reviewAudioButton === button && reviewAudioKey === audioKey && reviewAudio.src) {
+    const requestId = reviewAudioRequestId;
     audioFocus?.claimResumable(reviewAudioFocusAdapter);
     try {
       if (reviewAudio.paused) await reviewAudio.play();
@@ -1302,8 +1293,7 @@ async function toggleReviewAudio(button, question) {
         reviewAudio.pause();
       }
     } catch (error) {
-      resetReviewAudioPlayer();
-      showReviewAudioFailure(button, error);
+      if (requestId === reviewAudioRequestId) handleReviewPlaybackFailure(button, error);
     }
     return;
   }
@@ -1323,16 +1313,11 @@ async function toggleReviewAudio(button, question) {
     if (requestId !== reviewAudioRequestId || reviewAudioButton !== button) return;
     reviewAudioObjectUrl = URL.createObjectURL(result.blob);
     reviewAudio.src = reviewAudioObjectUrl;
-    reviewAudio.load();
-    setReviewAudioButtonState(button, "idle");
-    await waitForReviewAudioReady();
-    if (requestId !== reviewAudioRequestId || reviewAudioButton !== button) return;
     await reviewAudio.play();
     if (requestId === reviewAudioRequestId && reviewAudioButton === button) reviewAudioPending = false;
   } catch (error) {
     if (requestId !== reviewAudioRequestId || reviewAudioButton !== button) return;
-    resetReviewAudioPlayer();
-    showReviewAudioFailure(button, error);
+    handleReviewPlaybackFailure(button, error);
   }
 }
 
@@ -1923,7 +1908,7 @@ async function fetchItalianAudio(text, cacheKey, questionId, audioIdentityToken 
   return request.promise;
 }
 
-function speakItalian() {
+async function speakItalian() {
   if (!quiz.length) return;
   const q = quiz[current];
   if (!q || !q.question) return;
@@ -1938,44 +1923,42 @@ function speakItalian() {
   }
 
   const cacheKey = String(q.id || current) + "_it";
+  const identityKey = QUIZBANK_MODE ? `${cacheKey}:${q.audioIdentityToken || ""}` : cacheKey;
   const focusToken = beginQuizTtsFocus("it", `quiz-question-it:${cacheKey}`);
   const myId = ++italianAudioId;
   italianAudioBtn?.classList.add("is-loading");
   italianAudioBtn?.setAttribute("aria-busy", "true");
 
-  fetchItalianAudio(q.question, cacheKey, q.id, q.audioIdentityToken || "")
-    .then(data => {
-      if (!isCurrentQuizTts("it", focusToken, myId)) return;
-      italianAudioBtn?.classList.remove("is-loading");
-      italianAudioBtn?.removeAttribute("aria-busy");
+  try {
+    const data = italianAudioCache.get(identityKey) || await fetchItalianAudio(q.question, cacheKey, q.id, q.audioIdentityToken || "");
+    if (!isCurrentQuizTts("it", focusToken, myId)) return;
+    italianAudioBtn?.classList.remove("is-loading");
+    italianAudioBtn?.removeAttribute("aria-busy");
 
-      const blobUrl = audioUrlFromBase64(data.audio);
+    const blobUrl = audioUrlFromBase64(data.audio);
 
-      const audio = new Audio(blobUrl);
-      googleItalianAudio = audio;
-      googleItalianAudioUrl = blobUrl;
-      isTtsPlaying = true;
-      italianAudioBtn?.classList.add("is-playing");
+    const audio = new Audio(blobUrl);
+    googleItalianAudio = audio;
+    googleItalianAudioUrl = blobUrl;
+    isTtsPlaying = true;
+    italianAudioBtn?.classList.add("is-playing");
 
-      const done = () => {
-        completeQuizTts("it", focusToken, myId, { resume: true });
-      };
+    const done = () => {
+      completeQuizTts("it", focusToken, myId, { resume: true });
+    };
 
-      audio.onended = done;
-      audio.onerror = () => {
-        if (completeQuizTts("it", focusToken, myId, { resume: true })) showAudioUnavailableToast();
-      };
-      audio.play().catch(() => {
-        if (completeQuizTts("it", focusToken, myId, { resume: true })) showAudioUnavailableToast();
-      });
-    })
-    .catch(err => {
-      if (!isCurrentQuizTts("it", focusToken, myId)) return;
-      console.error("[Italian TTS] Failed:", err.message);
-      if (completeQuizTts("it", focusToken, myId, { resume: true })) {
-        if (err.message !== "quizbank_content_changed_refresh_required") showAudioUnavailableToast("Audio italiano non disponibile");
-      }
-    });
+    audio.onended = done;
+    audio.onerror = () => {
+      if (completeQuizTts("it", focusToken, myId, { resume: true })) showAudioUnavailableToast();
+    };
+    await audio.play();
+  } catch (error) {
+    if (!completeQuizTts("it", focusToken, myId, { resume: true })) return;
+    if (error?.message === "quizbank_content_changed_refresh_required") return;
+    showAudioUnavailableToast(error?.name === "NotAllowedError"
+      ? "Audio pronto. Tocca di nuovo per ascoltare."
+      : "L’audio italiano non si è caricato. Riprova.");
+  }
 }
 
 // Prefers the synchronized TMM Books/All Books text and uses the protected
@@ -2975,7 +2958,7 @@ function getServerReviewItems(result = {}) {
     // Match question by ID (authoritative) then fall back to index
     const qIndex = quiz.findIndex(q => String(q.id) === String(item.id));
     const qi     = qIndex !== -1 ? qIndex : index;
-    const q      = quiz[qi];
+    const q      = qIndex >= 0 || item.id == null ? quiz[qi] : null;
 
     // item.correct from the server is a BOOLEAN: did the user answer correctly?
     // It is NOT the correct answer value — never use it as normalizeAnswerValue input.
@@ -3004,13 +2987,13 @@ function getServerReviewItems(result = {}) {
     return {
       id:            q?.id ?? item.id ?? "",
       index:         qi + 1,
-      question:      q?.question || `Domanda ${qi + 1}`,
-      figure:        q?.figure ?? null,
-      figureRotation: q?.figureRotation || 0,
+      question:      q?.question || item.question || `Domanda ${qi + 1}`,
+      figure:        q?.figure ?? item.figure ?? null,
+      figureRotation: q?.figureRotation ?? item.figureRotation ?? 0,
       sourceRevision: q?.sourceRevision || "",
-      audioQuestion: q?.audioQuestion || q?.question || `Domanda ${qi + 1}`,
-      audioFigure:   q?.audioFigure ?? q?.figure ?? null,
-      audioIdentityToken: q?.audioIdentityToken || "",
+      audioQuestion: q?.audioQuestion || q?.question || item.audioQuestion || item.question || `Domanda ${qi + 1}`,
+      audioFigure:   q?.audioFigure ?? q?.figure ?? item.audioFigure ?? item.figure ?? null,
+      audioIdentityToken: q?.audioIdentityToken || item.audioIdentityToken || "",
       helpQuestion: {
         id: q?.id ?? item.id ?? "",
         sourceRevision: q?.sourceRevision || "",
@@ -3047,6 +3030,7 @@ function buildAnswerReview(result = {}) {
       index:         index + 1,
       question:      question.question || `Domanda ${index + 1}`,
       figure:        question.figure ?? null,
+      figureRotation: question.figureRotation || 0,
       sourceRevision: question.sourceRevision || "",
       audioQuestion: question.audioQuestion || question.question || `Domanda ${index + 1}`,
       audioFigure:   question.audioFigure ?? question.figure ?? null,
@@ -3452,10 +3436,11 @@ function renderAnswerReview(items = []) {
       figureShell.className = "modal-review-figure-shell";
       const img = document.createElement("img");
       img.className = "modal-review-img";
-      img.alt = "";
-      if (QUIZBANK_MODE) loadQuizBankFigure(img, item);
-      else { img.src = buildFigureImageUrl(item.figure); img.onerror = function () { this.remove(); }; }
+      img.alt = "Figura della domanda";
+      img.loading = "lazy";
       figureShell.appendChild(img);
+      if (QUIZBANK_MODE) loadQuizBankFigure(img, item);
+      else window.MagicQuizBankFigures.load(img, item, { url: buildFigureImageUrl(item.figure) });
       figureShell.appendChild(reviewAudioControl);
       row.appendChild(figureShell);
     } else {
@@ -3896,7 +3881,7 @@ async function finishQuiz(forceFinish = false) {
         items: (Array.isArray(data.results) ? data.results : []).flatMap(item => {
           const index = quiz.findIndex(question => String(question.id) === String(item.id));
           if (index < 0 || payload[index]?.answer === null || typeof item.correct !== "boolean") return [];
-          return [{ quizId: String(item.id), question: quiz[index].question, correct: item.correct }];
+          return [{ quizId: String(item.id), question: quiz[index].question, figureId: quiz[index].figure ?? item.figure, correct: item.correct }];
         })
       });
     }

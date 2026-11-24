@@ -7,8 +7,7 @@
     return /^[1-9]\d{0,3}$/.test(id) ? `/api/asset?kind=figure&figure=${id}&presentation=numberless-v2&catalog=quizbank-r2-v2` : "";
   }
 
-  function load(image, question, { onReady = () => {}, isCurrent = () => true } = {}) {
-    const url = source(question.figure);
+  function load(image, question, { onReady = () => {}, isCurrent = () => true, url = source(question.figure) } = {}) {
     let note = null;
     let retry = null;
     const current = () => image.__quizBankFigureLoad === owner && isCurrent();

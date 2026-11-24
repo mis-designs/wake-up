@@ -192,8 +192,14 @@
       }
     });
   }
-  function audioFailure(state, version) {
+  function audioFailure(state, version, error) {
     if (!current(state) || version !== state.audioVersion) return;
+    if (error?.name === 'NotAllowedError' && state.audio) {
+      releaseFocus(state);
+      mediaUI(state);
+      status(state, 'Audio pronto. Premi Riproduci per ascoltare.');
+      return;
+    }
     stopAudio(state);
     status(state, 'Audio non disponibile.', () => selectAudio(state, state.lang, true));
   }
@@ -226,7 +232,7 @@
       await audio.play();
       if (!valid()) audio.pause();
       else mediaUI(state);
-    } catch (_) { if (valid()) audioFailure(state, version); }
+    } catch (error) { if (valid()) audioFailure(state, version, error); }
   }
   async function selectAudio(state, language, reload = false) {
     if (!current(state) || !state.theory) return;
@@ -267,12 +273,13 @@
       audio.pause(); releaseFocus(state); mediaUI(state); return;
     }
     claimFocus(state);
+    status(state, '');
     const version = state.audioVersion;
     try {
       await audio.play();
       if (!current(state) || state.audio !== audio || version !== state.audioVersion) audio.pause();
       else mediaUI(state);
-    } catch (_) { audioFailure(state, version); }
+    } catch (error) { if (state.audio === audio) audioFailure(state, version, error); }
   }
   function paragraph(state, language, text) {
     const p = document.createElement('p');

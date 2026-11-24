@@ -1646,7 +1646,12 @@
     try {
       await audio.play();
     } catch (error) {
-      if (activePlayback?.audio === audio) disposeExplanationPlayback(playback);
+      if (activePlayback !== playback) return;
+      if (error?.name === "NotAllowedError") {
+        showToast("Audio pronto. Tocca di nuovo Play per ascoltare.");
+        return;
+      }
+      disposeExplanationPlayback(playback);
       throw error;
     }
   }
@@ -1773,12 +1778,16 @@
       }
       await startTtsAudio(playback, base64AudioUrl(data.audio));
     } catch (error) {
-      if (error?.name === "AbortError" || ownRequest !== wordTtsRequestId || activeTtsPlayback !== playback) return;
+      if (ownRequest !== wordTtsRequestId || activeTtsPlayback !== playback) return;
       if (error?.message === "quizbank_content_changed_refresh_required") {
         completeStudyTts(playback, { resume: true }); return;
       }
       const missingTranslation = error?.message === "translation_not_available";
       if (completeStudyTts(playback, { resume: true })) {
+        if (error?.name === "NotAllowedError") {
+          showToast("Audio pronto. Tocca di nuovo per ascoltare.");
+          return;
+        }
         showToast(language === "bn"
           ? (missingTranslation ? "Traduzione non disponibile al momento." : "Audio bangla non disponibile.")
           : "Audio italiano non disponibile.");
@@ -2037,7 +2046,14 @@
     else stopStudyTts({ resume: false, reason: "resumable-request" });
     if (activePlayback?.key === key) {
       await startExplanationAudio(activePlayback.url, button, key, controls, activePlayback.durationHint)
-        .catch(() => showToast("Spiegazione audio non disponibile."));
+        .catch(error => {
+          if (activePlayback?.key !== key) return;
+          if (error?.name === "NotAllowedError") showToast("Audio pronto. Tocca di nuovo Play per ascoltare.");
+          else {
+            disposeExplanationPlayback(activePlayback);
+            showToast("La spiegazione audio non si è avviata. Riprova.");
+          }
+        });
       return;
     }
     const request = {
@@ -2099,7 +2115,7 @@
     // creates a second audio request for every visible question.
     try {
       const playback = await audioApi("getQuizAudioPlayback", question, { signal });
-      if (!playback?.audioUrl) throw firstError || new Error("audio_url_missing");
+      if (!playback?.audioUrl) throw new Error("audio_url_missing");
       const request = createTimedAudioRequest(signal);
       let response;
       try {
@@ -2107,13 +2123,17 @@
       } finally {
         request.cleanup();
       }
-      if (!response.ok) throw firstError || new Error(`audio_url_${response.status}`);
+      if (!response.ok) throw new Error(`audio_url_${response.status}`);
       const blob = await response.blob();
-      if (!blob.size) throw firstError || new Error("empty_audio_blob");
+      if (!blob.size) throw new Error("empty_audio_blob");
       return { blob, durationMs: Number(playback.durationMs) || 0 };
     } catch (error) {
-      if (error?.name === "AbortError") throw error;
-      throw firstError || new Error("audio_not_available");
+      const missing = code => ["quiz_audio_not_found", "audio_blob_404", "audio_url_404"].includes(code);
+      if (missing(error?.message)) {
+        if (missing(firstError?.message)) throw new Error("quiz_audio_not_found");
+        throw firstError;
+      }
+      throw error;
     }
   }
 

@@ -52,3 +52,75 @@ test('Safari activation rejection retains the blob and repeat tap plays synchron
   await context.playSharedAudio();
   assert.equal(context.sharedAudio.paused, true);
 });
+
+function ownerFunction(source, name) {
+  const fn = source.match(new RegExp('^(?:async )?function ' + name + '\\([^]*?^}', 'm'));
+  assert.ok(fn, name);
+  return fn[0];
+}
+
+test('Italian question retries playback during the click with one TTS request', async () => {
+  let downloads = 0, plays = 0;
+  const messages = [];
+  const ctx = {
+    quiz: [{ id: 'cap1_q2', question: 'Domanda' }], current: 0, QUIZBANK_MODE: false,
+    italianAudioId: 0, italianAudioBtn: null, italianAudioFocusToken: null, isTtsPlaying: false,
+    italianAudioCache: new Map(), hasTrialAudioPreview: () => true, beginQuizTtsFocus: () => 1,
+    isCurrentQuizTts: () => true, audioUrlFromBase64: () => 'blob:tts',
+    completeQuizTts() { ctx.isTtsPlaying = false; return true; },
+    showAudioUnavailableToast: message => messages.push(message),
+    async fetchItalianAudio(text, key) {
+      downloads++;
+      const data = { audio: 'test' };
+      ctx.italianAudioCache.set(key, data);
+      return data;
+    },
+    Audio: class {
+      async play() { if (++plays === 1) throw new DOMException('Click required', 'NotAllowedError'); }
+    }
+  };
+  vm.runInNewContext(ownerFunction(source, 'speakItalian'), ctx);
+  await ctx.speakItalian();
+  assert.match(messages[0], /Tocca di nuovo/);
+  const retry = ctx.speakItalian();
+  assert.equal(plays, 2);
+  await retry;
+  assert.equal(downloads, 1);
+});
+
+test('review of a wrong answer reuses the recording after a denied play', async () => {
+  let downloads = 0, plays = 0;
+  const messages = [];
+  const ctx = {
+    reviewAudio: { src: '', paused: true, async play() {
+      if (++plays === 1) throw new DOMException('Click required', 'NotAllowedError');
+      this.paused = false;
+    } },
+    reviewAudioPending: false, reviewAudioKey: '', reviewAudioRequestId: 0, reviewAudioButton: null,
+    AbortController, URL: { createObjectURL: () => 'blob:saved' }, audioFocus: null,
+    reviewAudioIdentityKey: () => 'fixture', setReviewAudioButtonState() {}, clearReviewAudioStatus() {},
+    setReviewAudioStatus: (_, message) => messages.push(message), stopAllAudio() {},
+    resetReviewAudioPlayer() { ctx.reviewAudioRequestId++; ctx.reviewAudio.src = ''; },
+    async requestSharedAudioBlob() { downloads++; return {blob: new Blob(['fixture'])}; },
+    showReviewAudioFailure() { assert.fail('audio is present'); }
+  };
+  vm.runInNewContext(['handleReviewPlaybackFailure', 'toggleReviewAudio'].map(name => ownerFunction(source, name)).join('\n'), ctx);
+  const button = { dataset: {} };
+  await ctx.toggleReviewAudio(button, {});
+  assert.match(messages[0], /Audio pronto/);
+  const retry = ctx.toggleReviewAudio(button, {});
+  assert.equal(plays, 2);
+  await retry;
+  assert.equal(downloads, 1);
+});
+
+test('Studia distinguishes a missing recording from a failed fallback', async () => {
+  const study = readFileSync(new URL('../study-quiz.js', import.meta.url), 'utf8').replace(/^  /gm, '');
+  for (const [second, expected] of [['timeout', 'timeout'], ['quiz_audio_not_found', 'quiz_audio_not_found']]) {
+    let calls = 0;
+    const ctx = { audioApi: async () => { throw new Error(++calls === 1 ? 'quiz_audio_not_found' : second); } };
+    vm.runInNewContext(ownerFunction(study, 'fetchExplanationBlob'), ctx);
+    await assert.rejects(ctx.fetchExplanationBlob({}), error => error.message === expected);
+    assert.equal(calls, 2);
+  }
+});

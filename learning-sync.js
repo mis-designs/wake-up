@@ -524,7 +524,8 @@
       if (!item || typeof item.correct !== "boolean" || !item.quizId || !item.question) continue;
       const quizId = String(item.quizId).slice(0, 255);
       const key = `${String(sessionId).slice(0, 120)}:${quizId}`;
-      byKey.set(key, { key, quizId, question: String(item.question).slice(0, 1600), correct: item.correct, at: now });
+      const figureId = root.QuizAudioIdentity?.normalizeFigure(item.figureId);
+      byKey.set(key, { key, quizId, ...(/^fig[1-9]\d*$/.test(figureId) ? { figureId } : {}), question: String(item.question).slice(0, 1600), correct: item.correct, at: now });
     }
     const record = { userId: auth.userId, deviceId: auth.deviceId, savedAt: now,
       entries: [...byKey.values()].sort((a, b) => a.at - b.at).slice(-LEARNING_SYNC_CONFIG.maxLocalReviewEntries) };

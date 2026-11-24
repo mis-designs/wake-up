@@ -689,6 +689,10 @@
   function renderGateQuestion() {
     const content = gateContent();
     if (!content || !activeQuiz) return;
+    if (activeQuiz.correctCount >= REQUIRED_CORRECT) {
+      finishGateSession();
+      return;
+    }
     const wordId = activeQuiz.wordIds[activeQuiz.currentIndex];
     const word = findWord(wordId);
     if (!word) {
@@ -711,9 +715,10 @@
       <div class="word-review-page">
       <p class="magic-word-question-label">Qual è il significato corretto?</p>
       <div class="magic-word-options" role="group" aria-label="Scegli il significato">
-        ${options.map(option => `<button type="button" data-word-id="${escapeHtml(option.id)}" lang="bn"><span>${escapeHtml(option.bn)}</span></button>`).join("")}
+        ${options.map(option => `<button type="button" data-word-id="${escapeHtml(option.id)}" lang="bn"><span class="word-review-pair"><span lang="bn">${escapeHtml(option.bn)}</span><span lang="it" hidden>${escapeHtml(option.it)}</span></span></button>`).join("")}
       </div>
       <p id="magicWordFeedback" class="magic-word-feedback" role="status"></p>
+      <button id="magicWordNext" class="word-review-next" type="button" hidden>${completed + 1 === REQUIRED_CORRECT ? "Concludi il ripasso" : "Prossima parola"}</button>
       ${activeQuiz.manual
         ? '<button id="magicWordManualClose" class="magic-word-optout" type="button">Chiudi allenamento</button>'
         : '<button id="magicWordOptOut" class="magic-word-optout" type="button"><span lang="bn">শব্দচর্চা বন্ধ করুন</span> <span lang="it">Disattiva il ripasso</span></button>'}
@@ -722,6 +727,7 @@
     content.querySelectorAll("[data-word-id]").forEach(button => {
       button.addEventListener("click", () => answerGateQuestion(button, button.dataset.wordId, word.id));
     });
+    root.document.getElementById("magicWordNext").addEventListener("click", renderGateQuestion, { once: true });
     root.document.getElementById("magicWordOptOut")?.addEventListener("click", renderOptOutConfirmation);
     root.document.getElementById("magicWordManualClose")?.addEventListener("click", closeManualPractice);
     content.querySelector(".magic-word-prompt")?.focus();
@@ -741,10 +747,19 @@
   function answerGateQuestion(button, selectedId, correctId) {
     if (answerLocked || !activeQuiz) return;
     const feedback = root.document.getElementById("magicWordFeedback");
-    if (selectedId !== correctId) {
+    const correct = selectedId === correctId;
+    const choices = gateContent().querySelectorAll("[data-word-id]");
+    for (const choice of choices) {
+      const isAnswer = choice.dataset.wordId === correctId;
+      choice.querySelector('[lang="it"]').hidden = false;
+      choice.classList.toggle("is-correct", isAnswer);
+      choice.disabled = correct || !isAnswer;
+    }
+    if (!correct) {
       button.classList.add("is-wrong");
-      button.disabled = true;
-      if (feedback) feedback.textContent = "Non ancora. Riprova: puoi farcela.";
+      const rightChoice = Array.from(choices).find(choice => choice.dataset.wordId === correctId);
+      if (feedback) feedback.textContent = `La risposta corretta è «${rightChoice.querySelector('[lang="bn"]').textContent}». Selezionala per continuare.`;
+      rightChoice.focus({ preventScroll: true });
       const selectedWord = findWord(selectedId);
       if (selectedWord?.it) speakItalian(selectedWord.it);
       return;
@@ -752,8 +767,6 @@
 
     answerLocked = true;
     stopItalianSpeech();
-    button.classList.add("is-correct");
-    root.document.querySelectorAll(".magic-word-options button").forEach(option => { option.disabled = true; });
     if (feedback) feedback.textContent = "Corretto!";
     activeQuiz.correctCount = Number(activeQuiz.correctCount || 0) + 1;
     activeQuiz.currentIndex = Number(activeQuiz.currentIndex || 0) + 1;
@@ -762,10 +775,9 @@
     preference.active = activeQuiz;
     writePreference(preference);
 
-    root.setTimeout(() => {
-      if (activeQuiz.correctCount >= REQUIRED_CORRECT) finishGateSession();
-      else renderGateQuestion();
-    }, 650);
+    const next = root.document.getElementById("magicWordNext");
+    next.hidden = false;
+    next.focus({ preventScroll: true });
   }
 
   function openHomeAfterUnlock() {

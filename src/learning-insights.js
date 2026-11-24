@@ -495,7 +495,8 @@
     return `${dashboardHeading(model, true)}<div class="li-dashboard-grid">${scorePanel(model)}<section class="li-chart-card li-review-intro"><p class="li-kicker">Il tuo ripasso</p><h2>${model.summary.totalAnswers ? errors.length : "—"}<span> ${errors.length === 1 ? "domanda da rivedere" : "domande da rivedere"}</span></h2><p>Una domanda esce da questa lista quando l’ultima risposta disponibile è corretta.</p><p>Le risposte sbagliate ripetute alla stessa domanda contano una sola volta nella lista.</p></section>${nextStudyPanel(model)}</div>${chapterCharts(model, true)}
       <section class="li-chart-card li-local-review" aria-labelledby="liReviewQuestions"><header class="li-section-heading"><div><p class="li-kicker">Rileggi e riprova</p><h2 id="liReviewQuestions">Le domande da rivedere</h2></div><span class="li-scope-tag">${Math.min(errors.length, state.visibleCount)} di ${errors.length}</span></header>${errors.length ? `<ol class="li-review-grid">${errors.slice(0, state.visibleCount).map(item => {
         const chapter = localChapter(item.quizId);
-        return `<li class="li-local-error"><small>${chapter ? `Capitolo ${chapter}` : "Quiz"} · ${escapeHtml(formatDate(item.at))}</small><p>${escapeHtml(item.question)}</p><button class="li-secondary-action d-btn d-btn-ghost" type="button" data-li-action="${chapter ? "start-quiz" : "home"}" ${chapter ? `data-chapter="${chapter}"` : ""} onclick="MagicBookLearningInsights.handleClick(event)">${chapter ? "Allenati su questo capitolo" : "Torna a studiare"}</button></li>`;
+        const figure = reviewFigure(item.figureId);
+        return `<li class="li-local-error">${figure}<small>${chapter ? `Capitolo ${chapter}` : "Quiz"} · ${escapeHtml(formatDate(item.at))}</small><p>${escapeHtml(item.question)}</p><button class="li-secondary-action d-btn d-btn-ghost" type="button" data-li-action="${chapter ? "start-quiz" : "home"}" ${chapter ? `data-chapter="${chapter}"` : ""} onclick="MagicBookLearningInsights.handleClick(event)">${chapter ? "Allenati su questo capitolo" : "Torna a studiare"}</button></li>`;
       }).join("")}</ol>${errors.length > state.visibleCount ? '<button class="li-secondary-action li-more d-btn d-btn-ghost" type="button" data-li-action="more" onclick="MagicBookLearningInsights.handleClick(event)">Mostra altre domande</button>' : ""}` : `<div class="li-chart-empty"><strong>${model.summary.totalAnswers ? "Nessuna domanda da rivedere nelle correzioni disponibili." : "Il tuo ripasso comincia con la prossima correzione."}</strong><p>${model.summary.totalAnswers ? "Puoi continuare con un altro capitolo." : "Se hai già fatto quiz in passato, potrebbero non essere ancora presenti in questa vista."}</p></div>`}</section>`;
   }
 
@@ -548,10 +549,14 @@
       : (Array.isArray(model.errors?.[lens.key]) ? model.errors[lens.key] : []);
   }
 
+  function reviewFigure(figureId) {
+    return figureId ? `<div class="li-media-frame"><img class="li-figure-image" loading="lazy" decoding="async" src="${figureUrl(figureId)}" alt="Figura della domanda"><span class="li-media-fallback">Figura non disponibile</span></div>` : "";
+  }
+
   function renderRelatedQuiz(item) {
     const rows = Array.isArray(item.relatedQuiz) ? item.relatedQuiz : [];
     if (!rows.length) return "";
-    return `<div class="li-related"><h4>Quiz collegati</h4><ul>${rows.map(row => `<li><span>${escapeHtml(formatQuizReference(row.quizId, row.chapter))}</span><p>${escapeHtml(row.question)}</p></li>`).join("")}</ul></div>`;
+    return `<div class="li-related"><h4>Quiz collegati</h4><ul>${rows.map(row => `<li><span>${escapeHtml(formatQuizReference(row.quizId, row.chapter))}</span><p>${escapeHtml(row.question)}</p>${row.figureId !== figureAssetId(item) ? reviewFigure(row.figureId) : ""}</li>`).join("")}</ul></div>`;
   }
 
   function renderErrorDetail(item) {

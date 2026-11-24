@@ -275,7 +275,31 @@ body.magic-word-gate-open {
   overflow-wrap: anywhere;
   cursor: pointer;
 }
-#magicWordGate .magic-word-options button span {
+.word-review-pair {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+#magicWordGate .word-review-pair [lang="it"] {
+  color: #415a4e;
+  font: 550 15px/1.4 Inter, sans-serif;
+}
+.word-review-next {
+  display: block;
+  min-height: 44px;
+  margin: 8px 0;
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 6px;
+  background: #193d31;
+  color: white;
+  font: 650 15px/1.4 Inter, sans-serif;
+  cursor: pointer;
+}
+.word-review-next[hidden], .word-review-pair [hidden] { display: none; }
+.magic-word-options button:disabled { opacity: 1; }
+.word-review-next:focus-visible { outline: 2px solid #236047; outline-offset: 2px; }
+#magicWordGate .magic-word-options button span[lang="bn"] {
   font: 400 20px/1.45 var(--font-bn-adorsho);
 }
 .magic-word-options button::after {
