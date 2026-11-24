@@ -6,7 +6,8 @@ const CLIENT_AUTH_RESET_KEY = "client_auth_reset_version";
 const QUIZBANK_MODE = window.location.pathname.replace(/\/+$/, "") === "/quiz" && new URLSearchParams(window.location.search).get("source") === "quizbank";
 const QUIZBANK_SHEET = new URLSearchParams(window.location.search).get("scheda") || "";
 const QUIZBANK_VALID_SHEET = /^\d{1,2}$/.test(QUIZBANK_SHEET) && Number(QUIZBANK_SHEET) >= 1 && Number(QUIZBANK_SHEET) <= 50;
-const HOME_ROUTE = QUIZBANK_MODE ? (QUIZBANK_VALID_SHEET ? `/quizbank?scheda=${Number(QUIZBANK_SHEET)}` : "/quizbank") : "/magic-book";
+const ALL_QUIZ_MODE = window.location.pathname.replace(/\/+$/, "") === "/quiz" && new URLSearchParams(window.location.search).get("source") === "all";
+const HOME_ROUTE = ALL_QUIZ_MODE ? "/home" : QUIZBANK_MODE ? (QUIZBANK_VALID_SHEET ? `/quizbank?scheda=${Number(QUIZBANK_SHEET)}` : "/quizbank") : "/magic-book";
 if (QUIZBANK_MODE) document.querySelector(".exit-btn")?.setAttribute("aria-label", "Torna alla scheda");
 const TRIAL_MODE = window.location.pathname.replace(/\/+$/, "") === "/quiz/prova-gratis";
 const TRIAL_HOME_ROUTE = "/?trialOffer=1";
@@ -417,7 +418,7 @@ async function refreshQuizSession() {
         phone: getQuizPhone(),
         deviceId: getQuizDeviceId(),
         chapters: routeInfo.chapters,
-        mode: getRequestedQuizMode()
+        mode: ALL_QUIZ_MODE ? "allquiz" : getRequestedQuizMode()
       })
     });
     const data = await response.json().catch(() => ({}));
@@ -445,7 +446,7 @@ async function refreshQuizSession() {
 }
 
 async function ensureFreshQuizSession() {
-  if (QUIZBANK_MODE || TRIAL_MODE || !quizSessionToken || !quizSessionTokenExpiresAt) return { ok: true };
+  if (ALL_QUIZ_MODE || QUIZBANK_MODE || TRIAL_MODE || !quizSessionToken || !quizSessionTokenExpiresAt) return { ok: true };
   if (quizSessionTokenExpiresAt > Date.now() + QUIZ_SESSION_REFRESH_SKEW_MS) return { ok: true };
   return refreshQuizSession();
 }
@@ -573,6 +574,7 @@ document.addEventListener("visibilitychange", () => {
 });
 
 function getQuizAccessErrorMessage(error) {
+  if (error === "all_quiz_access_required") return "All Quiz è un extra. Chiedi l’attivazione a TMM Bangla Patente. সব অধ্যায়ের কুইজ চালু করতে আমাদের সঙ্গে যোগাযোগ করুন।";
   if (QUIZBANK_MODE && ["quizbank_access_denied", "quizbank_access_required", "quizbank_preview_forbidden"].includes(error)) return "Il tuo account non è abilitato a QuizBank. Torna alla scheda dopo l’attivazione.";
   if (QUIZBANK_MODE && error === "quizbank_admin_required") return "Solo gli amministratori possono aggiungere spiegazioni audio.";
   if (error === "expired") return "Accesso scaduto. Contatta il supporto per rinnovare.";
@@ -626,8 +628,8 @@ async function handleQuizAccessError(error) {
   resetQuizTheory(); clearQuizTheoryButtons();
   if (quizAccessErrorHandled) return;
   quizAccessErrorHandled = true;
-  if (QUIZBANK_MODE) {
-    setQuizTitle("Accesso riservato | QuizBank");
+  if (QUIZBANK_MODE || ALL_QUIZ_MODE) {
+    setQuizTitle(ALL_QUIZ_MODE ? "Accesso riservato | All Quiz" : "Accesso riservato | QuizBank");
     for (const controller of quizbankRequests) controller.abort();
     clearInterval(timerInterval); stopAllAudio(); closeInlineAudioRecorder();
     resetSharedAudioPlayer(); resetReviewAudioPlayer();
@@ -752,7 +754,7 @@ function getLearningQuizMode() {
 }
 
 function beginLearningQuizSession() {
-  if (QUIZBANK_MODE || TRIAL_MODE || !window.MagicBookLearningSync) {
+  if (ALL_QUIZ_MODE || QUIZBANK_MODE || TRIAL_MODE || !window.MagicBookLearningSync) {
     learningSessionId = "";
     return;
   }
@@ -768,7 +770,7 @@ function markLearningQuestionVisible() {
 }
 
 function queueLearningAnswer(userAnswer) {
-  if (QUIZBANK_MODE || TRIAL_MODE || !learningSessionId || !window.MagicBookLearningSync) return;
+  if (ALL_QUIZ_MODE || QUIZBANK_MODE || TRIAL_MODE || !learningSessionId || !window.MagicBookLearningSync) return;
   const question = quiz[current];
   const answerState = answers[current];
   if (!question?.id || !answerState) return;
@@ -1418,7 +1420,7 @@ function updateSharedAudioAvailability(question) {
     question: String(question.question || ""),
     figure: question.figure ?? ""
   } : null;
-  if (TRIAL_MODE || !question?.question || !sharedAudioPlayer) {
+  if (TRIAL_MODE || question?.hasSharedAudioSource === false || !question?.question || !sharedAudioPlayer) {
     setSharedAudioVisibility(false);
     return;
   }
@@ -2446,7 +2448,7 @@ async function loadQuiz() {
     if (TRIAL_MODE && !TRIAL_ALLOWED_CHAPTERS.has(chapters)) throw new Error("trial_chapter_forbidden");
     quizMode = getRequestedQuizMode();
     syncNativeQuizSection();
-    const url = buildQuizApiUrl("getQuiz", { chapters, mode: quizMode === "default" ? "" : quizMode });
+    const url = buildQuizApiUrl("getQuiz", { chapters, mode: ALL_QUIZ_MODE ? "allquiz" : quizMode === "default" ? "" : quizMode });
     const data = await fetchQuizJson(url, { cache: "no-store" });
 
     if (data.accessToken && data.accessTokenExpiresAt) {
@@ -3875,7 +3877,7 @@ async function finishQuiz(forceFinish = false) {
     const result = normalizeQuizResult(data, payload.length);
     // Retain only explicitly server-graded, answered questions. This snapshot
     // cannot modify the outbox, grading, account state or server statistics.
-    if (!TRIAL_MODE && !QUIZBANK_MODE) {
+    if (!TRIAL_MODE && !QUIZBANK_MODE && !ALL_QUIZ_MODE) {
       window.MagicBookLearningSync?.saveLocalReview?.({
         ...localReviewOwner,
         items: (Array.isArray(data.results) ? data.results : []).flatMap(item => {
@@ -3901,6 +3903,13 @@ async function finishQuiz(forceFinish = false) {
   } catch (err) {
     if (quizAccessErrorHandled) return;
     hideLoading();
+    if (ALL_QUIZ_MODE && err.message === "all_quiz_updated") {
+      clearInterval(timerInterval);
+      timerExpiryPending = false;
+      await showMessage("Catalogo aggiornato", "Le domande sono cambiate. Avvia un nuovo quiz per usare la versione aggiornata.");
+      returnToBook();
+      return;
+    }
     if (QUIZBANK_MODE && err.message === "quizbank_revision_changed") {
       clearInterval(timerInterval); timerExpiryPending = false;
       const restart = await showConfirm("Scheda aggiornata", "Questa scheda è stata corretta mentre la svolgevi. Per controllare il risultato occorre ricominciare con le domande aggiornate.", "Ricomincia scheda", "Mantieni le risposte");

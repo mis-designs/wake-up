@@ -290,10 +290,14 @@ function handleUserAccess(sheet, phone, deviceId, registerDevice, now) {
 }
 
 function getQuizBankColumn_(rows) {
+  return permissionColumn_(rows, "Quiz_bank");
+}
+
+function permissionColumn_(rows, name) {
   const header = rows[0] || [];
   let column = -1;
   for (let i = 0; i < header.length; i++) {
-    if (typeof header[i] !== "string" || header[i].trim() !== "Quiz_bank") continue;
+    if (typeof header[i] !== "string" || header[i].trim() !== name) continue;
     // A misplaced or duplicated permission header must never grant access.
     if (i < 5 || column !== -1) return -1;
     column = i;
@@ -329,6 +333,7 @@ function readUserAccess(sheet, phone, deviceId, now) {
         error: null,
         expiry: expiryState.expiryIso,
         role: isAdminPhone_(phone) ? "admin" : "user",
+        All_quiz: readQuizBankFlag_(rows[i], permissionColumn_(rows, "All_quiz")),
         Quiz_bank: readQuizBankFlag_(rows[i], quizBankColumn)
       };
     }
@@ -358,17 +363,17 @@ function writeUserAccess(sheet, phone, deviceId, now) {
     const quizBank = readQuizBankFlag_(rows[i], quizBankColumn);
 
     if (d1 === deviceId || d2 === deviceId) {
-      return { success: true, error: null, expiry: expiryIso, role: isAdminPhone_(phone) ? "admin" : "user", Quiz_bank: quizBank };
+      return { success: true, error: null, expiry: expiryIso, role: isAdminPhone_(phone) ? "admin" : "user", All_quiz: readQuizBankFlag_(rows[i], permissionColumn_(rows, "All_quiz")), Quiz_bank: quizBank };
     }
 
     if (!d1) {
       sheet.getRange(i + 1, 2).setValue(deviceId);
-      return { success: true, error: null, expiry: expiryIso, devices: 1, role: isAdminPhone_(phone) ? "admin" : "user", Quiz_bank: quizBank };
+      return { success: true, error: null, expiry: expiryIso, devices: 1, role: isAdminPhone_(phone) ? "admin" : "user", All_quiz: readQuizBankFlag_(rows[i], permissionColumn_(rows, "All_quiz")), Quiz_bank: quizBank };
     }
 
     if (!d2) {
       sheet.getRange(i + 1, 3).setValue(deviceId);
-      return { success: true, error: null, expiry: expiryIso, devices: 2, role: isAdminPhone_(phone) ? "admin" : "user", Quiz_bank: quizBank };
+      return { success: true, error: null, expiry: expiryIso, devices: 2, role: isAdminPhone_(phone) ? "admin" : "user", All_quiz: readQuizBankFlag_(rows[i], permissionColumn_(rows, "All_quiz")), Quiz_bank: quizBank };
     }
 
     const replacedDevice = d1;
@@ -379,7 +384,7 @@ function writeUserAccess(sheet, phone, deviceId, now) {
       error: null,
       expiry: expiryIso,
       role: isAdminPhone_(phone) ? "admin" : "user",
-      Quiz_bank: quizBank,
+      All_quiz: readQuizBankFlag_(rows[i], permissionColumn_(rows, "All_quiz")), Quiz_bank: quizBank,
       rotated: true,
       replacedDevice
     };
@@ -412,17 +417,17 @@ function handleConfirmDeviceRotation(sheet, phone, deviceId, now) {
       const quizBank = readQuizBankFlag_(rows[i], quizBankColumn);
 
       if (d1 === deviceId || d2 === deviceId) {
-        return { success: true, error: null, expiry: expiryIso, role: isAdminPhone_(phone) ? "admin" : "user", Quiz_bank: quizBank };
+        return { success: true, error: null, expiry: expiryIso, role: isAdminPhone_(phone) ? "admin" : "user", All_quiz: readQuizBankFlag_(rows[i], permissionColumn_(rows, "All_quiz")), Quiz_bank: quizBank };
       }
 
       if (!d1) {
         sheet.getRange(rowNumber, 2).setValue(deviceId);
-        return { success: true, error: null, expiry: expiryIso, devices: 1, role: isAdminPhone_(phone) ? "admin" : "user", Quiz_bank: quizBank };
+        return { success: true, error: null, expiry: expiryIso, devices: 1, role: isAdminPhone_(phone) ? "admin" : "user", All_quiz: readQuizBankFlag_(rows[i], permissionColumn_(rows, "All_quiz")), Quiz_bank: quizBank };
       }
 
       if (!d2) {
         sheet.getRange(rowNumber, 3).setValue(deviceId);
-        return { success: true, error: null, expiry: expiryIso, devices: 2, role: isAdminPhone_(phone) ? "admin" : "user", Quiz_bank: quizBank };
+        return { success: true, error: null, expiry: expiryIso, devices: 2, role: isAdminPhone_(phone) ? "admin" : "user", All_quiz: readQuizBankFlag_(rows[i], permissionColumn_(rows, "All_quiz")), Quiz_bank: quizBank };
       }
 
       const oldDevice1 = d1;
@@ -435,7 +440,7 @@ function handleConfirmDeviceRotation(sheet, phone, deviceId, now) {
         error: null,
         expiry: expiryIso,
         role: isAdminPhone_(phone) ? "admin" : "user",
-        Quiz_bank: quizBank,
+        All_quiz: readQuizBankFlag_(rows[i], permissionColumn_(rows, "All_quiz")), Quiz_bank: quizBank,
         rotated: true,
         replacedDevice: oldDevice1
       };
@@ -546,6 +551,10 @@ function updateUser(sheet, phone, data, now) {
   const values = sheet.getDataRange().getValues();
   const qb = adminQuizBankInput_(data, values);
   if (qb.error) return { success: false, error: qb.error };
+  const setAllQuiz = Object.prototype.hasOwnProperty.call(data, "All_quiz");
+  const allValue = String(data.All_quiz);
+  let allColumn = permissionColumn_(values, "All_quiz");
+  if (setAllQuiz && !["0", "1"].includes(allValue)) return { success: false, error: "bad_all_quiz" };
   const newPhone = normalizePhone(data.newPhone || phone);
   const expiryDate = parseExpiryDate(data.expiry);
   const hasExpiryInput = String(data.expiry || "").trim() !== "";
@@ -561,6 +570,16 @@ function updateUser(sheet, phone, data, now) {
     if (normalizePhone(values[i][0]) !== phone) continue;
 
     const row = i + 1;
+    if (setAllQuiz && allColumn === -1) {
+      // The surrounding admin write lock also serializes first-time column creation.
+      if (values[0].some(function (cell) { return String(cell).trim() === "All_quiz"; })) {
+        return { success: false, error: "all_quiz_column_invalid" };
+      }
+      allColumn = Math.max(5, values[0].length);
+      if (allColumn >= sheet.getMaxColumns()) sheet.insertColumnsAfter(sheet.getMaxColumns(), allColumn + 1 - sheet.getMaxColumns());
+      sheet.getRange(1, allColumn + 1).setValue("All_quiz");
+    }
+    if (setAllQuiz) sheet.getRange(row, allColumn + 1).setValue(Number(allValue));
     if (newPhone !== phone) sheet.getRange(row, 1).setValue(newPhone);
     if (expiryDate) sheet.getRange(row, 4).setValue(expiryDate);
     if (qb.provided) sheet.getRange(row, qb.column + 1).setValue(qb.value);
@@ -569,6 +588,7 @@ function updateUser(sheet, phone, data, now) {
       success: true,
       error: null,
       phone: newPhone,
+      All_quiz: setAllQuiz ? Number(allValue) : readQuizBankFlag_(values[i], allColumn),
       Quiz_bank: qb.provided ? qb.value : readQuizBankFlag_(values[i], qb.column),
       expiry: expiryDate ? expiryDate.toISOString() : null
     };
@@ -635,6 +655,7 @@ function removePhone(sheet, phone) {
 function searchPhone(sheet, phone, now) {
   const values = sheet.getDataRange().getValues();
   const quizBankColumn = getQuizBankColumn_(values);
+  const allColumn = permissionColumn_(values, "All_quiz");
   for (let i = 1; i < values.length; i++) {
     if (normalizePhone(values[i][0]) !== phone) continue;
     const [p, d1, d2, expiry, regDate] = values[i];
@@ -658,7 +679,7 @@ function searchPhone(sheet, phone, now) {
     }
 
     return { phone, expiry: expiryIso, registration_date: regDateIso, remaining_days: remainingDays, status,
-      Quiz_bank: readQuizBankFlag_(values[i], quizBankColumn) };
+      All_quiz: readQuizBankFlag_(values[i], allColumn), Quiz_bank: readQuizBankFlag_(values[i], quizBankColumn) };
   }
   return null;
 }
@@ -666,6 +687,7 @@ function searchPhone(sheet, phone, now) {
 function listPhones(sheet, now) {
   const values = sheet.getDataRange().getValues();
   const quizBankColumn = getQuizBankColumn_(values);
+  const allColumn = permissionColumn_(values, "All_quiz");
   const out = [];
   for (let i = 1; i < values.length; i++) {
     const [p, d1, d2, expiry, regDate] = values[i];
@@ -690,7 +712,7 @@ function listPhones(sheet, now) {
     }
 
     out.push({ phone, device1: d1 || "", device2: d2 || "", expiry: expIso, registration_date: regDateIso, status,
-      Quiz_bank: readQuizBankFlag_(values[i], quizBankColumn) });
+      All_quiz: readQuizBankFlag_(values[i], allColumn), Quiz_bank: readQuizBankFlag_(values[i], quizBankColumn) });
   }
   return out;
 }

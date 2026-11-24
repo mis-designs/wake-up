@@ -15,7 +15,8 @@ test("one desktop header groups six independent accessible phone, duration and a
   assert.equal((modal.match(/class="admin-editor-columns"/g)||[]).length, 1);
   assert.equal((modal.match(/class="admin-bulk-row"/g)||[]).length, 6);
   for (let i=1;i<=6;i++) assert.ok(modal.includes(`aria-label="QuizBank per Telefono ${i}"`));
-  assert.equal((modal.match(/class="admin-qb-control" aria-hidden="true"/g)||[]).length, 7);
+  assert.equal((modal.match(/class="admin-qb-control" aria-hidden="true"/g)||[]).length, 8);
+  assert.match(modal, /type="checkbox" aria-label="Accesso extra All Quiz"/);
   assert.match(modal, /type="checkbox" aria-label="Accesso QuizBank"/);
   assert.doesNotMatch(modal, /role="switch"|onclick=".*QuizBank/);
 });

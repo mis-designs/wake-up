@@ -30,6 +30,7 @@ function fixture({ rows = dataRows(), properties = {}, lockAvailable = true, wai
   const config = { GAS_SECRET: TOKEN, ADMIN_KEY, ADMIN_PHONES: "", ADMIN_PHONE_NUMBERS: "", ...properties };
   const cache = new Map([["rate_limit", String(cacheCount)]]);
   const sheet = {
+    getMaxColumns() { return 26; },
     getDataRange() {
       stats.dataRanges++;
       return { getValues() { stats.reads++; if (readError) throw new Error("fixture read failure"); return data.map(row => row.slice()); } };
@@ -430,4 +431,15 @@ test("JSONP and promo dispatch keep their original response ownership", () => {
   const promo = fixture();
   assert.deepEqual(promo.request("POST", { action: "promo_redeem", Quiz_bank: 1 }).body, { success: true, promoFixture: true });
   assert.equal(promo.stats.promo.length, 1); assert.equal(promo.stats.sheetLookups, 0); assertNoWrites(promo);
+});
+
+test("All Quiz activation and revocation are independent from QuizBank", () => {
+  const h = fixture({rows:dataRows(1)});
+  const edit = value => h.request("POST",{action:"admin_update",adminKey:ADMIN_KEY,All_quiz:value}).body;
+  assert.equal(h.request("GET").body.All_quiz,0);
+  assert.equal(edit(1).All_quiz,1);
+  assert.equal(h.data[0].at(-1),"All_quiz");
+  assert.equal(h.request("GET").body.All_quiz,1);
+  assert.equal(edit(0).All_quiz,0);
+  assert.equal(h.request("GET").body.Quiz_bank,1);
 });

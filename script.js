@@ -5095,6 +5095,8 @@ function setAdminMessage(message = "", type = "") {
 
 function getAdminErrorMessage(error) {
   if (error === "bad_quizbank") return "Valore QuizBank non valido. Seleziona o deseleziona il flag.";
+  if (error === "all_quiz_not_confirmed") return "Attivazione All Quiz non confermata. Verifica la versione del servizio accessi.";
+  if (error === "all_quiz_column_invalid") return "Controlla l’intestazione All_quiz nel foglio utenti.";
   if (error === "quizbank_column_missing") return "Nel foglio utenti manca la colonna Quiz_bank, oppure è duplicata. Correggi l'intestazione prima di salvare.";
   if (error === "quizbank_not_confirmed") return "Il server non ha confermato il flag QuizBank. Aggiorna lo script Google e verifica il numero nell'elenco: potrebbe essere già stato salvato.";
   if (error === "save_unconfirmed") return "Salvataggio non confermato. I dati restano qui: controlla il numero nell'elenco prima di riprovare.";
@@ -5798,6 +5800,11 @@ function adminOpenUserModal(mode, user = null) {
     quizBank.checked = hasAdminQuizBank(user);
     quizBank.disabled = mode !== "edit";
   }
+  const allQuiz = document.getElementById("adminModalAllQuiz");
+  allQuiz.defaultChecked = String(user?.All_quiz ?? "0") === "1";
+  allQuiz.checked = allQuiz.defaultChecked;
+  allQuiz.disabled = mode !== "edit";
+  document.getElementById("adminAllQuizField").classList.toggle("hidden", mode !== "edit");
   document.getElementById("adminQuizBankField")?.classList.toggle("hidden", mode !== "edit");
   document.getElementById("adminQuizBankHelp")?.classList.toggle("hidden", mode === "renew");
 
@@ -5963,7 +5970,9 @@ async function adminSubmitUserModal() {
       const result = await adminRequest("create", { phone, days: days || 90, expiry, Quiz_bank });
       successMessage = result.outcome === "renewed" ? "Utente già presente: accesso rinnovato. QuizBank invariato." : "Utente creato.";
     } else if (mode === "edit") {
-      await adminRequest("update", { phone: originalPhone, newPhone: phone, expiry, Quiz_bank });
+      const allQuiz = document.getElementById("adminModalAllQuiz");
+      const extra = allQuiz.checked === allQuiz.defaultChecked ? {} : { All_quiz: Number(allQuiz.checked) };
+      await adminRequest("update", { phone: originalPhone, newPhone: phone, expiry, Quiz_bank, ...extra });
       successMessage = "Utente aggiornato.";
     } else {
       await adminRequest("renew", {

@@ -210,13 +210,7 @@ html:root.android-webview.magic-vivid {
   .native-actions>button { border:1px solid var(--atlas-rule)!important; background:var(--atlas-white)!important; border-radius:10px!important; color:var(--atlas-ink)!important; }
   .native-actions>button.is-blue { border-color:#b7d2c3!important; background:#e0f0e6!important; color:#194936!important; }
 
-  .android-home-quiz-panel { background:var(--atlas-paper); border-radius:18px; }
-  @media (orientation:portrait) {
-    .android-home-quiz-overlay { align-items:end; padding:12px 12px max(12px,env(safe-area-inset-bottom)); }
-    .android-home-quiz-panel { margin-inline:auto; padding:20px; }
-  }
-  .android-home-quiz-heading h2 { font-family:var(--atlas-title); text-transform:none; }
-  .android-home-quiz-choice { border-radius:11px; }
+
   .native-mode-screen {
     --mode-canvas:var(--atlas-paper)!important; --mode-paper:var(--atlas-white)!important;
     --mode-ink:var(--atlas-ink)!important; --mode-blue:var(--atlas-jade)!important; --mode-focus:#123c37!important;
@@ -322,4 +316,31 @@ html:root.android-webview.magic-vivid {
   .profile-panel { background:var(--atlas-white)!important; border-color:var(--atlas-rule)!important; }
   .login-panel { background:var(--atlas-white); }
   .login-submit { background:var(--atlas-jade)!important; border-color:var(--atlas-jade)!important; box-shadow:none!important; }
+}
+
+/* Short visual labels keep the Italian statement and its answer on one reading axis. */
+html.android-webview body.study-page #study-reader .study-question-main {padding:clamp(14px,4vw,24px)}
+html.android-webview body.study-page #study-reader .study-question-meta {align-items:center;gap:8px;margin-bottom:10px}
+html.android-webview body.study-page #study-reader .study-question-text {text-align:start;overflow-wrap:break-word;line-height:1.48}
+html.android-webview body.study-page #study-reader .study-reader-toolbar h2 {text-align:start;line-height:1.15;text-wrap:balance;overflow-wrap:break-word}
+html.android-webview body.study-page #study-reader .study-actions {display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:14px}
+html.android-webview body.study-page #study-reader .study-actions :is(.study-action,.quiz-theory-button,.quiz-video-button) {
+  flex:0 1 auto; width:auto!important; min-width:0; min-height:44px!important; height:auto;
+  margin:0!important; padding:5px 7px!important; gap:4px!important; justify-content:center; align-items:center;
+  border-radius:12px!important; font-size:13px; line-height:1.3; box-shadow:none!important;
+}
+html.android-webview body.study-page #study-reader .study-action-help [lang=bn],
+html.android-webview body.study-page #study-reader .study-action-bangla>span:last-child {
+  font:700 17px/1.4 "Hadi Rounded",sans-serif!important;letter-spacing:0;
+}
+html.android-webview body.study-page #study-reader .quiz-video-button>span {font:400 15px/1.45 "Adorsho Lipi",sans-serif!important}
+html.android-webview body.study-page #study-reader .quiz-theory-button-bn {font-size:16px!important}
+html.android-webview body.study-page #study-reader .quiz-theory-button-label {line-height:1.3}
+html.android-webview body.study-page #study-reader .study-explanation-media {flex:1 0 100%;max-width:100%;min-width:0}
+
+html.android-webview body.study-page #study-reader .study-actions .study-action-help {
+  background:#ede7f6!important; color:#482d6e!important; border:1px solid #d8cdea!important;
+}
+html.android-webview body.study-page #study-reader .study-actions .study-action-help[aria-expanded=true] {
+  background:#4d337a!important; color:#fff!important;
 }

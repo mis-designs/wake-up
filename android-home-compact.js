@@ -99,8 +99,10 @@
     const heading = element('div', '', 'android-home-quiz-heading');
     const title = element('h2', 'Quiz');
     title.id = 'androidHomeQuizTitle';
-    const close = element('button', 'Chiudi', 'android-home-quiz-close');
+    const close = element('button', '', 'figure-detail-close android-home-quiz-close');
     close.type = 'button';
+    close.setAttribute('aria-label', 'Chiudi');
+    close.append(icon('/icons/tmm-close.svg'));
     close.onclick = () => dismissPopup();
     heading.append(title, close);
     const choices = [
@@ -117,12 +119,63 @@
       button.onclick = () => dismissPopup(original);
       return button;
     });
-    panel.append(heading, ...choices);
+    function group(name) {
+      const section = element('fieldset', '', 'quiz-hub-group');
+      section.append(element('legend', name));
+      return section;
+    }
+    const magic = group('Magic Book');
+    magic.append(...choices);
+    const all = group('All Quiz');
+    const caption = element('p', 'Accesso extra', 'quiz-hub-caption');
+    const mix = element('a', '', 'quiz-hub-mode');
+    mix.href = '/quiz?source=all';
+    const mixBn = element('span', 'সব অধ্যায় থেকে কুইজ');
+    mixBn.lang = 'bn';
+    mix.append(element('strong', 'Mix quiz'), mixBn);
+    const chapters = element('details', '', 'quiz-hub-chapters');
+    const summary = element('summary', '', 'quiz-hub-mode');
+    const selectBn = element('span', 'এক বা একাধিক অধ্যায় বাছুন');
+    selectBn.lang = 'bn';
+    summary.append(element('strong', 'Scegli i capitoli'), selectBn);
+    const options = element('div', '', 'quiz-hub-options');
+    const checked = new Set();
+    const start = element('button', 'Inizia il quiz', 'quiz-hub-start');
+    start.type = 'button';
+    start.disabled = true;
+    const count = element('span', '', 'quiz-hub-count');
+    count.setAttribute('role', 'status');
+    const names = window.MagicBookAndroidAdapter?.titles || CHAPTER_TITLES;
+    names.forEach((name, index) => {
+      const number = index + 1;
+      const label = element('label');
+      const box = element('input');
+      box.type = 'checkbox';
+      box.value = String(number);
+      box.onchange = () => {
+        if (box.checked) checked.add(number);
+        else checked.delete(number);
+        count.textContent = checked.size === 1 ? '1 capitolo' : checked.size + ' capitoli';
+        start.disabled = !checked.size;
+      };
+      label.append(box, element('b', String(number).padStart(2, '0')), element('span', name));
+      options.append(label);
+    });
+    start.onclick = () => {
+      if (!checked.size) return;
+      const params = new URLSearchParams({ source: 'all', chapters: [...checked].sort((a,b) => a-b).join(',') });
+      location.assign('/quiz?' + params);
+    };
+    const footer = element('div', '', 'quiz-hub-footer');
+    footer.append(count, start);
+    chapters.append(summary, options, footer);
+    all.append(caption, mix, chapters);
+    panel.append(heading, magic, all);
     overlay.append(panel);
     document.body.append(overlay);
     const key = Date.now().toString(36);
     const dispose = window.MagicBookPopup.mount(overlay, {
-      focusable: () => [...choices, close],
+      focusable: () => panel.querySelectorAll('button,a[href],summary,details[open] input'),
       returnFocus: launcher,
       bodyClass: 'android-home-quiz-open',
       onDismiss: () => dismissPopup(),

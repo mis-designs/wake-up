@@ -605,3 +605,6 @@ The Android book entry has a white surface with a soft violet shade, a rounded o
 On the installed Android Home, omit the MiskatDesigns watermark. The floating Home control uses the outlined house alone. The book sways gently over a white surface and the quiz pencil makes a short writing gesture. Decorative motion belongs to the visible Home.
 
 Il ripasso delle cinque parole riprende un vocabolario aperto. La fascia verde ospita la parola italiana e il segnalibro indica la domanda corrente. Le risposte bangla sono righe su fondo carta. Nella correzione, il termine italiano segue ogni voce sulla stessa verticale in corpo minore, con il simbolo di esito al margine destro.
+
+On Android the Quiz launcher opens a full-height exercise menu. Each catalogue title sits in the outline of its own group. On study cards Hadi Rounded labels the Bangla translation, and Adorsho Lipi labels video explanations. Audio, theory and translation controls keep a 44 px touch target.
+The Quiz menu and classroom photo viewer center the same 24 px cross on a scalloped background. The caption beneath All Quiz reads “Accesso extra”.

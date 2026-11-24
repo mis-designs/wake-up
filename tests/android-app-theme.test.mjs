@@ -68,7 +68,7 @@ test("the app marker precedes styles; only named route variants may follow the t
     };
     assert.deepEqual(stylesAfterTheme, routeStyles[page] || []);
     if (["index.html", "quiz.html", "study-quiz.html"].includes(page)) {
-      const atlasIndex = html.indexOf("/android-study-atlas.css?v=4");
+      const atlasIndex = html.indexOf("/android-study-atlas.css?v=5");
       assert.ok(atlasIndex > markerIndex && atlasIndex < themeIndex);
     }
 
@@ -92,7 +92,7 @@ test("the app marker precedes styles; only named route variants may follow the t
 });
 
 test("the app theme assets are available offline", () => {
-  assert.match(worker, /\/android-study-atlas\.css\?v=4/);
+  assert.match(worker, /\/android-study-atlas\.css\?v=5/);
   assert.match(worker, /\/android-webview-mode\.js\?v=7-native-only/);
   assert.match(worker, /\/android-app-theme\.css\?v=14-welcome-split/);
 });

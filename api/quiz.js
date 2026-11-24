@@ -1,3 +1,4 @@
+import { drawAllQuiz, allQuizClaims, gradeAllQuiz, allQuizRecordingId, issuedAllQuizRow } from "../lib/all-quiz.mjs";
 import figureVideos from '../lib/figure-video.cjs';
 import crypto from "crypto";
 import { gallerySnapshot, resolveGalleryRow, invalidateGallery } from '../lib/video-gallery.mjs';
@@ -380,7 +381,11 @@ async function getCanonicalQuizAudioCandidates(questionId, question, figure) {
 }
 
 async function resolveQuizAudioRow({ question, figure, questionId }) {
-  const identity = quizAudioCatalog.resolve({ questionId, question, figure });
+  const canonicalId = String(questionId).startsWith("all_") ? allQuizRecordingId(questionId) : questionId;
+  if (String(questionId).startsWith("all_") && !canonicalId) {
+    return { identity: { quizKey: "" }, result: { row: null, requiresReview: false } };
+  }
+  const identity = quizAudioCatalog.resolve({ questionId: canonicalId, question, figure });
   return { identity, result: await findQuizAudioRow(identity) };
 }
 
@@ -1035,6 +1040,17 @@ function requireSuccessfulQuizBankAccess(access) {
   return access;
 }
 
+async function authorizeAllQuiz(phone, deviceId, accessToken) {
+  const proof = verifySignedToken(accessToken, { phone, deviceId, purpose: "access" });
+  if (!proof.ok && !(proof.signatureValid && proof.error === "token_expired")) {
+    return { ok: false, statusCode: 401, error: "unauthorized" };
+  }
+  const access = await ensureAccess({ phone, deviceId, accessToken, forceValidate: true, quizBankValidation: true });
+  if (!access.ok || access.role === "admin") return access;
+  if (String(access.authData?.All_quiz ?? "").trim() === "1") return access;
+  return { ok: false, statusCode: 403, error: "all_quiz_access_required" };
+}
+
 function quizBankAccessMode() {
   // Server-only promotion switch. Unknown configuration must never broaden access.
   const mode = String(process.env.QUIZBANK_ACCESS_MODE ?? "magicbook").trim().toLowerCase();
@@ -1330,9 +1346,11 @@ export default async function handler(req, res) {
       const figureRow=String(questionId).startsWith('fv_');
       const galleryRow = figureRow || String(questionId).startsWith('vg_');
       if (galleryRow && !master) return res.status(403).json({ error: 'master_admin_required' });
-      const sourceRow = figureRow ? figureVideos.resolveFigureVideoRow(questionId) : galleryRow ? await resolveGalleryRow(questionId) : LOCAL_MAGIC_BOOK_ROWS.find(item => String(item.id) === String(questionId)) || LOCAL_EXAM_ROWS.find(item => String(item.id) === String(questionId));
+      const allRead = action === "getQuizVideo" && String(questionId).startsWith("all_");
+      const allSession = allRead && verifySignedToken(quizSessionToken, { phone, deviceId, purpose: "quiz" });
+      const sourceRow = allRead ? (allSession.ok && issuedAllQuizRow(allSession.payload, questionId)) : figureRow ? figureVideos.resolveFigureVideoRow(questionId) : galleryRow ? await resolveGalleryRow(questionId) : LOCAL_MAGIC_BOOK_ROWS.find(item => String(item.id) === String(questionId)) || LOCAL_EXAM_ROWS.find(item => String(item.id) === String(questionId));
       if (!sourceRow) return res.status(404).json({ error: 'video_question_unavailable' });
-      const row = galleryRow ? sourceRow : normalizeQuestionRow(sourceRow);
+      const row = galleryRow || allRead ? sourceRow : normalizeQuestionRow(sourceRow);
       if (getQuizAudioIdentity(row.question, row.figure).quizKey !== getQuizAudioIdentity(question, figure).quizKey) return res.status(409).json({ error: 'video_question_changed' });
       const result = await serveQuizVideo({ action, row, master, owner: normalizePhoneNumber(phone), video: getRequestData(req).video }, req, res);
       if (action !== 'getQuizVideo') {if(figureRow)figureVideos.invalidateFigureVideos();else invalidateGallery();}
@@ -1344,7 +1362,7 @@ export default async function handler(req, res) {
       // trial tokens cannot substitute; only a server-owned canonical row resolves.
       const quizSession = verifySignedToken(quizSessionToken, { phone, deviceId, purpose: "quiz" });
       if (!quizSession.ok) return res.status(401).json({ error: quizSession.error });
-      const row = LOCAL_MAGIC_BOOK_ROWS.find(item => String(item.id) === questionId)
+      const row = quizSession.payload.catalog === "all" ? issuedAllQuizRow(quizSession.payload, questionId) : LOCAL_MAGIC_BOOK_ROWS.find(item => String(item.id) === questionId)
         || LOCAL_EXAM_ROWS.find(item => String(item.id) === questionId);
       const result = await serveQuizTheory({ action, questionId, question, figure, language }, row, req, res);
       return res.status(200).json(result);
@@ -1378,7 +1396,12 @@ export default async function handler(req, res) {
 
     if (req.method === "POST" && action === "refreshQuizSession") {
       res.setHeader("Cache-Control", "no-store");
-      const access = await ensureAccess({ phone, deviceId, accessToken });
+      const previous = verifySignedToken(quizSessionToken, { phone, deviceId, purpose: "quiz" });
+      const allQuiz = mode === "allquiz" || previous.payload?.catalog === "all";
+      if (allQuiz && (previous.payload?.catalog !== "all" || !(previous.ok || previous.signatureValid))) {
+        return res.status(401).json({ error: "quiz_session_expired" });
+      }
+      const access = allQuiz ? await authorizeAllQuiz(phone, deviceId, accessToken) : await ensureAccess({ phone, deviceId, accessToken });
       if (!access.ok) {
         return res.status(access.statusCode || 401).json({ error: access.error || "unauthorized" });
       }
@@ -1388,6 +1411,7 @@ export default async function handler(req, res) {
         phone,
         deviceId,
         purpose: "quiz",
+        claims: allQuiz ? { catalog: "all", drawIds: previous.payload.drawIds, revision: previous.payload.revision } : {},
         ttlMs: modeConfig?.sessionTtlMs || QUIZ_SESSION_TOKEN_TTL_MS,
         role: access.role === "admin" ? "admin" : "user"
       });
@@ -1430,11 +1454,19 @@ export default async function handler(req, res) {
 
       // A valid short-lived signed access token is sufficient here. This keeps
       // quiz loading independent of a fresh Google Apps Script round trip.
-      const access = await ensureAccess({ phone, deviceId, accessToken });
+      const allQuiz = mode === "allquiz";
+      const access = allQuiz ? await authorizeAllQuiz(phone, deviceId, accessToken) : await ensureAccess({ phone, deviceId, accessToken });
       if (!access.ok) {
         return res.status(access.statusCode || 401).json({ error: access.error || "unauthorized" });
       }
 
+      if (allQuiz) {
+        const quiz = drawAllQuiz(chapters, shuffleQuestions);
+        const session = createSignedToken({ phone, deviceId, purpose: "quiz", ttlMs: QUIZ_SESSION_TOKEN_TTL_MS, claims: allQuizClaims(quiz) });
+        const title = !chapters ? "All Quiz · Mix" : String(chapters).includes(",") ? "All Quiz · Multi" : "All Quiz · Cap. " + chapters;
+        return res.status(200).json({ quiz, title, timerMinutes: 20, quizSessionToken: session.token, quizSessionTokenExpiresAt: session.expiresAt,
+          ...(access.accessToken ? { accessToken: access.accessToken, accessTokenExpiresAt: access.accessTokenExpiresAt } : {}) });
+      }
       const modeConfig = getExamModeConfig(mode);
       // Admin authority comes only from a valid signed admin token.
       const admin = access.role === "admin";
@@ -1897,7 +1929,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "missing_answers" });
       }
 
-      const data = gradeLocalQuiz(answers);
+      const data = quizSession.payload.catalog === "all" ? gradeAllQuiz(quizSession.payload, answers) : gradeLocalQuiz(answers);
       const normalizedResult = normalizeQuizResult(data, answers.length);
       return res.status(200).json(normalizedResult);
     }

@@ -330,7 +330,7 @@ test("identity mismatch makes no request, aborts existing media and clears priva
   };
   Object.assign(h.context, {
     quizBankIdentityMatches: () => false, quizAccessErrorHandled: false,
-    TRIAL_MODE: false, HOME_ROUTE: "/quizbank?scheda=25", timerInterval: 123,
+    TRIAL_MODE: false, ALL_QUIZ_MODE: false, HOME_ROUTE: "/quizbank?scheda=25", timerInterval: 123,
     clearInterval: id => cleanup.push(["timer", id]), stopAllAudio: () => cleanup.push("audio"),
     closeInlineAudioRecorder: () => cleanup.push("recorder"), resetSharedAudioPlayer: () => cleanup.push("shared"),
     resetReviewAudioPlayer: () => cleanup.push("review"), hideLoading: noop,

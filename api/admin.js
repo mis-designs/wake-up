@@ -134,6 +134,11 @@ function sanitizeAdminFields(action, body) {
     fields.Quiz_bank = body.Quiz_bank;
   }
 
+  if (action === "update" && Object.hasOwn(body, "All_quiz")) {
+    if (body.All_quiz !== 0 && body.All_quiz !== 1) return { error: "bad_all_quiz" };
+    fields.All_quiz = body.All_quiz;
+  }
+
   if (action === "recent") {
     fields.order = "registration_desc";
   }
@@ -267,6 +272,9 @@ export default async function handler(req, res) {
     }
     if (data?.success !== true) {
       return res.status(200).json({ success: false, error: readAdminError(data) });
+    }
+    if (Object.hasOwn(sanitized.fields, "All_quiz") && data.All_quiz !== sanitized.fields.All_quiz) {
+      return res.status(200).json({ success: false, error: "all_quiz_not_confirmed" });
     }
     if (!renewedExisting && Object.hasOwn(sanitized.fields, "Quiz_bank") && data.Quiz_bank !== sanitized.fields.Quiz_bank) {
       // Older GAS deployments can save the phone while ignoring the new flag.

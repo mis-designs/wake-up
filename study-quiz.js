@@ -928,7 +928,11 @@
       window.location.href = trialOfferUrl("Spiegazioni audio complete");
     });
     const help = actionButton("study-action-help", "Traduzione e parole chiave", "文");
-    if (QUIZBANK_MODE) {
+    if (document.documentElement.classList.contains("android-webview")) {
+      help.lastElementChild.textContent = "বাংলা";
+      help.lastElementChild.lang = "bn";
+      help.setAttribute("aria-label", "বাংলা · Traduzione e parole chiave");
+    } else if (QUIZBANK_MODE) {
       const label = help.lastElementChild;
       label.className = "quizbank-help-label";
       const bengali = document.createElement("span");

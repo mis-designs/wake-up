@@ -310,6 +310,14 @@
   ],
   "rewrites": [
     {
+      "source": "/api/_video-gallery-allbooks.json",
+      "destination": "/api/quiz?action=private_catalog"
+    },
+    {
+      "source": "/api/_video-gallery-allbooks",
+      "destination": "/api/quiz?action=private_catalog"
+    },
+    {
       "source": "/api/_quiz-theory.json",
       "destination": "/api/quiz?action=privateQuizTheory"
     },

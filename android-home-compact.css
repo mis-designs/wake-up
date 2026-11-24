@@ -86,24 +86,49 @@ html.android-webview.magic-vivid[data-native-study-screen=home] .native-dock {
 }
 html.android-webview.magic-vivid .native-dock .vivid-dock-home { display:grid; place-items:center; width:46px; height:44px; min-height:44px!important; gap:0; padding:0!important; }
 html.android-webview.magic-vivid .native-dock .vivid-dock-home img { width:21px; height:21px; }
+/* The book title interrupts the fine outline like a printed exercise sheet. */
 html.android-webview .android-home-quiz-overlay {
-  position:fixed;inset:0;z-index:3000;display:grid;place-items:center;
-  padding:20px;background:#21102c75;backdrop-filter:blur(7px);overflow:auto;
+  position:fixed; inset:0; z-index:3000; overflow:auto; overscroll-behavior:contain;
+  background:var(--atlas-paper,#faf8fe); padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
 }
-html.android-webview .android-home-quiz-panel {
-  width:min(100%,380px);padding:22px;border:1px solid #e5d9ef;border-radius:27px;
-  background:#faf8fe;color:#2a223b;box-shadow:0 20px 60px #28113c26;
+html.android-webview .android-home-quiz-overlay .android-home-quiz-panel {
+  width:min(100%, 38rem); min-height:100%; margin:auto; box-sizing:border-box;
+  border:0; border-radius:0; box-shadow:none; color:var(--atlas-ink,#272238); background:transparent;
+  padding:12px clamp(16px,5vw,32px) 24px;
 }
-html.android-webview .android-home-quiz-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:18px;}
-html.android-webview .android-home-quiz-heading h2{font:400 28px/1.1 Norwester,sans-serif;margin:0;}
-html.android-webview .android-home-quiz-close{min-height:44px;padding:8px 13px;border:1px solid #dfd3ed;border-radius:14px;color:#5d3e7e;background:#fff;font:600 13px Arial,sans-serif;}
-html.android-webview .android-home-quiz-choice{width:100%;display:flex;align-items:center;gap:16px;min-height:86px;padding:16px;border:1px solid #ead7af;border-radius:19px;background:#fff0cd;color:#51360c;text-align:left;}
-html.android-webview .android-home-quiz-choice+.android-home-quiz-choice{margin-top:12px;border-color:#c4dfd0;background:#def2e8;color:#244c3c;}
-html.android-webview .android-home-quiz-choice>img{width:32px;height:32px;object-fit:contain;}
-html.android-webview .android-home-quiz-choice>span{display:grid;gap:7px;}
-html.android-webview .android-home-quiz-choice strong{font:650 17px/1.2 Arial,sans-serif;}
-html.android-webview .android-home-quiz-choice [lang=bn]{font:400 19px/1.5 "Hadi Rounded",sans-serif;}
-html.android-webview .android-home-quiz-overlay :is(button,a):focus-visible{outline:3px solid #9463c9;outline-offset:3px;}
+html.android-webview .android-home-quiz-heading {display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px}
+html.android-webview .android-home-quiz-heading h2 {font:600 30px/1.15 var(--atlas-title,Georgia,serif); margin:0}
+html.android-webview .android-home-quiz-heading .android-home-quiz-close {
+  --figure-paper: var(--atlas-paper, white);
+  --figure-ink: var(--atlas-ink, #342943);
+  width:48px; height:48px; margin:0; padding:0; border:0; background:transparent; box-shadow:none;
+}
+html.android-webview .quiz-hub-group {margin:0 0 16px; min-width:0; padding:10px 12px 14px; border:1px solid #d6cde0; border-radius:16px}
+html.android-webview .quiz-hub-group legend {padding:0 7px; font:600 22px/1.2 var(--atlas-title,Georgia,serif); color:#342943}
+html.android-webview .quiz-hub-group .android-home-quiz-choice,
+html.android-webview .quiz-hub-mode {width:100%; box-sizing:border-box; min-height:54px; border:0; border-radius:10px; box-shadow:none; text-align:start; text-decoration:none; cursor:pointer}
+html.android-webview .quiz-hub-group .android-home-quiz-choice {display:flex; align-items:center; gap:14px; padding:10px 14px; background:#fff0cd; color:#51360c}
+html.android-webview .quiz-hub-group .android-home-quiz-choice + button {margin-top:7px; background:#def2e8; color:#214639}
+html.android-webview .android-home-quiz-choice>img {width:26px;height:26px;object-fit:contain}
+html.android-webview .android-home-quiz-choice>span {display:grid;gap:2px}
+html.android-webview .android-home-quiz-panel strong {font:650 16px/1.25 Arial,sans-serif}
+html.android-webview .android-home-quiz-panel [lang=bn] {font:400 16px/1.45 "Hadi Rounded",sans-serif; letter-spacing:0}
+html.android-webview .quiz-hub-caption {margin:0 6px 8px;color:#60586c;font-size:14px}
+html.android-webview .quiz-hub-mode {display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-content:center;padding:10px 14px;background:#eee9f8;color:#3d2c5b}
+html.android-webview .quiz-hub-mode [lang=bn] {grid-column:1;color:#5b4872}
+html.android-webview .quiz-hub-mode::after {content:"";grid-column:2;grid-row:1/3;align-self:center;width:22px;height:22px;background:url('/icons/next.png') center/contain no-repeat}
+html.android-webview .quiz-hub-chapters {margin-top:7px}
+html.android-webview .quiz-hub-chapters summary {list-style:none}
+html.android-webview .quiz-hub-chapters summary::-webkit-details-marker {display:none}
+html.android-webview .quiz-hub-chapters summary::after {transform:rotate(90deg)}
+html.android-webview .quiz-hub-chapters[open] summary::after {transform:rotate(-90deg)}
+html.android-webview .quiz-hub-options label {display:grid; grid-template-columns:20px 2ch 1fr; align-items:center;gap:10px;min-height:44px;padding:4px 6px;border-bottom:1px solid #e2dbe8;font:500 15px/1.35 Arial,sans-serif;cursor:pointer}
+html.android-webview .quiz-hub-options input {width:18px;height:18px;accent-color:#65429b}
+html.android-webview .quiz-hub-options b,.quiz-hub-count {color:#655773;font-variant-numeric:tabular-nums}
+html.android-webview .quiz-hub-footer {position:sticky;bottom:0;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--atlas-paper,#faf8fe);padding:8px 0}
+html.android-webview .quiz-hub-start {width:auto;min-height:44px;padding:8px 16px;color:white;background:#4d337a;border:0;border-radius:11px}
+html.android-webview .quiz-hub-start:disabled {background:#e3dfeb;color:#665d72}
+html.android-webview .android-home-quiz-overlay :is(button,a,input,summary):focus-visible {outline:3px solid #8150b0;outline-offset:2px}
 @media(orientation:landscape) and (max-height:500px){
  html.android-webview.magic-vivid .native-home.vivid-home.android-home-compact{display:flex;max-width:510px;height:auto;min-height:100%!important;}
  html.android-webview .android-home-quiz-panel{padding:16px;}
@@ -119,4 +144,3 @@ html.android-webview.magic-vivid .native-home.android-home-compact #nativeHomeTi
 }
 html.android-webview.magic-vivid .native-home.android-home-compact #nativeHomeTitle .native-greeting-rail>span:first-child::after { content:"·"; margin-left:6px; }
 html.android-webview.magic-vivid .native-home.android-home-compact #nativeHomeTitle .native-greeting-rail>span:last-child { position:absolute; inset:0; opacity:0; }
-html.android-webview .android-home-quiz-heading .android-home-quiz-close{width:auto!important;flex:none;margin-left:auto;box-shadow:none;}
