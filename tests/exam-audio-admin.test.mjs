@@ -5,6 +5,14 @@ import { readFileSync } from "node:fs";
 import { quizAudioCatalog, quizAudioLegacyRegistry } from "../api/quiz-audio-catalog.mjs";
 import identityTools from "../quiz-audio-identity.cjs";
 
+test("Exam 80 associates the 70-metre distance question with the distance sign in the admin catalog", () => {
+  const exam = quizAudioCatalog.rows.find(row => row.id === "exam_q35");
+  const chapter = quizAudioCatalog.rows.find(row => row.id === "cap3_q3");
+  assert.equal(exam.question, chapter.question);
+  assert.equal(exam.figure, "fig57");
+  assert.equal(exam.figure, chapter.figure);
+});
+
 function element(tag = "div") {
   const classes = new Set();
   return {
