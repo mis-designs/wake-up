@@ -110,6 +110,23 @@ test("invalid QuizBank sheet routes cannot fall back to MagicBook or request any
   }
 });
 
+test("a learner can navigate all 30 practice questions using only the sheet audio index", async () => {
+  const h = fixture();
+  const ctx = h.context;
+  const rendered = [];
+  Object.assign(ctx, { sharedAudioAvailabilityCache: new Map(), sharedAudioAvailabilityKey: q => q.id,
+    resetSharedAudioPlayer: noop, sharedAudioRequestId: 1, sharedAudioPlayer: {}, sharedAudioContext: null,
+    setSharedAudioVisualState: noop, applySharedAudioAvailability: data => rendered.push(data.available) });
+  vm.runInContext(functionSource("updateSharedAudioAvailability"), ctx);
+  ctx.response.audioIndex = Object.fromEntries(ctx.response.quiz.map((q, i) => [q.id, { available: i % 2 === 0 }]));
+  await ctx.loadQuiz();
+  assert.equal(ctx.quiz.length, 30);
+  for (const q of [...ctx.quiz, ...ctx.quiz]) ctx.updateSharedAudioAvailability(q);
+  assert.deepEqual(rendered, Array.from({ length: 60 }, (_, i) => i % 2 === 0));
+  assert.equal(h.calls.length, 1);
+  assert.match(h.calls[0].url, /mediaIndex=1/);
+});
+
 test("client rejects incomplete, foreign, reordered or revision-less quiz responses", async () => {
   for (const mutate of [r => r.quiz.pop(), r => r.quiz.reverse(), r => r.quiz[0].id = "qb_s01_q01",
     r => r.quiz[1] = r.quiz[0], r => delete r.quizbankRevision]) {

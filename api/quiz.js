@@ -357,13 +357,23 @@ async function getQuizAudioRow(quizKey) {
   return rows[0] || null;
 }
 
-async function getQuizAudioRows(keys) {
+async function getQuizAudioRows(keys, signal) {
   const sql = getQuizAudioDatabase();
-  return sql`
+  return sql.query(`
     SELECT quiz_key, audio_key, audio_mime_type, audio_duration_ms
     FROM quiz_audio_explanations
-    WHERE quiz_key = ANY(${keys}::text[])
-  `;
+    WHERE quiz_key = ANY($1::text[])
+  `, [keys], { fetchOptions: { signal } });
+}
+
+export async function quizBankSheetAudioIndex(rows, identityFor, signal) {
+  const identities = rows.map(identityFor);
+  const keys = [...new Set(identities.flatMap(audioLookupKeys))];
+  const recordings = await getQuizAudioRows(keys, signal);
+  return Object.fromEntries(rows.map((question, index) => {
+    const { row } = selectAudioRow(identities[index], recordings, isLegacyQuizAudioAmbiguous);
+    return [question.id, { available: Boolean(row?.audio_key), durationMs: row?.audio_duration_ms || null }];
+  }));
 }
 
 async function findQuizAudioRow(identity) {

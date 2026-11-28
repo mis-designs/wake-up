@@ -702,6 +702,7 @@
         deviceId: session.deviceId,
         chapters: String(chapter)
       });
+      if (QUIZBANK_MODE) query.set("mediaIndex", "1");
       const data = await fetchStudyJson(`${API}?${query}`, {
         headers: authHeaders(),
         cache: "no-store",
@@ -714,7 +715,19 @@
       quizSessionTokenExpiresAt = Number((TRIAL_MODE ? data.trialTokenExpiresAt : data.quizSessionTokenExpiresAt) || 0);
       questions = Array.isArray(data.quiz) ? data.quiz : [];
       quizBankContentNoticeShown = false;
-      if (QUIZBANK_MODE) setQuizBankCapabilities(data);
+      if (QUIZBANK_MODE) {
+        setQuizBankCapabilities(data);
+        window.MagicQuizVideo?.applySheetIndex?.(questions, data.missingVideos);
+        for (const question of questions) {
+          const status = data.audioIndex?.[question.id];
+          // Admins verify a registered object before offering recording/repair controls.
+          if (quizBankCanUploadAudio && status?.available) {
+            audioStatusCache.delete(audioStatusKey(question));
+          } else if (typeof status?.available === "boolean") {
+            cacheAudioAvailability(question, status.available);
+          }
+        }
+      }
       renderQuestions();
       rememberStudyChapter(chapter);
       elements.loading.classList.add("hidden");

@@ -6,6 +6,8 @@ import { S3Client } from "@aws-sdk/client-s3";
 import { parseQuizBank, quizBankConfig, loadQuizBank, quizBankAudioIdentity, quizBankStorageIdentity, quizBankContentToken } from "../api/quizbank-catalog.mjs";
 import { quizAudioCatalog } from "../api/quiz-audio-catalog.mjs";
 import { neonConfig } from "@neondatabase/serverless";
+import videoArchive from "../lib/video-archive.cjs";
+import quizVideo from "../lib/quiz-video.cjs";
 
 export function fixtureRows() {
   return Array.from({ length: 1500 }, (_, i) => {
@@ -42,6 +44,33 @@ test("exact Magic Book reuse preserves identity; altered figure, punctuation or 
   assert.equal(quizBankAudioIdentity({ ...row, correct: !row.correct, question: row.question + " !!!" }), null);
   assert.equal(quizBankAudioIdentity({ ...row, figure: "9999" }), null);
   assert.deepEqual(quizBankStorageIdentity(row), quizBankAudioIdentity(row));
+});
+
+test("video discovery shares one prefix list, and a partial or unavailable list cannot hide videos", async t => {
+  for (const name of ["ACCOUNT_ID", "ACCESS_KEY_ID", "SECRET_ACCESS_KEY"]) {
+    const key = "QUIZ_VIDEO_R2_" + name, previous = process.env[key];
+    process.env[key] = "fixture";
+    t.after(() => previous === undefined ? delete process.env[key] : process.env[key] = previous);
+  }
+  t.after(() => videoArchive.invalidate("quiz"));
+  const rows = parseQuizBank(fixtureRows()).sheets[0];
+  let calls = 0, fail = false;
+  const page = { IsTruncated: false, CommonPrefixes: [{ Prefix: quizVideo.identity(rows[0]).prefix + "/" }] };
+  t.mock.method(S3Client.prototype, "send", async command => {
+    calls++;
+    assert.equal(command.input.Delimiter, "/");
+    if (fail) throw Error("fixture denied");
+    return page;
+  });
+  const [a, b] = await Promise.all([videoArchive.missingQuizVideos(rows), videoArchive.missingQuizVideos(rows)]);
+  assert.deepEqual(a.ids, rows.slice(1).map(q => q.id)); assert.deepEqual(b.ids, a.ids);
+  assert.equal(calls, 1);
+  videoArchive.invalidate("quiz"); page.IsTruncated = true;
+  assert.equal(await videoArchive.missingQuizVideos(rows), undefined);
+  videoArchive.invalidate("quiz"); fail = true;
+  assert.equal(await videoArchive.missingQuizVideos(rows), undefined);
+  assert.equal(await videoArchive.missingQuizVideos(rows), undefined);
+  assert.equal(calls, 3);
 });
 
 test("isolated storage identities include exact content, figure and answer, never position or legacy keys", () => {
@@ -153,6 +182,25 @@ test("private API: no role spoofing or unentitled user access, no R2 before auth
   assert.equal(queries, 1, "unmapped content probes only its isolated identity");
   assert.equal((await request({ action: "getQuizAudioStatus", questionId: "qb_s01_q01", question: "spoof", figure: "9999" }, token("admin"), "POST")).body.available, true);
   assert.equal(queries, 2);
+  for (const action of ["getStudyQuiz", "getQuiz"]) {
+    const before = queries;
+    const result = await request({ action, chapters: "1", mediaIndex: "1" });
+    assert.equal(result.statusCode, 200);
+    assert.equal(queries, before + 1, "one audio database lookup for all thirty questions");
+    assert.equal(Object.keys(result.body.audioIndex).length, 30);
+    assert.deepEqual(result.body.audioIndex.qb_s01_q01, { available: true, durationMs: 1200 });
+    assert.deepEqual(result.body.audioIndex.qb_s01_q02, { available: false, durationMs: null });
+    assert.equal(result.body.audioIndex.qb_s02_q01, undefined);
+    if (action === "getQuiz") assert.ok(result.body.quiz.every(row => !Object.hasOwn(row, "correct")));
+  }
+  const beforeDenied = queries;
+  assert.equal((await request({ action: "getStudyQuiz", chapters: "1", mediaIndex: "1" }, "invalid")).statusCode, 401);
+  assert.equal(queries, beforeDenied);
+  neonConfig.fetchFunction = async () => { throw new Error("Database offline"); };
+  const offline = await request({ action: "getStudyQuiz", chapters: "1", mediaIndex: "1" });
+  assert.equal(offline.statusCode, 200);
+  assert.equal(offline.body.quiz.length, 30);
+  assert.equal(offline.body.audioIndex, undefined, "a failed index must not mark recordings absent");
   assert.equal((await request({ action: "getItalianAudio", questionId: "qb_s01_q01", text: "untrusted" })).statusCode, 200);
   assert.equal(ttsText, canonical.question, "TTS must use the server's question, not arbitrary client text");
   assert.equal((await request({ action: "getQuizAudioBlob", questionId: "qb_s99_q01" }, token("admin"), "POST")).statusCode, 404);

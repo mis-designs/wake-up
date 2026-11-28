@@ -1,6 +1,7 @@
-import { authorizeQuizBankPreview, quizBankSession, serveQuizBankMedia, saveQuizBankAudio, serveQuizTheory, serveQuizVideo, serveFigureVideo, isQuizVideoMaster } from "./quiz.js";
+import { authorizeQuizBankPreview, quizBankSession, serveQuizBankMedia, saveQuizBankAudio, serveQuizTheory, serveQuizVideo, serveFigureVideo, isQuizVideoMaster, quizBankSheetAudioIndex } from "./quiz.js";
 import { loadQuizBank, quizBankStorageIdentity, quizBankContentToken, matchesQuizBankContentToken } from "./quizbank-catalog.mjs";
 import { isQuizTheoryAction } from "../lib/quiz-theory-response.mjs";
+import videoArchive from "../lib/video-archive.cjs";
 import { decodeQuizAudioUpload } from "../lib/quiz-audio-upload.mjs";
 import { buildQuizBankAttempt, gradeQuizBankAttempt, normalizeQuizBankSheet } from "../lib/quizbank-attempt.mjs";
 
@@ -42,10 +43,29 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "quizbank_invalid_sheet" });
     }
     const bank = await loadQuizBank();
+    let audioIndex, missingVideos;
+    if (req.query?.mediaIndex === "1" && ["getQuiz", "getStudyQuiz"].includes(data.action)) {
+      const controller = new AbortController();
+      const abort = () => controller.abort();
+      const timer = setTimeout(abort, 1200);
+      res.once?.("close", abort);
+      try {
+        if (!res.destroyed) {
+          const rows = bank.sheets[sheet - 1];
+          [audioIndex, missingVideos] = await Promise.all([
+            quizBankSheetAudioIndex(rows, quizBankStorageIdentity, controller.signal).catch(() => undefined),
+            canUploadVideo ? undefined : videoArchive.missingQuizVideos(rows).catch(() => undefined)
+          ]);
+        }
+      } finally {
+        clearTimeout(timer);
+        res.removeListener?.("close", abort);
+      }
+    }
     if (data.action === "getQuiz") {
       return res.status(200).json({ ok: true, sheet, role, canUploadAudio, isAdmin: canUploadAudio,
         source: "quizbank", mode: "default", title: `QuizBank · Scheda ${sheet}`, timerMinutes: 20,
-        ...buildQuizBankAttempt(withContentTokens(bank.sheets[sheet - 1])), ...quizBankSession(data, { role }), ...renewed });
+        ...buildQuizBankAttempt(withContentTokens(bank.sheets[sheet - 1])), audioIndex, missingVideos, ...quizBankSession(data, { role }), ...renewed });
     }
     if (data.action === "checkQuiz") {
       // Authorization already validated JSON/body shape. Keep this QuizBank-only
@@ -62,7 +82,7 @@ export default async function handler(req, res) {
     }
     if (data.action === "getStudyQuiz") {
       return res.status(200).json({ ok: true, sheet, role, canUploadAudio,
-        quiz: withContentTokens(bank.sheets[sheet - 1]), ...quizBankSession(data, { role }), ...renewed });
+        quiz: withContentTokens(bank.sheets[sheet - 1]), audioIndex, missingVideos, ...quizBankSession(data, { role }), ...renewed });
     }
     const row = bank.byId.get(String(data.questionId || ""));
     if (!row) return res.status(404).json({ error: "quizbank_question_not_found" });

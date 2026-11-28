@@ -1,6 +1,12 @@
 (function(root) {
   'use strict';
   const bindings = new Set(), cache = new Map();
+  const absentUntil = new WeakMap();
+  function applySheetIndex(questions, missing) {
+    if (!Array.isArray(missing?.ids) || !(missing.ttlMs > 0)) return;
+    const ids = new Set(missing.ids), until = Date.now() + Math.min(60000, missing.ttlMs);
+    for (const question of questions) if (ids.has(question.id)) absentUntil.set(question, until);
+  }
   let active = null, epoch = 0, pendingBack = false;
   const icon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="4" stroke="currentColor" stroke-width="1.8"/><path d="m10 8 6 4-6 4Z" fill="currentColor"/></svg>';
   const uploadIcon = '<span class="quiz-video-upload-icon" aria-hidden="true"></span>';
@@ -476,6 +482,7 @@
     }
     const update = async () => {
       if (!current(binding)) return;
+      if (absentUntil.get(options.question) > Date.now()) return;
       try {
         const result = await lookup(binding);
         if (!current(binding)) return; remember(binding, result);
@@ -502,5 +509,5 @@
   root.addEventListener('magicbook:logout', reset);
   root.addEventListener('storage', () => { if ([...bindings].some(binding => !current(binding))) reset(); });
   root.addEventListener('magicbook:quiz-question-change', () => { close({ restoreFocus: false }); for (const binding of [...bindings]) { if (!current(binding)) destroyButton(binding.button); } });
-  root.MagicQuizVideo = Object.freeze({ createButton, destroyButton, close, reset, directUpload, encodeChunk });
+  root.MagicQuizVideo = Object.freeze({ createButton, destroyButton, close, reset, directUpload, encodeChunk, applySheetIndex });
 })(window);

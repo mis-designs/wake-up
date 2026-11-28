@@ -499,7 +499,10 @@ function buildQuizApiUrl(action, params = {}) {
     deviceId: getQuizDeviceId()
   });
 
-  if (action === "getQuiz") query.set("draw", createQuizDrawId());
+  if (action === "getQuiz") {
+    query.set("draw", createQuizDrawId());
+    if (QUIZBANK_MODE) query.set("mediaIndex", "1");
+  }
 
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") {
@@ -2472,6 +2475,16 @@ async function loadQuiz() {
       quizbankRevision = data.quizbankRevision;
     }
     quiz = data.quiz;
+    if (QUIZBANK_MODE) window.MagicQuizVideo?.applySheetIndex?.(quiz, data.missingVideos);
+    if (QUIZBANK_MODE && data.audioIndex) {
+      sharedAudioAvailabilityCache.clear();
+      for (const question of quiz) {
+        const status = data.audioIndex[question.id];
+        if (typeof status?.available === "boolean" && !(isAdmin && status.available)) {
+          sharedAudioAvailabilityCache.set(sharedAudioAvailabilityKey(question), status);
+        }
+      }
+    }
     quizbankContentNoticeShown = false;
 
     const modeConfig = getQuizModeConfig(quizMode);
